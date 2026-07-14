@@ -133,6 +133,8 @@ model User {
   // Relations
   profile       Profile?
   subscriptions Subscription[]
+  sessions      Session[]
+  accounts      Account[]
 
   // `email` is already indexed by the `@unique` constraint above.
   @@map("users")
@@ -173,6 +175,68 @@ model Subscription {
   @@index([userId])
   @@index([status])
   @@map("subscriptions")
+}
+
+// ---------------------------------------------------------------------------
+// Better Auth (Sprint 4.1)
+// These models are required by Better Auth's Prisma adapter. Field names use
+// Better Auth's expected camelCase; tables are mapped to snake_case plurals.
+// ---------------------------------------------------------------------------
+
+/// An authenticated session. Managed entirely by Better Auth.
+model Session {
+  id        String   @id
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// A credential/provider account for a user. For email+password auth the
+/// hashed password lives here. Managed entirely by Better Auth.
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+/// Short-lived verification tokens (e.g. for future email verification).
+/// Managed entirely by Better Auth.
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
 }
 
 /// A professional golf tour (PGA, DP World, LIV, etc.).
