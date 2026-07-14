@@ -5,6 +5,7 @@ import {
   Flag,
   LayoutDashboard,
   MapPinned,
+  Palette,
   Settings,
   SlidersHorizontal,
   Trophy,
