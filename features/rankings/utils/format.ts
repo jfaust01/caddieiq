@@ -3,12 +3,60 @@
  * both server and client.
  */
 
-import type { ConfidenceLevel } from '@/lib/analytics/shared/types'
-import type { RankingMovement } from '@/lib/ranking'
+import type {
+  AnalyticsModuleKey,
+  ConfidenceLevel,
+} from '@/lib/analytics/shared/types'
+import type { RankingMovement, RankingWeights } from '@/lib/ranking'
 
-import type { RankingRow } from '../types'
+import type { RankingModuleScores, RankingRow } from '../types'
 
 export type Tone = 'success' | 'warning' | 'muted' | 'default' | 'destructive'
+
+/** A prepared per-module contribution row for the detail breakdown. */
+export interface MetricRow {
+  key: AnalyticsModuleKey
+  label: string
+  value: number
+  weight: number
+}
+
+/** Maps the flat module-score keys back to analytics module keys + labels. */
+const MODULE_META: Record<
+  keyof RankingModuleScores,
+  { key: AnalyticsModuleKey; label: string }
+> = {
+  recentForm: { key: 'recent-form', label: 'Recent Form' },
+  courseFit: { key: 'course-fit', label: 'Course Fit' },
+  value: { key: 'value', label: 'Value' },
+  momentum: { key: 'momentum', label: 'Momentum' },
+  wind: { key: 'wind', label: 'Wind Performance' },
+  strokesGained: { key: 'strokes-gained', label: 'Strokes Gained' },
+  consistency: { key: 'consistency', label: 'Consistency' },
+}
+
+/**
+ * Combine a row's flat module scores with the ranking type's weights into a
+ * sorted (by weight, then score) list for the detail breakdown panel.
+ */
+export function buildMetricRows(
+  scores: RankingModuleScores,
+  weights: RankingWeights,
+): MetricRow[] {
+  return (
+    Object.entries(scores) as [keyof RankingModuleScores, number][]
+  )
+    .map(([scoreKey, value]) => {
+      const meta = MODULE_META[scoreKey]
+      return {
+        key: meta.key,
+        label: meta.label,
+        value,
+        weight: weights[meta.key] ?? 0,
+      }
+    })
+    .sort((a, b) => b.weight - a.weight || b.value - a.value)
+}
 
 /** Display a 0–100 score as a rounded integer. */
 export function formatScore(value: number): string {

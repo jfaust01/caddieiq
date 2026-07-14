@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function RankingsPage() {
-  return <RankingsView />
+  return <RankingsView type="overall" />
 }

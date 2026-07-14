@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { getRankingDefinition, type RankingType } from '@/lib/ranking'
+import {
+  getDefaultWeights,
+  getRankingDefinition,
+  type RankingType,
+  type RankingWeights,
+} from '@/lib/ranking'
 import { tourLabel } from '@/features/players/utils/format'
 
 import { buildInsights, getRankingView } from '../services/rankings-service'
@@ -59,6 +64,8 @@ function matchesForm(row: RankingRow, form: RankingFiltersState['form']): boolea
 export interface UseRankingsResult {
   type: RankingType
   isLoading: boolean
+  /** Normalized weights the engine applied for the active ranking type. */
+  weights: RankingWeights
   /** Unfiltered, enriched rows (used for insights + options). */
   allRows: RankingRow[]
   /** Rows after search + filters are applied. */
@@ -98,6 +105,9 @@ export interface UseRankingsResult {
  */
 export function useRankings(type: RankingType): UseRankingsResult {
   const [allRows, setAllRows] = useState<RankingRow[]>([])
+  const [weights, setWeights] = useState<RankingWeights>(() =>
+    getDefaultWeights(type),
+  )
   const [generatedAt, setGeneratedAt] = useState<Date | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [filters, setFilters] = useState<RankingFiltersState>(
@@ -117,6 +127,7 @@ export function useRankings(type: RankingType): UseRankingsResult {
       void getRankingView(type).then((view) => {
         if (!active) return
         setAllRows(view.results)
+        setWeights(view.weights)
         setGeneratedAt(view.generatedAt)
         setIsLoading(false)
       })
@@ -238,6 +249,7 @@ export function useRankings(type: RankingType): UseRankingsResult {
   return {
     type,
     isLoading,
+    weights,
     allRows,
     rows,
     filters,
