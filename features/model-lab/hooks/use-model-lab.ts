@@ -107,18 +107,16 @@ export function useModelLab(initialModelId?: string): UseModelLab {
 
   // Select the initial model (deep link) or the first saved model on mount.
   useEffect(() => {
-    setWorking((current) => {
-      if (current) return current
-      const target =
-        (initialModelId && models.find((model) => model.id === initialModelId)) ||
-        models[0]
-      if (!target) return null
-      const clone = cloneModel(target)
-      setReadOnly(false)
-      setIsDirty(false)
-      void executeRun(clone)
-      return clone
-    })
+    if (working) return
+    const target =
+      (initialModelId && models.find((model) => model.id === initialModelId)) ||
+      models[0]
+    if (!target) return
+    const clone = cloneModel(target)
+    setWorking(clone)
+    setReadOnly(false)
+    setIsDirty(false)
+    void executeRun(clone)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

@@ -1,12 +1,9 @@
-import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
-import { ModelsView } from '@/features/models/models-view'
-
-export const metadata: Metadata = {
-  title: 'Models',
-  description: 'Design, tune, and deploy custom prediction models.',
-}
-
+/**
+ * The Models workspace moved to the Model Lab (`/model-lab`). Keep this route as
+ * a redirect so existing links continue to work.
+ */
 export default function ModelsPage() {
-  return <ModelsView />
+  redirect('/model-lab')
 }

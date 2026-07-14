@@ -79,7 +79,7 @@ export const primaryNavigation: NavSection[] = [
     items: [
       {
         title: 'Models',
-        href: '/models',
+        href: '/model-lab',
         icon: SlidersHorizontal,
         description: 'Design, tune, and deploy custom models.',
       },
