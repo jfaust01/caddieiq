@@ -11,7 +11,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -48,12 +47,10 @@ export function QuickActions() {
         }
       />
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="flex items-center justify-between">
-            Quick actions
-            <Kbd>C</Kbd>
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
+        <div className="flex items-center justify-between px-1.5 py-1 text-xs font-medium text-muted-foreground">
+          Quick actions
+          <Kbd>C</Kbd>
+        </div>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           {QUICK_ACTIONS.map((action) => (

@@ -7,9 +7,7 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -56,18 +54,14 @@ export function Notifications() {
         }
       />
       <DropdownMenuContent align="end" className="w-88 p-0">
-        <DropdownMenuGroup>
-          <div className="flex items-center justify-between px-3 py-2.5">
-            <DropdownMenuLabel className="p-0 text-sm font-semibold">
-              Notifications
-            </DropdownMenuLabel>
-            {unreadCount > 0 ? (
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                {unreadCount} new
-              </span>
-            ) : null}
-          </div>
-        </DropdownMenuGroup>
+        <div className="flex items-center justify-between px-3 py-2.5">
+          <span className="text-sm font-semibold">Notifications</span>
+          {unreadCount > 0 ? (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              {unreadCount} new
+            </span>
+          ) : null}
+        </div>
         <DropdownMenuSeparator className="my-0" />
 
         {notifications.length === 0 ? (
