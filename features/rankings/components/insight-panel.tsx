@@ -9,7 +9,7 @@ import { InsightCard } from './insight-card'
 
 interface InsightPanelProps {
   insights: RankingInsight[]
-  isLoading: boolean
+  isLoading?: boolean
   onSelectPlayer: (playerId: string) => void
 }
 
@@ -31,7 +31,7 @@ function InsightSkeleton() {
 /** The insight panel: a responsive grid of summary cards. */
 export function InsightPanel({
   insights,
-  isLoading,
+  isLoading = false,
   onSelectPlayer,
 }: InsightPanelProps) {
   return (

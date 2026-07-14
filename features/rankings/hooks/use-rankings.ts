@@ -2,21 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import {
-  getDefaultWeights,
-  getRankingDefinition,
-  type RankingType,
-  type RankingWeights,
-} from '@/lib/ranking'
+import { getRankingDefinition, type RankingType, type RankingWeights } from '@/lib/ranking'
 import { tourLabel } from '@/features/players/utils/format'
 
-import { buildInsights, getRankingView } from '../services/rankings-service'
+import { buildInsights } from '../services/rankings-service'
 import type {
   FilterOption,
   RankingFiltersState,
   RankingInsight,
   RankingRow,
   RankingSummary,
+  RankingView,
 } from '../types'
 
 export const DEFAULT_RANKING_FILTERS: RankingFiltersState = {
@@ -63,7 +59,6 @@ function matchesForm(row: RankingRow, form: RankingFiltersState['form']): boolea
 
 export interface UseRankingsResult {
   type: RankingType
-  isLoading: boolean
   /** Normalized weights the engine applied for the active ranking type. */
   weights: RankingWeights
   /** Unfiltered, enriched rows (used for insights + options). */
@@ -95,48 +90,31 @@ export interface UseRankingsResult {
 }
 
 /**
- * Client controller for the Rankings Experience: loads the enriched view for a
- * ranking type, then handles search, filters, favorites, and selection.
+ * Client controller for the Rankings Experience. The enriched view is computed
+ * on the server (the Ranking Engine runs in an RSC) and passed in via
+ * `initialView`; this hook only owns interactive state: search, filters,
+ * favorites, and selection.
  *
- * The short simulated latency exercises the loading/skeleton states while the
- * data is still mock.
- * TODO(data): swap the simulated latency for real fetching (SWR / server data)
- * once the live rankings API is connected.
+ * TODO(data): accept a refetch callback (SWR / server action) once the live
+ * rankings API can revalidate on the client.
  */
-export function useRankings(type: RankingType): UseRankingsResult {
-  const [allRows, setAllRows] = useState<RankingRow[]>([])
-  const [weights, setWeights] = useState<RankingWeights>(() =>
-    getDefaultWeights(type),
-  )
-  const [generatedAt, setGeneratedAt] = useState<Date | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export function useRankings(
+  type: RankingType,
+  initialView: RankingView,
+): UseRankingsResult {
+  const allRows = initialView.results
+  const weights = initialView.weights
+  const generatedAt = initialView.generatedAt
   const [filters, setFilters] = useState<RankingFiltersState>(
     DEFAULT_RANKING_FILTERS,
   )
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
 
+  // Reset interactive state whenever the ranking type (and its data) changes.
   useEffect(() => {
-    let active = true
-    setIsLoading(true)
-    // Reset filters/selection when switching ranking type.
     setFilters(DEFAULT_RANKING_FILTERS)
     setSelectedPlayerId(null)
-
-    const timeout = setTimeout(() => {
-      void getRankingView(type).then((view) => {
-        if (!active) return
-        setAllRows(view.results)
-        setWeights(view.weights)
-        setGeneratedAt(view.generatedAt)
-        setIsLoading(false)
-      })
-    }, 350)
-
-    return () => {
-      active = false
-      clearTimeout(timeout)
-    }
   }, [type])
 
   const setSearch = useCallback((value: string) => {
@@ -248,7 +226,6 @@ export function useRankings(type: RankingType): UseRankingsResult {
 
   return {
     type,
-    isLoading,
     weights,
     allRows,
     rows,

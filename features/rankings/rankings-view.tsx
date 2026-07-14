@@ -12,14 +12,16 @@ import { RankingTabs } from './components/ranking-tabs'
 import { RankingSummaryBar } from './components/ranking-summary-bar'
 import { RankingFilters } from './components/ranking-filters'
 import { RankingsTable } from './components/rankings-table'
-import { RankingsTableSkeleton } from './components/rankings-table-skeleton'
 import { InsightPanel } from './components/insight-panel'
 import { RankingDetailPanel } from './components/ranking-detail-panel'
 import { useRankings } from './hooks/use-rankings'
+import type { RankingView } from './types'
 
 interface RankingsViewProps {
   /** Active ranking type, resolved from the route. */
   type: RankingType
+  /** Enriched view computed on the server (the Ranking Engine runs in an RSC). */
+  initialView: RankingView
 }
 
 /**
@@ -28,8 +30,8 @@ interface RankingsViewProps {
  * breakdown and a placeholder AI rationale. The active board is route-driven
  * (`/rankings/[type]`) so it is linkable and shareable.
  */
-export function RankingsView({ type }: RankingsViewProps) {
-  const rankings = useRankings(type)
+export function RankingsView({ type, initialView }: RankingsViewProps) {
+  const rankings = useRankings(type, initialView)
 
   return (
     <PageShell>
@@ -40,14 +42,10 @@ export function RankingsView({ type }: RankingsViewProps) {
 
       <RankingTabs activeType={type} />
 
-      <RankingSummaryBar
-        summary={rankings.summary}
-        isLoading={rankings.isLoading}
-      />
+      <RankingSummaryBar summary={rankings.summary} />
 
       <InsightPanel
         insights={rankings.insights}
-        isLoading={rankings.isLoading}
         onSelectPlayer={rankings.selectPlayer}
       />
 
@@ -61,9 +59,7 @@ export function RankingsView({ type }: RankingsViewProps) {
           onReset={rankings.resetFilters}
         />
 
-        {rankings.isLoading ? (
-          <RankingsTableSkeleton />
-        ) : rankings.rows.length === 0 ? (
+        {rankings.rows.length === 0 ? (
           <EmptyState
             icon={Trophy}
             title="No players match these filters"

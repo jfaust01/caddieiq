@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { RankingsView } from '@/features/rankings/rankings-view'
+import { getRankingView } from '@/features/rankings/services/rankings-service'
 import {
   getRankingDefinition,
   listRankingTypes,
@@ -33,5 +34,6 @@ export default async function RankingTypePage({
 }: RankingTypePageProps) {
   const { type } = await params
   if (!isRankingType(type)) notFound()
-  return <RankingsView type={type} />
+  const initialView = await getRankingView(type)
+  return <RankingsView type={type} initialView={initialView} />
 }

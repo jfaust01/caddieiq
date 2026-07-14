@@ -43,7 +43,7 @@ function SummaryItem({ icon: Icon, label, value, isLoading }: SummaryItemProps) 
 
 interface RankingSummaryBarProps {
   summary: RankingSummary
-  isLoading: boolean
+  isLoading?: boolean
   className?: string
 }
 
@@ -53,7 +53,7 @@ interface RankingSummaryBarProps {
  */
 export function RankingSummaryBar({
   summary,
-  isLoading,
+  isLoading = false,
   className,
 }: RankingSummaryBarProps) {
   return (
