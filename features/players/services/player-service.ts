@@ -105,7 +105,7 @@ function buildStatistics(player: Player): PlayerStatistic[] {
   const rankFor = (offset: number) =>
     Math.max(1, Math.round(seededValue(seed + offset, 1, 70)))
 
-  return [
+  const stats: PlayerStatistic[] = [
     { key: 'sg-total', label: 'SG: Total', value: `+${seededValue(seed + 1, 0.4, 2.6).toFixed(2)}`, rank: rankFor(1), category: 'STROKES_GAINED' },
     { key: 'sg-ott', label: 'SG: Off The Tee', value: `+${seededValue(seed + 2, 0.1, 1.1).toFixed(2)}`, rank: rankFor(2), category: 'STROKES_GAINED' },
     { key: 'sg-app', label: 'SG: Approach', value: `+${seededValue(seed + 3, 0.2, 1.3).toFixed(2)}`, rank: rankFor(3), category: 'STROKES_GAINED' },
@@ -116,7 +116,9 @@ function buildStatistics(player: Player): PlayerStatistic[] {
     { key: 'gir', label: 'Greens in Regulation', value: `${seededValue(seed + 8, 62, 74).toFixed(1)}%`, rank: rankFor(8), category: 'TRADITIONAL' },
     { key: 'scrambling', label: 'Scrambling', value: `${seededValue(seed + 9, 54, 68).toFixed(1)}%`, rank: rankFor(9), category: 'TRADITIONAL' },
     { key: 'fieldSize', label: 'Field Size', value: `${fieldSize}`, rank: null, category: 'TRADITIONAL' },
-  ].filter((stat) => stat.key !== 'fieldSize')
+  ]
+
+  return stats.filter((stat) => stat.key !== 'fieldSize')
 }
 
 function buildRankings(player: Player): PlayerRanking[] {
