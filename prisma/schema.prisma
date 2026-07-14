@@ -538,8 +538,9 @@ model PlayerRound {
   updatedAt         DateTime  @updatedAt
 
   // Relations
-  round           Round           @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  tournamentField TournamentField @relation(fields: [tournamentFieldId], references: [id], onDelete: Cascade)
+  round           Round            @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  tournamentField TournamentField  @relation(fields: [tournamentFieldId], references: [id], onDelete: Cascade)
+  statistic       RoundStatistic?
 
   // A player has exactly one record per round.
   @@unique([roundId, tournamentFieldId])
@@ -547,4 +548,46 @@ model PlayerRound {
   @@index([tournamentFieldId])
   @@index([position])
   @@map("player_rounds")
+}
+
+// ---------------------------------------------------------------------------
+// Round Statistic (Sprint 3.8)
+// ---------------------------------------------------------------------------
+
+/// RAW statistics imported from external providers for a single player round.
+/// These values are stored exactly as ingested and must never contain
+/// calculated/derived analytics; derived metrics live in a separate model.
+model RoundStatistic {
+  id                   String   @id @default(cuid())
+  playerRoundId        String
+  drivingDistance      Float?
+  drivingAccuracy      Float?
+  fairwaysHit          Int?
+  fairwaysPossible     Int?
+  greensInRegulation   Int?
+  greensPossible       Int?
+  putts                Int?
+  birdies              Int?
+  eagles               Int?
+  pars                 Int?
+  bogeys               Int?
+  doubleBogeys         Int?
+  scramblingPercentage Float?
+  sandSavePercentage   Float?
+  proximityToHole      Float?
+  sgOffTheTee          Float?
+  sgApproach           Float?
+  sgAroundGreen        Float?
+  sgPutting            Float?
+  sgTotal              Float?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relations
+  playerRound PlayerRound @relation(fields: [playerRoundId], references: [id], onDelete: Cascade)
+
+  // Exactly one statistic record per player round.
+  @@unique([playerRoundId])
+  @@index([playerRoundId])
+  @@map("round_statistics")
 }
