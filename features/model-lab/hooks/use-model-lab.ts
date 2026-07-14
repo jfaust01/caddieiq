@@ -112,12 +112,10 @@ export function useModelLab(initialModelId?: string): UseModelLab {
   // Note: state updates happen first and synchronously; the engine run is
   // scheduled separately so a rejection can never discard the selection.
   useEffect(() => {
-    ;(globalThis as Record<string, unknown>).__mlEffect = `ran models=${models.length}`
     if (working) return
     const target =
       (initialModelId && models.find((model) => model.id === initialModelId)) ||
       models[0]
-    ;(globalThis as Record<string, unknown>).__mlEffect = `target=${target?.id ?? 'none'}`
     if (!target) return
     const clone = cloneModel(target)
     setWorking(clone)

@@ -60,10 +60,6 @@ export function ModelLabView({ initialModelId }: ModelLabViewProps) {
         description="Compose custom ranking models by weighting metric groups, then preview the field in real time."
       />
 
-      <p data-ml-debug className="text-xs text-muted-foreground">
-        {debug}
-      </p>
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_340px]">
         {/* Left: saved models + templates */}
         <ModelListPanel lab={lab} onRename={openRename} onDelete={openDelete} />
