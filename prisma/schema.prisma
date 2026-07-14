@@ -108,6 +108,13 @@ enum TournamentFieldStatus {
   FINISHED
 }
 
+enum RoundStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -407,6 +414,7 @@ model Tournament {
   season            Season?            @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   tournamentCourses TournamentCourse[]
   field             TournamentField[]
+  rounds            Round[]
 
   @@index([slug])
   @@index([tourId])
@@ -473,4 +481,33 @@ model TournamentField {
   @@index([status])
   @@index([teeTime])
   @@map("tournament_fields")
+}
+
+// ---------------------------------------------------------------------------
+// Round (Sprint 3.6)
+// ---------------------------------------------------------------------------
+
+/// One scheduled round of a tournament. Players are not attached yet; that
+/// arrives in a later sprint (PlayerRound).
+model Round {
+  id             String      @id @default(cuid())
+  tournamentId   String
+  roundNumber    Int
+  scheduledDate  DateTime?
+  status         RoundStatus @default(SCHEDULED)
+  courseSetup    Json?
+  weatherSummary String?
+  completed      Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  // A tournament can only have one record per round number.
+  @@unique([tournamentId, roundNumber])
+  @@index([tournamentId])
+  @@index([roundNumber])
+  @@index([status])
+  @@map("rounds")
 }
