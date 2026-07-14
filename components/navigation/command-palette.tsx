@@ -44,17 +44,19 @@ export function CommandPalette() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-8 w-full max-w-64 items-center gap-2 rounded-lg border border-border bg-surface px-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-        aria-label="Open command palette"
+        className="flex h-8 w-full max-w-72 items-center gap-2 rounded-lg border border-border bg-surface px-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        aria-label="Search players, tournaments, courses"
       >
         <Search className="size-4 shrink-0" />
-        <span className="flex-1 text-left">Search</span>
+        <span className="flex-1 truncate text-left">
+          Search players, tournaments, courses...
+        </span>
         <Kbd>⌘K</Kbd>
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <Command>
-          <CommandInput placeholder="Type a command or search..." />
+          <CommandInput placeholder="Search players, tournaments, courses..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             {primaryNavigation.map((section) => (

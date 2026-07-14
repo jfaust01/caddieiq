@@ -20,6 +20,7 @@ import {
   secondaryNavigation,
 } from '@/constants/navigation'
 import { siteConfig } from '@/constants/site'
+import { useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 
 function isActivePath(pathname: string, href: string): boolean {
@@ -29,6 +30,14 @@ function isActivePath(pathname: string, href: string): boolean {
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const { data: session } = useSession()
+  // Better Auth's session user may carry a role; admin-only sections stay
+  // hidden unless the signed-in user is explicitly an ADMIN.
+  const isAdmin =
+    (session?.user as { role?: string } | undefined)?.role === 'ADMIN'
+  const sections = primaryNavigation.filter(
+    (section) => !section.adminOnly || isAdmin,
+  )
 
   return (
     <Sidebar collapsible="icon">
@@ -52,7 +61,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {primaryNavigation.map((section) => (
+        {sections.map((section) => (
           <SidebarGroup key={section.title}>
             <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
             <SidebarGroupContent>

@@ -1,6 +1,7 @@
 import { Breadcrumbs } from '@/components/navigation/breadcrumbs'
 import { CommandPalette } from '@/components/navigation/command-palette'
 import { Notifications } from '@/components/layout/notifications'
+import { QuickActions } from '@/components/layout/quick-actions'
 import { UserMenu } from '@/components/layout/user-menu'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Separator } from '@/components/ui/separator'
@@ -17,6 +18,9 @@ export function TopNav() {
       <div className="ml-auto flex items-center gap-1.5">
         <div className="hidden sm:block">
           <CommandPalette />
+        </div>
+        <div className="hidden sm:block">
+          <QuickActions />
         </div>
         <Notifications />
         <ThemeToggle />
