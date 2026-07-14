@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { signOut, useSession } from '@/lib/auth-client'
 
 const MENU_ITEMS = [
   { label: 'Account', icon: User, href: '/settings' },
@@ -21,8 +22,23 @@ const MENU_ITEMS = [
   { label: 'Help', icon: CircleHelp, href: '/help' },
 ] as const
 
+function initialsFromName(name?: string | null): string {
+  if (!name) return 'CQ'
+  const parts = name.trim().split(/\s+/).slice(0, 2)
+  const initials = parts.map((part) => part[0]).join('')
+  return initials.toUpperCase() || 'CQ'
+}
+
 export function UserMenu() {
   const router = useRouter()
+  const { data: session, isPending } = useSession()
+  const user = session?.user
+
+  async function handleSignOut() {
+    await signOut()
+    router.push('/login')
+    router.refresh()
+  }
 
   return (
     <DropdownMenu>
@@ -36,21 +52,25 @@ export function UserMenu() {
           >
             <Avatar className="size-8">
               <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">
-                CQ
+                {initialsFromName(user?.name)}
               </AvatarFallback>
             </Avatar>
           </Button>
         }
       />
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium">Workspace</span>
-            <span className="text-xs font-normal text-muted-foreground">
-              Sign in to sync your models
-            </span>
-          </div>
-        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium">
+                {user?.name ?? 'Workspace'}
+              </span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {user?.email ?? 'Sign in to sync your models'}
+              </span>
+            </div>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           {MENU_ITEMS.map((item) => (
@@ -65,10 +85,20 @@ export function UserMenu() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem disabled>
-            <LogOut data-icon="inline-start" />
-            Sign out
-          </DropdownMenuItem>
+          {user ? (
+            <DropdownMenuItem onClick={handleSignOut}>
+              <LogOut data-icon="inline-start" />
+              Sign out
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              disabled={isPending}
+              onClick={() => router.push('/login')}
+            >
+              <LogOut data-icon="inline-start" />
+              Sign in
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

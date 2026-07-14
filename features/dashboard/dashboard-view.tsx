@@ -8,6 +8,7 @@ import { PageShell } from '@/components/shared/page-shell'
 import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AccountSummary } from '@/features/dashboard/account-summary'
 import type { StatMetric } from '@/types'
 
 const OVERVIEW_METRICS: StatMetric[] = [
@@ -17,16 +18,35 @@ const OVERVIEW_METRICS: StatMetric[] = [
   { id: 'runs', label: 'Runs this week', value: '—', icon: Activity, hint: 'Model executions appear here.' },
 ]
 
-export function DashboardView() {
+interface DashboardViewProps {
+  name: string
+  email: string
+  tier: string
+  isAdmin: boolean
+}
+
+export function DashboardView({
+  name,
+  email,
+  tier,
+  isAdmin,
+}: DashboardViewProps) {
   return (
     <PageShell>
       <PageHeader
         eyebrow="Overview"
-        title="Dashboard"
+        title={`Welcome back, ${name}`}
         description="Your command center for models, picks, and performance. Connect data sources to bring this workspace to life."
         actions={
           <Button nativeButton={false} render={<Link href="/models">New model</Link>} />
         }
+      />
+
+      <AccountSummary
+        name={name}
+        email={email}
+        tier={tier}
+        isAdmin={isAdmin}
       />
 
       <section
