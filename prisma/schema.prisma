@@ -66,6 +66,25 @@ enum RankingSystem {
   CADDIEIQ
 }
 
+enum GrassType {
+  BENT
+  BERMUDA
+  POA
+  RYE
+  ZOYSIA
+  FESCUE
+  OTHER
+}
+
+enum CourseStyle {
+  LINKS
+  PARKLAND
+  DESERT
+  HEATHLAND
+  MOUNTAIN
+  OTHER
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -258,4 +277,72 @@ model PlayerRanking {
   @@index([rankingSystem])
   @@index([effectiveDate])
   @@map("player_rankings")
+}
+
+// ---------------------------------------------------------------------------
+// Course Engine (Sprint 3.3)
+// ---------------------------------------------------------------------------
+
+/// A professional golf course. Supports soft deletion via `deletedAt`.
+model Course {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  city            String?
+  stateProvince   String?
+  country         String?
+  latitude        Float?
+  longitude       Float?
+  par             Int?
+  yardage         Int?
+  altitudeFt      Int?
+  establishedYear Int?
+  website         String?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  characteristic CourseCharacteristic?
+
+  @@index([slug])
+  @@index([country])
+  @@map("courses")
+}
+
+/// Analytics describing how a course plays. One record per course.
+model CourseCharacteristic {
+  id                  String       @id @default(cuid())
+  courseId            String       @unique
+  style               CourseStyle?
+  fairwayGrass        GrassType?
+  greenGrass          GrassType?
+  roughGrass          GrassType?
+  averageGreenSize    Float?
+  greenSpeed          Float?
+  fairwayWidth        Float?
+  roughLength         Float?
+  treeLined           Boolean?
+  waterHazards        Int?
+  windExposure        Float?
+  elevationChange     Float?
+  walkingDifficulty   Float?
+  drivingImportance   Float?
+  approachImportance  Float?
+  shortGameImportance Float?
+  puttingImportance   Float?
+  scramblingDifficulty Float?
+  birdieRate          Float?
+  bogeyRate           Float?
+  varianceRating      Float?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  // Relations
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([style])
+  @@map("course_characteristics")
 }
