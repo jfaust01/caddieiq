@@ -29,13 +29,6 @@ interface ModelLabViewProps {
 export function ModelLabView({ initialModelId }: ModelLabViewProps) {
   const lab = useModelLab(initialModelId)
 
-  console.log('[v0] ModelLabView render', {
-    models: lab.models.length,
-    working: lab.working?.id ?? null,
-    summary: !!lab.summary,
-    preview: !!lab.preview,
-  })
-
   const [renameTarget, setRenameTarget] = useState<Model | null>(null)
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Model | null>(null)
@@ -66,6 +59,10 @@ export function ModelLabView({ initialModelId }: ModelLabViewProps) {
         title="Model Lab"
         description="Compose custom ranking models by weighting metric groups, then preview the field in real time."
       />
+
+      <p data-ml-debug className="text-xs text-muted-foreground">
+        {debug}
+      </p>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_340px]">
         {/* Left: saved models + templates */}

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { ModelLabView } from '@/features/model-lab'
+import { ModelLabView } from '@/features/model-lab/model-lab-view'
 
 export const metadata: Metadata = {
   title: 'Model Lab',
