@@ -1,0 +1,1 @@
+export { ConsistencyModule } from "./module"

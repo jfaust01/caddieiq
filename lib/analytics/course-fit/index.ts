@@ -1,0 +1,1 @@
+export { CourseFitModule } from "./module"

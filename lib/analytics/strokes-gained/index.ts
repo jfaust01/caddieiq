@@ -1,0 +1,1 @@
+export { StrokesGainedModule } from "./module"
