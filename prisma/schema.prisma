@@ -47,6 +47,74 @@ enum TourType {
   LPGA
 }
 
+enum Handedness {
+  RIGHT
+  LEFT
+  UNKNOWN
+}
+
+enum PlayerStatus {
+  ACTIVE
+  INACTIVE
+  INJURED
+  RETIRED
+}
+
+enum RankingSystem {
+  OWGR
+  DATAGOLF
+  CADDIEIQ
+}
+
+enum GrassType {
+  BENT
+  BERMUDA
+  POA
+  RYE
+  ZOYSIA
+  FESCUE
+  OTHER
+}
+
+enum CourseStyle {
+  LINKS
+  PARKLAND
+  DESERT
+  HEATHLAND
+  MOUNTAIN
+  OTHER
+}
+
+enum TournamentStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELED
+}
+
+enum TournamentFormat {
+  STROKE_PLAY
+  MATCH_PLAY
+  TEAM
+  STABLEFORD
+}
+
+enum TournamentFieldStatus {
+  CONFIRMED
+  ALTERNATE
+  WITHDRAWN
+  DISQUALIFIED
+  CUT
+  FINISHED
+}
+
+enum RoundStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -65,6 +133,8 @@ model User {
   // Relations
   profile       Profile?
   subscriptions Subscription[]
+  sessions      Session[]
+  accounts      Account[]
 
   // `email` is already indexed by the `@unique` constraint above.
   @@map("users")
@@ -107,6 +177,68 @@ model Subscription {
   @@map("subscriptions")
 }
 
+// ---------------------------------------------------------------------------
+// Better Auth (Sprint 4.1)
+// These models are required by Better Auth's Prisma adapter. Field names use
+// Better Auth's expected camelCase; tables are mapped to snake_case plurals.
+// ---------------------------------------------------------------------------
+
+/// An authenticated session. Managed entirely by Better Auth.
+model Session {
+  id        String   @id
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// A credential/provider account for a user. For email+password auth the
+/// hashed password lives here. Managed entirely by Better Auth.
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+/// Short-lived verification tokens (e.g. for future email verification).
+/// Managed entirely by Better Auth.
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
 /// A professional golf tour (PGA, DP World, LIV, etc.).
 model Tour {
   id        String   @id @default(cuid())
@@ -118,7 +250,9 @@ model Tour {
   updatedAt DateTime @updatedAt
 
   // Relations
-  seasons Season[]
+  seasons             Season[]
+  playerTourHistories PlayerTourHistory[]
+  tournaments         Tournament[]
 
   @@index([type])
   @@map("tours")
@@ -134,11 +268,390 @@ model Season {
   updatedAt DateTime @updatedAt
 
   // Relations
-  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  tour                Tour                @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  playerTourHistories PlayerTourHistory[]
+  tournaments         Tournament[]
 
   // A tour can only have one record per calendar year.
   @@unique([tourId, year])
   @@index([tourId])
   @@index([year])
   @@map("seasons")
+}
+
+// ---------------------------------------------------------------------------
+// Player Ecosystem (Sprint 3.2)
+// ---------------------------------------------------------------------------
+
+/// A professional golfer. Supports soft deletion via `deletedAt`.
+model Player {
+  id            String       @id @default(cuid())
+  firstName     String
+  lastName      String
+  fullName      String
+  slug          String       @unique
+  birthDate     DateTime?
+  heightCm      Int?
+  weightKg      Int?
+  turnedProYear Int?
+  handedness    Handedness   @default(UNKNOWN)
+  status        PlayerStatus @default(ACTIVE)
+  headshotUrl   String?
+  countryCode   String?
+  nationalityId String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  nationality      Nationality?        @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
+  tourHistory      PlayerTourHistory[]
+  rankings         PlayerRanking[]
+  tournamentFields TournamentField[]
+
+  @@index([slug])
+  @@index([lastName])
+  @@index([countryCode])
+  @@index([nationalityId])
+  @@map("players")
+}
+
+/// A country / nationality reference used by players.
+model Nationality {
+  id        String   @id @default(cuid())
+  name      String
+  iso2      String   @unique
+  iso3      String   @unique
+  flagEmoji String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  players Player[]
+
+  @@map("nationalities")
+}
+
+/// Tracks a player's membership on a tour over time (allows moving between tours).
+model PlayerTourHistory {
+  id        String    @id @default(cuid())
+  playerId  String
+  tourId    String
+  seasonId  String?
+  joinedAt  DateTime
+  leftAt    DateTime?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  player Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  tour   Tour    @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  season Season? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+
+  @@index([playerId])
+  @@index([tourId])
+  @@index([seasonId])
+  @@map("player_tour_histories")
+}
+
+/// A player's rank within a given ranking system at a point in time.
+model PlayerRanking {
+  id            String        @id @default(cuid())
+  playerId      String
+  rankingSystem RankingSystem
+  rank          Int
+  points        Float?
+  effectiveDate DateTime
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([rankingSystem])
+  @@index([effectiveDate])
+  @@map("player_rankings")
+}
+
+// ---------------------------------------------------------------------------
+// Course Engine (Sprint 3.3)
+// ---------------------------------------------------------------------------
+
+/// A professional golf course. Supports soft deletion via `deletedAt`.
+model Course {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  city            String?
+  stateProvince   String?
+  country         String?
+  latitude        Float?
+  longitude       Float?
+  par             Int?
+  yardage         Int?
+  altitudeFt      Int?
+  establishedYear Int?
+  website         String?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  characteristic     CourseCharacteristic?
+  tournamentCourses  TournamentCourse[]
+
+  @@index([slug])
+  @@index([country])
+  @@map("courses")
+}
+
+/// Analytics describing how a course plays. One record per course.
+model CourseCharacteristic {
+  id                  String       @id @default(cuid())
+  courseId            String       @unique
+  style               CourseStyle?
+  fairwayGrass        GrassType?
+  greenGrass          GrassType?
+  roughGrass          GrassType?
+  averageGreenSize    Float?
+  greenSpeed          Float?
+  fairwayWidth        Float?
+  roughLength         Float?
+  treeLined           Boolean?
+  waterHazards        Int?
+  windExposure        Float?
+  elevationChange     Float?
+  walkingDifficulty   Float?
+  drivingImportance   Float?
+  approachImportance  Float?
+  shortGameImportance Float?
+  puttingImportance   Float?
+  scramblingDifficulty Float?
+  birdieRate          Float?
+  bogeyRate           Float?
+  varianceRating      Float?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  // Relations
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([style])
+  @@map("course_characteristics")
+}
+
+// ---------------------------------------------------------------------------
+// Tournament Engine (Sprint 3.4)
+// ---------------------------------------------------------------------------
+
+/// A professional golf tournament. Supports historical, active, and future
+/// events across multiple tours and seasons. Soft-deletable via `deletedAt`.
+model Tournament {
+  id                 String           @id @default(cuid())
+  tourId             String
+  seasonId           String?
+  name               String
+  officialName       String?
+  slug               String           @unique
+  status             TournamentStatus @default(SCHEDULED)
+  format             TournamentFormat @default(STROKE_PLAY)
+  startDate          DateTime?
+  endDate            DateTime?
+  purse              Decimal?
+  fedExPoints        Int?
+  worldRankingPoints Int?
+  cutAfterRounds     Int?
+  cutLine            Int?
+  numberOfRounds     Int              @default(4)
+  active             Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  deletedAt          DateTime?
+
+  // Relations
+  tour              Tour               @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  season            Season?            @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  tournamentCourses TournamentCourse[]
+  field             TournamentField[]
+  rounds            Round[]
+
+  @@index([slug])
+  @@index([tourId])
+  @@index([seasonId])
+  @@index([status])
+  @@map("tournaments")
+}
+
+/// Links a tournament to the course(s) it is played on for a given year,
+/// allowing venues to rotate across seasons.
+model TournamentCourse {
+  id           String   @id @default(cuid())
+  tournamentId String
+  courseId     String
+  year         Int
+  hostCourse   Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  course     Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // A tournament uses one venue record per calendar year.
+  @@unique([tournamentId, year])
+  @@index([year])
+  @@index([courseId])
+  @@map("tournament_courses")
+}
+
+// ---------------------------------------------------------------------------
+// Tournament Field (Sprint 3.5)
+// ---------------------------------------------------------------------------
+
+/// A player's participation in a tournament. This is the anchor record that
+/// future rounds, statistics, betting lines, DFS salaries, ownership
+/// projections, and AI explanations will all reference.
+model TournamentField {
+  id            String                @id @default(cuid())
+  tournamentId  String
+  playerId      String
+  playerNumber  Int?
+  status        TournamentFieldStatus @default(CONFIRMED)
+  isAlternate   Boolean               @default(false)
+  qualified     Boolean               @default(true)
+  teeTime       DateTime?
+  startingHole  Int?
+  withdrawn     Boolean               @default(false)
+  disqualified  Boolean               @default(false)
+  cutMade       Boolean?
+  finalPosition Int?
+  earnings      Decimal?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  // Relations
+  tournament   Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player       Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerRounds PlayerRound[]
+
+  // A player can only appear once in a given tournament.
+  @@unique([tournamentId, playerId])
+  @@index([tournamentId])
+  @@index([playerId])
+  @@index([status])
+  @@index([teeTime])
+  @@map("tournament_fields")
+}
+
+// ---------------------------------------------------------------------------
+// Round (Sprint 3.6)
+// ---------------------------------------------------------------------------
+
+/// One scheduled round of a tournament. Players are not attached yet; that
+/// arrives in a later sprint (PlayerRound).
+model Round {
+  id             String      @id @default(cuid())
+  tournamentId   String
+  roundNumber    Int
+  scheduledDate  DateTime?
+  status         RoundStatus @default(SCHEDULED)
+  courseSetup    Json?
+  weatherSummary String?
+  completed      Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  tournament   Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  playerRounds PlayerRound[]
+
+  // A tournament can only have one record per round number.
+  @@unique([tournamentId, roundNumber])
+  @@index([tournamentId])
+  @@index([roundNumber])
+  @@index([status])
+  @@map("rounds")
+}
+
+// ---------------------------------------------------------------------------
+// Player Round (Sprint 3.7)
+// ---------------------------------------------------------------------------
+
+/// One player's performance during one tournament round. This is the anchor
+/// record that every future statistic, fantasy score, betting result, AI
+/// explanation, and model score will reference.
+model PlayerRound {
+  id                String    @id @default(cuid())
+  roundId           String
+  tournamentFieldId String
+  score             Int?
+  toPar             Int?
+  position          Int?
+  madeCut           Boolean?
+  withdrawn         Boolean   @default(false)
+  disqualified      Boolean   @default(false)
+  teeTime           DateTime?
+  startedAt         DateTime?
+  finishedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  round           Round            @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  tournamentField TournamentField  @relation(fields: [tournamentFieldId], references: [id], onDelete: Cascade)
+  statistic       RoundStatistic?
+
+  // A player has exactly one record per round.
+  @@unique([roundId, tournamentFieldId])
+  @@index([roundId])
+  @@index([tournamentFieldId])
+  @@index([position])
+  @@map("player_rounds")
+}
+
+// ---------------------------------------------------------------------------
+// Round Statistic (Sprint 3.8)
+// ---------------------------------------------------------------------------
+
+/// RAW statistics imported from external providers for a single player round.
+/// These values are stored exactly as ingested and must never contain
+/// calculated/derived analytics; derived metrics live in a separate model.
+model RoundStatistic {
+  id                   String   @id @default(cuid())
+  playerRoundId        String
+  drivingDistance      Float?
+  drivingAccuracy      Float?
+  fairwaysHit          Int?
+  fairwaysPossible     Int?
+  greensInRegulation   Int?
+  greensPossible       Int?
+  putts                Int?
+  birdies              Int?
+  eagles               Int?
+  pars                 Int?
+  bogeys               Int?
+  doubleBogeys         Int?
+  scramblingPercentage Float?
+  sandSavePercentage   Float?
+  proximityToHole      Float?
+  sgOffTheTee          Float?
+  sgApproach           Float?
+  sgAroundGreen        Float?
+  sgPutting            Float?
+  sgTotal              Float?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relations
+  playerRound PlayerRound @relation(fields: [playerRoundId], references: [id], onDelete: Cascade)
+
+  // Exactly one statistic record per player round.
+  @@unique([playerRoundId])
+  @@index([playerRoundId])
+  @@map("round_statistics")
 }
