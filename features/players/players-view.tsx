@@ -1,24 +1,16 @@
-import { Plus, Users } from 'lucide-react'
-
-import { ResourceView } from '@/components/shared/resource-view'
-import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/shared/page-header'
+import { PageShell } from '@/components/shared/page-shell'
+import { PlayerDirectory } from '@/features/players/components/player-directory'
 
 export function PlayersView() {
   return (
-    <ResourceView
-      eyebrow="Data"
-      title="Players"
-      description="Browse and manage the player universe that powers your models and rankings."
-      searchPlaceholder="Search players..."
-      emptyIcon={Users}
-      emptyTitle="No players yet"
-      emptyDescription="Your player universe is empty. Import a roster or add players to begin building models."
-      actions={
-        <Button>
-          <Plus data-icon="inline-start" />
-          Add player
-        </Button>
-      }
-    />
+    <PageShell>
+      <PageHeader
+        eyebrow="Data"
+        title="Players"
+        description="Browse the player universe that powers your models and rankings. Search, filter, and open a profile to explore form, rankings, and statistics."
+      />
+      <PlayerDirectory />
+    </PageShell>
   )
 }
