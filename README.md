@@ -24,6 +24,35 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Database (Prisma + PostgreSQL)
+
+CaddieIQ uses [Prisma](https://www.prisma.io) as its ORM against a PostgreSQL
+database (Neon-compatible).
+
+1. Copy the environment template and fill in your connection strings:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   - `DATABASE_URL` — pooled connection string (used by the app at runtime).
+   - `DATABASE_URL_UNPOOLED` — direct/unpooled connection string (used by the
+     Prisma CLI for migrations). Optional; falls back to `DATABASE_URL`.
+
+2. Generate the Prisma Client and apply migrations:
+
+   ```bash
+   pnpm db:generate        # generate the typed client into lib/generated/prisma
+   pnpm db:migrate          # create/apply migrations in development
+   ```
+
+   Other helpers: `pnpm db:migrate:deploy` (apply migrations in production),
+   `pnpm db:push` (push schema without a migration), `pnpm db:studio`
+   (open Prisma Studio).
+
+The schema lives in `prisma/schema.prisma` and the singleton client is exported
+from `lib/prisma.ts` (backed by the Neon serverless driver adapter).
+
 ## Learn More
 
 To learn more, take a look at the following resources:
