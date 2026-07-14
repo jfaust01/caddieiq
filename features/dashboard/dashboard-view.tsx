@@ -25,7 +25,7 @@ export function DashboardView() {
         title="Dashboard"
         description="Your command center for models, picks, and performance. Connect data sources to bring this workspace to life."
         actions={
-          <Button render={<Link href="/models">New model</Link>} />
+          <Button nativeButton={false} render={<Link href="/models">New model</Link>} />
         }
       />
 
@@ -76,7 +76,11 @@ export function DashboardView() {
           title="Build your first model"
           description="Define inputs, weights, and scoring logic to start generating picks."
           action={
-            <Button variant="outline" render={<Link href="/models">Go to Models</Link>} />
+            <Button
+            variant="outline"
+            nativeButton={false}
+            render={<Link href="/models">Go to Models</Link>}
+          />
           }
         />
       </section>

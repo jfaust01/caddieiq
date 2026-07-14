@@ -1,6 +1,6 @@
 'use client'
 
-import { zodResolver } from '@hookform/resolvers/zod'
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -31,7 +31,7 @@ export function WorkspaceForm() {
     formState: { errors, isSubmitting, isDirty },
     reset,
   } = useForm<WorkspaceFormValues>({
-    resolver: zodResolver(workspaceSchema),
+    resolver: standardSchemaResolver(workspaceSchema),
     defaultValues: DEFAULT_VALUES,
   })
 

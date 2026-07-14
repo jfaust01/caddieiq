@@ -27,11 +27,16 @@ export default function HomePage() {
             {siteConfig.description}
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <Button size="lg" render={<Link href="/dashboard" />}>
+            <Button size="lg" nativeButton={false} render={<Link href="/dashboard" />}>
               Open dashboard
               <ArrowRight data-icon="inline-end" />
             </Button>
-            <Button size="lg" variant="outline" render={<Link href="/models" />}>
+            <Button
+              size="lg"
+              variant="outline"
+              nativeButton={false}
+              render={<Link href="/models" />}
+            >
               Build a model
             </Button>
           </div>
