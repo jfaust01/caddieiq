@@ -99,6 +99,15 @@ enum TournamentFormat {
   STABLEFORD
 }
 
+enum TournamentFieldStatus {
+  CONFIRMED
+  ALTERNATE
+  WITHDRAWN
+  DISQUALIFIED
+  CUT
+  FINISHED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -224,9 +233,10 @@ model Player {
   deletedAt     DateTime?
 
   // Relations
-  nationality  Nationality?        @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
-  tourHistory  PlayerTourHistory[]
-  rankings     PlayerRanking[]
+  nationality      Nationality?        @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
+  tourHistory      PlayerTourHistory[]
+  rankings         PlayerRanking[]
+  tournamentFields TournamentField[]
 
   @@index([slug])
   @@index([lastName])
@@ -396,6 +406,7 @@ model Tournament {
   tour              Tour               @relation(fields: [tourId], references: [id], onDelete: Cascade)
   season            Season?            @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   tournamentCourses TournamentCourse[]
+  field             TournamentField[]
 
   @@index([slug])
   @@index([tourId])
@@ -424,4 +435,42 @@ model TournamentCourse {
   @@index([year])
   @@index([courseId])
   @@map("tournament_courses")
+}
+
+// ---------------------------------------------------------------------------
+// Tournament Field (Sprint 3.5)
+// ---------------------------------------------------------------------------
+
+/// A player's participation in a tournament. This is the anchor record that
+/// future rounds, statistics, betting lines, DFS salaries, ownership
+/// projections, and AI explanations will all reference.
+model TournamentField {
+  id            String                @id @default(cuid())
+  tournamentId  String
+  playerId      String
+  playerNumber  Int?
+  status        TournamentFieldStatus @default(CONFIRMED)
+  isAlternate   Boolean               @default(false)
+  qualified     Boolean               @default(true)
+  teeTime       DateTime?
+  startingHole  Int?
+  withdrawn     Boolean               @default(false)
+  disqualified  Boolean               @default(false)
+  cutMade       Boolean?
+  finalPosition Int?
+  earnings      Decimal?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  // Relations
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  // A player can only appear once in a given tournament.
+  @@unique([tournamentId, playerId])
+  @@index([tournamentId])
+  @@index([playerId])
+  @@index([status])
+  @@index([teeTime])
+  @@map("tournament_fields")
 }
