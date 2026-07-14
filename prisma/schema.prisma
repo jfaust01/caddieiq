@@ -1,0 +1,145 @@
+// CaddieIQ — Production database schema
+// Sprint 3.1: Prisma foundation (User, Profile, Subscription, Tour, Season).
+// Provider: PostgreSQL (Neon-compatible).
+//
+// Conventions:
+//   - Primary keys: `String @id @default(cuid())` (never auto-increment integers).
+//   - Audit fields: every model has `createdAt` / `updatedAt`.
+//   - Soft deletes (`deletedAt`) are only added where they make sense.
+//   - Table names are mapped to snake_case plurals via `@@map`.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  ELITE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIAL
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum TourType {
+  PGA
+  DP_WORLD
+  LIV
+  KORN_FERRY
+  LPGA
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+/// Application user / account.
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  name          String?
+  image         String?
+  role          UserRole @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  profile       Profile?
+  subscriptions Subscription[]
+
+  // `email` is already indexed by the `@unique` constraint above.
+  @@map("users")
+}
+
+/// One-to-one extension of a User with presentation & preference data.
+model Profile {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  displayName  String?
+  timezone     String?
+  favoriteTour TourType?
+  preferences  Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // `userId` is already indexed by the `@unique` constraint above.
+  @@map("profiles")
+}
+
+/// Billing subscription for a User. A user may have many over time.
+model Subscription {
+  id                 String             @id @default(cuid())
+  userId             String
+  tier               SubscriptionTier   @default(FREE)
+  status             SubscriptionStatus @default(TRIAL)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+/// A professional golf tour (PGA, DP World, LIV, etc.).
+model Tour {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  type      TourType
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  seasons Season[]
+
+  @@index([type])
+  @@map("tours")
+}
+
+/// A single competitive season belonging to a Tour.
+model Season {
+  id        String   @id @default(cuid())
+  tourId    String
+  year      Int
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  // A tour can only have one record per calendar year.
+  @@unique([tourId, year])
+  @@index([tourId])
+  @@index([year])
+  @@map("seasons")
+}
