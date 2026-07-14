@@ -47,6 +47,25 @@ enum TourType {
   LPGA
 }
 
+enum Handedness {
+  RIGHT
+  LEFT
+  UNKNOWN
+}
+
+enum PlayerStatus {
+  ACTIVE
+  INACTIVE
+  INJURED
+  RETIRED
+}
+
+enum RankingSystem {
+  OWGR
+  DATAGOLF
+  CADDIEIQ
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -118,7 +137,8 @@ model Tour {
   updatedAt DateTime @updatedAt
 
   // Relations
-  seasons Season[]
+  seasons             Season[]
+  playerTourHistories PlayerTourHistory[]
 
   @@index([type])
   @@map("tours")
@@ -134,11 +154,108 @@ model Season {
   updatedAt DateTime @updatedAt
 
   // Relations
-  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  tour                Tour                @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  playerTourHistories PlayerTourHistory[]
 
   // A tour can only have one record per calendar year.
   @@unique([tourId, year])
   @@index([tourId])
   @@index([year])
   @@map("seasons")
+}
+
+// ---------------------------------------------------------------------------
+// Player Ecosystem (Sprint 3.2)
+// ---------------------------------------------------------------------------
+
+/// A professional golfer. Supports soft deletion via `deletedAt`.
+model Player {
+  id            String       @id @default(cuid())
+  firstName     String
+  lastName      String
+  fullName      String
+  slug          String       @unique
+  birthDate     DateTime?
+  heightCm      Int?
+  weightKg      Int?
+  turnedProYear Int?
+  handedness    Handedness   @default(UNKNOWN)
+  status        PlayerStatus @default(ACTIVE)
+  headshotUrl   String?
+  countryCode   String?
+  nationalityId String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  nationality  Nationality?        @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
+  tourHistory  PlayerTourHistory[]
+  rankings     PlayerRanking[]
+
+  @@index([slug])
+  @@index([lastName])
+  @@index([countryCode])
+  @@index([nationalityId])
+  @@map("players")
+}
+
+/// A country / nationality reference used by players.
+model Nationality {
+  id        String   @id @default(cuid())
+  name      String
+  iso2      String   @unique
+  iso3      String   @unique
+  flagEmoji String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  players Player[]
+
+  @@map("nationalities")
+}
+
+/// Tracks a player's membership on a tour over time (allows moving between tours).
+model PlayerTourHistory {
+  id        String    @id @default(cuid())
+  playerId  String
+  tourId    String
+  seasonId  String?
+  joinedAt  DateTime
+  leftAt    DateTime?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  player Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  tour   Tour    @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  season Season? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+
+  @@index([playerId])
+  @@index([tourId])
+  @@index([seasonId])
+  @@map("player_tour_histories")
+}
+
+/// A player's rank within a given ranking system at a point in time.
+model PlayerRanking {
+  id            String        @id @default(cuid())
+  playerId      String
+  rankingSystem RankingSystem
+  rank          Int
+  points        Float?
+  effectiveDate DateTime
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([rankingSystem])
+  @@index([effectiveDate])
+  @@map("player_rankings")
 }
