@@ -85,6 +85,20 @@ enum CourseStyle {
   OTHER
 }
 
+enum TournamentStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELED
+}
+
+enum TournamentFormat {
+  STROKE_PLAY
+  MATCH_PLAY
+  TEAM
+  STABLEFORD
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -158,6 +172,7 @@ model Tour {
   // Relations
   seasons             Season[]
   playerTourHistories PlayerTourHistory[]
+  tournaments         Tournament[]
 
   @@index([type])
   @@map("tours")
@@ -175,6 +190,7 @@ model Season {
   // Relations
   tour                Tour                @relation(fields: [tourId], references: [id], onDelete: Cascade)
   playerTourHistories PlayerTourHistory[]
+  tournaments         Tournament[]
 
   // A tour can only have one record per calendar year.
   @@unique([tourId, year])
@@ -304,7 +320,8 @@ model Course {
   deletedAt       DateTime?
 
   // Relations
-  characteristic CourseCharacteristic?
+  characteristic     CourseCharacteristic?
+  tournamentCourses  TournamentCourse[]
 
   @@index([slug])
   @@index([country])
@@ -345,4 +362,66 @@ model CourseCharacteristic {
   @@index([courseId])
   @@index([style])
   @@map("course_characteristics")
+}
+
+// ---------------------------------------------------------------------------
+// Tournament Engine (Sprint 3.4)
+// ---------------------------------------------------------------------------
+
+/// A professional golf tournament. Supports historical, active, and future
+/// events across multiple tours and seasons. Soft-deletable via `deletedAt`.
+model Tournament {
+  id                 String           @id @default(cuid())
+  tourId             String
+  seasonId           String?
+  name               String
+  officialName       String?
+  slug               String           @unique
+  status             TournamentStatus @default(SCHEDULED)
+  format             TournamentFormat @default(STROKE_PLAY)
+  startDate          DateTime?
+  endDate            DateTime?
+  purse              Decimal?
+  fedExPoints        Int?
+  worldRankingPoints Int?
+  cutAfterRounds     Int?
+  cutLine            Int?
+  numberOfRounds     Int              @default(4)
+  active             Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  deletedAt          DateTime?
+
+  // Relations
+  tour              Tour               @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  season            Season?            @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  tournamentCourses TournamentCourse[]
+
+  @@index([slug])
+  @@index([tourId])
+  @@index([seasonId])
+  @@index([status])
+  @@map("tournaments")
+}
+
+/// Links a tournament to the course(s) it is played on for a given year,
+/// allowing venues to rotate across seasons.
+model TournamentCourse {
+  id           String   @id @default(cuid())
+  tournamentId String
+  courseId     String
+  year         Int
+  hostCourse   Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  course     Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // A tournament uses one venue record per calendar year.
+  @@unique([tournamentId, year])
+  @@index([year])
+  @@index([courseId])
+  @@map("tournament_courses")
 }
