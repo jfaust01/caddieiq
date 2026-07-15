@@ -46,3 +46,9 @@ export {
   type ResolvedSeasonStat,
   type PlayerSeasonStatRow,
 } from "./statistics-repository"
+export {
+  NewsRepository,
+  getNewsRepository,
+  type ResolvedNewsArticle,
+  type NewsArticleView,
+} from "./news-repository"

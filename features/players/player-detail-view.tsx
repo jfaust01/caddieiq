@@ -18,6 +18,7 @@ import { CourseHistory } from '@/features/players/components/course-history'
 import { TournamentHistory } from '@/features/players/components/tournament-history'
 import { RecentActivity } from '@/features/players/components/recent-activity'
 import { RecentForm } from '@/features/players/components/recent-form'
+import { PlayerNews } from '@/features/players/components/player-news'
 import { PlayerDetailSkeleton } from '@/features/players/components/player-detail-skeleton'
 
 interface PlayerDetailViewProps {
@@ -90,6 +91,7 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="news">News</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
@@ -120,6 +122,10 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
             <TournamentHistory history={player.tournamentHistory} />
             <CourseHistory history={player.courseHistory} />
           </div>
+        </TabsContent>
+
+        <TabsContent value="news">
+          <PlayerNews news={player.news} />
         </TabsContent>
 
         <TabsContent value="activity">

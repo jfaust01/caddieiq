@@ -213,14 +213,14 @@ function buildSeasonStatistics(record: PlayerWithRelations): PlayerSeasonStat[] 
  * resolve to null/empty so the detail view renders its "not available yet"
  * states instead of placeholder numbers.
  *
- * Note: `analytics` and `rankingProfile` are intentionally NOT produced here —
- * they are derived by the Analytics and Ranking engines and composed onto the
- * payload in the (async) service layer, keeping this mapper pure and free of
- * any analytics/ranking computation.
+ * Note: `analytics`, `rankingProfile`, and `news` are intentionally NOT produced
+ * here — analytics/ranking are derived by their engines, and news comes from a
+ * separate repository. All three are composed onto the payload in the (async)
+ * service layer, keeping this mapper pure and free of cross-source computation.
  */
 export function mapPlayerDetail(
   record: PlayerWithRelations,
-): Omit<PlayerDetail, "analytics" | "rankingProfile"> {
+): Omit<PlayerDetail, "analytics" | "rankingProfile" | "news"> {
   return {
     ...mapPlayer(record),
     careerSummary: null,

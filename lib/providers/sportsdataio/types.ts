@@ -170,6 +170,37 @@ export interface SdioPlayerSeasonStats extends SdioRecord {
   PointsGained?: number
 }
 
+/**
+ * Raw SportsDataIO news article from `/json/News`.
+ *
+ * The feed carries only the provider's native numeric `PlayerID` to associate
+ * an article with a player — never a name. Since CaddieIQ has no external-id
+ * column, the news importer bridges `PlayerID → deterministic slug` using the
+ * Players feed, then resolves that slug to a `Player.id`. Articles whose
+ * `PlayerID` does not resolve (general / tournament-wide news, or a player not
+ * in our catalog) are retained with a null player rather than discarded.
+ *
+ * Every field is optional except the ids; the mapper persists only what is
+ * present and never fabricates missing fields.
+ */
+export interface SdioNewsArticle extends SdioRecord {
+  /** Provider's native news id. Idempotency key for re-imports. */
+  NewsID: number
+  Title?: string
+  /** Article body / summary. */
+  Content?: string
+  Url?: string
+  /** Publishing outlet (e.g. "RotoBaller"). */
+  Source?: string
+  Author?: string
+  /** Comma-separated provider categories. */
+  Categories?: string
+  /** When the provider last updated the article (ISO-ish). */
+  Updated?: string
+  /** Native player id this article is about (0 / absent = general news). */
+  PlayerID?: number
+}
+
 /** Map of resource key → raw response element type, for typed requests. */
 export interface SdioResourceMap {
   players: SdioPlayer

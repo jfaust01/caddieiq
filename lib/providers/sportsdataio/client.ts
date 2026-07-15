@@ -38,6 +38,7 @@ import { createSportsDataIoLogger, type SportsDataIoLogger } from "./logger"
 import type {
   SdioCourse,
   SdioLeaderboard,
+  SdioNewsArticle,
   SdioPlayer,
   SdioPlayerSeasonStats,
   SdioResource,
@@ -225,6 +226,17 @@ export class SportsDataProvider
       `/json/PlayerSeasonStats/${encodeURIComponent(String(season))}`,
       "playerSeasonStats",
     )
+    return { data, meta }
+  }
+
+  // --- Capability: news ----------------------------------------------------
+
+  /**
+   * List recent golf news via `/json/News`. Returns the raw articles — mapping
+   * and player reconciliation happen downstream in the news importer.
+   */
+  async listNews(): Promise<ProviderListResponse<SdioNewsArticle>> {
+    const { data, meta } = await this.getList<SdioNewsArticle>("/json/News", "news")
     return { data, meta }
   }
 

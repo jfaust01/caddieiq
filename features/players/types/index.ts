@@ -172,6 +172,28 @@ export interface ActivityEntry {
   date: string
 }
 
+/**
+ * A news article about the player, sourced live from the provider news feed and
+ * associated via the provider's native player id. Every field except `title`
+ * is nullable and means "not reported by the source"; the UI never fabricates a
+ * summary, outlet, or date.
+ */
+export interface PlayerNewsItem {
+  id: string
+  /** Headline. */
+  title: string
+  /** Body / summary, or null when the source supplied none. */
+  summary: string | null
+  /** Canonical article URL, or null when unavailable. */
+  url: string | null
+  /** Publishing outlet (e.g. "RotoBaller"), or null when unavailable. */
+  outlet: string | null
+  /** Byline, or null when unavailable. */
+  author: string | null
+  /** ISO publish timestamp, or null when unreported. */
+  publishedAt: string | null
+}
+
 /** Full profile payload for the detail page. */
 export interface PlayerDetail extends Player {
   /** Headline career figures, or null when no historical data is ingested. */
@@ -197,6 +219,12 @@ export interface PlayerDetail extends Player {
   courseHistory: CourseHistoryEntry[]
   tournamentHistory: TournamentHistoryEntry[]
   activity: ActivityEntry[]
+  /**
+   * Recent news about the player, newest first, sourced live from the provider
+   * news feed. Empty until news has been imported or when the provider has no
+   * articles linked to this player.
+   */
+  news: PlayerNewsItem[]
 }
 
 /** Optional world-ranking band used by the directory filters. */

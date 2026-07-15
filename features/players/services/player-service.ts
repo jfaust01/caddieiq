@@ -26,9 +26,27 @@ import type {
 } from "@/features/players/types"
 import { analyticsService } from "@/lib/analytics/service"
 import { rankingService } from "@/lib/rankings/service"
+import { getNewsRepository, type NewsArticleView } from "@/lib/repositories"
 import { getPlayerRepository, type PlayerSearchParams } from "@/lib/repositories/player-repository"
+import type { PlayerNewsItem } from "@/features/players/types"
 
 import { mapPlayer, mapPlayerDetail } from "./player-mapper"
+
+/** Number of recent articles surfaced on a player's profile. */
+const PLAYER_NEWS_LIMIT = 6
+
+/** Map a persisted news row into the UI news item (dates → ISO strings). */
+function mapPlayerNews(row: NewsArticleView): PlayerNewsItem {
+  return {
+    id: row.id,
+    title: row.title,
+    summary: row.content,
+    url: row.url,
+    outlet: row.outlet,
+    author: row.author,
+    publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
+  }
+}
 
 const TOUR_LABELS: Record<Tour, string> = {
   PGA: "PGA Tour",
@@ -112,11 +130,18 @@ export const playerService = {
     if (!record) return null
     // Analytics are the single source of derived intelligence; the Ranking
     // Engine orders those same analytics into the player's global placements.
-    const [analytics, rankingProfile] = await Promise.all([
+    // News is live provider content linked to this player at import time.
+    const [analytics, rankingProfile, newsRows] = await Promise.all([
       analyticsService.getPlayerAnalytics(id),
       rankingService.getPlayerRankingProfile(id),
+      getNewsRepository().listByPlayer(id, PLAYER_NEWS_LIMIT),
     ])
-    return { ...mapPlayerDetail(record), analytics, rankingProfile }
+    return {
+      ...mapPlayerDetail(record),
+      analytics,
+      rankingProfile,
+      news: newsRows.map(mapPlayerNews),
+    }
   },
 
   /** Tour filter options, including the "All" sentinel. */

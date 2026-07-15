@@ -29,6 +29,7 @@ import {
   importPlayerStatistics,
   type StatisticsImportSummary,
 } from "./statistics-relations"
+import { importNews, type NewsImportSummary } from "./news-import"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -84,6 +85,11 @@ export {
   type StatisticsImportSummary,
   type ImportStatisticsOptions,
 } from "./statistics-relations"
+export {
+  importNews,
+  type NewsImportSummary,
+  type ImportNewsOptions,
+} from "./news-import"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -204,4 +210,17 @@ export async function runStatisticsImport(
   seasons?: readonly number[],
 ): Promise<StatisticsImportSummary> {
   return importPlayerStatistics({ seasons })
+}
+
+/**
+ * Import recent news into `news_articles`, linking each article to a player
+ * when its provider `PlayerID` resolves to one in our catalog.
+ *
+ * Run this AFTER {@link runPlayerImport} has populated the player catalog so the
+ * `PlayerID → slug → Player.id` bridge can resolve. Unresolvable articles are
+ * still stored as general news. Idempotent — reconciles each article on its
+ * provider `externalId` (NewsID). Returns a {@link NewsImportSummary}.
+ */
+export async function runNewsImport(): Promise<NewsImportSummary> {
+  return importNews()
 }
