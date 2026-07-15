@@ -39,24 +39,34 @@ export interface Nationality {
   name: string
 }
 
-/** Core player record shown in directory cards and profile headers. */
+/**
+ * Core player record shown in directory cards and profile headers.
+ *
+ * Fields sourced from optional columns/relations in the live database are
+ * nullable: the UI must degrade gracefully (render an em-dash or "Unranked")
+ * when a value has not been ingested yet rather than fabricate one.
+ */
 export interface Player {
   id: string
   firstName: string
   lastName: string
   fullName: string
-  nationality: Nationality
-  tour: Tour
-  /** Official World Golf Ranking position. */
-  worldRanking: number
-  handedness: Handedness
+  /** Resolved nationality, or null when the player has no linked country. */
+  nationality: Nationality | null
+  /** Active tour, or null when no active tour membership is recorded. */
+  tour: Tour | null
+  /** Official World Golf Ranking position, or null when unranked. */
+  worldRanking: number | null
+  /** Dominant hand, or null when unknown. */
+  handedness: Handedness | null
   status: PlayerStatus
-  age: number
-  /** Year the player turned professional. */
-  turnedPro: number
+  /** Age in years derived from birth date, or null when unknown. */
+  age: number | null
+  /** Year the player turned professional, or null when unknown. */
+  turnedPro: number | null
   /** Remote headshot URL when available; null renders an initials placeholder. */
   headshotUrl: string | null
-  /** Most-recent finishes, newest first. */
+  /** Most-recent finishes, newest first. Empty until round data is ingested. */
   recentForm: FormResult[]
 }
 
@@ -132,7 +142,8 @@ export interface ActivityEntry {
 
 /** Full profile payload for the detail page. */
 export interface PlayerDetail extends Player {
-  careerSummary: CareerSummary
+  /** Headline career figures, or null when no historical data is ingested. */
+  careerSummary: CareerSummary | null
   rankings: PlayerRanking[]
   statistics: PlayerStatistic[]
   courseHistory: CourseHistoryEntry[]

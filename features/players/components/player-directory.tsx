@@ -1,5 +1,8 @@
 'use client'
 
+import { TriangleAlert } from 'lucide-react'
+
+import { EmptyState } from '@/components/shared/empty-state'
 import { EmptyPlayersState } from '@/features/players/components/empty-players-state'
 import { PlayerCard } from '@/features/players/components/player-card'
 import { PlayerFilters } from '@/features/players/components/player-filters'
@@ -55,10 +58,11 @@ export function PlayerDirectory() {
     setView,
     result,
     isLoading,
+    isError,
     options,
   } = usePlayers()
 
-  const showEmpty = !isLoading && result.items.length === 0
+  const showEmpty = !isLoading && !isError && result.items.length === 0
 
   return (
     <div className="flex flex-col gap-4">
@@ -87,7 +91,13 @@ export function PlayerDirectory() {
         isLoading={isLoading}
       />
 
-      {isLoading ? (
+      {isError ? (
+        <EmptyState
+          icon={TriangleAlert}
+          title="Couldn't load players"
+          description="We couldn't reach the database. Please try again in a moment."
+        />
+      ) : isLoading ? (
         <PlayerSkeleton view={view} count={PLAYERS_PAGE_SIZE} />
       ) : showEmpty ? (
         <EmptyPlayersState hasFilters={hasActiveFilters} onReset={resetFilters} />
@@ -105,7 +115,7 @@ export function PlayerDirectory() {
         </div>
       )}
 
-      {!isLoading && !showEmpty ? (
+      {!isLoading && !isError && !showEmpty ? (
         <PlayerPagination
           page={result.page}
           totalPages={result.totalPages}

@@ -1,14 +1,19 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useCallback, useMemo, useState } from 'react'
 
-import { playerService } from '@/features/players/services/player-service'
+import {
+  fetchNationalityOptions,
+  fetchPlayers,
+} from '@/features/players/services/player-actions'
 import type {
   FilterOption,
   Handedness,
   PaginatedResult,
   Player,
   PlayerFilters,
+  PlayerQuery,
   PlayerStatus,
   RankingBand,
   Tour,
@@ -25,6 +30,15 @@ export const DEFAULT_PLAYER_FILTERS: PlayerFilters = {
   handedness: 'ALL',
   status: 'ALL',
 }
+
+const TOUR_OPTIONS: FilterOption<Tour | 'ALL'>[] = [
+  { value: 'ALL', label: 'All tours' },
+  { value: 'PGA', label: 'PGA Tour' },
+  { value: 'DP_WORLD', label: 'DP World Tour' },
+  { value: 'LIV', label: 'LIV Golf' },
+  { value: 'KORN_FERRY', label: 'Korn Ferry Tour' },
+  { value: 'CHAMPIONS', label: 'PGA Tour Champions' },
+]
 
 const RANKING_BAND_OPTIONS: FilterOption<RankingBand>[] = [
   { value: 'ALL', label: 'Any ranking' },
@@ -47,6 +61,18 @@ const STATUS_OPTIONS: FilterOption<PlayerStatus | 'ALL'>[] = [
   { value: 'INACTIVE', label: 'Inactive' },
 ]
 
+const DEFAULT_NATIONALITY_OPTIONS: FilterOption[] = [
+  { value: 'ALL', label: 'All nationalities' },
+]
+
+const EMPTY_RESULT: PaginatedResult<Player> = {
+  items: [],
+  total: 0,
+  page: 1,
+  pageSize: PLAYERS_PAGE_SIZE,
+  totalPages: 1,
+}
+
 export interface UsePlayersResult {
   filters: PlayerFilters
   setSearch: (value: string) => void
@@ -62,6 +88,7 @@ export interface UsePlayersResult {
   setView: (view: ViewMode) => void
   result: PaginatedResult<Player>
   isLoading: boolean
+  isError: boolean
   options: {
     tour: FilterOption<Tour | 'ALL'>[]
     nationality: FilterOption[]
@@ -72,32 +99,42 @@ export interface UsePlayersResult {
 }
 
 /**
- * Client-side controller for the player directory: search, filters, pagination,
- * and view mode over the placeholder `PlayerService`.
+ * Client controller for the player directory: search, filters, pagination, and
+ * view mode over the *live* player data.
  *
- * The short simulated latency exists so loading/skeleton states are exercised
- * while the data is still mock.
- * TODO(data): replace the simulated latency with real data fetching (SWR /
- * TanStack Query) once the live PlayerService is connected.
+ * Data is fetched through the `fetchPlayers` server action via TanStack Query
+ * (no fetching in effects). Previous pages are kept in place while the next
+ * query resolves so pagination and filtering stay smooth, and query errors are
+ * surfaced so the directory can render a database-error state.
  */
 export function usePlayers(): UsePlayersResult {
   const [filters, setFilters] = useState<PlayerFilters>(DEFAULT_PLAYER_FILTERS)
   const [page, setPage] = useState(1)
   const [view, setView] = useState<ViewMode>('grid')
-  const [isLoading, setIsLoading] = useState(true)
 
-  const query = useMemo(
+  const query = useMemo<PlayerQuery>(
     () => ({ filters, page, pageSize: PLAYERS_PAGE_SIZE }),
     [filters, page],
   )
 
-  const result = useMemo(() => playerService.getPlayers(query), [query])
+  const playersQuery = useQuery({
+    queryKey: ['players', query],
+    queryFn: async () => {
+      const response = await fetchPlayers(query)
+      if (!response.ok) throw new Error(response.error)
+      return response.data
+    },
+    placeholderData: keepPreviousData,
+  })
 
-  useEffect(() => {
-    setIsLoading(true)
-    const timeout = setTimeout(() => setIsLoading(false), 300)
-    return () => clearTimeout(timeout)
-  }, [query])
+  const nationalityQuery = useQuery({
+    queryKey: ['player-nationality-options'],
+    queryFn: async () => {
+      const response = await fetchNationalityOptions()
+      if (!response.ok) throw new Error(response.error)
+      return response.data
+    },
+  })
 
   const setSearch = useCallback((value: string) => {
     setFilters((prev) => ({ ...prev, search: value }))
@@ -130,13 +167,13 @@ export function usePlayers(): UsePlayersResult {
 
   const options = useMemo(
     () => ({
-      tour: playerService.getTourOptions(),
-      nationality: playerService.getNationalityOptions(),
+      tour: TOUR_OPTIONS,
+      nationality: nationalityQuery.data ?? DEFAULT_NATIONALITY_OPTIONS,
       rankingBand: RANKING_BAND_OPTIONS,
       handedness: HANDEDNESS_OPTIONS,
       status: STATUS_OPTIONS,
     }),
-    [],
+    [nationalityQuery.data],
   )
 
   return {
@@ -149,8 +186,9 @@ export function usePlayers(): UsePlayersResult {
     setPage,
     view,
     setView,
-    result,
-    isLoading,
+    result: playersQuery.data ?? EMPTY_RESULT,
+    isLoading: playersQuery.isPending,
+    isError: playersQuery.isError,
     options,
   }
 }

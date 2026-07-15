@@ -11,18 +11,27 @@ export async function generateMetadata({
   params,
 }: PlayerDetailPageProps): Promise<Metadata> {
   const { playerId } = await params
-  const player = playerService.getPlayerById(playerId)
 
-  if (!player) {
-    return {
-      title: 'Player not found',
-      description: 'This player could not be located in the CaddieIQ universe.',
+  try {
+    const player = await playerService.getPlayerById(playerId)
+
+    if (!player) {
+      return {
+        title: 'Player not found',
+        description: 'This player could not be located in the CaddieIQ universe.',
+      }
     }
-  }
 
-  return {
-    title: player.fullName,
-    description: `Profile, statistics, and recent form for ${player.fullName}.`,
+    return {
+      title: player.fullName,
+      description: `Profile, statistics, and recent form for ${player.fullName}.`,
+    }
+  } catch {
+    // Never let a transient database error break metadata generation.
+    return {
+      title: 'Player profile',
+      description: 'Profile, statistics, and recent form.',
+    }
   }
 }
 

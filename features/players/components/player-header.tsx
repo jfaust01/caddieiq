@@ -9,7 +9,12 @@ import { PlayerHeadshot } from '@/features/players/components/player-headshot'
 import { PlayerStatusBadge } from '@/features/players/components/player-status-badge'
 import { RecentForm } from '@/features/players/components/recent-form'
 import type { PlayerDetail } from '@/features/players/types'
-import { handednessLabel, tourLabel } from '@/features/players/utils/format'
+import {
+  handednessLabel,
+  numberDisplay,
+  tourLabel,
+  worldRankDisplay,
+} from '@/features/players/utils/format'
 
 interface PlayerHeaderProps {
   player: PlayerDetail
@@ -67,9 +72,9 @@ export function PlayerHeader({ player }: PlayerHeaderProps) {
           </div>
 
           <dl className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-            <Fact label="World Rank" value={`#${player.worldRanking}`} />
-            <Fact label="Age" value={`${player.age}`} />
-            <Fact label="Turned Pro" value={`${player.turnedPro}`} />
+            <Fact label="World Rank" value={worldRankDisplay(player.worldRanking)} />
+            <Fact label="Age" value={numberDisplay(player.age)} />
+            <Fact label="Turned Pro" value={numberDisplay(player.turnedPro)} />
             <Fact label="Plays" value={handednessLabel(player.handedness)} />
           </dl>
         </CardContent>

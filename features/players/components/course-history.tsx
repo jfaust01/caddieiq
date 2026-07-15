@@ -13,7 +13,7 @@ interface CourseHistoryProps {
   history: CourseHistoryEntry[]
 }
 
-/** Placeholder course-history table. */
+/** Course-history table. Renders an empty state until round data is ingested. */
 export function CourseHistory({ history }: CourseHistoryProps) {
   return (
     <Card>
@@ -21,6 +21,11 @@ export function CourseHistory({ history }: CourseHistoryProps) {
         <CardTitle>Course History</CardTitle>
       </CardHeader>
       <CardContent>
+        {history.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No course history has been imported for this player yet.
+          </p>
+        ) : (
         <Table>
           <TableHeader>
             <TableRow>
@@ -47,6 +52,7 @@ export function CourseHistory({ history }: CourseHistoryProps) {
             ))}
           </TableBody>
         </Table>
+        )}
       </CardContent>
     </Card>
   )

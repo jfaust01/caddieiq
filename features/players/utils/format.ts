@@ -26,6 +26,9 @@ const HANDEDNESS_LABELS: Record<Handedness, string> = {
   LEFT: 'Left-handed',
 }
 
+/** Shown wherever an optional value has not been ingested yet. */
+export const EMPTY_VALUE = '—'
+
 const STATUS_LABELS: Record<PlayerStatus, string> = {
   ACTIVE: 'Active',
   INJURED: 'Injured',
@@ -34,20 +37,30 @@ const STATUS_LABELS: Record<PlayerStatus, string> = {
 
 export type Tone = 'success' | 'warning' | 'muted' | 'default'
 
-export function tourLabel(tour: Tour): string {
-  return TOUR_LABELS[tour]
+export function tourLabel(tour: Tour | null): string {
+  return tour ? TOUR_LABELS[tour] : EMPTY_VALUE
 }
 
-export function tourShortLabel(tour: Tour): string {
-  return TOUR_SHORT[tour]
+export function tourShortLabel(tour: Tour | null): string {
+  return tour ? TOUR_SHORT[tour] : EMPTY_VALUE
 }
 
-export function handednessLabel(handedness: Handedness): string {
-  return HANDEDNESS_LABELS[handedness]
+export function handednessLabel(handedness: Handedness | null): string {
+  return handedness ? HANDEDNESS_LABELS[handedness] : EMPTY_VALUE
 }
 
 export function statusLabel(status: PlayerStatus): string {
   return STATUS_LABELS[status]
+}
+
+/** World-ranking display: `#12` when ranked, "Unranked" when not. */
+export function worldRankDisplay(rank: number | null): string {
+  return rank === null ? 'Unranked' : `#${rank}`
+}
+
+/** Numeric field display: the number as a string, or an em-dash when unknown. */
+export function numberDisplay(value: number | null): string {
+  return value === null ? EMPTY_VALUE : `${value}`
 }
 
 export function statusTone(status: PlayerStatus): Tone {

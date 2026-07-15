@@ -7,7 +7,7 @@ interface RecentActivityProps {
   activity: ActivityEntry[]
 }
 
-/** Placeholder recent-activity feed. */
+/** Recent-activity feed. Renders an empty state until activity is ingested. */
 export function RecentActivity({ activity }: RecentActivityProps) {
   return (
     <Card>
@@ -15,6 +15,11 @@ export function RecentActivity({ activity }: RecentActivityProps) {
         <CardTitle>Recent Activity</CardTitle>
       </CardHeader>
       <CardContent>
+        {activity.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No recent activity has been imported for this player yet.
+          </p>
+        ) : (
         <ul className="flex flex-col gap-4">
           {activity.map((item) => (
             <li key={item.id} className="flex gap-3">
@@ -36,6 +41,7 @@ export function RecentActivity({ activity }: RecentActivityProps) {
             </li>
           ))}
         </ul>
+        )}
       </CardContent>
     </Card>
   )

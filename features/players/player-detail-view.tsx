@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, UserX } from 'lucide-react'
+import { ArrowLeft, TriangleAlert, UserX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageShell } from '@/components/shared/page-shell'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -23,7 +23,7 @@ interface PlayerDetailViewProps {
 }
 
 export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
-  const { player, isLoading, notFound } = usePlayerDetail(playerId)
+  const { player, isLoading, notFound, isError } = usePlayerDetail(playerId)
 
   const backButton = (
     <Button
@@ -44,6 +44,19 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
       <PageShell>
         {backButton}
         <PlayerDetailSkeleton />
+      </PageShell>
+    )
+  }
+
+  if (isError) {
+    return (
+      <PageShell>
+        {backButton}
+        <EmptyState
+          icon={TriangleAlert}
+          title="Couldn't load player"
+          description="We couldn't reach the database. Please try again in a moment."
+        />
       </PageShell>
     )
   }

@@ -9,7 +9,7 @@ import { PlayerHeadshot } from '@/features/players/components/player-headshot'
 import { PlayerStatusBadge } from '@/features/players/components/player-status-badge'
 import { RecentForm } from '@/features/players/components/recent-form'
 import type { Player } from '@/features/players/types'
-import { tourShortLabel } from '@/features/players/utils/format'
+import { tourShortLabel, worldRankDisplay } from '@/features/players/utils/format'
 
 interface PlayerCardProps {
   player: Player
@@ -40,7 +40,7 @@ export function PlayerCard({ player }: PlayerCardProps) {
           <div className="flex flex-col gap-0.5 rounded-lg bg-muted/50 px-3 py-2">
             <span className="text-xs text-muted-foreground">World Rank</span>
             <span className="text-lg font-semibold tabular-nums">
-              #{player.worldRanking}
+              {worldRankDisplay(player.worldRanking)}
             </span>
           </div>
           <div className="flex flex-col gap-0.5 rounded-lg bg-muted/50 px-3 py-2">

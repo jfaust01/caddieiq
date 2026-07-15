@@ -92,29 +92,88 @@ export abstract class BaseRepository {
   }
 
   /**
+   * How many items {@link runBulk} persists concurrently.
+   *
+   * Persisting one row at a time serializes thousands of database round-trips
+   * on a full import, which cannot complete in a normal execution budget. A
+   * bounded worker pool keeps wall-clock time reasonable while still bounding
+   * the number of simultaneous connections we open against the database.
+   *
+   * Override per repository if a model needs a tighter or looser bound.
+   */
+  protected readonly bulkConcurrency = 16
+
+  /**
    * Run an async single-item persister across a batch, folding every result
    * into a {@link BulkRepositoryResult}. A failure on one item is captured and
    * the batch continues — bulk operations never throw for a single bad item.
+   *
+   * Items are processed by a bounded pool of workers (see
+   * {@link bulkConcurrency}). Each result is recorded against its original
+   * index so the folded `records`/`errors` stay in input order regardless of
+   * the order in which the concurrent persists resolve.
    */
   protected async runBulk<D, T>(
     items: readonly D[],
     referenceOf: (item: D) => string | undefined,
     persist: (item: D) => Promise<RepositoryResult<T>>,
   ): Promise<BulkRepositoryResult<T>> {
-    const acc = emptyBulkResult<T>()
-    for (let index = 0; index < items.length; index += 1) {
+    const results: Array<RepositoryResult<T>> = new Array(items.length)
+
+    const runOne = async (index: number): Promise<void> => {
       const item = items[index]
       const reference = referenceOf(item)
       try {
-        const result = await persist(item)
-        accumulate(acc, result, index, reference)
+        results[index] = await persist(item)
       } catch (error) {
         // Defensive: `persist` is expected to return, not throw, but guard the
         // batch so one unexpected throwable can't abort the whole import.
         const repoError = toRepositoryError(error, { operation: "bulk", reference })
         this.logger.failure(reference, repoError.message, { code: repoError.code })
-        accumulate(acc, fail<T>(repoError), index, reference)
+        results[index] = fail<T>(repoError)
       }
+    }
+
+    // Group indices by reconciliation key. Items that share a key (the same
+    // slug) MUST run sequentially: concurrent upserts on one key would both
+    // read "not found" and race to insert, tripping the unique constraint.
+    // Items with distinct keys are independent and safe to run in parallel.
+    // Undefined references get a unique bucket so they never serialize together.
+    const buckets = new Map<string, number[]>()
+    for (let index = 0; index < items.length; index += 1) {
+      const key = referenceOf(items[index]) ?? `__undefined_${index}`
+      const bucket = buckets.get(key)
+      if (bucket) bucket.push(index)
+      else buckets.set(key, [index])
+    }
+    const queue = [...buckets.values()]
+
+    // Bounded worker pool: `workerCount` cursors pull the next bucket off a
+    // shared counter until the queue is drained, running each bucket's items
+    // in input order.
+    let cursor = 0
+    const workerCount = Math.max(1, Math.min(this.bulkConcurrency, queue.length))
+    const workers: Array<Promise<void>> = []
+    for (let w = 0; w < workerCount; w += 1) {
+      workers.push(
+        (async () => {
+          while (true) {
+            const queueIndex = cursor
+            cursor += 1
+            if (queueIndex >= queue.length) return
+            for (const index of queue[queueIndex]) {
+              await runOne(index)
+            }
+          }
+        })(),
+      )
+    }
+    await Promise.all(workers)
+
+    // Fold in input order so the result is deterministic.
+    const acc = emptyBulkResult<T>()
+    for (let index = 0; index < items.length; index += 1) {
+      accumulate(acc, results[index], index, referenceOf(items[index]))
     }
     return acc
   }

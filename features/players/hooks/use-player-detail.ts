@@ -1,45 +1,39 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { playerService } from '@/features/players/services/player-service'
+import { useQuery } from '@tanstack/react-query'
+
+import { fetchPlayerDetail } from '@/features/players/services/player-actions'
 import type { PlayerDetail } from '@/features/players/types'
 
 interface UsePlayerDetailResult {
   player: PlayerDetail | null
   isLoading: boolean
+  /** True when the player id does not exist in the live database. */
   notFound: boolean
+  /** True when the database could not be reached. */
+  isError: boolean
 }
 
 /**
- * Loads a single player's detail record. Simulates async latency so the
- * loading state can be exercised while the backend is still mocked.
+ * Loads a single player's detail record from the live database through the
+ * `fetchPlayerDetail` server action (via TanStack Query — no fetching in
+ * effects). Distinguishes "not found" (valid query, no such player) from a
+ * database error so the view can render the appropriate state.
  */
 export function usePlayerDetail(playerId: string): UsePlayerDetailResult {
-  const [player, setPlayer] = useState<PlayerDetail | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
+  const query = useQuery({
+    queryKey: ['player-detail', playerId],
+    queryFn: async () => {
+      const response = await fetchPlayerDetail(playerId)
+      if (!response.ok) throw new Error(response.error)
+      return response.data
+    },
+  })
 
-  useEffect(() => {
-    let active = true
-    setIsLoading(true)
-    setNotFound(false)
-
-    const timer = setTimeout(() => {
-      if (!active) return
-      const result = playerService.getPlayerById(playerId)
-      if (result) {
-        setPlayer(result)
-      } else {
-        setNotFound(true)
-      }
-      setIsLoading(false)
-    }, 400)
-
-    return () => {
-      active = false
-      clearTimeout(timer)
-    }
-  }, [playerId])
-
-  return { player, isLoading, notFound }
+  return {
+    player: query.data ?? null,
+    isLoading: query.isPending,
+    notFound: query.isSuccess && query.data === null,
+    isError: query.isError,
+  }
 }

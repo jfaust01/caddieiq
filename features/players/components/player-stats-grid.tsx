@@ -35,6 +35,21 @@ export function PlayerStatsGrid({ statistics }: PlayerStatsGridProps) {
     (stat) => stat.category === 'TRADITIONAL',
   )
 
+  if (statistics.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Statistics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Statistics haven&apos;t been imported for this player yet.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
