@@ -92,6 +92,17 @@ export interface TournamentSearchRow {
   defendingChampion: string | null
 }
 
+/**
+ * A single tournament for the detail page: everything in {@link TournamentSearchRow}
+ * plus the record lifecycle timestamps. Kept separate so the list query stays
+ * lean (it never selects the timestamps) while the detail page can surface
+ * created/updated metadata.
+ */
+export interface TournamentDetailRow extends TournamentSearchRow {
+  createdAt: Date | null
+  updatedAt: Date | null
+}
+
 export class TournamentRepository extends BaseRepository {
   constructor(prisma: PrismaClient = prismaClient, sink?: RepositoryLogSink) {
     super(prisma, "tournament", sink)
@@ -231,8 +242,8 @@ export class TournamentRepository extends BaseRepository {
    * soft-deleted, so the caller can render a proper 404. The id is bound, never
    * interpolated (injection-safe). Read-only.
    */
-  async findDetailById(id: string): Promise<TournamentSearchRow | null> {
-    const rows = await this.prisma.$queryRaw<TournamentSearchRow[]>(Prisma.sql`
+  async findDetailById(id: string): Promise<TournamentDetailRow | null> {
+    const rows = await this.prisma.$queryRaw<TournamentDetailRow[]>(Prisma.sql`
       SELECT
         t.id AS "id",
         t.name AS "name",
@@ -242,6 +253,8 @@ export class TournamentRepository extends BaseRepository {
         t."startDate" AS "startDate",
         t."endDate" AS "endDate",
         t.purse::float8 AS "purse",
+        t."createdAt" AS "createdAt",
+        t."updatedAt" AS "updatedAt",
         s.year AS "seasonYear",
         tr.type::text AS "tourType",
         tr.name AS "tourName",

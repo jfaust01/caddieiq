@@ -39,7 +39,14 @@ import { mapTournamentSummary } from './tournament-mapper'
 const getTournamentByIdCached = cache(
   async (id: string): Promise<TournamentSummary | null> => {
     const row = await getTournamentRepository().findDetailById(id)
-    return row ? mapTournamentSummary(row) : null
+    if (!row) return null
+    // Detail view adds the lifecycle timestamps on top of the shared summary
+    // mapping; the list mapper intentionally leaves them undefined.
+    return {
+      ...mapTournamentSummary(row),
+      createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
+      updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
+    }
   },
 )
 

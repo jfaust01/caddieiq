@@ -1,4 +1,4 @@
-import { Award, CalendarDays, ChevronLeft, DollarSign, Landmark, MapPin, Trophy } from 'lucide-react'
+import { Award, CalendarDays, ChevronLeft, Clock, DollarSign, Landmark, MapPin, Trophy } from 'lucide-react'
 import Link from 'next/link'
 
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +12,7 @@ import {
   formatDateRange,
   formatLocation,
   formatPurse,
+  formatTimestamp,
   seasonDisplay,
   statusLabel,
   textDisplay,
@@ -121,6 +122,16 @@ export function TournamentDetailView({ tournament }: TournamentDetailViewProps) 
           </dl>
         </CardContent>
       </Card>
+
+      {tournament.createdAt || tournament.updatedAt ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <Clock className="size-3.5 shrink-0" aria-hidden />
+            Added {formatTimestamp(tournament.createdAt)}
+          </span>
+          <span>Last updated {formatTimestamp(tournament.updatedAt)}</span>
+        </div>
+      ) : null}
     </PageShell>
   )
 }

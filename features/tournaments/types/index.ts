@@ -57,6 +57,12 @@ export interface TournamentSummary {
   purse: number | null
   /** Winner of the prior edition, or null when not derivable. */
   defendingChampion: string | null
+  /**
+   * Record lifecycle timestamps (ISO strings). Only populated on the detail
+   * view; the directory list omits them, so they are optional.
+   */
+  createdAt?: string | null
+  updatedAt?: string | null
 }
 
 /** Directory filter state. `ALL` sentinels keep the controls fully typed. */

@@ -50,14 +50,17 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
       : (tournament.course ?? location)
 
   return (
-    <Card className="justify-between transition-shadow hover:shadow-md">
+    <Card className="relative cursor-pointer justify-between transition-shadow hover:border-foreground/20 hover:shadow-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background">
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <h3 className="truncate font-medium tracking-tight" title={tournament.name}>
+              {/* Stretched link: its hit area (after:inset-0) covers the whole
+                  card, so any click on the card navigates. It is the single
+                  keyboard-focusable target; focus is shown via the card ring. */}
               <Link
                 href={`/tournaments/${tournament.id}`}
-                className="outline-none hover:underline focus-visible:underline"
+                className="outline-none after:absolute after:inset-0 hover:underline"
               >
                 {tournament.name}
               </Link>
@@ -107,13 +110,16 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
       </CardContent>
 
       <CardFooter>
+        {/* Visual affordance only. The whole card is the real link (above), so
+            this is hidden from the a11y tree and removed from the tab order to
+            avoid a redundant second stop to the same destination. */}
         <Button
           variant="outline"
           size="sm"
-          className="w-full"
+          className="pointer-events-none w-full"
           nativeButton={false}
           render={
-            <Link href={`/tournaments/${tournament.id}`}>
+            <Link href={`/tournaments/${tournament.id}`} tabIndex={-1} aria-hidden>
               View details
               <ArrowUpRight data-icon="inline-end" />
             </Link>

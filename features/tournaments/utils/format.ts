@@ -122,3 +122,21 @@ export function formatLocation(location: TournamentLocation | null): string {
 export function textDisplay(value: string | null): string {
   return value && value.trim() ? value : EMPTY_VALUE
 }
+
+const TIMESTAMP_FMT = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
+/**
+ * Record timestamp display, e.g. "Apr 10, 2025, 3:45 PM", or an em-dash when
+ * the value is missing/undefined (list rows omit timestamps).
+ */
+export function formatTimestamp(value: string | null | undefined): string {
+  if (!value) return EMPTY_VALUE
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? EMPTY_VALUE : TIMESTAMP_FMT.format(date)
+}
