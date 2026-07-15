@@ -183,7 +183,7 @@ export function useModelLab(initialModelId?: string): UseModelLab {
       description: 'A fresh model — enable metric groups and tune their weights.',
       origin: 'custom',
       favorite: false,
-      metrics: buildMetrics({ 'strokes-gained': 25, 'recent-form': 25 }),
+      metrics: buildMetrics({ seasonPerformance: 25, recentForm: 25 }),
       versions: [],
       createdAt: now,
       updatedAt: now,
