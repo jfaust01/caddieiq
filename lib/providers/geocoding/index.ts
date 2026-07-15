@@ -16,8 +16,11 @@ export type { GeocodeMatch, GeocodeQuery, GeocodeConfidence } from "./types"
 export {
   NominatimGeocodingProvider,
   NOMINATIM_PROVIDER_NAME,
+  isGolfCourseFeature,
   selectVerifiedGolfMatch,
   buildNominatimQuery,
+  buildNominatimQueryVariants,
+  normalizeCourseName,
   type NominatimRawResult,
 } from "./nominatim"
 export {

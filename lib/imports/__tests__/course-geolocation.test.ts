@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from "vitest"
 import { ProviderError } from "@/lib/providers/shared/errors"
 import {
   buildNominatimQuery,
+  buildNominatimQueryVariants,
+  isGolfCourseFeature,
+  normalizeCourseName,
   selectVerifiedGolfMatch,
   type NominatimRawResult,
 } from "@/lib/providers/geocoding"
@@ -66,6 +69,52 @@ describe("selectVerifiedGolfMatch", () => {
   it("returns null for an empty result set", () => {
     expect(selectVerifiedGolfMatch([], "osm-nominatim")).toBeNull()
   })
+
+  it("verifies a golf_course tagged via the jsonv2 `category` field", () => {
+    // Real jsonv2 responses put the category on `category`, leaving `class`
+    // undefined — e.g. Augusta National. This must still verify.
+    const jsonv2Golf: NominatimRawResult = {
+      lat: "33.5006",
+      lon: "-82.0226",
+      category: "leisure",
+      type: "golf_course",
+      addresstype: "leisure",
+      display_name: "Augusta National Golf Club, Augusta, GA",
+    }
+    const match = selectVerifiedGolfMatch([jsonv2Golf], "osm-nominatim")
+    expect(match?.confidence).toBe("verified")
+    expect(match?.matchType).toBe("leisure:golf_course")
+  })
+
+  it("rejects a clubhouse POI tagged `restaurant` — honesty over coverage", () => {
+    // Pebble Beach's node is mapped as a restaurant, not a golf_course; we must
+    // not auto-verify it (the user chose the strict golf-feature-only rule).
+    const clubhouse: NominatimRawResult = {
+      lat: "36.5697",
+      lon: "-121.9497",
+      category: "amenity",
+      type: "restaurant",
+      display_name: "Pebble Beach Golf Links, 17 Mile Drive, Pebble Beach",
+    }
+    expect(selectVerifiedGolfMatch([clubhouse], "osm-nominatim")).toBeNull()
+  })
+})
+
+describe("isGolfCourseFeature", () => {
+  it.each([
+    ["jsonv2 category", { category: "leisure", type: "golf_course" }, true],
+    ["legacy class", { class: "leisure", type: "golf_course" }, true],
+    ["addresstype only", { addresstype: "leisure", type: "golf" }, true],
+    ["restaurant POI", { category: "amenity", type: "restaurant" }, false],
+    ["locality centroid", { category: "place", type: "city" }, false],
+    ["leisure but not golf", { category: "leisure", type: "park" }, false],
+    ["missing type", { category: "leisure" }, false],
+  ] satisfies Array<[string, NominatimRawResult, boolean]>)(
+    "%s -> %s",
+    (_label, raw, expected) => {
+      expect(isGolfCourseFeature(raw)).toBe(expected)
+    },
+  )
 })
 
 describe("buildNominatimQuery", () => {
@@ -78,6 +127,46 @@ describe("buildNominatimQuery", () => {
         country: null,
       }),
     ).toBe("Augusta National, Augusta, GA")
+  })
+})
+
+describe("normalizeCourseName", () => {
+  it.each([
+    ["Torrey Pines (North)", "Torrey Pines"],
+    ["Chambers Bay GC", "Chambers Bay Golf Course"],
+    ["Plainfield CC", "Plainfield Country Club"],
+    ["Kuala Lumpur G&CC", "Kuala Lumpur Golf and Country Club"],
+    ["Silverado CC (North)", "Silverado Country Club"],
+    ["Pebble Beach Golf Links", "Pebble Beach Golf Links"],
+  ])("normalizes %s -> %s", (input, expected) => {
+    expect(normalizeCourseName(input)).toBe(expected)
+  })
+})
+
+describe("buildNominatimQueryVariants", () => {
+  it("yields raw then normalized, de-duplicated", () => {
+    expect(
+      buildNominatimQueryVariants({
+        courseName: "Chambers Bay GC",
+        city: "University Place",
+        stateProvince: "WA",
+        country: "USA",
+      }),
+    ).toEqual([
+      "Chambers Bay GC, University Place, WA, USA",
+      "Chambers Bay Golf Course, University Place, WA, USA",
+    ])
+  })
+
+  it("collapses to a single variant when normalization is a no-op", () => {
+    expect(
+      buildNominatimQueryVariants({
+        courseName: "Augusta National Golf Club",
+        city: null,
+        stateProvince: null,
+        country: null,
+      }),
+    ).toEqual(["Augusta National Golf Club"])
   })
 })
 

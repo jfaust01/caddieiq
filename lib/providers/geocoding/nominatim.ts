@@ -30,19 +30,40 @@ const MAX_ERROR_BODY = 500
 export interface NominatimRawResult {
   lat?: string
   lon?: string
-  /** Top-level feature category, e.g. "leisure", "place", "boundary". */
+  /**
+   * Top-level feature category in `jsonv2` responses, e.g. "leisure", "place".
+   * (In the legacy `json` format this same value is returned as `class`; we read
+   * both so the verification rule is format-agnostic.)
+   */
+  category?: string
+  /** Legacy alias for {@link NominatimRawResult.category} (format=json). */
   class?: string
-  /** Feature type within the class, e.g. "golf_course", "city". */
+  /** Feature type within the category, e.g. "golf_course", "city", "restaurant". */
   type?: string
+  /** `addresstype` echoes the category for the primary feature (e.g. "leisure"). */
+  addresstype?: string
   display_name?: string
   importance?: number
 }
 
 /**
  * The OSM feature types that constitute a genuine golf course. `golf_course` is
- * the canonical `leisure` tag; `golf` appears on some older/edge features.
+ * the canonical `leisure=golf_course` tag; `golf` appears on some older/edge
+ * features.
  */
 const GOLF_FEATURE_TYPES = new Set(["golf_course", "golf"])
+
+/**
+ * True only when a raw result IS an actual mapped golf-course feature
+ * (`leisure=golf_course`). Reads the category from `category` (jsonv2),
+ * `class` (legacy json), or `addresstype`, so the rule is response-format
+ * agnostic. A clubhouse POI tagged `restaurant`, a locality centroid, or any
+ * non-golf feature returns `false` — those are never auto-verified.
+ */
+export function isGolfCourseFeature(r: NominatimRawResult): boolean {
+  const category = r.category ?? r.class ?? r.addresstype
+  return category === "leisure" && typeof r.type === "string" && GOLF_FEATURE_TYPES.has(r.type)
+}
 
 /**
  * Pure verification rule: pick the first result that is an actual golf-course
@@ -56,7 +77,7 @@ export function selectVerifiedGolfMatch(
   source: string,
 ): GeocodeMatch | null {
   for (const r of results) {
-    if (r.class !== "leisure" || !r.type || !GOLF_FEATURE_TYPES.has(r.type)) continue
+    if (!isGolfCourseFeature(r)) continue
 
     const latitude = Number(r.lat)
     const longitude = Number(r.lon)
@@ -71,13 +92,14 @@ export function selectVerifiedGolfMatch(
       continue
     }
 
+    const category = r.category ?? r.class ?? r.addresstype ?? "leisure"
     return {
       latitude,
       longitude,
       confidence: "verified",
       source,
       displayName: r.display_name ?? "",
-      matchType: `${r.class}:${r.type}`,
+      matchType: `${category}:${r.type}`,
     }
   }
 
@@ -90,6 +112,58 @@ export function buildNominatimQuery(query: GeocodeQuery): string {
     .map((part) => part?.trim())
     .filter((part): part is string => Boolean(part))
     .join(", ")
+}
+
+/** Common golf-course name abbreviations → their full OSM-friendly form. */
+const NAME_EXPANSIONS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\bG&CC\b/gi, "Golf and Country Club"],
+  [/\bG&\s?C\b/gi, "Golf and Country Club"],
+  [/\bGC&C\b/gi, "Golf and Country Club"],
+  [/\bCC\b/gi, "Country Club"],
+  [/\bG\.?C\.?\b/gi, "Golf Course"],
+  [/\bGL\b/gi, "Golf Links"],
+  [/\bTPC\b/gi, "TPC"],
+]
+
+/**
+ * Normalize a course name into a more geocoder-friendly form WITHOUT changing
+ * which real place it refers to:
+ *  - drop a trailing parenthetical sub-course qualifier, e.g. "Torrey Pines
+ *    (North)" → "Torrey Pines" (OSM maps the venue, rarely each nine), and
+ *  - expand common abbreviations ("GC" → "Golf Course", "CC" → "Country Club").
+ *
+ * Pure and side-effect free. This only affects the SEARCH string; the verified
+ * match gate ({@link isGolfCourseFeature}) is unchanged, so normalization can
+ * never turn a non-golf location into a false "verified".
+ */
+export function normalizeCourseName(name: string): string {
+  let out = name.replace(/\s*\([^)]*\)\s*$/, "").trim()
+  for (const [pattern, replacement] of NAME_EXPANSIONS) {
+    out = out.replace(pattern, replacement)
+  }
+  return out.replace(/\s{2,}/g, " ").trim()
+}
+
+/**
+ * Ordered, de-duplicated list of query strings to try for a course, most
+ * specific first: the raw name as given, then the normalized name. Trying the
+ * raw form first preserves any already-correct exact match; the normalized form
+ * recovers abbreviated/sub-course names that OSM stores under their full name.
+ */
+export function buildNominatimQueryVariants(query: GeocodeQuery): string[] {
+  const variants: string[] = []
+  const seen = new Set<string>()
+  const push = (courseName: string) => {
+    const q = buildNominatimQuery({ ...query, courseName })
+    const key = q.toLowerCase()
+    if (q !== "" && !seen.has(key)) {
+      seen.add(key)
+      variants.push(q)
+    }
+  }
+  push(query.courseName)
+  push(normalizeCourseName(query.courseName))
+  return variants
 }
 
 export interface NominatimProviderDeps {
@@ -132,26 +206,36 @@ export class NominatimGeocodingProvider implements GeocodingProvider {
   }
 
   async geocodeCourse(query: GeocodeQuery): Promise<GeocodeMatch | null> {
-    const q = buildNominatimQuery(query)
-    if (q === "") {
+    const variants = buildNominatimQueryVariants(query)
+    if (variants.length === 0) {
       throw new ProviderError("Nominatim geocode requires at least a course name.", {
         provider: NOMINATIM_PROVIDER_NAME,
         code: "VALIDATION_ERROR",
       })
     }
 
-    const params = new URLSearchParams({
-      q,
-      format: "jsonv2",
-      addressdetails: "0",
-      limit: "5",
-    })
-    const results = (await this.request(`/search?${params.toString()}`)) as
-      | NominatimRawResult[]
-      | null
+    // Try the raw name first, then the normalized fallback. Return the first
+    // VERIFIED golf-course match; only fall through to the next variant on a
+    // clean "no golf feature" result (network/rate-limit errors still throw).
+    for (const q of variants) {
+      const params = new URLSearchParams({
+        q,
+        format: "jsonv2",
+        addressdetails: "0",
+        // Return OSM tags so we can positively identify golf-course features.
+        extratags: "1",
+        limit: "5",
+      })
+      const results = (await this.request(`/search?${params.toString()}`)) as
+        | NominatimRawResult[]
+        | null
 
-    if (!Array.isArray(results)) return null
-    return selectVerifiedGolfMatch(results, this.name)
+      if (!Array.isArray(results)) continue
+      const match = selectVerifiedGolfMatch(results, this.name)
+      if (match) return match
+    }
+
+    return null
   }
 
   // --- Internal ------------------------------------------------------------
