@@ -582,6 +582,7 @@ model Tournament {
   bettingEvents      BettingEvent[]
   fantasyProjections FantasyProjection[]
   dfsSalaries        DfsSalary[]
+  weatherSnapshot    WeatherSnapshot?
 
   @@index([slug])
   @@index([tourId])
@@ -897,4 +898,86 @@ model DfsSalary {
   @@index([tournamentId])
   @@index([playerId])
   @@map("dfs_salaries")
+}
+
+// ---------------------------------------------------------------------------
+// Weather Intelligence Engine (Sprint 4.x)
+// ---------------------------------------------------------------------------
+
+/// A single captured forecast for a tournament venue — the raw, verified facts
+/// the Weather Intelligence Engine normalizes into signals. One (latest) snapshot
+/// per tournament; re-importing replaces it. `capturedAt` + `forecast*` bounds
+/// drive the confidence grade (forecast age, horizon, coverage). Never holds
+/// fabricated data: if the provider returns nothing usable, no snapshot is
+/// written and the engine reports weather as unavailable.
+model WeatherSnapshot {
+  id               String   @id @default(cuid())
+  tournamentId     String   @unique
+  /// Host course this forecast was fetched for (venue coordinates), when linked.
+  courseId         String?
+  /// Data source, e.g. "openweather". Never a fabricated feed.
+  source           String   @default("openweather")
+  /// Venue coordinates the forecast was requested for.
+  latitude         Float
+  longitude        Float
+  /// Seconds offset from UTC at the venue — used to bucket periods into local
+  /// days and morning/afternoon waves.
+  utcOffsetSeconds Int      @default(0)
+  /// When this forecast was captured from the provider (drives forecast age).
+  capturedAt       DateTime @default(now())
+  /// Earliest / latest forecast validity times covered by this snapshot.
+  forecastStart    DateTime?
+  forecastEnd      DateTime?
+  /// Number of stored forecast periods (coverage signal).
+  periodCount      Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tournament Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  periods    WeatherPeriod[]
+
+  @@index([tournamentId])
+  @@map("weather_snapshots")
+}
+
+/// A single forecast period (a 3-hour provider bucket) within a snapshot. Every
+/// signal is nullable: a value is stored only when the provider supplied it, so
+/// the normalizer degrades gracefully rather than reading a fabricated zero.
+model WeatherPeriod {
+  id                String   @id @default(cuid())
+  snapshotId        String
+  /// Forecast validity time (UTC).
+  forecastTime      DateTime
+  /// Air temperature, degrees Celsius.
+  temperatureC      Float?
+  /// Apparent ("feels like") temperature, degrees Celsius.
+  feelsLikeC        Float?
+  /// Sustained wind speed, metres per second.
+  windSpeedMs       Float?
+  /// Wind gust, metres per second.
+  windGustMs        Float?
+  /// Wind origin direction, meteorological degrees (0 = N, 90 = E).
+  windDeg           Int?
+  /// Probability of precipitation, 0..1.
+  precipProbability Float?
+  /// Rain volume over the period, millimetres.
+  rainMm            Float?
+  /// Relative humidity, percent.
+  humidity          Int?
+  /// Cloud cover, percent.
+  cloudCover        Int?
+  /// Sea-level pressure, hectopascals.
+  pressureHpa       Int?
+  /// Visibility, metres.
+  visibilityM       Int?
+  /// Provider condition code (e.g. OpenWeather 500) and short label.
+  conditionCode     Int?
+  conditionLabel    String?
+  createdAt         DateTime @default(now())
+
+  snapshot WeatherSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId])
+  @@index([forecastTime])
+  @@map("weather_periods")
 }
