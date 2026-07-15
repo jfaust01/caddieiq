@@ -32,6 +32,7 @@ import {
 import { importNews, type NewsImportSummary } from "./news-import"
 import { importBetting, type BettingImportSummary } from "./betting-import"
 import { importFantasy, type FantasyImportSummary } from "./fantasy-import"
+import { importWeather, type WeatherImportSummary } from "./weather-import"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -102,6 +103,11 @@ export {
   type FantasyImportSummary,
   type ImportFantasyOptions,
 } from "./fantasy-import"
+export {
+  importWeather,
+  type WeatherImportSummary,
+  type ImportWeatherOptions,
+} from "./weather-import"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -269,4 +275,21 @@ export async function runFantasyImport(
   tournamentExternalIds?: readonly string[],
 ): Promise<FantasyImportSummary> {
   return importFantasy({ tournamentExternalIds })
+}
+
+/**
+ * Import OpenWeather forecasts into `weather_snapshots` / `weather_periods`, one
+ * snapshot per tournament, keyed off its linked host course's coordinates.
+ *
+ * Run this AFTER {@link runTournamentImport} and {@link runCourseLinking} so
+ * each event has a venue to locate a forecast for. Tournaments with no host
+ * course or no coordinates are skipped (never fetched for a fabricated
+ * location). Idempotent — re-running atomically replaces each snapshot. When
+ * `tournamentIds` is omitted, upcoming/in-progress events within the provider's
+ * useful forecast horizon are refreshed.
+ */
+export async function runWeatherImport(
+  tournamentIds?: readonly string[],
+): Promise<WeatherImportSummary> {
+  return importWeather({ tournamentIds })
 }

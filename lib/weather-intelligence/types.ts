@@ -126,9 +126,13 @@ export interface WeatherDay {
 /** A machine-readable gap explaining reduced confidence or coverage. */
 export interface WeatherGap {
   code:
+    // Resolution-stage gaps (no forecast could be located/loaded)
+    | "tournament-not-found"
+    | "no-host-course"
+    | "course-missing-coordinates"
     | "no-snapshot"
+    // Data-stage gaps (a snapshot exists but is thin/old)
     | "no-periods"
-    | "no-course-coordinates"
     | "forecast-stale"
     | "rounds-uncovered"
     | "signal-missing"
@@ -158,6 +162,14 @@ export interface WeatherSignalFamily {
   forecastAgeHours: number | null
 }
 
+/** The host venue a forecast is resolved for. */
+export interface WeatherVenue {
+  courseId: string | null
+  courseName: string | null
+  latitude: number | null
+  longitude: number | null
+}
+
 /** Provenance + coverage for a resolved forecast. */
 export interface WeatherProvenance {
   source: string
@@ -179,7 +191,13 @@ export interface WeatherProvenance {
 export interface WeatherIntelligence {
   status: "available" | "unavailable"
   confidence: WeatherConfidence
-  venue: { latitude: number; longitude: number; utcOffsetSeconds: number } | null
+  /**
+   * The host venue the forecast is for. Present (with a course name where
+   * linked) even in some `unavailable` states so the UI can name the venue while
+   * explaining why conditions are pending. `latitude`/`longitude` are `null`
+   * when the course has no coordinates.
+   */
+  venue: WeatherVenue | null
   provenance: WeatherProvenance | null
   /** Conditions for the period nearest to "now" (or the next future period). */
   current: WeatherPeriodSignals | null
@@ -200,7 +218,10 @@ export interface WeatherIntelligence {
 
 /** Normalized input the pure engine consumes (repository-shaped, no Prisma). */
 export interface WeatherIntelligenceInput {
+  /** Geo + local-time offset used for forecast math (bucketing days/waves). */
   venue: { latitude: number; longitude: number; utcOffsetSeconds: number }
+  /** Host-venue display info echoed onto the output for the UI. */
+  displayVenue: WeatherVenue
   source: string
   capturedAt: Date
   forecastStart: Date | null

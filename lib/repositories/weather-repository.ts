@@ -9,7 +9,7 @@
  * two competing forecasts.
  */
 
-import type { PrismaClient } from "@/lib/generated/prisma/client"
+import { Prisma, type PrismaClient } from "@/lib/generated/prisma/client"
 
 import prismaClient from "@/lib/prisma"
 
@@ -83,6 +83,25 @@ export interface WeatherSnapshotRow {
   periods: WeatherPeriodRow[]
 }
 
+/**
+ * A tournament's venue + schedule facts, used to (a) locate a forecast lookup
+ * for the importer and (b) label forecast days as practice / round-N for the
+ * engine. `latitude`/`longitude` are `null` when the host course has no
+ * coordinates — the importer then reports weather as unavailable rather than
+ * fetching for a fabricated location.
+ */
+export interface WeatherVenueRow {
+  tournamentId: string
+  tournamentName: string
+  courseId: string | null
+  courseName: string | null
+  latitude: number | null
+  longitude: number | null
+  startDate: Date | null
+  endDate: Date | null
+  numberOfRounds: number
+}
+
 const PERIOD_SELECT = {
   forecastTime: true,
   temperatureC: true,
@@ -131,6 +150,40 @@ export class WeatherRepository extends BaseRepository {
       },
     })
     return snapshot as WeatherSnapshotRow | null
+  }
+
+  /**
+   * A tournament's venue coordinates and schedule, resolved from its linked host
+   * course. Returns `null` for a missing/soft-deleted tournament; venue
+   * `latitude`/`longitude` are `null` when the course lacks coordinates. Powers
+   * both the importer (where to fetch) and the engine (how to label days).
+   * The id is bound, never interpolated. Read-only.
+   */
+  async findWeatherVenueById(tournamentId: string): Promise<WeatherVenueRow | null> {
+    const rows = await this.prisma.$queryRaw<WeatherVenueRow[]>(Prisma.sql`
+      SELECT
+        t.id                AS "tournamentId",
+        t.name              AS "tournamentName",
+        t."startDate"       AS "startDate",
+        t."endDate"         AS "endDate",
+        t."numberOfRounds"  AS "numberOfRounds",
+        course.id           AS "courseId",
+        course.name         AS "courseName",
+        course.latitude     AS "latitude",
+        course.longitude    AS "longitude"
+      FROM tournaments t
+      LEFT JOIN LATERAL (
+        SELECT c.id, c.name, c.latitude, c.longitude
+        FROM tournament_courses tc
+        JOIN courses c ON c.id = tc."courseId" AND c."deletedAt" IS NULL
+        WHERE tc."tournamentId" = t.id
+        ORDER BY tc."hostCourse" DESC, c.name ASC
+        LIMIT 1
+      ) course ON true
+      WHERE t.id = ${tournamentId} AND t."deletedAt" IS NULL
+      LIMIT 1
+    `)
+    return rows[0] ?? null
   }
 
   /**

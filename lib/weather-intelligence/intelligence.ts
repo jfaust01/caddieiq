@@ -164,7 +164,7 @@ export function buildWeatherIntelligence(
     return unavailableIntelligence(
       [{ code: "no-periods" }],
       "No forecast periods have been imported for this tournament yet.",
-      input.venue,
+      input.displayVenue,
     )
   }
 
@@ -218,7 +218,7 @@ export function buildWeatherIntelligence(
   const base: Omit<WeatherIntelligence, "family"> = {
     status: "available",
     confidence,
-    venue: input.venue,
+    venue: input.displayVenue,
     provenance: {
       source: input.source,
       capturedAt: input.capturedAt.toISOString(),

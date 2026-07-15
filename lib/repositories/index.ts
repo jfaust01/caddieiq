@@ -72,4 +72,5 @@ export {
   type WeatherPeriodInput,
   type WeatherSnapshotRow,
   type WeatherPeriodRow,
+  type WeatherVenueRow,
 } from "./weather-repository"
