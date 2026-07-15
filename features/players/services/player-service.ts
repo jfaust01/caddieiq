@@ -19,21 +19,70 @@ import type {
   FilterOption,
   PaginatedResult,
   Player,
+  PlayerCourseFit,
   PlayerDetail,
   PlayerQuery,
   RankingBand,
   Tour,
 } from "@/features/players/types"
+import { courseService } from "@/features/courses/services/course-service"
 import { analyticsService } from "@/lib/analytics/service"
+import { computeCourseFit } from "@/lib/analytics/course-fit"
 import { rankingService } from "@/lib/rankings/service"
 import { getNewsRepository, type NewsArticleView } from "@/lib/repositories"
-import { getPlayerRepository, type PlayerSearchParams } from "@/lib/repositories/player-repository"
+import {
+  getPlayerRepository,
+  type PlayerCourseFitContextRow,
+  type PlayerSearchParams,
+} from "@/lib/repositories/player-repository"
+import type { PlayerAnalytics } from "@/lib/analytics/types"
 import type { PlayerNewsItem } from "@/features/players/types"
 
+import { buildPlayerSkillProfile } from "./player-course-fit"
 import { mapPlayer, mapPlayerDetail } from "./player-mapper"
 
 /** Number of recent articles surfaced on a player's profile. */
 const PLAYER_NEWS_LIMIT = 6
+
+/**
+ * Resolve a player's Course Fit against the venue of their next upcoming event
+ * (or their most recent linked event as a fallback). Returns `null` when there
+ * is no such event/course — the UI then renders an honest empty state instead
+ * of a fabricated fit.
+ *
+ * The player's skill profile is built from verified analytics only (all-`null`
+ * today, so the model reports low/none confidence), and the course profile is
+ * sourced from the Course Intelligence Engine. This is the only place the two
+ * halves of a player-vs-course fit are joined for the profile page.
+ */
+async function resolveCourseFit(
+  playerId: string,
+  analytics: PlayerAnalytics,
+  contextRow: PlayerCourseFitContextRow | null,
+): Promise<PlayerCourseFit | null> {
+  if (!contextRow) return null
+  const courseProfile = await courseService.getCourseIntelligence(contextRow.courseId)
+  if (!courseProfile) return null
+
+  const result = computeCourseFit({
+    playerId,
+    courseProfile,
+    skills: buildPlayerSkillProfile(analytics),
+  })
+
+  return {
+    context: {
+      tournamentId: contextRow.tournamentId,
+      tournamentName: contextRow.tournamentName,
+      tournamentSlug: contextRow.tournamentSlug,
+      courseId: contextRow.courseId,
+      courseName: contextRow.courseName,
+      startDate: contextRow.startDate ? contextRow.startDate.toISOString() : null,
+      timing: contextRow.timing,
+    },
+    result,
+  }
+}
 
 /** Map a persisted news row into the UI news item (dates → ISO strings). */
 function mapPlayerNews(row: NewsArticleView): PlayerNewsItem {
@@ -131,16 +180,22 @@ export const playerService = {
     // Analytics are the single source of derived intelligence; the Ranking
     // Engine orders those same analytics into the player's global placements.
     // News is live provider content linked to this player at import time.
-    const [analytics, rankingProfile, newsRows] = await Promise.all([
+    const [analytics, rankingProfile, newsRows, fitContext] = await Promise.all([
       analyticsService.getPlayerAnalytics(id),
       rankingService.getPlayerRankingProfile(id),
       getNewsRepository().listByPlayer(id, PLAYER_NEWS_LIMIT),
+      getPlayerRepository().findNextCourseFitContextById(id),
     ])
+    // Course Fit joins the verified player skill profile (from analytics) with
+    // the host course's intelligence profile. Resolved after analytics so the
+    // skill profile is available; still cheap (one course read at most).
+    const courseFit = await resolveCourseFit(id, analytics, fitContext)
     return {
       ...mapPlayerDetail(record),
       analytics,
       rankingProfile,
       news: newsRows.map(mapPlayerNews),
+      courseFit,
     }
   },
 

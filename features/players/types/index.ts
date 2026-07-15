@@ -9,6 +9,7 @@
  * when the live data layer is connected.
  */
 
+import type { CourseFitResult } from '@/lib/analytics/course-fit'
 import type { PlayerAnalytics } from '@/lib/analytics/types'
 import type { PlayerRankingProfile } from '@/lib/rankings/types'
 
@@ -220,11 +221,40 @@ export interface PlayerDetail extends Player {
   tournamentHistory: TournamentHistoryEntry[]
   activity: ActivityEntry[]
   /**
+   * Course Fit for the venue of the player's next upcoming tournament (or their
+   * most recent linked event as a fallback). `null` when the player has no
+   * scheduled or historical event with a linked course to evaluate against.
+   * The `fitContext` describes which event/course the fit was computed for.
+   */
+  courseFit: PlayerCourseFit | null
+  /**
    * Recent news about the player, newest first, sourced live from the provider
    * news feed. Empty until news has been imported or when the provider has no
    * articles linked to this player.
    */
   news: PlayerNewsItem[]
+}
+
+/**
+ * The event/course a player's Course Fit was evaluated against, and whether it
+ * is the player's next upcoming event or a most-recent fallback. Lets the UI
+ * label the card honestly (e.g. "Next start · Pebble Beach").
+ */
+export interface PlayerCourseFitContext {
+  tournamentId: string
+  tournamentName: string
+  tournamentSlug: string
+  courseId: string
+  courseName: string
+  /** ISO start date of the event, or null when unscheduled. */
+  startDate: string | null
+  timing: 'UPCOMING' | 'RECENT'
+}
+
+/** Course Fit result plus the event/course context it was computed for. */
+export interface PlayerCourseFit {
+  context: PlayerCourseFitContext
+  result: CourseFitResult
 }
 
 /** Optional world-ranking band used by the directory filters. */

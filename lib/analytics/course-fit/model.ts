@@ -47,6 +47,7 @@ const SIGNAL_META: Readonly<
 function readDemand(profile: CourseProfile | null, demandKey: CourseCharacteristicKey): number | null {
   if (!profile) return null
   const characteristic = getCharacteristic(profile, demandKey)
+  if (!characteristic) return null
   const signal = characteristic.signal
   if (signal.status !== "verified" || signal.kind !== "rating") return null
   // Ratings carry the verified source magnitude (0–1 importance) in `raw`.

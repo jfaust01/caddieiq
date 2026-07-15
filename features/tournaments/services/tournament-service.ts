@@ -28,6 +28,14 @@ import type {
   TourType,
 } from '@/features/tournaments/types'
 import { analyticsService } from '@/lib/analytics/service'
+import {
+  buildFieldFitBoard,
+  computeCourseFit,
+  emptyPlayerSkillProfile,
+  type FieldFitBoard,
+  type FieldFitEntry,
+} from '@/lib/analytics/course-fit'
+import { courseService } from '@/features/courses/services/course-service'
 import { rankingService } from '@/lib/rankings/service'
 import type { RankingBoard, RankingBoardSet, RankingCategory } from '@/lib/rankings/types'
 import { getFieldRepository } from '@/lib/repositories/field-repository'
@@ -165,6 +173,68 @@ const getTournamentFieldCached = cache(
   },
 )
 
+/** How many players each fit list (Top Fits / Fades / etc.) shows. */
+const FIT_LIST_LIMIT = 5
+
+/**
+ * Build the tournament's Course Fit board: every field entrant evaluated by the
+ * Course Fit Model against the host course, then ranked into the hub lists (top
+ * fits, fades, trending-up by verified momentum, most-uncertain).
+ *
+ * Honest by construction:
+ * - Reuses the request-cached field, so it adds no roster query. Analytics for
+ *   `momentum` are batched in one call over the field.
+ * - The host `courseProfile` comes from the Course Intelligence Engine; when the
+ *   event has no linked course it is `null` and every entrant's fit degrades to
+ *   "course-demand-missing" rather than being invented.
+ * - Player skill profiles are the honest all-`null` default today (no per-skill
+ *   data is ingested), so scored lists stay empty until real data exists — the
+ *   board never pads Top Fits/Fades with guesses.
+ *
+ * Wrapped in React `cache`, keyed by tournament + course id, so it resolves at
+ * most once per request.
+ */
+const getFieldFitBoardCached = cache(
+  async (tournamentId: string, courseId: string | null): Promise<FieldFitBoard> => {
+    const field = await getTournamentFieldCached(tournamentId)
+    if (field.entrants.length === 0) {
+      return buildFieldFitBoard([], FIT_LIST_LIMIT)
+    }
+
+    const playerIds = field.entrants.map((entrant) => entrant.playerId)
+    // The host course profile is shared across every entrant; the momentum
+    // analytic is batched once over the whole field (same season-normalized
+    // engine used everywhere), so this stays a two-call resolve.
+    const [courseProfile, analytics] = await Promise.all([
+      courseId ? courseService.getCourseIntelligence(courseId) : Promise.resolve(null),
+      analyticsService.getAnalyticsForPlayers(playerIds),
+    ])
+
+    const momentumByPlayer = new Map(
+      analytics.map((a) => {
+        const value = a.isEmpty
+          ? null
+          : (a.scores.find((score) => score.key === 'rankingMomentum')?.value ?? null)
+        return [a.playerId, value] as const
+      }),
+    )
+
+    const entries: FieldFitEntry[] = field.entrants.map((entrant) => ({
+      playerId: entrant.playerId,
+      displayName: entrant.playerName,
+      // No per-skill player data is ingested yet — use the honest empty profile.
+      result: computeCourseFit({
+        playerId: entrant.playerId,
+        courseProfile,
+        skills: emptyPlayerSkillProfile(),
+      }),
+      momentum: momentumByPlayer.get(entrant.playerId) ?? null,
+    }))
+
+    return buildFieldFitBoard(entries, FIT_LIST_LIMIT)
+  },
+)
+
 /** How many articles the tournament-hub field-news rail shows in total. */
 const FIELD_NEWS_LIMIT = 6
 /** How many articles per player feed the rail before the global cap. */
@@ -268,6 +338,16 @@ export const tournamentService = {
    */
   getTournamentField(id: string): Promise<TournamentField> {
     return getTournamentFieldCached(id)
+  },
+
+  /**
+   * Return the tournament's Course Fit board (top fits, fades, trending-up,
+   * most-uncertain) evaluated against the host course. Pass the linked course
+   * id (or `null` when the event has no venue). Reads through the Course Fit
+   * Model and Course Intelligence Engine — never fabricates fits.
+   */
+  getFieldFitBoard(id: string, courseId: string | null): Promise<FieldFitBoard> {
+    return getFieldFitBoardCached(id, courseId)
   },
 
   /**

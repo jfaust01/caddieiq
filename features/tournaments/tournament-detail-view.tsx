@@ -7,6 +7,7 @@ import { TournamentDetailTabs } from '@/features/tournaments/components/tourname
 import { TournamentField } from '@/features/tournaments/components/tournament-field'
 import { FieldRankingLeaders } from '@/features/tournaments/components/field-ranking-leaders'
 import { TournamentCourseIntelligence } from '@/features/tournaments/components/tournament-course-intelligence'
+import { FieldFitBoard } from '@/features/tournaments/components/field-fit-board'
 import { TournamentHero } from '@/features/tournaments/components/tournament-hero'
 import { TournamentIntelligence } from '@/features/tournaments/components/tournament-intelligence'
 import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
@@ -33,10 +34,11 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
   // query — only the news lookup itself. The host-course intelligence is loaded
   // in parallel, and only when the event is actually linked to a venue.
   const courseRef = tournament.courseRef
-  const [field, fieldNews, courseProfile] = await Promise.all([
+  const [field, fieldNews, courseProfile, fitBoard] = await Promise.all([
     tournamentService.getTournamentField(tournament.id),
     tournamentService.getFieldNews(tournament.id),
     courseRef ? courseService.getCourseIntelligence(courseRef.id) : Promise.resolve(null),
+    tournamentService.getFieldFitBoard(tournament.id, courseRef?.id ?? null),
   ])
 
   return (
@@ -63,6 +65,10 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
           profile={courseProfile}
           course={{ id: courseRef.id, name: courseRef.name }}
         />
+      ) : null}
+
+      {field.size > 0 ? (
+        <FieldFitBoard board={fitBoard} hasCourse={Boolean(courseRef)} />
       ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
