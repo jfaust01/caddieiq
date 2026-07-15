@@ -14,6 +14,8 @@
 
 import 'server-only'
 
+import { cache } from 'react'
+
 import type {
   FilterOption,
   PaginatedResult,
@@ -27,6 +29,26 @@ import {
 } from '@/lib/repositories/tournament-repository'
 
 import { mapTournamentSummary } from './tournament-mapper'
+
+/**
+ * Load one tournament by id, mapped to the UI shape, or `null` when it does not
+ * exist. Wrapped in React `cache` so a route that resolves it in both
+ * `generateMetadata` and the page component only hits the database once per
+ * request.
+ */
+const getTournamentByIdCached = cache(
+  async (id: string): Promise<TournamentSummary | null> => {
+    const row = await getTournamentRepository().findDetailById(id)
+    if (!row) return null
+    // Detail view adds the lifecycle timestamps on top of the shared summary
+    // mapping; the list mapper intentionally leaves them undefined.
+    return {
+      ...mapTournamentSummary(row),
+      createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
+      updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
+    }
+  },
+)
 
 /** Translate UI query state (with its `"ALL"` sentinels) into DB search params. */
 function toSearchParams(query: TournamentQuery): TournamentSearchParams {
@@ -60,6 +82,15 @@ export const tournamentService = {
       pageSize: query.pageSize,
       totalPages,
     }
+  },
+
+  /**
+   * Return a single tournament by id for the detail page, or `null` when no
+   * such tournament exists (so the route can respond with a proper 404). Reads
+   * through the repository — never fabricates data.
+   */
+  getTournamentById(id: string): Promise<TournamentSummary | null> {
+    return getTournamentByIdCached(id)
   },
 
   /** Tour filter options derived from the tours actually referenced by events. */

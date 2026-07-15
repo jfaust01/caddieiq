@@ -32,6 +32,18 @@ export interface TournamentLocation {
 }
 
 /**
+ * The host course as a first-class, navigable entity. Present only when the
+ * event is linked to a course; `par`/`yardage` are null when the source omits
+ * them. `id` powers the link to the course detail page.
+ */
+export interface TournamentCourseRef {
+  id: string
+  name: string
+  par: number | null
+  yardage: number | null
+}
+
+/**
  * A tournament as shown in the directory. Only optional/relation-backed fields
  * are nullable; `name`, `slug`, and `status` are always present.
  */
@@ -51,12 +63,24 @@ export interface TournamentSummary {
   tour: TournamentTour | null
   /** Host course name, or null when no venue is linked. */
   course: string | null
+  /**
+   * The linked host course as a navigable entity (id + par/yardage), or null
+   * when no venue is linked. `course` (the name) is retained for compact list
+   * rendering; `courseRef` powers the detail-page link and course stats.
+   */
+  courseRef: TournamentCourseRef | null
   /** Host location, or null when no venue is linked. */
   location: TournamentLocation | null
   /** Prize purse in source currency units, or null when unsupplied. */
   purse: number | null
   /** Winner of the prior edition, or null when not derivable. */
   defendingChampion: string | null
+  /**
+   * Record lifecycle timestamps (ISO strings). Only populated on the detail
+   * view; the directory list omits them, so they are optional.
+   */
+  createdAt?: string | null
+  updatedAt?: string | null
 }
 
 /** Directory filter state. `ALL` sentinels keep the controls fully typed. */

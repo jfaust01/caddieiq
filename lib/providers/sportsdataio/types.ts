@@ -42,10 +42,32 @@ export interface SdioTournament extends SdioRecord {
   Purse?: number
 }
 
-/** Raw SportsDataIO course (nested under tournaments in the upstream API). */
+/**
+ * Raw SportsDataIO course.
+ *
+ * SportsDataIO's golf feed has no standalone course catalog: the `/json/Courses`
+ * resource returns the same venue-bearing tournament rows as `/json/Tournaments`
+ * (verified: identical `TournamentID` set, one row per event). The *course* is
+ * therefore the `Venue` field, with `Location`/`City`/`State`/`Country`/`Par`/
+ * `Yards` describing it. There is no upstream `CourseID`, so course identity is
+ * reconciled downstream from the venue name (via the deterministic slug).
+ *
+ * `Name` and `StartDate` are the *tournament's* name and date; they are not used
+ * by the course mapper but are retained because they are the only keys available
+ * to resolve the tournament ↔ course relationship (see
+ * `lib/imports/course-relations.ts`).
+ */
 export interface SdioCourse extends SdioRecord {
-  CourseID: number
+  /** Upstream tournament id (the feed is tournament-shaped). */
+  TournamentID: number
+  /** Tournament name — used only for relationship resolution, not the course. */
   Name?: string
+  /** Tournament start date (ISO-ish) — used to key the tournament↔course year. */
+  StartDate?: string
+  /** The course/venue name — the course's identity in this feed. */
+  Venue?: string
+  /** Free-text locality, e.g. "Pebble Beach, CA". Fallback for City/State. */
+  Location?: string
   City?: string
   State?: string
   Country?: string

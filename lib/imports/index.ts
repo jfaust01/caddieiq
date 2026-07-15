@@ -22,6 +22,8 @@ import type { ProviderQuery } from "@/lib/providers/provider"
 import { ImportManager, type ImportManagerDeps } from "./import-manager"
 import type { ImportResult } from "./import-result"
 import type { TournamentImportDeps } from "./tournament-import"
+import { createTournamentRelationResolver } from "./tournament-relations"
+import { linkTournamentCourses, type CourseLinkSummary } from "./course-relations"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -55,6 +57,17 @@ export {
   createTournamentImportDefinition,
   type TournamentImportDeps,
 } from "./tournament-import"
+export {
+  createTournamentRelationResolver,
+  type TournamentRelationResolver,
+  type TournamentRelationResolverOptions,
+  type TournamentRelationResolution,
+} from "./tournament-relations"
+export {
+  linkTournamentCourses,
+  type CourseLinkSummary,
+  type LinkCoursesOptions,
+} from "./course-relations"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -97,22 +110,50 @@ export function runCourseImport(options: RunImportOptions = {}): Promise<ImportR
 
 /**
  * Run the full tournament pipeline against SportsDataIO and the Tournament
- * repository. Tour/season resolution can be supplied via `resolveRelations`;
- * without it, existing tournaments update and brand-new ones are reported as
- * relationship failures (see `tournament-import.ts`).
+ * repository.
+ *
+ * Tour/season linkage is a required-FK concern the base mapping intentionally
+ * omits, so this runner resolves it before persistence: unless a caller injects
+ * a custom `resolveRelations`, it builds the default database-backed resolver
+ * ({@link createTournamentRelationResolver}), which supplies the required
+ * `tourId` (and optional `seasonId`) for every tournament. This is the piece
+ * that was previously missing — without a resolver, brand-new tournaments were
+ * rejected as relationship failures and nothing persisted.
  */
-export function runTournamentImport(
+export async function runTournamentImport(
   options: RunImportOptions & {
     resolveRelations?: TournamentImportDeps["resolveRelations"]
+    /** Business key of the tour the schedule belongs to (default `"PGA"`). */
+    tourCode?: string
   } = {},
 ): Promise<ImportResult> {
   const manager = resolveManager(options)
+  const resolveRelations =
+    options.resolveRelations ??
+    (await createTournamentRelationResolver({ tourCode: options.tourCode }))
   return manager.runTournamentImport(
     {
       provider: SportsDataProvider.fromEnv(),
       repository: getTournamentRepository(),
-      resolveRelations: options.resolveRelations,
+      resolveRelations,
     },
     options.query,
   )
+}
+
+/**
+ * Populate the `tournament_courses` join table by matching the venue-bearing
+ * SportsDataIO feed against already-imported tournaments and courses.
+ *
+ * Run this AFTER both {@link runTournamentImport} and {@link runCourseImport}
+ * have populated their tables. Idempotent — safe to re-run; it reconciles each
+ * link on the `(tournamentId, year)` key. Returns a {@link CourseLinkSummary}
+ * describing how many links were created/updated/skipped.
+ */
+export async function runCourseLinking(
+  options: RunImportOptions = {},
+): Promise<CourseLinkSummary> {
+  const provider = SportsDataProvider.fromEnv()
+  const response = await provider.listCourses(options.query)
+  return linkTournamentCourses(response.data)
 }

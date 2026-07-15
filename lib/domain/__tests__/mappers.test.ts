@@ -41,10 +41,11 @@ describe("mapSportsDataPlayer", () => {
 })
 
 describe("mapSportsDataCourse", () => {
-  it("maps State→stateProvince and Yards→yardage", () => {
+  it("uses Venue as the course, maps State→stateProvince and Yards→yardage", () => {
     const course = mapSportsDataCourse({
-      CourseID: 55,
-      Name: "Augusta National",
+      TournamentID: 55,
+      Name: "The Masters",
+      Venue: "Augusta National",
       City: "Augusta",
       State: "GA",
       Country: "USA",
@@ -52,16 +53,44 @@ describe("mapSportsDataCourse", () => {
       Yards: 7475,
     })
 
+    // The course's identity is the venue, not the tournament name.
     expect(course.name).toBe("Augusta National")
     expect(course.slug).toBe("augusta-national")
     expect(course.stateProvince).toBe("GA")
     expect(course.yardage).toBe(7475)
     expect(course.par).toBe(72)
-    expect(course.externalRef.externalId).toBe("55")
+    // No upstream CourseID exists; identity is the deterministic slug.
+    expect(course.externalRef.externalId).toBe("augusta-national")
   })
 
-  it("uses a placeholder name when absent", () => {
-    expect(mapSportsDataCourse({ CourseID: 9 }).name).toBe("Unknown Course")
+  it("parses city/state from free-text Location when structured fields are absent", () => {
+    const course = mapSportsDataCourse({
+      TournamentID: 56,
+      Name: "AT&T Pebble Beach Pro-Am",
+      Venue: "Pebble Beach Golf Links",
+      Location: "Pebble Beach, CA",
+    })
+
+    expect(course.name).toBe("Pebble Beach Golf Links")
+    expect(course.city).toBe("Pebble Beach")
+    expect(course.stateProvince).toBe("CA")
+  })
+
+  it("does not mislabel an international locality segment as a US state", () => {
+    const course = mapSportsDataCourse({
+      TournamentID: 57,
+      Name: "Irish Open",
+      Venue: "Adare Manor",
+      Location: "Adare, Ireland",
+    })
+
+    expect(course.city).toBe("Adare")
+    // "Ireland" is not a 2-letter US state code, so it is left unset.
+    expect(course.stateProvince).toBeNull()
+  })
+
+  it("uses a placeholder name when the venue is absent", () => {
+    expect(mapSportsDataCourse({ TournamentID: 9 }).name).toBe("Unknown Course")
   })
 })
 
