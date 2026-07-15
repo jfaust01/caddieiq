@@ -5,7 +5,7 @@ import { getSessionCookie } from "better-auth/cookies"
  * Routes that require an authenticated session. Add future authenticated
  * route prefixes here as they are built.
  */
-const PROTECTED_PREFIXES = ["/dashboard"]
+const PROTECTED_PREFIXES = ["/dashboard", "/admin"]
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(
@@ -33,5 +33,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/admin/:path*"],
 }
