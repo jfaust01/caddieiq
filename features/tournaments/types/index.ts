@@ -83,6 +83,43 @@ export interface TournamentSummary {
   updatedAt?: string | null
 }
 
+/** Participation status of a field entry (mirrors the database enum). */
+export type FieldEntryStatus =
+  | 'CONFIRMED'
+  | 'ALTERNATE'
+  | 'WITHDRAWN'
+  | 'DISQUALIFIED'
+  | 'CUT'
+  | 'FINISHED'
+
+/**
+ * One player in a tournament's field, as shown in the UI. `playerId` links to
+ * the player profile. Finishing position is intentionally absent: the provider
+ * tier obfuscates it, so the field is presented as a roster with reliable
+ * participation status rather than fabricated standings.
+ */
+export interface FieldEntrant {
+  playerId: string
+  playerName: string
+  /** Raw ISO-ish country code, or null when unknown. */
+  countryCode: string | null
+  status: FieldEntryStatus
+  isAlternate: boolean
+  withdrawn: boolean
+  cutMade: boolean | null
+}
+
+/**
+ * A tournament's field for the detail page: the total size plus the roster.
+ * `size` counts every entry (alternates included). When no field has been
+ * imported, `size` is 0 and `entrants` is empty so the UI can show an honest
+ * "awaiting import" state.
+ */
+export interface TournamentField {
+  size: number
+  entrants: FieldEntrant[]
+}
+
 /** Directory filter state. `ALL` sentinels keep the controls fully typed. */
 export interface TournamentFilters {
   search: string

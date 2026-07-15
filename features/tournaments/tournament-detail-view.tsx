@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PageShell } from '@/components/shared/page-shell'
 import { TournamentDetailTabs } from '@/features/tournaments/components/tournament-detail-tabs'
+import { TournamentField } from '@/features/tournaments/components/tournament-field'
 import { TournamentHero } from '@/features/tournaments/components/tournament-hero'
 import { TournamentIntelligence } from '@/features/tournaments/components/tournament-intelligence'
 import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
 import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
+import { tournamentService } from '@/features/tournaments/services/tournament-service'
 import type { TournamentSummary } from '@/features/tournaments/types'
 
 interface TournamentDetailViewProps {
@@ -18,11 +20,14 @@ interface TournamentDetailViewProps {
  * Tournament research hub. Organized for decisions, not database fields: a hero
  * that answers "what/how big/what conditions" at a glance, an intelligence
  * layer that frames why the event matters, quick-navigation tabs, and a live
- * Overview of the verified facts alongside a research sidebar. Sections without
- * imported data render intentional "Coming soon" placeholders rather than
- * broken layouts, and never expose raw ids or internal timestamps.
+ * Overview + Field of the verified facts alongside a research sidebar. Sections
+ * without imported data render intentional "Coming soon" placeholders rather
+ * than broken layouts, and never expose raw ids or internal timestamps.
  */
-export function TournamentDetailView({ tournament }: TournamentDetailViewProps) {
+export async function TournamentDetailView({ tournament }: TournamentDetailViewProps) {
+  // The field powers both the hero "Field size" stat and the Field tab.
+  const field = await tournamentService.getTournamentField(tournament.id)
+
   return (
     <PageShell>
       <Button
@@ -38,13 +43,17 @@ export function TournamentDetailView({ tournament }: TournamentDetailViewProps) 
         }
       />
 
-      <TournamentHero tournament={tournament} />
+      <TournamentHero tournament={tournament} fieldSize={field.size} />
 
       <TournamentIntelligence />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <TournamentDetailTabs overview={<TournamentOverview tournament={tournament} />} />
+          <TournamentDetailTabs
+            overview={<TournamentOverview tournament={tournament} />}
+            field={<TournamentField field={field} />}
+            fieldCount={field.size}
+          />
         </div>
         <aside className="lg:col-span-1" aria-label="Tournament research">
           <TournamentSidebar tournament={tournament} />

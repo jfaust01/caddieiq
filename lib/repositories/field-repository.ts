@@ -58,15 +58,14 @@ export interface FieldEntryRow {
   isAlternate: boolean
   withdrawn: boolean
   cutMade: boolean | null
-  finalPosition: number | null
 }
 
-/** Compact entrant used for the tournament hub's "top entrants" preview. */
+/** Compact entrant used for the tournament hub's field preview. */
 export interface FieldPreviewRow {
   playerId: string
   playerName: string
   countryCode: string | null
-  finalPosition: number | null
+  status: string
 }
 
 export class FieldRepository extends BaseRepository {
@@ -131,28 +130,37 @@ export class FieldRepository extends BaseRepository {
   }
 
   /**
-   * A small ranked preview of a tournament's field for the hub — confirmed
-   * starters first, ordered by finishing position (winners first), then name.
+   * A small preview of a tournament's field for the hub, ordered alphabetically
+   * by player name.
+   *
+   * Ordering is by name — NOT by finishing position — on purpose: the current
+   * SportsDataIO tier obfuscates rank/result fields, so any "leaderboard"
+   * ordering would be fabricated. An alphabetical roster is the honest,
+   * stable presentation.
    */
-  async previewByTournament(tournamentId: string, limit = 5): Promise<FieldPreviewRow[]> {
+  async previewByTournament(tournamentId: string, limit = 6): Promise<FieldPreviewRow[]> {
     return this.prisma.$queryRaw<FieldPreviewRow[]>(Prisma.sql`
       SELECT
         p.id AS "playerId",
         p."fullName" AS "playerName",
         p."countryCode" AS "countryCode",
-        tf."finalPosition" AS "finalPosition"
+        tf.status::text AS "status"
       FROM tournament_fields tf
       JOIN players p ON p.id = tf."playerId" AND p."deletedAt" IS NULL
       WHERE tf."tournamentId" = ${tournamentId}
-      ORDER BY tf."finalPosition" ASC NULLS LAST, p."fullName" ASC
+      ORDER BY p."fullName" ASC
       LIMIT ${limit}
     `)
   }
 
   /**
    * The full field for a tournament, flattened with player identity for the
-   * Field tab. Ordered by finishing position (winners first), then name, so the
-   * list is meaningful for both completed and upcoming events. Read-only.
+   * Field tab, ordered alphabetically by player name.
+   *
+   * As with {@link previewByTournament}, the ordering intentionally avoids
+   * finishing position because the provider tier obfuscates it. Callers get a
+   * clean roster and can re-sort client-side on the reliable dimensions (name,
+   * participation status). Read-only.
    */
   async listByTournament(tournamentId: string): Promise<FieldEntryRow[]> {
     return this.prisma.$queryRaw<FieldEntryRow[]>(Prisma.sql`
@@ -164,12 +172,11 @@ export class FieldRepository extends BaseRepository {
         tf.status::text AS "status",
         tf."isAlternate" AS "isAlternate",
         tf.withdrawn AS "withdrawn",
-        tf."cutMade" AS "cutMade",
-        tf."finalPosition" AS "finalPosition"
+        tf."cutMade" AS "cutMade"
       FROM tournament_fields tf
       JOIN players p ON p.id = tf."playerId" AND p."deletedAt" IS NULL
       WHERE tf."tournamentId" = ${tournamentId}
-      ORDER BY tf."finalPosition" ASC NULLS LAST, p."fullName" ASC
+      ORDER BY p."fullName" ASC
     `)
   }
 }

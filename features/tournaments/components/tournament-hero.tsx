@@ -11,6 +11,7 @@ import {
   EMPTY_VALUE,
   formatCoursePar,
   formatDateRange,
+  formatFieldSize,
   formatPurse,
   formatYardage,
   textDisplay,
@@ -65,6 +66,8 @@ function HeroStat({ icon: Icon, label, value, pending = false, href }: HeroStatP
 
 interface TournamentHeroProps {
   tournament: TournamentSummary
+  /** Number of players in the imported field; 0 when none imported yet. */
+  fieldSize: number
 }
 
 /**
@@ -73,7 +76,7 @@ interface TournamentHeroProps {
  * statistics. Course is sourced live; field size, weather, and difficulty show
  * intentional placeholders until those feeds are imported.
  */
-export function TournamentHero({ tournament }: TournamentHeroProps) {
+export function TournamentHero({ tournament, fieldSize }: TournamentHeroProps) {
   const tourName = tournament.tour?.name ?? null
 
   // Compose "Par 72 · 7,475 yds" from whichever course specs are available.
@@ -82,6 +85,8 @@ export function TournamentHero({ tournament }: TournamentHeroProps) {
   const specParts = [parText, yardageText].filter((part) => part !== EMPTY_VALUE)
   const hasCourseSpec = specParts.length > 0
   const courseSpec = hasCourseSpec ? specParts.join(' · ') : 'Awaiting import'
+
+  const fieldSizeLabel = formatFieldSize(fieldSize)
 
   return (
     <Card>
@@ -132,7 +137,12 @@ export function TournamentHero({ tournament }: TournamentHeroProps) {
             value={courseSpec}
             pending={!hasCourseSpec}
           />
-          <HeroStat icon={Users} label="Field size" value="Awaiting import" pending />
+          <HeroStat
+            icon={Users}
+            label="Field size"
+            value={fieldSizeLabel ?? 'Awaiting import'}
+            pending={!fieldSizeLabel}
+          />
           <HeroStat icon={CloudSun} label="Weather" value="Awaiting import" pending />
         </div>
       </CardContent>

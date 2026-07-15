@@ -3,7 +3,12 @@
  * use from both server and client components.
  */
 
-import type { TournamentLocation, TournamentStatus, TourType } from '@/features/tournaments/types'
+import type {
+  FieldEntryStatus,
+  TournamentLocation,
+  TournamentStatus,
+  TourType,
+} from '@/features/tournaments/types'
 
 /** Shown wherever an optional value has not been ingested yet. */
 export const EMPTY_VALUE = '—'
@@ -135,6 +140,48 @@ export function formatYardage(yardage: number | null): string {
   return typeof yardage === 'number' && Number.isFinite(yardage)
     ? `${YARDAGE_FMT.format(yardage)} yds`
     : EMPTY_VALUE
+}
+
+const FIELD_STATUS_LABELS: Record<FieldEntryStatus, string> = {
+  CONFIRMED: 'Confirmed',
+  ALTERNATE: 'Alternate',
+  WITHDRAWN: 'Withdrawn',
+  DISQUALIFIED: 'Disqualified',
+  CUT: 'Missed cut',
+  FINISHED: 'Finished',
+}
+
+/** Human label for a field entry status, e.g. "Missed cut". */
+export function fieldStatusLabel(status: FieldEntryStatus): string {
+  return FIELD_STATUS_LABELS[status]
+}
+
+/** Badge tone for a field entry status. */
+export function fieldStatusTone(status: FieldEntryStatus): Tone {
+  switch (status) {
+    case 'FINISHED':
+      return 'success'
+    case 'CONFIRMED':
+      return 'default'
+    case 'ALTERNATE':
+      return 'muted'
+    case 'CUT':
+      return 'muted'
+    case 'WITHDRAWN':
+    case 'DISQUALIFIED':
+      return 'warning'
+  }
+}
+
+const FIELD_SIZE_FMT = new Intl.NumberFormat('en-US')
+
+/**
+ * Field-size display, e.g. "156 players". Returns null when the field is empty
+ * so callers can render an "awaiting import" placeholder instead.
+ */
+export function formatFieldSize(size: number): string | null {
+  if (!Number.isFinite(size) || size <= 0) return null
+  return `${FIELD_SIZE_FMT.format(size)} ${size === 1 ? 'player' : 'players'}`
 }
 
 const TIMESTAMP_FMT = new Intl.DateTimeFormat('en-US', {

@@ -19,16 +19,18 @@ import { cache } from 'react'
 import type {
   FilterOption,
   PaginatedResult,
+  TournamentField,
   TournamentQuery,
   TournamentSummary,
   TourType,
 } from '@/features/tournaments/types'
+import { getFieldRepository } from '@/lib/repositories/field-repository'
 import {
   getTournamentRepository,
   type TournamentSearchParams,
 } from '@/lib/repositories/tournament-repository'
 
-import { mapTournamentSummary } from './tournament-mapper'
+import { mapFieldEntrant, mapTournamentSummary } from './tournament-mapper'
 
 /**
  * Load one tournament by id, mapped to the UI shape, or `null` when it does not
@@ -47,6 +49,23 @@ const getTournamentByIdCached = cache(
       createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
       updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
     }
+  },
+)
+
+/**
+ * Load a tournament's field (size + roster) mapped to UI shapes. Wrapped in
+ * React `cache` so it is fetched at most once per request. Returns an empty
+ * field (`size: 0`) when nothing has been imported, so the UI shows an honest
+ * placeholder rather than fabricating entrants.
+ */
+const getTournamentFieldCached = cache(
+  async (tournamentId: string): Promise<TournamentField> => {
+    const repository = getFieldRepository()
+    const [size, rows] = await Promise.all([
+      repository.countByTournament(tournamentId),
+      repository.listByTournament(tournamentId),
+    ])
+    return { size, entrants: rows.map(mapFieldEntrant) }
   },
 )
 
@@ -91,6 +110,14 @@ export const tournamentService = {
    */
   getTournamentById(id: string): Promise<TournamentSummary | null> {
     return getTournamentByIdCached(id)
+  },
+
+  /**
+   * Return a tournament's field (size + roster) for the detail page. Reads
+   * through the field repository — never fabricates entrants.
+   */
+  getTournamentField(id: string): Promise<TournamentField> {
+    return getTournamentFieldCached(id)
   },
 
   /** Tour filter options derived from the tours actually referenced by events. */
