@@ -20,9 +20,53 @@ import { BaseRepository, type UpsertPlan } from "./base-repository"
 import type { RepositoryLogSink } from "./logger"
 import type { BulkRepositoryResult, RepositoryResult } from "./repository-result"
 
+/**
+ * Relations the read/directory surfaces need alongside the base player row:
+ * the resolved nationality, the active tour membership (with its tour), and the
+ * player's ranking history (newest first) so callers can derive the current
+ * world ranking without a second query.
+ */
+const playerReadInclude = {
+  nationality: true,
+  tourHistory: {
+    where: { active: true },
+    include: { tour: true },
+    orderBy: { joinedAt: "desc" },
+  },
+  rankings: {
+    orderBy: { effectiveDate: "desc" },
+  },
+} satisfies Prisma.PlayerInclude
+
+/** A player row joined with the relations required by the read surfaces. */
+export type PlayerWithRelations = Prisma.PlayerGetPayload<{ include: typeof playerReadInclude }>
+
 export class PlayerRepository extends BaseRepository {
   constructor(prisma: PrismaClient = prismaClient, sink?: RepositoryLogSink) {
     super(prisma, "player", sink)
+  }
+
+  /**
+   * Read the full directory of non-deleted players with the relations the UI
+   * renders against. Ordered by name for a stable default; filtering, ranking
+   * sort, and pagination are applied by the feature service against the mapped
+   * domain objects. Read-only — never mutates.
+   */
+  async listWithRelations(): Promise<PlayerWithRelations[]> {
+    return this.prisma.player.findMany({
+      where: { deletedAt: null },
+      include: playerReadInclude,
+      orderBy: [{ fullName: "asc" }],
+    })
+  }
+
+  /** Find a player by internal id, with read relations. Excludes soft-deleted rows. */
+  async findDetailById(id: string): Promise<PlayerWithRelations | null> {
+    const record = await this.prisma.player.findFirst({
+      where: { id, deletedAt: null },
+      include: playerReadInclude,
+    })
+    return record
   }
 
   /** Find a player by internal id. Excludes soft-deleted rows. */
