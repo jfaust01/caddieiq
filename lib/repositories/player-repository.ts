@@ -50,6 +50,22 @@ const playerReadInclude = {
 export type PlayerWithRelations = Prisma.PlayerGetPayload<{ include: typeof playerReadInclude }>
 
 /**
+ * The resolved course context for a player's Course Fit: the tournament and its
+ * host course the fit is evaluated against, plus whether that event is upcoming
+ * or the most recent fallback. Returned by
+ * {@link PlayerRepository.findNextCourseFitContextById}.
+ */
+export interface PlayerCourseFitContextRow {
+  tournamentId: string
+  tournamentName: string
+  tournamentSlug: string
+  startDate: Date | null
+  courseId: string
+  courseName: string
+  timing: "UPCOMING" | "RECENT"
+}
+
+/**
  * Fully-resolved, database-ready parameters for {@link PlayerRepository.search}.
  * The feature service translates UI filter state (with its `"ALL"` sentinels)
  * into this shape; every field here is an active constraint. `skip`/`take` are
@@ -255,6 +271,50 @@ export class PlayerRepository extends BaseRepository {
       LEFT JOIN nationalities n ON n.id = p."nationalityId"
       WHERE p."deletedAt" IS NULL AND p.id IN (${Prisma.join([...ids])})
     `)
+  }
+
+  /**
+   * Resolve the course a player's Course Fit should be evaluated against: the
+   * host venue of their next upcoming tournament, falling back to the most
+   * recent linked event when nothing is scheduled ahead.
+   *
+   * Only rows with a real linked host course are considered, so the caller can
+   * treat a `null` result as an honest "no course to evaluate against" state
+   * rather than fabricating one. Ordering prefers future events (nearest first)
+   * and then past events (most recent first); the `timing` flag tells the UI
+   * which case was chosen. Read-only.
+   */
+  async findNextCourseFitContextById(playerId: string): Promise<PlayerCourseFitContextRow | null> {
+    const rows = await this.prisma.$queryRaw<PlayerCourseFitContextRow[]>(Prisma.sql`
+      SELECT
+        t.id            AS "tournamentId",
+        t.name          AS "tournamentName",
+        t.slug          AS "tournamentSlug",
+        t."startDate"   AS "startDate",
+        c.id            AS "courseId",
+        c.name          AS "courseName",
+        CASE WHEN t."startDate" >= now() THEN 'UPCOMING' ELSE 'RECENT' END AS "timing"
+      FROM tournament_fields tf
+      JOIN tournaments t ON t.id = tf."tournamentId"
+      JOIN LATERAL (
+        SELECT tc."courseId"
+        FROM tournament_courses tc
+        WHERE tc."tournamentId" = t.id
+        ORDER BY tc."hostCourse" DESC, tc.year DESC
+        LIMIT 1
+      ) host ON true
+      JOIN courses c ON c.id = host."courseId" AND c."deletedAt" IS NULL
+      WHERE tf."playerId" = ${playerId}
+        AND tf.withdrawn = false
+        AND t."deletedAt" IS NULL
+        AND t.status <> 'CANCELED'
+        AND t."startDate" IS NOT NULL
+      ORDER BY
+        (CASE WHEN t."startDate" >= now() THEN 0 ELSE 1 END) ASC,
+        ABS(EXTRACT(EPOCH FROM (t."startDate" - now()))) ASC
+      LIMIT 1
+    `)
+    return rows[0] ?? null
   }
 
   /** Find a player by internal id, with read relations. Excludes soft-deleted rows. */
