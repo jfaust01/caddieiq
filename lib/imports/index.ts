@@ -23,6 +23,7 @@ import { ImportManager, type ImportManagerDeps } from "./import-manager"
 import type { ImportResult } from "./import-result"
 import type { TournamentImportDeps } from "./tournament-import"
 import { createTournamentRelationResolver } from "./tournament-relations"
+import { linkTournamentCourses, type CourseLinkSummary } from "./course-relations"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -62,6 +63,11 @@ export {
   type TournamentRelationResolverOptions,
   type TournamentRelationResolution,
 } from "./tournament-relations"
+export {
+  linkTournamentCourses,
+  type CourseLinkSummary,
+  type LinkCoursesOptions,
+} from "./course-relations"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -133,4 +139,21 @@ export async function runTournamentImport(
     },
     options.query,
   )
+}
+
+/**
+ * Populate the `tournament_courses` join table by matching the venue-bearing
+ * SportsDataIO feed against already-imported tournaments and courses.
+ *
+ * Run this AFTER both {@link runTournamentImport} and {@link runCourseImport}
+ * have populated their tables. Idempotent — safe to re-run; it reconciles each
+ * link on the `(tournamentId, year)` key. Returns a {@link CourseLinkSummary}
+ * describing how many links were created/updated/skipped.
+ */
+export async function runCourseLinking(
+  options: RunImportOptions = {},
+): Promise<CourseLinkSummary> {
+  const provider = SportsDataProvider.fromEnv()
+  const response = await provider.listCourses(options.query)
+  return linkTournamentCourses(response.data)
 }

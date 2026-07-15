@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
-import { CalendarDays, CloudSun, DollarSign, Gauge, MapPin, Users } from 'lucide-react'
+import { CalendarDays, CloudSun, DollarSign, Flag, MapPin, Users } from 'lucide-react'
+import Link from 'next/link'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -8,8 +9,10 @@ import { TournamentStatusBadge } from '@/features/tournaments/components/tournam
 import type { TournamentSummary } from '@/features/tournaments/types'
 import {
   EMPTY_VALUE,
+  formatCoursePar,
   formatDateRange,
   formatPurse,
+  formatYardage,
   textDisplay,
 } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
@@ -20,10 +23,16 @@ interface HeroStatProps {
   value: string
   /** When true, the value renders in a muted "awaiting data" treatment. */
   pending?: boolean
+  /** When set, the value becomes a link to this href. */
+  href?: string
 }
 
 /** A single at-a-glance hero metric. Pending stats read as intentional placeholders. */
-function HeroStat({ icon: Icon, label, value, pending = false }: HeroStatProps) {
+function HeroStat({ icon: Icon, label, value, pending = false, href }: HeroStatProps) {
+  const valueClass = cn(
+    'truncate text-sm font-semibold',
+    pending && 'font-medium text-muted-foreground/60',
+  )
   return (
     <div className="flex items-start gap-3">
       <span
@@ -36,15 +45,19 @@ function HeroStat({ icon: Icon, label, value, pending = false }: HeroStatProps) 
       </span>
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="text-xs text-muted-foreground">{label}</span>
-        <span
-          className={cn(
-            'truncate text-sm font-semibold',
-            pending && 'font-medium text-muted-foreground/60',
-          )}
-          title={value}
-        >
-          {value}
-        </span>
+        {href ? (
+          <Link
+            href={href}
+            className={cn(valueClass, 'text-primary underline-offset-4 hover:underline')}
+            title={value}
+          >
+            {value}
+          </Link>
+        ) : (
+          <span className={valueClass} title={value}>
+            {value}
+          </span>
+        )}
       </div>
     </div>
   )
@@ -62,6 +75,13 @@ interface TournamentHeroProps {
  */
 export function TournamentHero({ tournament }: TournamentHeroProps) {
   const tourName = tournament.tour?.name ?? null
+
+  // Compose "Par 72 · 7,475 yds" from whichever course specs are available.
+  const parText = formatCoursePar(tournament.courseRef?.par ?? null)
+  const yardageText = formatYardage(tournament.courseRef?.yardage ?? null)
+  const specParts = [parText, yardageText].filter((part) => part !== EMPTY_VALUE)
+  const hasCourseSpec = specParts.length > 0
+  const courseSpec = hasCourseSpec ? specParts.join(' · ') : 'Awaiting import'
 
   return (
     <Card>
@@ -99,15 +119,21 @@ export function TournamentHero({ tournament }: TournamentHeroProps) {
         <Separator />
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <HeroStat icon={Users} label="Field size" value="Awaiting import" pending />
           <HeroStat
             icon={MapPin}
             label="Course"
             value={textDisplay(tournament.course)}
-            pending={!tournament.course}
+            pending={!tournament.courseRef}
+            href={tournament.courseRef ? `/courses/${tournament.courseRef.id}` : undefined}
           />
+          <HeroStat
+            icon={Flag}
+            label="Par / Yardage"
+            value={courseSpec}
+            pending={!hasCourseSpec}
+          />
+          <HeroStat icon={Users} label="Field size" value="Awaiting import" pending />
           <HeroStat icon={CloudSun} label="Weather" value="Awaiting import" pending />
-          <HeroStat icon={Gauge} label="Course difficulty" value="Awaiting import" pending />
         </div>
       </CardContent>
     </Card>

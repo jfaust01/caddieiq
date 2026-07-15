@@ -85,7 +85,13 @@ export interface TournamentSearchRow {
   tourType: string | null
   tourName: string | null
   tourCode: string | null
+  /** Host course id, enabling a link to the course detail page. */
+  courseId: string | null
   courseName: string | null
+  /** Host course par, when known. */
+  coursePar: number | null
+  /** Host course yardage, when known. */
+  courseYardage: number | null
   city: string | null
   stateProvince: string | null
   country: string | null
@@ -195,14 +201,17 @@ export class TournamentRepository extends BaseRepository {
         tr.type::text AS "tourType",
         tr.name AS "tourName",
         tr.code AS "tourCode",
+        course.id AS "courseId",
         course.name AS "courseName",
+        course.par AS "coursePar",
+        course.yardage AS "courseYardage",
         course.city AS "city",
         course."stateProvince" AS "stateProvince",
         course.country AS "country",
         champ."fullName" AS "defendingChampion"
       ${fromCore}
       LEFT JOIN LATERAL (
-        SELECT c.name, c.city, c."stateProvince", c.country
+        SELECT c.id, c.name, c.par, c.yardage, c.city, c."stateProvince", c.country
         FROM tournament_courses tc
         JOIN courses c ON c.id = tc."courseId"
         WHERE tc."tournamentId" = t.id
@@ -259,7 +268,10 @@ export class TournamentRepository extends BaseRepository {
         tr.type::text AS "tourType",
         tr.name AS "tourName",
         tr.code AS "tourCode",
+        course.id AS "courseId",
         course.name AS "courseName",
+        course.par AS "coursePar",
+        course.yardage AS "courseYardage",
         course.city AS "city",
         course."stateProvince" AS "stateProvince",
         course.country AS "country",
@@ -268,7 +280,7 @@ export class TournamentRepository extends BaseRepository {
       JOIN tours tr ON tr.id = t."tourId"
       LEFT JOIN seasons s ON s.id = t."seasonId"
       LEFT JOIN LATERAL (
-        SELECT c.name, c.city, c."stateProvince", c.country
+        SELECT c.id, c.name, c.par, c.yardage, c.city, c."stateProvince", c.country
         FROM tournament_courses tc
         JOIN courses c ON c.id = tc."courseId"
         WHERE tc."tournamentId" = t.id
@@ -383,6 +395,43 @@ export class TournamentRepository extends BaseRepository {
       (input) => input.tournament.slug,
       (input) => this.upsert(input),
     )
+  }
+
+  /**
+   * Idempotently link a tournament to the course it is played on for a given
+   * year. Reconciled on the `(tournamentId, year)` unique key, so re-running the
+   * link step updates the existing row (e.g. corrects the course) rather than
+   * duplicating it. Both ids must already exist; this only writes the join.
+   */
+  async linkCourseByYear(params: {
+    tournamentId: string
+    courseId: string
+    year: number
+    hostCourse?: boolean
+  }): Promise<RepositoryResult<{ id: string; created: boolean }>> {
+    const { tournamentId, courseId, year, hostCourse = true } = params
+    const reference = `${tournamentId}:${year}`
+    try {
+      const existing = await this.prisma.tournamentCourse.findUnique({
+        where: { tournamentId_year: { tournamentId, year } },
+      })
+      const record = await this.prisma.tournamentCourse.upsert({
+        where: { tournamentId_year: { tournamentId, year } },
+        create: { tournamentId, courseId, year, hostCourse },
+        update: { courseId, hostCourse },
+      })
+      const created = !existing
+      created ? this.logger.insert(reference) : this.logger.update(reference)
+      return ok({ id: record.id, created }, created ? "inserted" : "updated")
+    } catch (error) {
+      const repoError = toRepositoryError(error, {
+        entity: "tournamentCourse",
+        operation: "linkCourseByYear",
+        reference,
+      })
+      this.logger.failure(reference, repoError.message, { code: repoError.code })
+      return fail<{ id: string; created: boolean }>(repoError)
+    }
   }
 }
 

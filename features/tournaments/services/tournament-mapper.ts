@@ -55,6 +55,15 @@ export function mapTournamentSummary(row: TournamentSearchRow): TournamentSummar
       ? { type: toTourType(row.tourType), name: row.tourName, code: row.tourCode ?? '' }
       : null,
     course: row.courseName ?? null,
+    courseRef:
+      row.courseId && row.courseName
+        ? {
+            id: row.courseId,
+            name: row.courseName,
+            par: typeof row.coursePar === 'number' ? row.coursePar : null,
+            yardage: typeof row.courseYardage === 'number' ? row.courseYardage : null,
+          }
+        : null,
     location: hasLocation
       ? {
           city: row.city ?? null,

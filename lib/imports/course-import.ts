@@ -64,7 +64,9 @@ export function dedupeCourses(raw: readonly SdioCourse[]): SdioCourse[] {
 
     for (const field of MERGEABLE_FIELDS) {
       if (existing[field] == null && row[field] != null) {
-        existing[field] = row[field]
+        // Widen through a record view: each field is individually type-correct,
+        // but the loop's union of value types is not assignable field-by-field.
+        ;(existing as Record<string, unknown>)[field] = row[field]
       }
     }
   }

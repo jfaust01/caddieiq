@@ -123,6 +123,20 @@ export function textDisplay(value: string | null): string {
   return value && value.trim() ? value : EMPTY_VALUE
 }
 
+/** Course par display, e.g. "Par 72", or an em-dash when unknown. */
+export function formatCoursePar(par: number | null): string {
+  return typeof par === 'number' && Number.isFinite(par) ? `Par ${par}` : EMPTY_VALUE
+}
+
+const YARDAGE_FMT = new Intl.NumberFormat('en-US')
+
+/** Course yardage display, e.g. "7,475 yds", or an em-dash when unknown. */
+export function formatYardage(yardage: number | null): string {
+  return typeof yardage === 'number' && Number.isFinite(yardage)
+    ? `${YARDAGE_FMT.format(yardage)} yds`
+    : EMPTY_VALUE
+}
+
 const TIMESTAMP_FMT = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',

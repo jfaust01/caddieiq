@@ -168,10 +168,12 @@ describe("ImportManager – player pipeline", () => {
 })
 
 describe("ImportManager – course pipeline", () => {
-  it("maps and persists valid courses", async () => {
+  it("maps the venue as the course and persists it", async () => {
     const captured: Course[] = []
     const provider = fakeProvider({
-      courses: [{ CourseID: 10, Name: "Augusta National", Par: 72 }] as SdioCourse[],
+      courses: [
+        { TournamentID: 10, Name: "The Masters", Venue: "Augusta National", Par: 72 },
+      ] as SdioCourse[],
     })
 
     const result = await manager.run(
@@ -182,6 +184,31 @@ describe("ImportManager – course pipeline", () => {
     expect(result.entity).toBe("course")
     expect(result.processed).toBe(1)
     expect(result.inserted).toBe(1)
+    expect(captured[0].name).toBe("Augusta National")
     expect(captured[0].slug).toBe("augusta-national")
+  })
+
+  it("collapses the tournament-shaped feed to distinct venues before mapping", async () => {
+    const captured: Course[] = []
+    // The feed repeats a venue once per edition; a sparse row is completed by a
+    // richer sibling for the same venue.
+    const provider = fakeProvider({
+      courses: [
+        { TournamentID: 1, Name: "Masters 2023", Venue: "Augusta National" },
+        { TournamentID: 2, Name: "Masters 2024", Venue: "Augusta National", Par: 72 },
+        { TournamentID: 3, Name: "U.S. Open 2024", Venue: "Pinehurst No. 2", Par: 70 },
+      ] as SdioCourse[],
+    })
+
+    const result = await manager.run(
+      createCourseImportDefinition({ provider, repository: fakeCourseRepo(captured) }),
+      "sportsdataio",
+    )
+
+    // Two distinct venues, not three feed rows.
+    expect(result.processed).toBe(2)
+    expect(captured).toHaveLength(2)
+    const augusta = captured.find((c) => c.slug === "augusta-national")
+    expect(augusta?.par).toBe(72) // back-filled from the richer sibling row
   })
 })
