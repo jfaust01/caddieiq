@@ -6,6 +6,7 @@ import { useCallback, useMemo, useState } from 'react'
 import {
   fetchNationalityOptions,
   fetchPlayers,
+  fetchTourFilterAvailable,
 } from '@/features/players/services/player-actions'
 import type {
   FilterOption,
@@ -89,6 +90,11 @@ export interface UsePlayersResult {
   result: PaginatedResult<Player>
   isLoading: boolean
   isError: boolean
+  /**
+   * Whether the tour filter is usable. False when the live data lacks tour
+   * classification (imported players); the control is disabled in that case.
+   */
+  tourFilterEnabled: boolean
   options: {
     tour: FilterOption<Tour | 'ALL'>[]
     nationality: FilterOption[]
@@ -112,9 +118,29 @@ export function usePlayers(): UsePlayersResult {
   const [page, setPage] = useState(1)
   const [view, setView] = useState<ViewMode>('grid')
 
+  const tourAvailabilityQuery = useQuery({
+    queryKey: ['player-tour-filter-available'],
+    queryFn: async () => {
+      const response = await fetchTourFilterAvailable()
+      if (!response.ok) throw new Error(response.error)
+      return response.data
+    },
+  })
+
+  // Default to disabled until confirmed available, so we never filter on tour
+  // data that doesn't meaningfully exist.
+  const tourFilterEnabled = tourAvailabilityQuery.data ?? false
+
+  // When the tour filter is unavailable, force it to "ALL" in the query the
+  // server sees — the control is disabled, but this guarantees correct results
+  // even if stale state carries a tour value.
   const query = useMemo<PlayerQuery>(
-    () => ({ filters, page, pageSize: PLAYERS_PAGE_SIZE }),
-    [filters, page],
+    () => ({
+      filters: tourFilterEnabled ? filters : { ...filters, tour: 'ALL' },
+      page,
+      pageSize: PLAYERS_PAGE_SIZE,
+    }),
+    [filters, page, tourFilterEnabled],
   )
 
   const playersQuery = useQuery({
@@ -189,6 +215,7 @@ export function usePlayers(): UsePlayersResult {
     result: playersQuery.data ?? EMPTY_RESULT,
     isLoading: playersQuery.isPending,
     isError: playersQuery.isError,
+    tourFilterEnabled,
     options,
   }
 }

@@ -59,6 +59,7 @@ export function PlayerDirectory() {
     result,
     isLoading,
     isError,
+    tourFilterEnabled,
     options,
   } = usePlayers()
 
@@ -81,6 +82,7 @@ export function PlayerDirectory() {
           setFilter={setFilter}
           hasActiveFilters={hasActiveFilters}
           onReset={resetFilters}
+          tourFilterEnabled={tourFilterEnabled}
         />
       </div>
 

@@ -62,3 +62,18 @@ export async function fetchNationalityOptions(): Promise<ActionResult<FilterOpti
     return { ok: false, error: 'DATABASE_UNAVAILABLE' }
   }
 }
+
+/**
+ * Whether the tour filter should be offered. Tour classification is not present
+ * for imported players, so the UI uses this to disable the control rather than
+ * return misleading results. On error, defaults to unavailable (safe: no
+ * incorrect filtering).
+ */
+export async function fetchTourFilterAvailable(): Promise<ActionResult<boolean>> {
+  try {
+    return { ok: true, data: await playerService.isTourFilterAvailable() }
+  } catch (error) {
+    logFailure('fetchTourFilterAvailable', error)
+    return { ok: false, error: 'DATABASE_UNAVAILABLE' }
+  }
+}

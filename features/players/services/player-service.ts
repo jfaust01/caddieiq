@@ -44,6 +44,16 @@ const RANKING_BAND_LIMIT: Record<Exclude<RankingBand, "ALL">, number> = {
 }
 
 /**
+ * Minimum share of players that must carry an active tour membership for the
+ * tour filter to be meaningful. Tour classification is not provided by the
+ * player import, so today only a handful of seeded players have it — filtering
+ * on tour would silently hide every unclassified player and return misleading
+ * results. Gating the filter on real coverage keeps it disabled until an import
+ * actually populates tour memberships, then re-enables it automatically.
+ */
+const TOUR_FILTER_MIN_COVERAGE = 0.5
+
+/**
  * Database statuses to include for a given UI status filter. The mapper folds
  * the database `RETIRED` status into the UI `INACTIVE`, so filtering for
  * `INACTIVE` must include both to stay consistent with what the UI displays.
@@ -104,6 +114,18 @@ export const playerService = {
         label,
       })),
     ]
+  },
+
+  /**
+   * Whether the tour filter should be offered, based on how much of the live
+   * directory actually has tour classification. Returns `false` when tour data
+   * is effectively absent (the case for imported players) so the UI can disable
+   * the control instead of returning misleading, seed-only results.
+   */
+  async isTourFilterAvailable(): Promise<boolean> {
+    const { withTour, total } = await getPlayerRepository().getActiveTourCoverage()
+    if (total === 0) return false
+    return withTour / total >= TOUR_FILTER_MIN_COVERAGE
   },
 
   /** Nationality filter options derived from the players actually in the database. */
