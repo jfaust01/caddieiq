@@ -49,3 +49,8 @@ export {
   TOURNAMENT_STATUS_BY_IS_OVER,
   UNKNOWN_TOURNAMENT_NAME,
 } from "./tournament/constants"
+
+// Tournament field domain
+export type { TournamentFieldEntry, TournamentFieldStatus } from "./field/types"
+export { mapSportsDataFieldEntry, type FieldMapContext } from "./field/mapper"
+export { DEFAULT_FIELD_STATUS, UNKNOWN_FIELD_PLAYER_NAME } from "./field/constants"

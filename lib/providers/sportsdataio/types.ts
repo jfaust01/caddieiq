@@ -75,6 +75,56 @@ export interface SdioCourse extends SdioRecord {
   Yards?: number
 }
 
+/**
+ * Raw SportsDataIO leaderboard **player** row.
+ *
+ * The `/json/Leaderboard/{tournamentid}` resource is the only feed that
+ * enumerates a tournament's *field* — every player who teed off (for a
+ * completed event) or is entered (for an upcoming one). Each row therefore
+ * doubles as a field entry and a per-player result.
+ *
+ * `PlayerID` is the provider's native player id, but CaddieIQ has no external-id
+ * column, so the field importer reconciles a row to an existing `Player` by the
+ * deterministic slug of `Name` (see `lib/imports/field-relations.ts`).
+ *
+ * Note on `TournamentStatus`: in the current SportsDataIO tier this arrives
+ * uniformly obfuscated (literally `"Scrambled"`), so it carries no signal. The
+ * mapper derives a real status from `IsWithdrawn`/`IsAlternate`/`MadeCut`
+ * instead of trusting this field.
+ */
+export interface SdioLeaderboardPlayer extends SdioRecord {
+  PlayerID: number
+  /** Display name — the field importer's reconciliation key (via slug). */
+  Name?: string
+  /** Finishing position / rank (1 = winner). */
+  Rank?: number
+  Country?: string
+  /** Whether the player made the cut (null before/at cut for upcoming events). */
+  MadeCut?: boolean
+  /** Whether the player won the event. */
+  Win?: boolean
+  /** Standby/alternate entry rather than a confirmed starter. */
+  IsAlternate?: boolean
+  /** Player withdrew from the event. */
+  IsWithdrawn?: boolean
+  /** Prize money earned, when reported. */
+  Earnings?: number
+  /** First-round tee time (ISO-ish), when scheduled. */
+  TeeTime?: string
+  /** Obfuscated in the current tier — do not trust; kept for completeness. */
+  TournamentStatus?: string
+}
+
+/**
+ * Raw SportsDataIO leaderboard response: the tournament envelope plus its field.
+ * `Tournament.IsOver` tells the mapper whether missed-cut / finished statuses
+ * are meaningful yet.
+ */
+export interface SdioLeaderboard extends SdioRecord {
+  Tournament?: SdioTournament
+  Players?: SdioLeaderboardPlayer[]
+}
+
 /** Map of resource key → raw response element type, for typed requests. */
 export interface SdioResourceMap {
   players: SdioPlayer
