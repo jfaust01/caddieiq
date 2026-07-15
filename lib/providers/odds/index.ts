@@ -1,2 +1,5 @@
 export * from "./provider"
 export * from "./normalizer"
+export * from "./client"
+export * from "./config"
+export type * from "./types"

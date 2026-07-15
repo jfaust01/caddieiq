@@ -313,6 +313,7 @@ model Player {
   bettingOutcomes    BettingOutcome[]
   fantasyProjections FantasyProjection[]
   dfsSalaries        DfsSalary[]
+  oddsQuotes         OddsQuote[]
 
   @@index([slug])
   @@index([lastName])
@@ -604,6 +605,7 @@ model Tournament {
   fantasyProjections FantasyProjection[]
   dfsSalaries        DfsSalary[]
   weatherSnapshot    WeatherSnapshot?
+  oddsEvents         OddsEvent[]
 
   @@index([slug])
   @@index([tourId])
@@ -919,6 +921,104 @@ model DfsSalary {
   @@index([tournamentId])
   @@index([playerId])
   @@map("dfs_salaries")
+}
+
+// ---------------------------------------------------------------------------
+// Odds Intelligence Engine (Sprint 8.7)
+//
+// The Market Signal Family. Sourced from The Odds API (a *real*, multi-book
+// odds feed — distinct from the SportsDataIO betting tables above, which are
+// single-book and scrambled on the trial tier). The Odds API golf coverage is
+// tournament-WINNER outrights across several sportsbooks, which is exactly the
+// multi-book breadth consensus requires. Each row is one sportsbook's price for
+// one selection; consensus is DERIVED across books by the Odds Intelligence
+// engine, never persisted pre-chewed. Verified odds only: a quote is written
+// only when the provider returned a real price. Idempotent + freshness-guarded
+// (see OddsQuote.lastUpdate) so re-imports never overwrite newer odds with older.
+// ---------------------------------------------------------------------------
+
+/// The market a quote belongs to. The Odds API golf currently offers only
+/// TOURNAMENT_WINNER; the remaining markets are modeled so the engine can expose
+/// them the moment the provider (or a future feed) offers verified prices —
+/// they are never fabricated in the interim.
+enum OddsMarketType {
+  TOURNAMENT_WINNER
+  TOP_5
+  TOP_10
+  TOP_20
+  MAKE_CUT
+  MISS_CUT
+}
+
+/// A betting event pulled from The Odds API and (when resolvable) linked to a
+/// CaddieIQ tournament. Keyed by the provider event id for idempotent refresh.
+/// `capturedAt` records when this event's book of quotes was last refreshed and
+/// drives the freshness component of market confidence.
+model OddsEvent {
+  id              String   @id @default(cuid())
+  /// The Odds API event id (idempotency key).
+  providerEventId String   @unique
+  /// The Odds API sport key, e.g. "golf_the_open_championship_winner".
+  sportKey        String
+  sportTitle      String?
+  /// Resolved CaddieIQ tournament (matched by name/slug), or null when unmatched.
+  tournamentId    String?
+  /// Scheduled tee-off per the provider, when supplied.
+  commenceTime    DateTime?
+  /// Data source; always a real feed. Never fabricated.
+  source          String   @default("the-odds-api")
+  /// When this event's quotes were last captured from the provider.
+  capturedAt      DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  quotes     OddsQuote[]
+
+  @@index([tournamentId])
+  @@index([sportKey])
+  @@map("odds_events")
+}
+
+/// One sportsbook's price for one selection (player) in one market of an event.
+/// Consensus (book count, spread, variance, consensus probability) is computed
+/// across the sibling quotes for the same (event, market, selection) — this row
+/// stores only verified raw facts. Uniqueness on
+/// (event, market, bookmaker, selection) makes refresh idempotent; the importer
+/// only overwrites a quote when the incoming `lastUpdate` is newer.
+model OddsQuote {
+  id             String         @id @default(cuid())
+  oddsEventId    String
+  market         OddsMarketType
+  /// Bookmaker key, e.g. "draftkings".
+  bookmakerKey   String
+  /// Human-friendly bookmaker label, e.g. "DraftKings".
+  bookmakerTitle String
+  /// Raw selection label from the provider (player name).
+  selection      String
+  /// Deterministic slug derived from the selection, used to resolve to a Player.
+  selectionSlug  String
+  /// Resolved CaddieIQ player, or null when unmatched / non-player selection.
+  playerId       String?
+  /// Decimal odds exactly as provided (source of truth).
+  decimalOdds    Decimal
+  /// American odds derived from the decimal price.
+  americanOdds   Int
+  /// Raw implied probability (0..1) derived from the decimal price (includes vig).
+  impliedProbability Decimal
+  /// The provider's `last_update` for this bookmaker's market; the freshness key.
+  lastUpdate     DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  event  OddsEvent @relation(fields: [oddsEventId], references: [id], onDelete: Cascade)
+  player Player?   @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@unique([oddsEventId, market, bookmakerKey, selectionSlug])
+  @@index([oddsEventId])
+  @@index([playerId])
+  @@index([oddsEventId, market])
+  @@map("odds_quotes")
 }
 
 // ---------------------------------------------------------------------------
