@@ -38,7 +38,7 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
     tournamentService.getTournamentField(tournament.id),
     tournamentService.getFieldNews(tournament.id),
     courseRef ? courseService.getCourseIntelligence(courseRef.id) : Promise.resolve(null),
-    tournamentService.getFieldFitBoard(tournament.id, courseRef?.id ?? null),
+    tournamentService.getFieldFitBoard(tournament.id),
   ])
 
   return (

@@ -213,15 +213,16 @@ function buildSeasonStatistics(record: PlayerWithRelations): PlayerSeasonStat[] 
  * resolve to null/empty so the detail view renders its "not available yet"
  * states instead of placeholder numbers.
  *
- * Note: `analytics`, `rankingProfile`, `news`, and `courseFit` are intentionally
+ * Note: `analytics`, `rankingProfile`, `news`, and `upcoming` are intentionally
  * NOT produced here — analytics/ranking are derived by their engines, news comes
- * from a separate repository, and course fit joins the Course Intelligence and
- * Course Fit engines. All are composed onto the payload in the (async) service
- * layer, keeping this mapper pure and free of cross-source computation.
+ * from a separate repository, and `upcoming` is resolved by the Tournament
+ * Context Engine (which also carries Course Fit). All are composed onto the
+ * payload in the (async) service layer, keeping this mapper pure and free of
+ * cross-source computation.
  */
 export function mapPlayerDetail(
   record: PlayerWithRelations,
-): Omit<PlayerDetail, "analytics" | "rankingProfile" | "news" | "courseFit"> {
+): Omit<PlayerDetail, "analytics" | "rankingProfile" | "news" | "upcoming"> {
   return {
     ...mapPlayer(record),
     careerSummary: null,

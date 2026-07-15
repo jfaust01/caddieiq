@@ -350,6 +350,12 @@ honor:
 - **Single source of derived truth.** Specialist models consume the shared
   analytics/ratings rather than recomputing player strength from raw stats, so
   every surface agrees.
+- **Single source of event context.** Every event-specific model (Course Fit,
+  and future Weather / DFS / Betting / AI Coach) resolves *which* tournament and
+  host course it evaluates from the shared **Tournament Context Engine**
+  (`lib/tournament-context`, see [TOURNAMENT_CONTEXT_ENGINE.md](./TOURNAMENT_CONTEXT_ENGINE.md)),
+  never independently. The context's `verified / partial / unavailable`
+  confidence is the ceiling for the model built on it.
 - **Confidence propagates conservatively.** A model's confidence is bounded by
   the weakest input it relies on; downstream models (DFS Value, Betting Value)
   inherit and never inflate the confidence of the ratings beneath them.

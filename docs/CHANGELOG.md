@@ -10,6 +10,30 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+**Tournament Context Engine**
+
+- New shared engine (`lib/tournament-context`) that is the single authoritative
+  source of "which tournament is this player/page evaluating, and how complete
+  is that context?" A pure normalizer (`context.ts`) grades every context as
+  `verified` / `partial` / `unavailable` from verified DB facts only — never a
+  fabricated event or course — and a `server-only` service (`service.ts`)
+  resolves it for both a player (their next **upcoming** in-field event) and a
+  tournament id, returning an identical normalized shape.
+- `docs/TOURNAMENT_CONTEXT_ENGINE.md` specifying the engine, its confidence
+  ceiling, resolution rules, and the contract for adding future models.
+
+### Changed
+
+- **Course Fit now consumes the shared context** on both surfaces instead of
+  selecting an event independently. The Player Page's Course Fit card is
+  replaced by an **Upcoming Tournament** card that surfaces the shared context
+  (event header linking to the hub + Course Intelligence coverage summary) and
+  attaches Course Fit only when the context is `verified`. The Tournament Page
+  field board takes its host course from the same engine, so the whole page
+  agrees on one event and one confidence.
+
+### Added
+
 **Course Intelligence Engine**
 
 - Pure derivation layer (`lib/domain/course/profile.ts`) that turns verified

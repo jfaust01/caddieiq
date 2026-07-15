@@ -59,16 +59,23 @@ PlayerSkillProfile (verified) ───┘        (pure, no I/O)      (score | n
   - Player skill: a `PlayerSkillProfile` (five 0–100 skills, `null` when
     unknown). Built by `features/players/services/player-course-fit.ts` from
     verified analytics only — the honest all-`null` default today.
-- **Player Page:** `features/players/services/player-service.ts` resolves the
-  player's next tournament context via
-  `PlayerRepository.findNextCourseFitContextById()` and attaches `courseFit`
-  **only when that context is a verified `UPCOMING` entry with a linked host
-  course**. Course Fit is forward-looking: a historical-only result is treated as
-  no context (`courseFit: null`), and the card renders a neutral placeholder
-  rather than a fit derived from a past event. Rendered by
-  `features/players/components/course-fit-card.tsx` in the Analytics tab.
-- **Tournament Page:** `tournamentService.getFieldFitBoard()` scores the whole
-  field against the host course and ranks it into the hub lists. Rendered by
+- **Which tournament?** Course Fit no longer selects an event itself. Both
+  surfaces read the **[Tournament Context Engine](./TOURNAMENT_CONTEXT_ENGINE.md)**
+  — the single authority for "which tournament is being evaluated, and how
+  complete is that context?" Course Fit runs only when the context is
+  `verified` (a linked host course exists) and is capped at the context's
+  confidence.
+- **Player Page:** `player-service.ts` calls
+  `tournamentContextService.getPlayerActiveContext()` (the player's next
+  **upcoming** in-field event, forward-looking by design), then
+  `buildUpcomingContext` attaches the fit. `unavailable` → neutral placeholder,
+  no fit computed, nothing drawn from past events. `partial` (event, no linked
+  course) → event shown, fit withheld. `verified` → the full block renders.
+  Rendered by `features/players/components/upcoming-tournament-card.tsx` in the
+  Analytics tab.
+- **Tournament Page:** `tournamentService.getFieldFitBoard()` takes the host
+  course **from the shared context** (`getTournamentContext`), scores the whole
+  field against it, and ranks it into the hub lists. Rendered by
   `features/tournaments/components/field-fit-board.tsx`.
 
 ---

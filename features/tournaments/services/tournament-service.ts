@@ -37,6 +37,11 @@ import {
 } from '@/lib/analytics/course-fit'
 import { courseService } from '@/features/courses/services/course-service'
 import { rankingService } from '@/lib/rankings/service'
+import {
+  hasCourseContext,
+  tournamentContextService,
+  type TournamentContext,
+} from '@/lib/tournament-context'
 import type { RankingBoard, RankingBoardSet, RankingCategory } from '@/lib/rankings/types'
 import { getFieldRepository } from '@/lib/repositories/field-repository'
 import { getNewsRepository } from '@/lib/repositories'
@@ -182,11 +187,12 @@ const FIT_LIST_LIMIT = 5
  * fits, fades, trending-up by verified momentum, most-uncertain).
  *
  * Honest by construction:
+ * - The host course is taken from the shared Tournament Context Engine — the
+ *   single authority for the event's context — not resolved independently here.
+ *   When the context has no linked course, `courseId` is `null` and every
+ *   entrant's fit degrades to "course-demand-missing" rather than being invented.
  * - Reuses the request-cached field, so it adds no roster query. Analytics for
  *   `momentum` are batched in one call over the field.
- * - The host `courseProfile` comes from the Course Intelligence Engine; when the
- *   event has no linked course it is `null` and every entrant's fit degrades to
- *   "course-demand-missing" rather than being invented.
  * - Player skill profiles are the honest all-`null` default today (no per-skill
  *   data is ingested), so scored lists stay empty until real data exists — the
  *   board never pads Top Fits/Fades with guesses.
@@ -341,12 +347,26 @@ export const tournamentService = {
   },
 
   /**
-   * Return the tournament's Course Fit board (top fits, fades, trending-up,
-   * most-uncertain) evaluated against the host course. Pass the linked course
-   * id (or `null` when the event has no venue). Reads through the Course Fit
-   * Model and Course Intelligence Engine — never fabricates fits.
+   * The event's normalized Tournament Context (identity, dates, host course,
+   * field size) with a Verified/Partial/Unavailable confidence grade. This is
+   * the shared context every event-specific model reads; the hub surfaces it and
+   * passes it to Course Fit so the whole page agrees on one course and one
+   * confidence. Reads through the Tournament Context Engine.
    */
-  getFieldFitBoard(id: string, courseId: string | null): Promise<FieldFitBoard> {
+  getTournamentContext(id: string): Promise<TournamentContext> {
+    return tournamentContextService.getTournamentContext(id)
+  },
+
+  /**
+   * Return the tournament's Course Fit board (top fits, fades, trending-up,
+   * most-uncertain). The host course is taken from the shared Tournament Context
+   * Engine — never resolved independently — so the board always agrees with the
+   * rest of the hub. Reads through the Course Fit Model and Course Intelligence
+   * Engine; never fabricates fits.
+   */
+  async getFieldFitBoard(id: string): Promise<FieldFitBoard> {
+    const context = await tournamentContextService.getTournamentContext(id)
+    const courseId = hasCourseContext(context) ? context.course.id : null
     return getFieldFitBoardCached(id, courseId)
   },
 
