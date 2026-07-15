@@ -43,13 +43,13 @@ Legend for **Fidelity**: 🟢 real & usable now · 🟡 real but sparse/seasonal
 | Feed (endpoint) | Fidelity | Key real fields | Schema home | Notes |
 |---|---|---|---|---|
 | `Players` | 🟢 | `PlayerID`, `FirstName`, `LastName`, `Country`, **`PhotoUrl`**, DFS operator IDs | `players` (`headshotUrl`) | Photo URLs are real CDN links, load directly. |
-| `PlayerSeasonStats/{season}` | 🟢 | **`WorldGolfRank`**, **`WorldGolfRankLastWeek`**, `Events` | `player_season_statistics` (`worldRanking`, `worldRankingLastWeek`, `events`) | `AveragePoints`/`TotalPoints` are **OWGR ranking points**, not DraftKings fantasy points (see §4). |
+| `PlayerSeasonStats/{season}` | 🟢⚠️ | **`WorldGolfRank`**, **`WorldGolfRankLastWeek`**, `Events` | `player_season_statistics` (`worldRanking`, `worldRankingLastWeek`, `events`) | `AveragePoints`/`TotalPoints` are **OWGR ranking points**, not DraftKings fantasy points (see §4). **⚠️ 2026-07-15 probe: `WorldGolfRank` failed a sanity check on the trial tier** (world #1 Scheffler returned `0`; McIlroy & Fleetwood both returned `1`) — the ranking field appears scrambled on live re-fetch. No superior alternative exists (`Players` feed carries no rank). See §7. |
 | `News` / `NewsByDate/{date}` | 🟢 | `NewsID`, `Title`, `Content`, `Url`, `Source`, `Updated`, `PlayerID`, `TeamID` | *new* `news_articles` | Real editorial content. Player/tournament association via IDs. |
 | `NewsByPlayerID/{id}` | 🟢 | same as News, filtered | *new* `news_articles` | Powers per-player news on the Player Page. |
 | `Tournaments/{season}` / `Schedule` | 🟢 | `TournamentID`, `Name`, `StartDate`, `EndDate`, `Venue`, `Purse`, `OddsCoverage` | `tournaments` | `OddsCoverage` tells us whether betting is *entitled* for that event. |
-| `DfsSlatesByTournament/{id}` | 🟡 | `Salary`, `OperatorPlayerName`, `SlateID`, operator | *new* `dfs_salaries` | Salaries are real; present only for slated (upcoming/recent) events. |
-| `PlayerTournamentProjectionStats/{id}` | 🔴 | envelope real; `FantasyPoints*`, per-stat projections scrambled | *new* `fantasy_projections` | Pipeline built; values hidden until production tier. |
-| `BettingEvents…` / `v3/golf/odds` | 🔴 | `BettingEventID`, structure real; `BettingMarkets[].BettingBetType`, outcomes scrambled | *new* `betting_events`, `betting_markets`, `betting_outcomes` | Pipeline built; markets hidden until production tier. |
+| `DfsSlatesByTournament/{id}` | 🟢🟡 | `Salary`, `OperatorPlayerName`, `SlateID`, operator | *new* `dfs_salaries` | **Salaries confirmed REAL 2026-07-15** (DraftKings T692: Scheffler $13,300 → field floor ~$5,200, plausibly rank-ordered). Present only for slated (upcoming/recent) events. Additive data — replaces no existing field (see §7). |
+| `PlayerTournamentProjectionStats/{id}` | ⚪🔴 | envelope real; `FantasyPoints*`, per-stat projections scrambled | *new* `fantasy_projections` | Pipeline built. **2026-07-15 probe: HTTP 404 at `/golf/v2/projections/json/…` on the trial tier — not entitled/usable now** (see §7). Even when live, projections are estimates, not a superior source for *actual* production (§4). |
+| `BettingEvents…` / `v3/golf/odds` | ⚪🔴 | `BettingEventID`, structure real; `BettingMarkets[].BettingBetType`, outcomes scrambled | *new* `betting_events`, `betting_markets`, `betting_outcomes` | Pipeline built. **2026-07-15 probe: HTTP 404 at `/golf/v2/odds/json/BettingEventsByDate/{date}` on the trial tier — not entitled/usable now** (see §7). |
 | `Leaderboard/{id}` | 🟡 | `Rank`, `TotalScore`, round scores | `player_rounds` / `tournament_fields` | Populated only for in-progress/completed events in-season. |
 | DraftKings **fantasy points** (season aggregate) | ⚪ | — | — | Not in season-stats feed at any tier; only per-tournament, and scrambled on trial. |
 | Strokes Gained (external) | ⚪ | — | — | Not entitled on this key. Blocks SG-based signals. |
@@ -128,3 +128,65 @@ node --env-file-if-exists=/vercel/share/.env.project scripts/discover-sportsdata
 The probe never prints the API key. It reports, per endpoint: HTTP status,
 payload shape, top-level field names, and a scramble-sentinel check. Update §2
 whenever fidelity changes (e.g. after a tier upgrade).
+
+---
+
+## 7. Source superiority evaluation & migration log
+
+**Policy.** Whenever a feed is enabled or a tier/key changes, we evaluate every
+newly available feed against the fields already imported. If a new feed exposes
+**more accurate** data for an existing field, we migrate the platform to it and
+preserve backward compatibility where practical (keep the column, re-point the
+importer, keep reads stable). Every replacement — and every deliberate
+non-replacement — is logged here with its evidence. We never migrate to a feed
+that is unavailable, scrambled, or otherwise *less* accurate than what we have;
+doing so would regress real data behind a sentinel and violate the no-fabrication
+rule this catalog exists to enforce.
+
+### Evaluation — 2026-07-15 (betting + fantasy/DFS pipelines enabled)
+
+Live probes against the configured trial key (`api.sportsdata.io/golf/v2`),
+comparing each newly enabled feed to the field it could plausibly supersede:
+
+| Newly enabled feed | Live result | Could it replace an existing field? | Verdict |
+|---|---|---|---|
+| `PlayerTournamentProjectionStats/{id}` (fantasy projections) | **HTTP 404** — not entitled on trial | Candidate for "fantasy statistics". But it is (a) unavailable, and (b) *projected* points, not the *actual* season production already imported from `PlayerSeasonStats`. | **No migration.** Not more accurate — not even available. |
+| `BettingEventsByDate/{date}` (odds) | **HTTP 404** — not entitled on trial | No existing odds field; would only *add* data. | **No migration.** Unavailable; additive when live. |
+| `DfsSlatesByTournament/{id}` (DFS salaries) | **REAL** — DraftKings T692: Scheffler $13,300 → floor ~$5,200, rank-plausible | No existing salary field; purely additive. | **No migration** (nothing to replace). Retained as new `dfs_salaries` data. |
+
+**Cross-check on the field the directive named ("fantasy statistics").**
+`player_season_statistics.averagePoints/.totalPoints` remain the best available
+source: `PlayerSeasonStats` returned real, plausible actuals on this probe
+(Scheffler: 27 events, 10.4 avg, 438.4 total). The projections feed — the only
+plausible "superior" fantasy source — is 404 on this tier and, by definition,
+measures projected rather than actual output. Per §4 these values are OWGR
+points and must stay labeled as such; no fantasy-stats migration is possible or
+desirable today.
+
+**Incidental accuracy finding (not a migration — logged for transparency).**
+On this probe `PlayerSeasonStats.WorldGolfRank` failed a sanity check (world #1
+Scheffler = `0`; McIlroy and Fleetwood both = `1`), i.e. the *ranking* field
+reads scrambled on live re-fetch, even though the fantasy/`Events` fields in the
+same payload are real. There is **no superior source to migrate to** — the
+`Players` feed exposes no ranking column at all. Action: none taken (no better
+source exists); ranking reads continue to serve the last good imported values,
+and imports must keep applying the sentinel/sanity gate so a scrambled `0`/tie
+never overwrites a real rank. Re-evaluate when a production key lands.
+
+**Net result: 0 replacements.** No newly enabled feed is more accurate than a
+currently-imported field. All pipelines remain built-and-gated per §1.
+
+### Trigger conditions for a future migration
+
+Re-run this evaluation (and migrate + log here) when any of these become true:
+
+- A **production key** makes `PlayerTournamentProjectionStats` or the odds feeds
+  return real values — then wire *projections* as new inputs (still not a
+  replacement for actual production), and expose odds.
+- A feed begins returning a **real per-tournament DraftKings fantasy-points**
+  actual (not projection) — this *would* supersede the OWGR-points stand-in for
+  the "Fantasy Production" model input; migrate `fantasy_projections`/a new
+  actuals table in and re-point the analytics `SeasonStatSample.averagePoints`
+  source, keeping the OWGR column for backward compatibility.
+- `PlayerSeasonStats.WorldGolfRank` returns **consistently sane** rankings again
+  (unique, #1 == 1), confirming the trial scramble has lifted.

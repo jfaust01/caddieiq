@@ -62,4 +62,19 @@ describe("mapSportsDataSeasonStat", () => {
     const stat = mapSportsDataSeasonStat(raw({ Name: "   " }), 2025)
     expect(stat.playerName).toBe(UNKNOWN_STAT_PLAYER_NAME)
   })
+
+  it("treats a non-positive world ranking as unavailable (trial-tier scramble)", () => {
+    // On the trial tier the ranking field scrambles: the true #1 comes back as
+    // 0 and lower players tie at 1. Rank 0 is never a real OWGR position, so it
+    // must map to null rather than a fake rank — see docs/DATA_CATALOG.md §7.
+    const scrambled = mapSportsDataSeasonStat(
+      raw({ WorldGolfRank: 0, WorldGolfRankLastWeek: -1 }),
+      2025,
+    )
+    expect(scrambled.worldRanking).toBeNull()
+    expect(scrambled.worldRankingLastWeek).toBeNull()
+    // Real fantasy/activity fields in the same row are unaffected.
+    expect(scrambled.events).toBe(31)
+    expect(scrambled.totalPoints).toBe(279.5)
+  })
 })

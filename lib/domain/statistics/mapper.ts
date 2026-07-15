@@ -23,6 +23,21 @@ function cleanInteger(value: unknown): number | null {
 }
 
 /**
+ * Coerce a world-ranking value to a positive integer, or null.
+ *
+ * A valid Official World Golf Ranking position starts at 1, so `0` (and any
+ * non-positive value) is never real. On the trial tier the ranking field is a
+ * known scramble target — it returns `0` for the actual #1 and ties multiple
+ * players at `1` (see docs/DATA_CATALOG.md §7). Mapping non-positive ranks to
+ * null keeps a scrambled `0` from being persisted/surfaced as a fake rank; the
+ * repository additionally refuses to overwrite a real stored rank with null.
+ */
+function cleanRanking(value: unknown): number | null {
+  const n = cleanInteger(value)
+  return n != null && n > 0 ? n : null
+}
+
+/**
  * Translate a raw SportsDataIO season-stats row into a CaddieIQ
  * {@link PlayerSeasonStat}.
  *
@@ -41,8 +56,8 @@ export function mapSportsDataSeasonStat(
     playerName,
     playerSlug: slugify(playerName),
     season,
-    worldRanking: cleanInteger(raw.WorldGolfRank),
-    worldRankingLastWeek: cleanInteger(raw.WorldGolfRankLastWeek),
+    worldRanking: cleanRanking(raw.WorldGolfRank),
+    worldRankingLastWeek: cleanRanking(raw.WorldGolfRankLastWeek),
     events: cleanInteger(raw.Events),
     averagePoints: cleanNumber(raw.AveragePoints),
     totalPoints: cleanNumber(raw.TotalPoints),
