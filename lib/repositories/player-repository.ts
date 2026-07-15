@@ -194,6 +194,30 @@ export class PlayerRepository extends BaseRepository {
     `)
   }
 
+  /**
+   * How many non-deleted players carry an active tour membership, versus the
+   * total. Tour classification lives only in `player_tour_histories` (there is
+   * no tour column on `players`), and the current player import does not
+   * populate it — so this reports how meaningfully the tour filter can partition
+   * the directory. The feature layer uses it to decide whether to offer the
+   * tour filter at all. Read-only.
+   */
+  async getActiveTourCoverage(): Promise<{ withTour: number; total: number }> {
+    const rows = await this.prisma.$queryRaw<Array<{ with_tour: number; total: number }>>(Prisma.sql`
+      SELECT
+        count(*) FILTER (
+          WHERE EXISTS (
+            SELECT 1 FROM player_tour_histories th
+            WHERE th."playerId" = p.id AND th.active = true
+          )
+        )::int AS with_tour,
+        count(*)::int AS total
+      FROM players p
+      WHERE p."deletedAt" IS NULL
+    `)
+    return { withTour: rows[0]?.with_tour ?? 0, total: rows[0]?.total ?? 0 }
+  }
+
   /** Find a player by internal id, with read relations. Excludes soft-deleted rows. */
   async findDetailById(id: string): Promise<PlayerWithRelations | null> {
     const record = await this.prisma.player.findFirst({

@@ -19,6 +19,9 @@ interface FilterSelectProps {
   options: FilterOption[]
   onValueChange: (value: string) => void
   className?: string
+  disabled?: boolean
+  /** Accessible explanation shown on hover when the control is disabled. */
+  disabledHint?: string
 }
 
 function FilterSelect({
@@ -27,13 +30,20 @@ function FilterSelect({
   options,
   onValueChange,
   className,
+  disabled,
+  disabledHint,
 }: FilterSelectProps) {
   return (
     <Select
       value={value}
       onValueChange={(next) => onValueChange(String(next))}
+      disabled={disabled}
     >
-      <SelectTrigger aria-label={label} className={cn('w-full', className)}>
+      <SelectTrigger
+        aria-label={label}
+        title={disabled ? disabledHint : undefined}
+        className={cn('w-full', className)}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -62,6 +72,8 @@ interface PlayerFiltersProps {
   ) => void
   hasActiveFilters: boolean
   onReset: () => void
+  /** When false, tour classification is unavailable and the control is disabled. */
+  tourFilterEnabled: boolean
 }
 
 /** Filter toolbar for the player directory. */
@@ -71,16 +83,23 @@ export function PlayerFilters({
   setFilter,
   hasActiveFilters,
   onReset,
+  tourFilterEnabled,
 }: PlayerFiltersProps) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 xl:flex xl:flex-wrap xl:items-center">
       <FilterSelect
         label="Filter by tour"
-        value={filters.tour}
-        options={options.tour}
+        value={tourFilterEnabled ? filters.tour : 'ALL'}
+        options={
+          tourFilterEnabled
+            ? options.tour
+            : [{ value: 'ALL', label: 'Tour data unavailable' }]
+        }
         onValueChange={(value) =>
           setFilter('tour', value as PlayerFiltersState['tour'])
         }
+        disabled={!tourFilterEnabled}
+        disabledHint="Tour classification hasn't been imported for these players yet."
         className="xl:w-40"
       />
       <FilterSelect
