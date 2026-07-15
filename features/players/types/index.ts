@@ -103,6 +103,35 @@ export interface PlayerStatistic {
   category: StatCategory
 }
 
+/**
+ * A player's season-level statistics as reported by the data provider.
+ *
+ * IMPORTANT — coverage: this reflects only what the current SportsDataIO tier
+ * returns at season level. Money, FedEx Cup points, wins, top-10s, cuts made,
+ * scoring average, and strokes-gained are NOT provided by the source and are
+ * therefore intentionally absent — the UI never fabricates them. `worldRanking`
+ * is stored verbatim but the upstream tier is known to obfuscate its precision
+ * (ties), so it is presented as indicative, not authoritative.
+ */
+export interface PlayerSeasonStat {
+  /** Calendar season year, e.g. 2025. */
+  season: number
+  /** Official World Golf Ranking position, or null when not reported. */
+  worldRanking: number | null
+  /** World ranking the previous week, or null when not reported. */
+  worldRankingLastWeek: number | null
+  /** Events played, or null when not reported. */
+  events: number | null
+  /** Average fantasy points per event, or null when not reported. */
+  averagePoints: number | null
+  /** Total fantasy points across the season, or null when not reported. */
+  totalPoints: number | null
+  /** Fantasy points gained, or null when not reported. */
+  pointsGained: number | null
+  /** Fantasy points lost, or null when not reported. */
+  pointsLost: number | null
+}
+
 /** Career summary headline figures. */
 export interface CareerSummary {
   events: number
@@ -146,6 +175,8 @@ export interface PlayerDetail extends Player {
   careerSummary: CareerSummary | null
   rankings: PlayerRanking[]
   statistics: PlayerStatistic[]
+  /** Season statistics (newest first), sourced live. Empty until imported. */
+  seasonStatistics: PlayerSeasonStat[]
   courseHistory: CourseHistoryEntry[]
   tournamentHistory: TournamentHistoryEntry[]
   activity: ActivityEntry[]

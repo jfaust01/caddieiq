@@ -14,6 +14,7 @@ import type {
   Player,
   PlayerDetail,
   PlayerRanking,
+  PlayerSeasonStat,
   PlayerStatus,
   Nationality,
   RankingSystem,
@@ -154,11 +155,31 @@ function buildRankings(record: PlayerWithRelations): PlayerRanking[] {
 }
 
 /**
+ * Map live season-statistics rows (newest season first from the repository)
+ * into the UI shape. Every provider-supplied field is nullable and passed
+ * through verbatim — the mapper never fabricates the metrics the source omits.
+ */
+function buildSeasonStatistics(record: PlayerWithRelations): PlayerSeasonStat[] {
+  return record.seasonStatistics.map((row) => ({
+    season: row.season,
+    worldRanking: row.worldRanking,
+    worldRankingLastWeek: row.worldRankingLastWeek,
+    events: row.events,
+    averagePoints: row.averagePoints,
+    totalPoints: row.totalPoints,
+    pointsGained: row.pointsGained,
+    pointsLost: row.pointsLost,
+  }))
+}
+
+/**
  * Map a database player row (+ relations) into the full detail payload.
  *
- * Sections without a live source (career summary, statistics, course &
- * tournament history, activity) resolve to null/empty so the detail view can
- * render its "not available yet" states instead of placeholder numbers.
+ * `seasonStatistics` is populated live from the season-stats import. The
+ * remaining sections without a live source (career summary, the legacy
+ * strokes-gained `statistics` grid, course & tournament history, activity)
+ * resolve to null/empty so the detail view renders its "not available yet"
+ * states instead of placeholder numbers.
  */
 export function mapPlayerDetail(record: PlayerWithRelations): PlayerDetail {
   return {
@@ -166,6 +187,7 @@ export function mapPlayerDetail(record: PlayerWithRelations): PlayerDetail {
     careerSummary: null,
     rankings: buildRankings(record),
     statistics: [],
+    seasonStatistics: buildSeasonStatistics(record),
     courseHistory: [],
     tournamentHistory: [],
     activity: [],

@@ -63,6 +63,31 @@ export function numberDisplay(value: number | null): string {
   return value === null ? EMPTY_VALUE : `${value}`
 }
 
+const DECIMAL_FMT = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
+/**
+ * Decimal display for fantasy-points figures, e.g. `1,284.5`. Returns an
+ * em-dash when the value was not reported by the provider.
+ */
+export function decimalDisplay(value: number | null): string {
+  return value === null ? EMPTY_VALUE : DECIMAL_FMT.format(value)
+}
+
+/**
+ * Signed decimal display for movement deltas, e.g. `+3` / `-2`. Returns an
+ * em-dash when either side is unknown, and `even` when there is no change.
+ */
+export function rankMovementDisplay(current: number | null, previous: number | null): string {
+  if (current === null || previous === null) return EMPTY_VALUE
+  // A LOWER world-ranking number is BETTER, so improvement = previous - current.
+  const delta = previous - current
+  if (delta === 0) return 'even'
+  return delta > 0 ? `+${delta}` : `${delta}`
+}
+
 export function statusTone(status: PlayerStatus): Tone {
   switch (status) {
     case 'ACTIVE':
