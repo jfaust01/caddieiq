@@ -14,7 +14,11 @@ import type { ExternalReference } from "@/lib/domain/shared/types"
 // `Prisma` is imported as a value (not type-only): the detail read below uses
 // `Prisma.sql` to compose a safe, parameterized raw query.
 import { Prisma } from "@/lib/generated/prisma/client"
-import type { Course as CourseRecord, PrismaClient } from "@/lib/generated/prisma/client"
+import type {
+  Course as CourseRecord,
+  CourseCharacteristic as CourseCharacteristicRecord,
+  PrismaClient,
+} from "@/lib/generated/prisma/client"
 
 import prismaClient from "@/lib/prisma"
 
@@ -41,11 +45,25 @@ export interface CourseTournamentRow {
 }
 
 /**
+ * The verified inputs the Course Intelligence Engine derives a profile from:
+ * the course core record plus its optional analytics record. `characteristic`
+ * is `null` when no analytics have been imported for the course, so the engine
+ * degrades to an all-unknown profile rather than fabricating values.
+ */
+export interface CourseProfileInputsRow {
+  course: CourseRecord
+  characteristic: CourseCharacteristicRecord | null
+}
+
+/**
  * A course plus every tournament linked to it, for the detail page. Read-only
- * shape assembled by {@link CourseRepository.findDetailById}.
+ * shape assembled by {@link CourseRepository.findDetailById}. Carries the
+ * verified `characteristic` record (or `null`) so the detail page can render
+ * Course Intelligence without a second round trip.
  */
 export interface CourseDetailRow {
   course: CourseRecord
+  characteristic: CourseCharacteristicRecord | null
   tournaments: CourseTournamentRow[]
 }
 
@@ -61,14 +79,30 @@ export class CourseRepository extends BaseRepository {
   }
 
   /**
+   * Load the verified inputs the Course Intelligence Engine needs for a course:
+   * the core record plus its optional `CourseCharacteristic` analytics row.
+   * Returns `null` when the course does not exist or is soft-deleted. Read-only.
+   * Reused by both the course detail page and the tournament host-course view.
+   */
+  async findProfileInputsById(id: string): Promise<CourseProfileInputsRow | null> {
+    const course = await this.findById(id)
+    if (!course) return null
+    const characteristic = await this.prisma.courseCharacteristic.findUnique({
+      where: { courseId: id },
+    })
+    return { course, characteristic }
+  }
+
+  /**
    * Load a course for the detail page: the course record plus every tournament
    * linked to it via `tournament_courses`, newest first. Returns `null` when
    * the id does not exist or the row is soft-deleted, so the caller can render a
    * proper 404. The id is bound, never interpolated (injection-safe). Read-only.
    */
   async findDetailById(id: string): Promise<CourseDetailRow | null> {
-    const course = await this.findById(id)
-    if (!course) return null
+    const inputs = await this.findProfileInputsById(id)
+    if (!inputs) return null
+    const { course, characteristic } = inputs
 
     const tournaments = await this.prisma.$queryRaw<CourseTournamentRow[]>(Prisma.sql`
       SELECT
@@ -88,7 +122,7 @@ export class CourseRepository extends BaseRepository {
       ORDER BY tc.year DESC, t."startDate" DESC NULLS LAST, t.name ASC
     `)
 
-    return { course, tournaments }
+    return { course, characteristic, tournaments }
   }
 
   /**
