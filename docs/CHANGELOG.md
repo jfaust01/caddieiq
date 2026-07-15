@@ -10,6 +10,34 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+**Course Geolocation Engine**
+
+- New engine (`lib/imports/course-geolocation.ts` + `lib/providers/geocoding`)
+  that gives every golf course a **VERIFIED** latitude/longitude — the
+  prerequisite for weather, maps, and travel. Coordinates come from a swappable
+  geocoding provider behind a `GeocodingProvider` interface; the default is
+  **OpenStreetMap Nominatim** (zero-config, no API key). A course is only stored
+  as `VERIFIED` when the provider returns an actual mapped golf-course feature
+  (`leisure=golf_course`) — a clubhouse `restaurant` POI or a locality centroid
+  is rejected and the course is left `UNKNOWN`. Honesty over coverage: a
+  coordinate is never approximated.
+- New `Course` provenance columns (`coordinateConfidence` enum
+  `VERIFIED | ESTIMATED | UNKNOWN`, `coordinateSource`, `coordinatesVerifiedAt`)
+  and a guarded `CourseRepository.setVerifiedCoordinates` that atomically writes
+  a coordinate only when the course is not already `VERIFIED` — re-imports of the
+  SportsDataIO course feed (which carries no coordinates) can never clobber a
+  verified position. The importer is incremental and idempotent: only
+  not-yet-verified courses are looked up.
+- Query normalization (drop parenthetical sub-course qualifiers, expand
+  `GC`/`CC`/`G&CC`) lifts match coverage without weakening the verification gate,
+  since it only changes the search string, not what counts as verified.
+- **Weather Intelligence** now consumes only `VERIFIED` coordinates (enforced in
+  `WeatherRepository.findWeatherVenueById`), and the Tournament Page renders a
+  gap-aware "Awaiting course coordinates" state that names the Course Geolocation
+  Engine and states no approximate location is used.
+- `docs/COURSE_GEOLOCATION.md` specifying the engine, provider abstraction,
+  verification rule, provenance model, and consumer contract.
+
 **Weather Intelligence Engine**
 
 - New signal family (`lib/weather-intelligence`) that turns a verified,

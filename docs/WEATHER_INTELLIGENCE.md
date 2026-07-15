@@ -159,15 +159,20 @@ Two tables (see [DATA_CATALOG.md](./DATA_CATALOG.md)):
 `runWeatherImport(tournamentIds?)` is idempotent and honest by construction:
 
 - It only fetches for tournaments that have a **linked host course with
-  coordinates** and fall inside the provider's useful forecast horizon.
-  Events with no venue or no coordinates are **skipped, not fetched for a
-  fabricated location**.
+  VERIFIED coordinates** and fall inside the provider's useful forecast horizon.
+  Coordinates are supplied and vouched for by the **Course Geolocation Engine**
+  (see [COURSE_GEOLOCATION.md](./COURSE_GEOLOCATION.md)); the venue reader
+  surfaces a coordinate only when its `coordinateConfidence = VERIFIED`. Events
+  with no venue or no verified coordinates are **skipped, not fetched for a
+  fabricated or approximate location**.
 - The client is **timeout-guarded, retrying, and rate-limited**, and it fails
   loudly when `OPENWEATHER_API_KEY` is absent rather than returning stub data.
 - Each tournament's snapshot is replaced **atomically** (delete + insert in one
   transaction), so a reader never sees a half-written forecast.
-- Run it **after** the tournament import and course linking, so each event has a
-  venue to locate a forecast for.
+- Run it **after** the tournament import, course linking, and
+  `runCourseGeolocation`, so each event has a verified venue to locate a
+  forecast for. A course still `UNKNOWN` produces the Tournament Page's
+  "Awaiting course coordinates" state rather than any weather.
 
 Until a key is set and an import has run, the entire surface reports
 `unavailable` — which is the correct, honest state, not a bug.
