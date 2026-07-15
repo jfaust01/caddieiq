@@ -1,0 +1,35 @@
+/**
+ * Repository layer — the only layer permitted to write to the database.
+ *
+ * All persistence logic is centralized here. Repositories accept already-
+ * validated CaddieIQ domain objects (`lib/domain`) and translate them into
+ * Prisma writes. They never call providers, never map from raw payloads, and
+ * never validate — those concerns live in `lib/providers`, `lib/domain`, and
+ * `lib/data-quality` respectively.
+ *
+ * Future import jobs should depend only on these repositories to persist data.
+ */
+
+// Result & error contracts
+export * from "./repository-result"
+export * from "./errors"
+export {
+  RepositoryLogger,
+  consoleRepositorySink,
+  silentRepositorySink,
+  type RepositoryLogEntry,
+  type RepositoryLogLevel,
+  type RepositoryLogSink,
+} from "./logger"
+
+// Base plumbing (exported for testing / custom repositories)
+export { BaseRepository, type UpsertPlan, type SlugDelegate } from "./base-repository"
+
+// Concrete repositories + lazily-constructed default instances
+export { PlayerRepository, getPlayerRepository } from "./player-repository"
+export { CourseRepository, getCourseRepository } from "./course-repository"
+export {
+  TournamentRepository,
+  getTournamentRepository,
+  type TournamentPersistInput,
+} from "./tournament-repository"
