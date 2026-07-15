@@ -60,10 +60,13 @@ PlayerSkillProfile (verified) ───┘        (pure, no I/O)      (score | n
     unknown). Built by `features/players/services/player-course-fit.ts` from
     verified analytics only — the honest all-`null` default today.
 - **Player Page:** `features/players/services/player-service.ts` resolves the
-  player's next upcoming tournament course (fallback: most recent linked event)
-  via `PlayerRepository.findNextCourseFitContextById()`, then attaches
-  `courseFit`. Rendered by `features/players/components/course-fit-card.tsx` in
-  the Analytics tab.
+  player's next tournament context via
+  `PlayerRepository.findNextCourseFitContextById()` and attaches `courseFit`
+  **only when that context is a verified `UPCOMING` entry with a linked host
+  course**. Course Fit is forward-looking: a historical-only result is treated as
+  no context (`courseFit: null`), and the card renders a neutral placeholder
+  rather than a fit derived from a past event. Rendered by
+  `features/players/components/course-fit-card.tsx` in the Analytics tab.
 - **Tournament Page:** `tournamentService.getFieldFitBoard()` scores the whole
   field against the host course and ranks it into the hub lists. Rendered by
   `features/tournaments/components/field-fit-board.tsx`.

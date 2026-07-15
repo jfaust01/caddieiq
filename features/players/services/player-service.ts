@@ -45,10 +45,12 @@ import { mapPlayer, mapPlayerDetail } from "./player-mapper"
 const PLAYER_NEWS_LIMIT = 6
 
 /**
- * Resolve a player's Course Fit against the venue of their next upcoming event
- * (or their most recent linked event as a fallback). Returns `null` when there
- * is no such event/course — the UI then renders an honest empty state instead
- * of a fabricated fit.
+ * Resolve a player's Course Fit against the venue of their next **upcoming**
+ * verified tournament entry. Returns `null` — so the UI shows a neutral
+ * placeholder — whenever there is no such context: no upcoming entry, a
+ * historical-only fallback, or an upcoming event without a linked host course.
+ * Course Fit is forward-looking by design; we never compute or display it from a
+ * past event, and we never fabricate a fit.
  *
  * The player's skill profile is built from verified analytics only (all-`null`
  * today, so the model reports low/none confidence), and the course profile is
@@ -60,7 +62,8 @@ async function resolveCourseFit(
   analytics: PlayerAnalytics,
   contextRow: PlayerCourseFitContextRow | null,
 ): Promise<PlayerCourseFit | null> {
-  if (!contextRow) return null
+  // Only a verified upcoming entry yields a fit; a most-recent fallback does not.
+  if (!contextRow || contextRow.timing !== 'UPCOMING') return null
   const courseProfile = await courseService.getCourseIntelligence(contextRow.courseId)
   if (!courseProfile) return null
 

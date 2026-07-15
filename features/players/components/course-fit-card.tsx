@@ -42,19 +42,21 @@ function scoreDisplay(value: number | null): string {
   return value === null ? '\u2014' : `${Math.round(value)}`
 }
 
-/** Human label for the event the fit was computed against. */
-function contextLabel(fit: PlayerCourseFit): string {
-  return fit.context.timing === 'UPCOMING' ? 'Next start' : 'Most recent start'
-}
+/**
+ * Human label for the event the fit was computed against. Course Fit is only
+ * ever computed for a verified upcoming entry, so this is always "Next start".
+ */
+const CONTEXT_LABEL = 'Next start'
 
 /**
  * Course Fit card. Surfaces the {@link PlayerCourseFit} computed by the Course
- * Fit Model for the venue of the player's next (or most recent) event. It is
- * scrupulously honest: when no signal can be scored — the case today, since the
- * platform ingests no per-skill player data — it shows the model's real
- * confidence and explains exactly which inputs are missing rather than inventing
- * a fit number. It lights up automatically as course demand and player skill
- * data arrive.
+ * Fit Model for the venue of the player's next verified **upcoming** tournament.
+ * When there is no such context (`fit` is `null`), it shows a neutral placeholder
+ * rather than a fit derived from a past event. It is scrupulously honest: when no
+ * signal can be scored — the case today, since the platform ingests no per-skill
+ * player data — it shows the model's real confidence and explains exactly which
+ * inputs are missing rather than inventing a fit number. It lights up
+ * automatically as course demand and player skill data arrive.
  */
 export function CourseFitCard({ fit }: CourseFitCardProps) {
   // No scheduled or historical event with a linked course to evaluate against.
@@ -71,8 +73,9 @@ export function CourseFitCard({ fit }: CourseFitCardProps) {
           <p className="flex items-start gap-2 text-sm text-muted-foreground">
             <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             <span className="text-pretty">
-              Course Fit appears once this player is in the field for an event with a linked host
-              course. Nothing here is estimated.
+              Course Fit becomes available when this player has a verified upcoming tournament with a
+              linked host course. It is not calculated from past events, and nothing here is
+              estimated.
             </span>
           </p>
         </CardContent>
@@ -99,20 +102,21 @@ export function CourseFitCard({ fit }: CourseFitCardProps) {
       <CardContent className="flex flex-col gap-6">
         {/* Context: which event/course this fit is for */}
         <p className="text-xs text-muted-foreground text-pretty">
-          {contextLabel(fit)} ·{' '}
+          {CONTEXT_LABEL} ·{' '}
           <Link
             href={`/courses/${context.courseId}`}
             className="font-medium text-foreground underline-offset-2 hover:underline"
           >
             {context.courseName}
-          </Link>{' '}
-          <span aria-hidden>·</span> {context.tournamentName}
+          </Link>
         </p>
 
-        {/* Headline score */}
+        {/* Headline score, labelled with the upcoming tournament it is for */}
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-muted/40 p-4">
           <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">Fit score</span>
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+              Fit score · {context.tournamentName}
+            </span>
             <div className="flex items-baseline gap-2">
               <span className="text-4xl font-semibold tabular-nums">
                 {scoreDisplay(result.score)}

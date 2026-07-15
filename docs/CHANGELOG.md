@@ -29,10 +29,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   explainable, confidence-graded fit. A skill signal contributes only when both
   the course demand and player skill are verified; gaps are reported with a
   reason and the score stays `null` rather than defaulting to `0/100`.
-- Player Page Course Fit card (fit vs. the player's next upcoming event's course,
-  falling back to their most recent linked event) and a tournament-hub field
-  board (Top Fits, Fades, Trending Up, Most Uncertain) with an `X / N scored`
-  coverage counter.
+- Player Page Course Fit card (fit vs. the player's next verified upcoming
+  event's course; a neutral placeholder is shown when there is no such context —
+  it is never computed from past events) and a tournament-hub field board (Top
+  Fits, Fades, Trending Up, Most Uncertain) with an `X / N scored` coverage
+  counter.
 - `docs/COURSE_FIT_MODEL.md` specifying the signals, weighting, banding,
   confidence, and explainability contract.
 
