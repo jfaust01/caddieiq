@@ -309,6 +309,7 @@ model Player {
   rankings         PlayerRanking[]
   tournamentFields TournamentField[]
   seasonStatistics PlayerSeasonStatistic[]
+  newsArticles     NewsArticle[]
 
   @@index([slug])
   @@index([lastName])
@@ -428,6 +429,48 @@ model PlayerSeasonStatistic {
   @@index([season])
   @@index([worldRanking])
   @@map("player_season_statistics")
+}
+
+/// A news article from the data provider (SportsDataIO `/json/News`).
+///
+/// Player association is OPTIONAL: the news feed carries only the provider's
+/// native numeric `PlayerID` (no name), which is reconciled to a `Player` at
+/// import time via the Players feed (PlayerID → name → deterministic slug).
+/// Articles with no resolvable player — general or tournament-wide news — are
+/// retained with `playerId` null rather than discarded. Keyed by the provider's
+/// native `externalId` (NewsID) so re-imports update in place, never duplicate.
+///
+/// Every field is stored verbatim from the source. Nothing is fabricated; a
+/// null field means the provider did not supply it.
+model NewsArticle {
+  id          String    @id @default(cuid())
+  /// Provider's native news id (SportsDataIO `NewsID`). Unique for idempotency.
+  externalId  String    @unique
+  title       String
+  /// Article body/summary as provided (may be absent).
+  content     String?
+  url         String?
+  /// The publishing outlet as reported by the feed (e.g. "RotoBaller").
+  outlet      String?
+  author      String?
+  /// Comma-separated provider categories (stored verbatim).
+  categories  String?
+  /// When the provider last updated the article.
+  publishedAt DateTime?
+  /// Optional player association (null = general/tournament news).
+  playerId    String?
+  /// Provider provenance (the upstream data source, not the news outlet).
+  source      String    @default("sportsdataio")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  player Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([playerId])
+  @@index([publishedAt])
+  @@map("news_articles")
 }
 
 // ---------------------------------------------------------------------------
