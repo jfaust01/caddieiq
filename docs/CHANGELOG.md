@@ -22,6 +22,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `docs/COURSE_INTELLIGENCE.md` specifying the engine, attribute catalog, and
   normalization contract.
 
+**Course Fit Model**
+
+- Pure scoring engine (`lib/analytics/course-fit/model.ts`) that matches a
+  player's skill profile against a course's verified demand profile into an
+  explainable, confidence-graded fit. A skill signal contributes only when both
+  the course demand and player skill are verified; gaps are reported with a
+  reason and the score stays `null` rather than defaulting to `0/100`.
+- Player Page Course Fit card (fit vs. the player's next upcoming event's course,
+  falling back to their most recent linked event) and a tournament-hub field
+  board (Top Fits, Fades, Trending Up, Most Uncertain) with an `X / N scored`
+  coverage counter.
+- `docs/COURSE_FIT_MODEL.md` specifying the signals, weighting, banding,
+  confidence, and explainability contract.
+
 ---
 
 ## [0.1.0] — Foundation

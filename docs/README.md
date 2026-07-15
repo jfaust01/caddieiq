@@ -181,6 +181,7 @@ When writing prompts or PRs that extend the project:
 | [FEATURES.md](./FEATURES.md) | Planned features by module. |
 | [MODELS.md](./MODELS.md) | Ranking and rating model specification. |
 | [COURSE_INTELLIGENCE.md](./COURSE_INTELLIGENCE.md) | The Course Intelligence Engine: the normalized course profile. |
+| [COURSE_FIT_MODEL.md](./COURSE_FIT_MODEL.md) | The Course Fit Model: player-vs-course fit scoring. |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | How to contribute and ship changes. |
 | [CODING_STANDARDS.md](./CODING_STANDARDS.md) | Engineering conventions. |
 | [CHANGELOG.md](./CHANGELOG.md) | Release history. |
