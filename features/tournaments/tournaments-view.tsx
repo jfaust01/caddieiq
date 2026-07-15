@@ -1,24 +1,16 @@
-import { Flag, Plus } from 'lucide-react'
-
-import { ResourceView } from '@/components/shared/resource-view'
-import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/shared/page-header'
+import { PageShell } from '@/components/shared/page-shell'
+import { TournamentDirectory } from '@/features/tournaments/components/tournament-directory'
 
 export function TournamentsView() {
   return (
-    <ResourceView
-      eyebrow="Data"
-      title="Tournaments"
-      description="Manage events, fields, and scheduling context used across your analytics."
-      searchPlaceholder="Search tournaments..."
-      emptyIcon={Flag}
-      emptyTitle="No tournaments yet"
-      emptyDescription="Add an event to track fields, schedules, and the context your models rely on."
-      actions={
-        <Button>
-          <Plus data-icon="inline-start" />
-          Add tournament
-        </Button>
-      }
-    />
+    <PageShell>
+      <PageHeader
+        eyebrow="Data"
+        title="Tournaments"
+        description="Browse the events that power your models and analytics. Search by name and filter by status, tour, or season to find a tournament."
+      />
+      <TournamentDirectory />
+    </PageShell>
   )
 }

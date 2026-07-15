@@ -17,8 +17,10 @@
 
 import type { Tournament } from "@/lib/domain/tournament/types"
 import type { ExternalReference } from "@/lib/domain/shared/types"
+// `Prisma` is imported as a value (not type-only): the directory search below
+// uses `Prisma.sql`/`Prisma.join` to compose a safe, parameterized raw query.
+import { Prisma } from "@/lib/generated/prisma/client"
 import type {
-  Prisma,
   PrismaClient,
   Tournament as TournamentRecord,
 } from "@/lib/generated/prisma/client"
@@ -41,6 +43,53 @@ export interface TournamentPersistInput {
   tourId?: string
   /** Resolved season foreign key, when applicable. */
   seasonId?: string | null
+}
+
+/**
+ * Fully-resolved, database-ready parameters for {@link TournamentRepository.search}.
+ * The feature service translates UI filter state (with its `"ALL"` sentinels)
+ * into this shape; every field here is an active constraint. `skip`/`take` are
+ * the pagination window; all other fields are optional filters.
+ */
+export interface TournamentSearchParams {
+  /** Case-insensitive substring match against the tournament name. */
+  search?: string
+  /** Database `TournamentStatus` value (e.g. `"SCHEDULED"`). */
+  status?: string
+  /** Database `TourType` value (e.g. `"PGA"`); matches the owning tour. */
+  tourType?: string
+  /** Season year (e.g. `2025`); matches the linked season. */
+  seasonYear?: number
+  /** Rows to skip (pagination offset). */
+  skip: number
+  /** Rows to return (page size). */
+  take: number
+}
+
+/**
+ * A single flattened directory row: the tournament plus the joined tour,
+ * season, host-course, and (when derivable) prior-edition champion. Produced by
+ * {@link TournamentRepository.search} and mapped to the UI shape by the feature
+ * layer. Optional relations resolve to `null` when absent.
+ */
+export interface TournamentSearchRow {
+  id: string
+  name: string
+  officialName: string | null
+  slug: string
+  status: string
+  startDate: Date | null
+  endDate: Date | null
+  purse: number | null
+  seasonYear: number | null
+  tourType: string | null
+  tourName: string | null
+  tourCode: string | null
+  courseName: string | null
+  city: string | null
+  stateProvince: string | null
+  country: string | null
+  defendingChampion: string | null
 }
 
 export class TournamentRepository extends BaseRepository {
@@ -67,6 +116,143 @@ export class TournamentRepository extends BaseRepository {
       reason: "external-id lookup not supported by current schema; reconcile by slug",
     })
     return null
+  }
+
+  /**
+   * Server-side directory search: filter, sort, and paginate tournaments *in
+   * the database* and return only the requested page (plus the total match
+   * count).
+   *
+   * This is deliberately not a "load everything and slice in JS" method — every
+   * filter, the join to tour/season/host-course, the chronological sort, and
+   * pagination all execute as SQL, so the client only ever receives one page.
+   * A small parameterized raw query composes the filters (all user input is
+   * bound, never interpolated, so it is injection-safe). Host course is the
+   * `hostCourse` row when flagged, else the first linked course. The
+   * defending-champion column resolves the winner (`finalPosition = 1`) of the
+   * most recent *prior* edition of the same event, and is `null` whenever no
+   * such edition or result exists. Read-only — never mutates.
+   */
+  async search(
+    params: TournamentSearchParams,
+  ): Promise<{ items: TournamentSearchRow[]; total: number }> {
+    const conditions: Prisma.Sql[] = [Prisma.sql`t."deletedAt" IS NULL`]
+
+    if (params.search) {
+      conditions.push(Prisma.sql`t.name ILIKE ${`%${params.search}%`}`)
+    }
+    if (params.status) {
+      conditions.push(Prisma.sql`t.status::text = ${params.status}`)
+    }
+    if (params.tourType) {
+      conditions.push(Prisma.sql`tr.type::text = ${params.tourType}`)
+    }
+    if (typeof params.seasonYear === "number") {
+      conditions.push(Prisma.sql`s.year = ${params.seasonYear}`)
+    }
+
+    const where = Prisma.join(conditions, " AND ")
+    const fromCore = Prisma.sql`
+      FROM tournaments t
+      JOIN tours tr ON tr.id = t."tourId"
+      LEFT JOIN seasons s ON s.id = t."seasonId"
+    `
+
+    const totalRows = await this.prisma.$queryRaw<{ total: number }[]>(
+      Prisma.sql`SELECT count(*)::int AS total ${fromCore} WHERE ${where}`,
+    )
+    const total = totalRows[0]?.total ?? 0
+    if (total === 0 || params.take <= 0) return { items: [], total }
+
+    // Clamp the offset to the last populated page so an over-shooting request
+    // (e.g. the active page after filters shrink the result set) returns real
+    // rows instead of an empty page.
+    const lastPageSkip = Math.max(0, (Math.ceil(total / params.take) - 1) * params.take)
+    const skip = Math.min(Math.max(0, params.skip), lastPageSkip)
+
+    const items = await this.prisma.$queryRaw<TournamentSearchRow[]>(Prisma.sql`
+      SELECT
+        t.id AS "id",
+        t.name AS "name",
+        t."officialName" AS "officialName",
+        t.slug AS "slug",
+        t.status::text AS "status",
+        t."startDate" AS "startDate",
+        t."endDate" AS "endDate",
+        t.purse::float8 AS "purse",
+        s.year AS "seasonYear",
+        tr.type::text AS "tourType",
+        tr.name AS "tourName",
+        tr.code AS "tourCode",
+        course.name AS "courseName",
+        course.city AS "city",
+        course."stateProvince" AS "stateProvince",
+        course.country AS "country",
+        champ."fullName" AS "defendingChampion"
+      ${fromCore}
+      LEFT JOIN LATERAL (
+        SELECT c.name, c.city, c."stateProvince", c.country
+        FROM tournament_courses tc
+        JOIN courses c ON c.id = tc."courseId"
+        WHERE tc."tournamentId" = t.id
+        ORDER BY tc."hostCourse" DESC, c.name ASC
+        LIMIT 1
+      ) course ON true
+      LEFT JOIN LATERAL (
+        SELECT prev.id
+        FROM tournaments prev
+        WHERE prev.name = t.name
+          AND prev."deletedAt" IS NULL
+          AND prev."startDate" IS NOT NULL
+          AND t."startDate" IS NOT NULL
+          AND prev."startDate" < t."startDate"
+        ORDER BY prev."startDate" DESC
+        LIMIT 1
+      ) prev_edition ON true
+      LEFT JOIN LATERAL (
+        SELECT pl."fullName"
+        FROM tournament_fields tf
+        JOIN players pl ON pl.id = tf."playerId"
+        WHERE tf."tournamentId" = prev_edition.id AND tf."finalPosition" = 1
+        LIMIT 1
+      ) champ ON true
+      WHERE ${where}
+      ORDER BY t."startDate" DESC NULLS LAST, t.name ASC
+      LIMIT ${params.take} OFFSET ${skip}
+    `)
+
+    return { items, total }
+  }
+
+  /**
+   * Distinct tours that actually own at least one non-deleted tournament — the
+   * source for the directory's tour filter. Returns `null` results empty so the
+   * feature layer can offer only "All" until an import populates events.
+   * Read-only.
+   */
+  async listReferencedTours(): Promise<Array<{ type: string; name: string; code: string }>> {
+    return this.prisma.$queryRaw<Array<{ type: string; name: string; code: string }>>(Prisma.sql`
+      SELECT DISTINCT tr.type::text AS "type", tr.name AS "name", tr.code AS "code"
+      FROM tours tr
+      JOIN tournaments t ON t."tourId" = tr.id
+      WHERE t."deletedAt" IS NULL
+      ORDER BY tr.name ASC
+    `)
+  }
+
+  /**
+   * Distinct season years referenced by at least one non-deleted tournament —
+   * the source for the directory's season filter, newest first. Read-only.
+   */
+  async listReferencedSeasons(): Promise<number[]> {
+    const rows = await this.prisma.$queryRaw<Array<{ year: number }>>(Prisma.sql`
+      SELECT DISTINCT s.year AS "year"
+      FROM seasons s
+      JOIN tournaments t ON t."seasonId" = s.id
+      WHERE t."deletedAt" IS NULL
+      ORDER BY s.year DESC
+    `)
+    return rows.map((row) => row.year)
   }
 
   /**
