@@ -8,6 +8,8 @@
  * (renders an em-dash) rather than fabricating a value.
  */
 
+import type { FieldAnalyticsSummary } from '@/lib/analytics/types'
+
 /** Lifecycle status of a tournament (mirrors the database enum). */
 export type TournamentStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
 
@@ -124,6 +126,14 @@ export interface FieldEntrant {
 export interface TournamentField {
   size: number
   entrants: FieldEntrant[]
+  /**
+   * Field-level analytics from the Analytics Engine (average strength, form,
+   * and reliability of the assembled field). Consumes the same per-player
+   * analytics as every other surface — never a parallel computation. Its
+   * `ratedPlayers` is 0 when no entrant has season data, so the UI can stay
+   * honest instead of showing invented aggregates.
+   */
+  analyticsSummary: FieldAnalyticsSummary
 }
 
 /** Directory filter state. `ALL` sentinels keep the controls fully typed. */

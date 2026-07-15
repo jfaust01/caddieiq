@@ -24,6 +24,7 @@ import type {
   TournamentSummary,
   TourType,
 } from '@/features/tournaments/types'
+import { analyticsService } from '@/lib/analytics/service'
 import { getFieldRepository } from '@/lib/repositories/field-repository'
 import {
   getTournamentRepository,
@@ -61,11 +62,15 @@ const getTournamentByIdCached = cache(
 const getTournamentFieldCached = cache(
   async (tournamentId: string): Promise<TournamentField> => {
     const repository = getFieldRepository()
-    const [size, rows] = await Promise.all([
+    // The analytics summary is derived by the Analytics Engine (the single
+    // source of derived intelligence) rather than computed here; it shares the
+    // request-cached season population, so this adds no extra field-stats query.
+    const [size, rows, analyticsSummary] = await Promise.all([
       repository.countByTournament(tournamentId),
       repository.listByTournament(tournamentId),
+      analyticsService.getFieldAnalyticsSummary(tournamentId),
     ])
-    return { size, entrants: rows.map(mapFieldEntrant) }
+    return { size, entrants: rows.map(mapFieldEntrant), analyticsSummary }
   },
 )
 

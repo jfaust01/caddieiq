@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { FieldStatusBadge } from '@/features/tournaments/components/field-status-badge'
 import { TournamentPagination } from '@/features/tournaments/components/tournament-pagination'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
@@ -171,6 +172,8 @@ export function TournamentField({ field }: TournamentFieldProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      <FieldAnalyticsSummary summary={field.analyticsSummary} />
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchBar
           placeholder="Search players by name..."
