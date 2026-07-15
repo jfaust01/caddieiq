@@ -33,6 +33,10 @@ import { importNews, type NewsImportSummary } from "./news-import"
 import { importBetting, type BettingImportSummary } from "./betting-import"
 import { importFantasy, type FantasyImportSummary } from "./fantasy-import"
 import { importWeather, type WeatherImportSummary } from "./weather-import"
+import {
+  importCourseCoordinates,
+  type GeolocationSummary,
+} from "./course-geolocation"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -108,6 +112,14 @@ export {
   type WeatherImportSummary,
   type ImportWeatherOptions,
 } from "./weather-import"
+export {
+  CourseGeolocationService,
+  importCourseCoordinates,
+  type GeolocationSummary,
+  type GeolocationOutcome,
+  type GeolocationSkipReason,
+  type GeolocateOptions,
+} from "./course-geolocation"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -278,13 +290,30 @@ export async function runFantasyImport(
 }
 
 /**
- * Import OpenWeather forecasts into `weather_snapshots` / `weather_periods`, one
- * snapshot per tournament, keyed off its linked host course's coordinates.
+ * Give every golf course a VERIFIED latitude/longitude via the Course
+ * Geolocation Engine — the prerequisite for weather, maps, and travel.
  *
- * Run this AFTER {@link runTournamentImport} and {@link runCourseLinking} so
- * each event has a venue to locate a forecast for. Tournaments with no host
- * course or no coordinates are skipped (never fetched for a fabricated
- * location). Idempotent — re-running atomically replaces each snapshot. When
+ * Run this AFTER {@link runCourseImport} has populated the course catalog, and
+ * BEFORE {@link runWeatherImport} (weather only fetches for verified courses).
+ * Idempotent and incremental: only courses not already VERIFIED are looked up,
+ * so re-running processes just the remaining backlog and never overwrites a
+ * previously verified coordinate. Coordinates are never fabricated — a course
+ * with no verified golf-course match is left UNKNOWN. `limit` bounds one run.
+ */
+export async function runCourseGeolocation(limit?: number): Promise<GeolocationSummary> {
+  return importCourseCoordinates({ limit })
+}
+
+/**
+ * Import OpenWeather forecasts into `weather_snapshots` / `weather_periods`, one
+ * snapshot per tournament, keyed off its linked host course's VERIFIED
+ * coordinates.
+ *
+ * Run this AFTER {@link runTournamentImport}, {@link runCourseLinking}, and
+ * {@link runCourseGeolocation} so each event has a venue with verified
+ * coordinates to locate a forecast for. Tournaments with no host course or no
+ * verified coordinates are skipped (never fetched for a fabricated location).
+ * Idempotent — re-running atomically replaces each snapshot. When
  * `tournamentIds` is omitted, upcoming/in-progress events within the provider's
  * useful forecast horizon are refreshed.
  */

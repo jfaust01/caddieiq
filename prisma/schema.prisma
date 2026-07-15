@@ -490,6 +490,15 @@ model Course {
   country         String?
   latitude        Float?
   longitude       Float?
+  // Coordinate provenance (Course Geolocation Engine, Sprint 3.9).
+  // `coordinateConfidence` is the source of truth for whether lat/lng may be
+  // trusted: only VERIFIED coordinates are consumed downstream (Weather, Maps).
+  // UNKNOWN means "not yet located"; ESTIMATED is reserved and never written
+  // automatically. `coordinateSource` records which provider verified them
+  // (e.g. "osm-nominatim"); `coordinatesVerifiedAt` stamps when.
+  coordinateConfidence CoordinateConfidence @default(UNKNOWN)
+  coordinateSource     String?
+  coordinatesVerifiedAt DateTime?
   par             Int?
   yardage         Int?
   altitudeFt      Int?
@@ -506,7 +515,19 @@ model Course {
 
   @@index([slug])
   @@index([country])
+  // Lets the geolocation engine cheaply find courses still needing coordinates.
+  @@index([coordinateConfidence])
   @@map("courses")
+}
+
+/// Trust level for a course's stored latitude/longitude. Only VERIFIED
+/// coordinates are consumed by Weather Intelligence, Maps, and other spatial
+/// features. ESTIMATED is reserved for a future heuristic path and is never
+/// written automatically this sprint; UNKNOWN is the un-located default.
+enum CoordinateConfidence {
+  VERIFIED
+  ESTIMATED
+  UNKNOWN
 }
 
 /// Analytics describing how a course plays. One record per course.

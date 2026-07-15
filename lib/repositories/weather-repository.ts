@@ -154,10 +154,15 @@ export class WeatherRepository extends BaseRepository {
 
   /**
    * A tournament's venue coordinates and schedule, resolved from its linked host
-   * course. Returns `null` for a missing/soft-deleted tournament; venue
-   * `latitude`/`longitude` are `null` when the course lacks coordinates. Powers
-   * both the importer (where to fetch) and the engine (how to label days).
-   * The id is bound, never interpolated. Read-only.
+   * course. Returns `null` for a missing/soft-deleted tournament.
+   *
+   * Coordinates are surfaced ONLY when the host course's
+   * `coordinateConfidence = 'VERIFIED'`; for any other confidence (UNKNOWN, or
+   * the reserved ESTIMATED) `latitude`/`longitude` come back `null`. This is the
+   * enforcement point for the platform rule that weather is never fetched from
+   * an unverified or fabricated location — the importer sees no coordinate to
+   * fetch, and the engine reports the event as awaiting coordinates. The id is
+   * bound, never interpolated. Read-only.
    */
   async findWeatherVenueById(tournamentId: string): Promise<WeatherVenueRow | null> {
     const rows = await this.prisma.$queryRaw<WeatherVenueRow[]>(Prisma.sql`
@@ -173,7 +178,13 @@ export class WeatherRepository extends BaseRepository {
         course.longitude    AS "longitude"
       FROM tournaments t
       LEFT JOIN LATERAL (
-        SELECT c.id, c.name, c.latitude, c.longitude
+        SELECT
+          c.id,
+          c.name,
+          -- Only trust VERIFIED coordinates; otherwise expose NULL so weather
+          -- degrades to "awaiting coordinates" instead of using unverified data.
+          CASE WHEN c."coordinateConfidence" = 'VERIFIED' THEN c.latitude END  AS latitude,
+          CASE WHEN c."coordinateConfidence" = 'VERIFIED' THEN c.longitude END AS longitude
         FROM tournament_courses tc
         JOIN courses c ON c.id = tc."courseId" AND c."deletedAt" IS NULL
         WHERE tc."tournamentId" = t.id

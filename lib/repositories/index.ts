@@ -27,7 +27,12 @@ export { BaseRepository, type UpsertPlan, type SlugDelegate } from "./base-repos
 
 // Concrete repositories + lazily-constructed default instances
 export { PlayerRepository, getPlayerRepository } from "./player-repository"
-export { CourseRepository, getCourseRepository } from "./course-repository"
+export {
+  CourseRepository,
+  getCourseRepository,
+  type CourseGeocodeTargetRow,
+  type VerifiedCoordinatesInput,
+} from "./course-repository"
 export {
   TournamentRepository,
   getTournamentRepository,
