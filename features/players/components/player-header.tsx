@@ -31,6 +31,13 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 /** Profile header: identity, key facts, and recent form. */
 export function PlayerHeader({ player }: PlayerHeaderProps) {
+  // Prefer the player's own world ranking; otherwise fall back to the most
+  // recent imported season ranking (both are real provider data — never fabricated).
+  const latestSeasonRank = player.seasonStatistics.find(
+    (s) => s.worldRanking !== null,
+  )?.worldRanking ?? null
+  const worldRanking = player.worldRanking ?? latestSeasonRank
+
   return (
     <div className="flex flex-col gap-4">
       <Button
@@ -72,7 +79,7 @@ export function PlayerHeader({ player }: PlayerHeaderProps) {
           </div>
 
           <dl className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-            <Fact label="World Rank" value={worldRankDisplay(player.worldRanking)} />
+            <Fact label="World Rank" value={worldRankDisplay(worldRanking)} />
             <Fact label="Age" value={numberDisplay(player.age)} />
             <Fact label="Turned Pro" value={numberDisplay(player.turnedPro)} />
             <Fact label="Plays" value={handednessLabel(player.handedness)} />

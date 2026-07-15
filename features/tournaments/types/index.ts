@@ -107,6 +107,12 @@ export interface FieldEntrant {
   isAlternate: boolean
   withdrawn: boolean
   cutMade: boolean | null
+  /**
+   * The player's most recent season World Golf Ranking, or null when none has
+   * been imported. Sourced live from season stats — never fabricated — and
+   * treated as indicative given the provider tier's known rank obfuscation.
+   */
+  worldRanking: number | null
 }
 
 /**

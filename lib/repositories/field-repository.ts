@@ -58,6 +58,13 @@ export interface FieldEntryRow {
   isAlternate: boolean
   withdrawn: boolean
   cutMade: boolean | null
+  /**
+   * The player's most recent season World Golf Ranking, or null when no season
+   * statistics have been imported for them. Sourced from the live season-stats
+   * import — never fabricated. Treated as indicative given the provider tier's
+   * known rank obfuscation.
+   */
+  worldRanking: number | null
 }
 
 /** Compact entrant used for the tournament hub's field preview. */
@@ -172,9 +179,19 @@ export class FieldRepository extends BaseRepository {
         tf.status::text AS "status",
         tf."isAlternate" AS "isAlternate",
         tf.withdrawn AS "withdrawn",
-        tf."cutMade" AS "cutMade"
+        tf."cutMade" AS "cutMade",
+        stat."worldRanking" AS "worldRanking"
       FROM tournament_fields tf
       JOIN players p ON p.id = tf."playerId" AND p."deletedAt" IS NULL
+      -- The player's most recent season ranking, if any has been imported.
+      -- LEFT JOIN LATERAL keeps entrants without stats in the roster (rank null).
+      LEFT JOIN LATERAL (
+        SELECT s."worldRanking"
+        FROM player_season_statistics s
+        WHERE s."playerId" = p.id
+        ORDER BY s.season DESC
+        LIMIT 1
+      ) stat ON true
       WHERE tf."tournamentId" = ${tournamentId}
       ORDER BY p."fullName" ASC
     `)
