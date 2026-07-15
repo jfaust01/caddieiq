@@ -304,12 +304,15 @@ model Player {
   deletedAt     DateTime?
 
   // Relations
-  nationality      Nationality?            @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
-  tourHistory      PlayerTourHistory[]
-  rankings         PlayerRanking[]
-  tournamentFields TournamentField[]
-  seasonStatistics PlayerSeasonStatistic[]
-  newsArticles     NewsArticle[]
+  nationality        Nationality?            @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
+  tourHistory        PlayerTourHistory[]
+  rankings           PlayerRanking[]
+  tournamentFields   TournamentField[]
+  seasonStatistics   PlayerSeasonStatistic[]
+  newsArticles       NewsArticle[]
+  bettingOutcomes    BettingOutcome[]
+  fantasyProjections FantasyProjection[]
+  dfsSalaries        DfsSalary[]
 
   @@index([slug])
   @@index([lastName])
@@ -320,13 +323,13 @@ model Player {
 
 /// A country / nationality reference used by players.
 model Nationality {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  iso2      String   @unique
-  iso3      String   @unique
+  iso2      String    @unique
+  iso3      String    @unique
   flagEmoji String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   // Relations
@@ -414,8 +417,8 @@ model PlayerSeasonStatistic {
   pointsLost           Float?
 
   /// Provider provenance: the source name and its native season-stat id.
-  source         String  @default("sportsdataio")
-  externalId     String?
+  source     String  @default("sportsdataio")
+  externalId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -498,8 +501,8 @@ model Course {
   deletedAt       DateTime?
 
   // Relations
-  characteristic     CourseCharacteristic?
-  tournamentCourses  TournamentCourse[]
+  characteristic    CourseCharacteristic?
+  tournamentCourses TournamentCourse[]
 
   @@index([slug])
   @@index([country])
@@ -508,31 +511,31 @@ model Course {
 
 /// Analytics describing how a course plays. One record per course.
 model CourseCharacteristic {
-  id                  String       @id @default(cuid())
-  courseId            String       @unique
-  style               CourseStyle?
-  fairwayGrass        GrassType?
-  greenGrass          GrassType?
-  roughGrass          GrassType?
-  averageGreenSize    Float?
-  greenSpeed          Float?
-  fairwayWidth        Float?
-  roughLength         Float?
-  treeLined           Boolean?
-  waterHazards        Int?
-  windExposure        Float?
-  elevationChange     Float?
-  walkingDifficulty   Float?
-  drivingImportance   Float?
-  approachImportance  Float?
-  shortGameImportance Float?
-  puttingImportance   Float?
+  id                   String       @id @default(cuid())
+  courseId             String       @unique
+  style                CourseStyle?
+  fairwayGrass         GrassType?
+  greenGrass           GrassType?
+  roughGrass           GrassType?
+  averageGreenSize     Float?
+  greenSpeed           Float?
+  fairwayWidth         Float?
+  roughLength          Float?
+  treeLined            Boolean?
+  waterHazards         Int?
+  windExposure         Float?
+  elevationChange      Float?
+  walkingDifficulty    Float?
+  drivingImportance    Float?
+  approachImportance   Float?
+  shortGameImportance  Float?
+  puttingImportance    Float?
   scramblingDifficulty Float?
-  birdieRate          Float?
-  bogeyRate           Float?
-  varianceRating      Float?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  birdieRate           Float?
+  bogeyRate            Float?
+  varianceRating       Float?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   // Relations
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -571,11 +574,14 @@ model Tournament {
   deletedAt          DateTime?
 
   // Relations
-  tour              Tour               @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  season            Season?            @relation(fields: [seasonId], references: [id], onDelete: SetNull)
-  tournamentCourses TournamentCourse[]
-  field             TournamentField[]
-  rounds            Round[]
+  tour               Tour                @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  season             Season?             @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  tournamentCourses  TournamentCourse[]
+  field              TournamentField[]
+  rounds             Round[]
+  bettingEvents      BettingEvent[]
+  fantasyProjections FantasyProjection[]
+  dfsSalaries        DfsSalary[]
 
   @@index([slug])
   @@index([tourId])
@@ -699,8 +705,8 @@ model PlayerRound {
   updatedAt         DateTime  @updatedAt
 
   // Relations
-  round           Round            @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  tournamentField TournamentField  @relation(fields: [tournamentFieldId], references: [id], onDelete: Cascade)
+  round           Round           @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  tournamentField TournamentField @relation(fields: [tournamentFieldId], references: [id], onDelete: Cascade)
   statistic       RoundStatistic?
 
   // A player has exactly one record per round.
@@ -751,4 +757,144 @@ model RoundStatistic {
   @@unique([playerRoundId])
   @@index([playerRoundId])
   @@map("round_statistics")
+}
+
+// ---------------------------------------------------------------------------
+// Betting & Fantasy
+//
+// These pipelines are fully built, but on the current SportsDataIO trial tier
+// the *values* arrive scrambled (see docs/DATA_CATALOG.md §scrambling). Each
+// scramble-prone model therefore carries an `available` flag: when the importer
+// detects a sentinel it persists the real STRUCTURE (ids, relationships) with
+// `available = false` and null values, so nothing fake is ever surfaced and
+// real values flow automatically once a production key is installed. DFS
+// salaries are the exception — they are real when an event is slated — so
+// `DfsSalary` has no `available` gate.
+// ---------------------------------------------------------------------------
+
+/// A bookmaker betting event tied to a tournament (SportsDataIO BettingEvent).
+/// Keyed by the provider's `BettingEventID` for idempotent re-imports.
+model BettingEvent {
+  id           String    @id @default(cuid())
+  /// Provider's native BettingEventID.
+  externalId   String    @unique
+  /// Resolved CaddieIQ tournament (via slug), or null when unresolved.
+  tournamentId String?
+  name         String?
+  startDate    DateTime?
+  source       String    @default("sportsdataio")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tournament Tournament?     @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  markets    BettingMarket[]
+
+  @@index([tournamentId])
+  @@map("betting_events")
+}
+
+/// A market within a betting event (e.g. "Tournament Winner"). `available` is
+/// false when the provider scrambled the market descriptor, in which case
+/// `betType` is null and its outcomes carry no real payouts.
+model BettingMarket {
+  id             String   @id @default(cuid())
+  /// Provider's native BettingMarketID.
+  externalId     String   @unique
+  bettingEventId String
+  betType        String?
+  name           String?
+  /// True only when the market descriptor was NOT scrambled.
+  available      Boolean  @default(false)
+  source         String   @default("sportsdataio")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  event    BettingEvent     @relation(fields: [bettingEventId], references: [id], onDelete: Cascade)
+  outcomes BettingOutcome[]
+
+  @@index([bettingEventId])
+  @@map("betting_markets")
+}
+
+/// A single selection within a market (typically a player to win). Payout
+/// fields are null and `available` is false when the value was scrambled.
+model BettingOutcome {
+  id              String   @id @default(cuid())
+  /// Provider's native BettingOutcomeID.
+  externalId      String   @unique
+  bettingMarketId String
+  /// Resolved CaddieIQ player (via slug), or null when unresolved / non-player.
+  playerId        String?
+  label           String?
+  /// American odds (e.g. +500); null when scrambled.
+  payoutAmerican  Int?
+  /// Decimal odds; null when scrambled.
+  payoutDecimal   Decimal?
+  /// True only when the payout was NOT scrambled.
+  available       Boolean  @default(false)
+  source          String   @default("sportsdataio")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  market BettingMarket @relation(fields: [bettingMarketId], references: [id], onDelete: Cascade)
+  player Player?       @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([bettingMarketId])
+  @@index([playerId])
+  @@map("betting_outcomes")
+}
+
+/// Per-tournament fantasy projection for a player. `available` is false when the
+/// projected points were scrambled/implausible on the trial tier, in which case
+/// the point fields are null. Keyed by a composite tournament+player external id.
+model FantasyProjection {
+  id                      String   @id @default(cuid())
+  /// Composite `tournamentExternalId:playerExternalId` idempotency key.
+  externalId              String   @unique
+  tournamentId            String?
+  playerId                String?
+  /// Projected DraftKings fantasy points; null when scrambled.
+  fantasyPointsDraftKings Decimal?
+  /// Projected FanDuel fantasy points; null when scrambled.
+  fantasyPointsFanDuel    Decimal?
+  /// True only when at least one projection value was NOT scrambled.
+  available               Boolean  @default(false)
+  source                  String   @default("sportsdataio")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  player     Player?     @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([tournamentId])
+  @@index([playerId])
+  @@map("fantasy_projections")
+}
+
+/// A DFS operator salary for a player on a slate. Salaries are REAL whenever an
+/// event is slated (upcoming/recent), so there is no scramble gate here — an
+/// absent salary simply means the provider did not supply one. Keyed by a
+/// composite slate+operator-player external id.
+model DfsSalary {
+  id                 String   @id @default(cuid())
+  /// Composite `slateId:operatorPlayerId` idempotency key.
+  externalId         String   @unique
+  tournamentId       String?
+  playerId           String?
+  /// DFS operator, e.g. "DraftKings" or "FanDuel".
+  operator           String
+  slateId            String?
+  operatorPlayerName String?
+  /// Salary in whole dollars; null when the operator did not price the player.
+  salary             Int?
+  source             String   @default("sportsdataio")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  player     Player?     @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([tournamentId])
+  @@index([playerId])
+  @@map("dfs_salaries")
 }
