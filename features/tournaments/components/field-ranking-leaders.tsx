@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Trophy, TrendingUp } from 'lucide-react'
+import { Trophy, TrendingUp, Sparkles } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import type { AnalyticsBand } from '@/lib/analytics/types'
@@ -90,7 +90,7 @@ export function FieldRankingLeaders({ leaders }: FieldRankingLeadersProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 px-4 py-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 px-4 py-4 sm:grid-cols-2 lg:grid-cols-3">
         <LeaderList
           icon={Trophy}
           title="Top ranked"
@@ -102,6 +102,12 @@ export function FieldRankingLeaders({ leaders }: FieldRankingLeadersProps) {
           title="Top form"
           caption="Best recent form in the field"
           leaders={leaders.topForm}
+        />
+        <LeaderList
+          icon={Sparkles}
+          title="Best value"
+          caption="Top fantasy production in the field"
+          leaders={leaders.topFantasy}
         />
       </div>
 

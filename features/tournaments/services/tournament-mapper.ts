@@ -43,9 +43,9 @@ function toFieldStatus(value: string | null): FieldEntryStatus {
 /**
  * Map a flattened field row to the UI `FieldEntrant`.
  *
- * `rankingScore` defaults to null here (this mapper is a pure row translation);
- * the tournament service enriches it from the Ranking/Analytics engines so the
- * ranking score stays a single derived source rather than a duplicate here.
+ * The ranking scores default to null here (this mapper is a pure row
+ * translation); the tournament service enriches them from the Ranking/Analytics
+ * engines so the scores stay a single derived source rather than a duplicate.
  */
 export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
   return {
@@ -58,6 +58,8 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     cutMade: row.cutMade ?? null,
     worldRanking: row.worldRanking ?? null,
     rankingScore: null,
+    formScore: null,
+    fantasyScore: null,
   }
 }
 

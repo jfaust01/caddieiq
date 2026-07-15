@@ -223,6 +223,40 @@ export class PlayerRepository extends BaseRepository {
     return { withTour: rows[0]?.with_tour ?? 0, total: rows[0]?.total ?? 0 }
   }
 
+  /**
+   * Compact display metadata for a set of player ids — full name, country code,
+   * and active tour type — for surfaces (like the rankings directory) that get
+   * their ordering from the derived engines but still need to label each player.
+   *
+   * Batched into a single query and returned unordered; the caller restores the
+   * engine's ordering. Ids that are missing or soft-deleted are simply absent
+   * from the result rather than fabricated. Read-only.
+   */
+  async findDirectoryMetadataByIds(
+    ids: readonly string[],
+  ): Promise<Array<{ id: string; fullName: string; countryCode: string | null; tourType: string | null }>> {
+    if (ids.length === 0) return []
+    return this.prisma.$queryRaw<
+      Array<{ id: string; fullName: string; countryCode: string | null; tourType: string | null }>
+    >(Prisma.sql`
+      SELECT
+        p.id,
+        p."fullName",
+        COALESCE(n.iso3, p."countryCode") AS "countryCode",
+        (
+          SELECT t.type::text
+          FROM player_tour_histories th
+          JOIN tours t ON t.id = th."tourId"
+          WHERE th."playerId" = p.id AND th.active = true
+          ORDER BY th."joinedAt" DESC
+          LIMIT 1
+        ) AS "tourType"
+      FROM players p
+      LEFT JOIN nationalities n ON n.id = p."nationalityId"
+      WHERE p."deletedAt" IS NULL AND p.id IN (${Prisma.join([...ids])})
+    `)
+  }
+
   /** Find a player by internal id, with read relations. Excludes soft-deleted rows. */
   async findDetailById(id: string): Promise<PlayerWithRelations | null> {
     const record = await this.prisma.player.findFirst({

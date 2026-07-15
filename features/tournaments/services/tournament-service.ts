@@ -99,6 +99,7 @@ function buildRankingLeaders(
     ratedPlayers: overall?.totalRanked ?? 0,
     topRanked: boardToLeaders(overall, nameById),
     topForm: boardToLeaders(boardFor('recentForm'), nameById),
+    topFantasy: boardToLeaders(boardFor('fantasy'), nameById),
   }
 }
 
@@ -130,14 +131,30 @@ const getTournamentFieldCached = cache(
       analyticsService.getAnalyticsForPlayers(playerIds),
       rankingService.getBoardsForPlayers(playerIds),
     ])
-    const scoreByPlayer = new Map(
-      analytics.map((a) => [a.playerId, a.isEmpty ? null : a.overallRating]),
+    // One lookup per player carrying the three field-sort scores. All come from
+    // the SAME analytics profile (overall + the recentForm/fantasyProduction
+    // metrics), so field sorts agree with the rankings shown everywhere else.
+    const scoresByPlayer = new Map(
+      analytics.map((a) => {
+        if (a.isEmpty) return [a.playerId, { overall: null, form: null, fantasy: null }] as const
+        const metric = (key: string) =>
+          a.scores.find((score) => score.key === key)?.value ?? null
+        return [
+          a.playerId,
+          { overall: a.overallRating, form: metric('recentForm'), fantasy: metric('fantasyProduction') },
+        ] as const
+      }),
     )
 
-    const entrants = rows.map((row) => ({
-      ...mapFieldEntrant(row),
-      rankingScore: scoreByPlayer.get(row.playerId) ?? null,
-    }))
+    const entrants = rows.map((row) => {
+      const scores = scoresByPlayer.get(row.playerId)
+      return {
+        ...mapFieldEntrant(row),
+        rankingScore: scores?.overall ?? null,
+        formScore: scores?.form ?? null,
+        fantasyScore: scores?.fantasy ?? null,
+      }
+    })
 
     const nameById = new Map(entrants.map((entrant) => [entrant.playerId, entrant.playerName]))
     const rankingLeaders = buildRankingLeaders(rankingBoards, nameById)

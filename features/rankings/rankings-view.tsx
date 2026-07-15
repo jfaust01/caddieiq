@@ -6,91 +6,94 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/shared/page-header'
 import { PageShell } from '@/components/shared/page-shell'
-import type { RankingType } from '@/lib/ranking'
+import { TournamentPagination } from '@/features/tournaments/components/tournament-pagination'
 
 import { RankingTabs } from './components/ranking-tabs'
 import { RankingSummaryBar } from './components/ranking-summary-bar'
 import { RankingFilters } from './components/ranking-filters'
 import { RankingsTable } from './components/rankings-table'
-import { InsightPanel } from './components/insight-panel'
-import { RankingDetailPanel } from './components/ranking-detail-panel'
 import { useRankings } from './hooks/use-rankings'
 import type { RankingView } from './types'
 
 interface RankingsViewProps {
-  /** Active ranking type, resolved from the route. */
-  type: RankingType
-  /** Enriched view computed on the server (the Ranking Engine runs in an RSC). */
-  initialView: RankingView
+  /** The live view computed on the server (the engine runs in an RSC). */
+  view: RankingView
 }
 
 /**
- * Rankings Experience: a tabbed, filterable leaderboard driven by the Ranking
- * Engine. Selecting a row opens a slide-over preview with the weighted score
- * breakdown and a placeholder AI rationale. The active board is route-driven
- * (`/rankings/[type]`) so it is linkable and shareable.
+ * The live Rankings directory: a filterable, paginated leaderboard of the
+ * CaddieIQ Ranking Engine's boards. The active board is route-driven
+ * (`/rankings/[type]`) so it is linkable and shareable; Search, Tour, and
+ * Season filters plus pagination run over the ranked population on the client.
+ *
+ * This is the platform's real "opinion layer" — every row, score, grade, band,
+ * and confidence is engine output over live analytics. It deliberately shows
+ * only what the data can back, so there are no fabricated trend, course-fit, or
+ * market-value columns.
  */
-export function RankingsView({ type, initialView }: RankingsViewProps) {
-  const rankings = useRankings(type, initialView)
+export function RankingsView({ view }: RankingsViewProps) {
+  const rankings = useRankings(view)
+
+  const boardEmpty = view.totalRanked === 0
 
   return (
     <PageShell>
       <PageHeader
         title="Rankings"
-        description="Multi-model leaderboards blending recent form, course fit, value, and momentum into a single composite score."
+        description="CaddieIQ's leaderboards — every player ordered by the same season-normalized analytics shown across the platform."
       />
 
-      <RankingTabs activeType={type} />
+      <RankingTabs activeSlug={view.slug} />
 
       <RankingSummaryBar summary={rankings.summary} />
 
-      <InsightPanel
-        insights={rankings.insights}
-        onSelectPlayer={rankings.selectPlayer}
-      />
-
-      <div className="flex flex-col gap-4">
-        <RankingFilters
-          filters={rankings.filters}
-          options={rankings.options}
-          setSearch={rankings.setSearch}
-          setFilter={rankings.setFilter}
-          hasActiveFilters={rankings.hasActiveFilters}
-          onReset={rankings.resetFilters}
+      {boardEmpty ? (
+        <EmptyState
+          icon={Trophy}
+          title="No players ranked yet"
+          description="Once season statistics are imported, players will be scored and ranked here."
         />
-
-        {rankings.rows.length === 0 ? (
-          <EmptyState
-            icon={Trophy}
-            title="No players match these filters"
-            description="Try clearing the filters or broadening your search to see more of the field."
-            action={
-              rankings.hasActiveFilters ? (
-                <Button variant="outline" onClick={rankings.resetFilters}>
-                  Clear filters
-                </Button>
-              ) : undefined
-            }
+      ) : (
+        <div className="flex flex-col gap-4">
+          <RankingFilters
+            filters={rankings.filters}
+            options={rankings.options}
+            setSearch={rankings.setSearch}
+            setFilter={rankings.setFilter}
+            hasActiveFilters={rankings.hasActiveFilters}
+            onReset={rankings.resetFilters}
           />
-        ) : (
-          <RankingsTable
-            rows={rankings.rows}
-            selectedPlayerId={rankings.selectedPlayerId}
-            onSelect={rankings.selectPlayer}
-            isFavorite={rankings.isFavorite}
-            onToggleFavorite={rankings.toggleFavorite}
-          />
-        )}
-      </div>
 
-      <RankingDetailPanel
-        row={rankings.selectedRow}
-        weights={rankings.weights}
-        open={rankings.selectedPlayerId !== null}
-        onOpenChange={(open) => {
-          if (!open) rankings.selectPlayer(null)
-        }}
-      />
+          <p className="text-xs text-muted-foreground">
+            {rankings.filteredCount === rankings.totalRanked
+              ? `${rankings.totalRanked} ${rankings.totalRanked === 1 ? 'player' : 'players'} ranked`
+              : `${rankings.filteredCount} of ${rankings.totalRanked} players`}
+          </p>
+
+          {rankings.pageRows.length === 0 ? (
+            <EmptyState
+              icon={Trophy}
+              title="No players match these filters"
+              description="Try clearing the filters or broadening your search to see more of the board."
+              action={
+                rankings.hasActiveFilters ? (
+                  <Button variant="outline" onClick={rankings.resetFilters}>
+                    Clear filters
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <RankingsTable rows={rankings.pageRows} />
+          )}
+
+          <TournamentPagination
+            page={rankings.page}
+            totalPages={rankings.totalPages}
+            onPageChange={rankings.setPage}
+          />
+        </div>
+      )}
     </PageShell>
   )
 }

@@ -122,6 +122,18 @@ export interface FieldEntrant {
    * the platform ranking rather than being a separate calculation.
    */
   rankingScore: number | null
+  /**
+   * The player's Recent Form score (0–100), or null when unrated. Lets the
+   * field be sorted by who is playing best right now, using the same analytic
+   * the Form ranking is built from.
+   */
+  formScore: number | null
+  /**
+   * The player's Fantasy Production score (0–100), or null when unrated. Lets
+   * the field be sorted by fantasy value, using the same analytic the Fantasy
+   * ranking is built from.
+   */
+  fantasyScore: number | null
 }
 
 /**
@@ -151,6 +163,8 @@ export interface FieldRankingLeaders {
   topRanked: FieldLeader[]
   /** Best recent form in the field, best-first. */
   topForm: FieldLeader[]
+  /** Best fantasy production ("best value") in the field, best-first. */
+  topFantasy: FieldLeader[]
 }
 
 /**
