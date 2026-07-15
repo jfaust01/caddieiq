@@ -98,6 +98,26 @@ export const analyticsService = {
   },
 
   /**
+   * Analytics for the ENTIRE normalization population — every player with data
+   * in the current season, each scored against that same field. This is the
+   * reusable input the Ranking Engine consumes to build global rankings, so
+   * rankings order players by the identical analytics rendered everywhere else
+   * rather than recomputing scores. Shares the request-cached population load,
+   * so it adds no extra database work when analytics were already resolved.
+   */
+  async getPopulationAnalytics(): Promise<{
+    season: number | null
+    players: PlayerAnalytics[]
+  }> {
+    const { pop, byPlayer } = await loadContext()
+    const players = [...byPlayer.values()].map((sample) => ({
+      ...computePlayerAnalytics(sample, pop),
+      playerId: sample.playerId,
+    }))
+    return { season: pop.season, players }
+  },
+
+  /**
    * Compact, field-level analytics summary for the tournament hub: the average
    * strength, form, and reliability of the assembled field. Built by averaging
    * the SAME per-player analytics every other surface consumes — never a

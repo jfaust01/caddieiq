@@ -25,6 +25,7 @@ import type {
   Tour,
 } from "@/features/players/types"
 import { analyticsService } from "@/lib/analytics/service"
+import { rankingService } from "@/lib/rankings/service"
 import { getPlayerRepository, type PlayerSearchParams } from "@/lib/repositories/player-repository"
 
 import { mapPlayer, mapPlayerDetail } from "./player-mapper"
@@ -109,8 +110,13 @@ export const playerService = {
   async getPlayerById(id: string): Promise<PlayerDetail | null> {
     const record = await getPlayerRepository().findDetailById(id)
     if (!record) return null
-    const analytics = await analyticsService.getPlayerAnalytics(id)
-    return { ...mapPlayerDetail(record), analytics }
+    // Analytics are the single source of derived intelligence; the Ranking
+    // Engine orders those same analytics into the player's global placements.
+    const [analytics, rankingProfile] = await Promise.all([
+      analyticsService.getPlayerAnalytics(id),
+      rankingService.getPlayerRankingProfile(id),
+    ])
+    return { ...mapPlayerDetail(record), analytics, rankingProfile }
   },
 
   /** Tour filter options, including the "All" sentinel. */

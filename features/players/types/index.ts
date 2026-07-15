@@ -10,6 +10,7 @@
  */
 
 import type { PlayerAnalytics } from '@/lib/analytics/types'
+import type { PlayerRankingProfile } from '@/lib/rankings/types'
 
 /** Professional tours a player can compete on. */
 export type Tour = 'PGA' | 'DP_WORLD' | 'LIV' | 'KORN_FERRY' | 'CHAMPIONS'
@@ -186,6 +187,13 @@ export interface PlayerDetail extends Player {
    * in the normalization season.
    */
   analytics: PlayerAnalytics
+  /**
+   * The player's placements across every ranking category, from the Ranking
+   * Engine (global scope). Rendered as ranking badges. Built by ordering the
+   * same analytics above — never a parallel calculation — and honestly
+   * unranked (`isRanked: false`) when the player has no season data.
+   */
+  rankingProfile: PlayerRankingProfile
   courseHistory: CourseHistoryEntry[]
   tournamentHistory: TournamentHistoryEntry[]
   activity: ActivityEntry[]
