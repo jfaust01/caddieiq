@@ -24,6 +24,7 @@ import type {
   RankingBand,
   Tour,
 } from "@/features/players/types"
+import { analyticsService } from "@/lib/analytics/service"
 import { getPlayerRepository, type PlayerSearchParams } from "@/lib/repositories/player-repository"
 
 import { mapPlayer, mapPlayerDetail } from "./player-mapper"
@@ -99,10 +100,17 @@ export const playerService = {
     }
   },
 
-  /** Return a full profile for a live player, or null when not found. */
+  /**
+   * Return a full profile for a live player, or null when not found. The pure
+   * mapper builds the persisted sections; the Analytics Engine supplies the
+   * derived intelligence so analytics stay the platform's single source rather
+   * than being recomputed here.
+   */
   async getPlayerById(id: string): Promise<PlayerDetail | null> {
     const record = await getPlayerRepository().findDetailById(id)
-    return record ? mapPlayerDetail(record) : null
+    if (!record) return null
+    const analytics = await analyticsService.getPlayerAnalytics(id)
+    return { ...mapPlayerDetail(record), analytics }
   },
 
   /** Tour filter options, including the "All" sentinel. */

@@ -173,15 +173,19 @@ function buildSeasonStatistics(record: PlayerWithRelations): PlayerSeasonStat[] 
 }
 
 /**
- * Map a database player row (+ relations) into the full detail payload.
+ * Map a database player row (+ relations) into the persisted detail payload.
  *
  * `seasonStatistics` is populated live from the season-stats import. The
  * remaining sections without a live source (career summary, the legacy
  * strokes-gained `statistics` grid, course & tournament history, activity)
  * resolve to null/empty so the detail view renders its "not available yet"
  * states instead of placeholder numbers.
+ *
+ * Note: `analytics` is intentionally NOT produced here — it is derived by the
+ * Analytics Engine and composed onto the payload in the (async) service layer,
+ * keeping this mapper pure and free of any analytics computation.
  */
-export function mapPlayerDetail(record: PlayerWithRelations): PlayerDetail {
+export function mapPlayerDetail(record: PlayerWithRelations): Omit<PlayerDetail, "analytics"> {
   return {
     ...mapPlayer(record),
     careerSummary: null,

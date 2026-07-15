@@ -9,6 +9,8 @@
  * when the live data layer is connected.
  */
 
+import type { PlayerAnalytics } from '@/lib/analytics/types'
+
 /** Professional tours a player can compete on. */
 export type Tour = 'PGA' | 'DP_WORLD' | 'LIV' | 'KORN_FERRY' | 'CHAMPIONS'
 
@@ -177,6 +179,13 @@ export interface PlayerDetail extends Player {
   statistics: PlayerStatistic[]
   /** Season statistics (newest first), sourced live. Empty until imported. */
   seasonStatistics: PlayerSeasonStat[]
+  /**
+   * Derived analytics from the Analytics Engine, normalized against the current
+   * season's field. The engine is the single source of this intelligence; the
+   * profile is honest (its `isEmpty` flag is set) when the player has no data
+   * in the normalization season.
+   */
+  analytics: PlayerAnalytics
   courseHistory: CourseHistoryEntry[]
   tournamentHistory: TournamentHistoryEntry[]
   activity: ActivityEntry[]

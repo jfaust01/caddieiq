@@ -11,6 +11,7 @@ import { PlayerHeader } from '@/features/players/components/player-header'
 import { CareerSummary } from '@/features/players/components/career-summary'
 import { PlayerRankingPanel } from '@/features/players/components/player-ranking-panel'
 import { PlayerStatsGrid } from '@/features/players/components/player-stats-grid'
+import { PlayerAnalyticsPanel } from '@/features/players/components/player-analytics-panel'
 import { AiSummaryCard } from '@/features/players/components/ai-summary-card'
 import { CourseHistory } from '@/features/players/components/course-history'
 import { TournamentHistory } from '@/features/players/components/tournament-history'
@@ -85,6 +86,7 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
@@ -101,6 +103,10 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
             </div>
             <PlayerRankingPanel rankings={player.rankings} />
           </div>
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <PlayerAnalyticsPanel analytics={player.analytics} />
         </TabsContent>
 
         <TabsContent value="statistics">
