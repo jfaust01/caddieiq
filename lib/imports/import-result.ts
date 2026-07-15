@@ -36,6 +36,10 @@ export interface ImportResult {
   entity: ImportEntity
   /** Total records the run attempted (as fetched from the provider). */
   processed: number
+  /** Records successfully translated by the domain mapper. */
+  mapped: number
+  /** Records that passed the data-quality gate (were handed to the repository). */
+  validated: number
   /** New records created. */
   inserted: number
   /** Existing records updated. */
@@ -61,6 +65,8 @@ export interface ImportRunAccumulator {
   entity: ImportEntity
   startedAt: Date
   processed: number
+  mapped: number
+  validated: number
   inserted: number
   updated: number
   skipped: number
@@ -78,6 +84,8 @@ export function startImportRun(provider: string, entity: ImportEntity): ImportRu
     entity,
     startedAt: new Date(),
     processed: 0,
+    mapped: 0,
+    validated: 0,
     inserted: 0,
     updated: 0,
     skipped: 0,
@@ -105,6 +113,8 @@ export function finalizeImportResult(acc: ImportRunAccumulator): ImportResult {
     provider: acc.provider,
     entity: acc.entity,
     processed: acc.processed,
+    mapped: acc.mapped,
+    validated: acc.validated,
     inserted: acc.inserted,
     updated: acc.updated,
     skipped: acc.skipped,

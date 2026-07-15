@@ -12,7 +12,11 @@ import type { ImportResult } from "./import-result"
 import type { ImportStage } from "./import-errors"
 
 export type ImportLogLevel = "info" | "warn" | "error"
-export type ImportLogEvent = "import.start" | "import.finish" | "import.failure"
+export type ImportLogEvent =
+  | "import.start"
+  | "import.stage"
+  | "import.finish"
+  | "import.failure"
 
 /** A single structured import-log record. */
 export interface ImportLogEntry {
@@ -25,10 +29,20 @@ export interface ImportLogEntry {
   timestamp: string
   durationMs?: number
   stage?: ImportStage
+  /** Count emitted by a per-stage (`import.stage`) event. */
+  count?: number
   /** Compact counter summary, present on finish/failure. */
   summary?: Pick<
     ImportResult,
-    "processed" | "inserted" | "updated" | "skipped" | "failed" | "warnings" | "qualityScoreAverage"
+    | "processed"
+    | "mapped"
+    | "validated"
+    | "inserted"
+    | "updated"
+    | "skipped"
+    | "failed"
+    | "warnings"
+    | "qualityScoreAverage"
   >
 }
 
@@ -42,9 +56,10 @@ export const consoleImportSink: ImportLogSink = {
   write(entry) {
     const duration = entry.durationMs !== undefined ? ` (${entry.durationMs}ms)` : ""
     const line = `[imports:${entry.entity}] ${entry.event} — ${entry.message}${duration}`
-    if (entry.level === "error") console.error(line, entry.summary ?? "")
-    else if (entry.level === "warn") console.warn(line, entry.summary ?? "")
-    else console.log(line, entry.summary ?? "")
+    const detail = entry.summary ?? ""
+    if (entry.level === "error") console.error(line, detail)
+    else if (entry.level === "warn") console.warn(line, detail)
+    else console.log(line, detail)
   },
 }
 
@@ -54,6 +69,8 @@ export const silentImportSink: ImportLogSink = { write() {} }
 function summaryOf(result: ImportResult): ImportLogEntry["summary"] {
   return {
     processed: result.processed,
+    mapped: result.mapped,
+    validated: result.validated,
     inserted: result.inserted,
     updated: result.updated,
     skipped: result.skipped,
@@ -82,6 +99,24 @@ export class ImportLogger {
       entity: ctx.entity,
       provider: ctx.provider,
       message: `Starting ${ctx.entity} import from ${ctx.provider}.`,
+    })
+  }
+
+  /**
+   * Log the outcome of a single pipeline stage, carrying the number of records
+   * that survived it. Emitting one line per stage makes it possible to see
+   * exactly where records stop flowing (e.g. a large `validate` count followed
+   * by a `persist` count of zero points straight at persistence).
+   */
+  stage(ctx: ImportContext & { stage: ImportStage }, count: number, note?: string): void {
+    this.emit({
+      level: "info",
+      event: "import.stage",
+      entity: ctx.entity,
+      provider: ctx.provider,
+      stage: ctx.stage,
+      count,
+      message: `Stage "${ctx.stage}" → ${count} record(s)${note ? ` (${note})` : ""}.`,
     })
   }
 

@@ -106,6 +106,7 @@ export class ImportManager {
     }
 
     acc.processed = raw.length
+    this.logger.stage({ provider, entity: definition.entity, stage: "fetch" }, raw.length)
 
     // --- Stage 2: map (domain layer) --------------------------------------
     const mapped: TDomain[] = []
@@ -119,6 +120,12 @@ export class ImportManager {
         )
       }
     }
+    acc.mapped = mapped.length
+    this.logger.stage(
+      { provider, entity: definition.entity, stage: "map" },
+      mapped.length,
+      acc.failed > 0 ? `${acc.failed} failed to map` : undefined,
+    )
 
     // --- Stage 3: validate (data-quality layer) ---------------------------
     // The validator is called as-is; we only partition its output. No
