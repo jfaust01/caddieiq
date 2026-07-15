@@ -1,59 +1,28 @@
-import { Award, CalendarDays, ChevronLeft, Clock, DollarSign, Landmark, MapPin, Trophy } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { PageShell } from '@/components/shared/page-shell'
-import { TournamentStatusBadge } from '@/features/tournaments/components/tournament-status-badge'
+import { TournamentDetailTabs } from '@/features/tournaments/components/tournament-detail-tabs'
+import { TournamentHero } from '@/features/tournaments/components/tournament-hero'
+import { TournamentIntelligence } from '@/features/tournaments/components/tournament-intelligence'
+import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
+import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
 import type { TournamentSummary } from '@/features/tournaments/types'
-import {
-  EMPTY_VALUE,
-  formatDateRange,
-  formatLocation,
-  formatPurse,
-  formatTimestamp,
-  seasonDisplay,
-  statusLabel,
-  textDisplay,
-} from '@/features/tournaments/utils/format'
-
-interface FactProps {
-  icon: typeof CalendarDays
-  label: string
-  value: string
-  title?: string
-}
-
-/** A single labelled fact row with a leading icon. Graceful em-dash fallback. */
-function Fact({ icon: Icon, label, value, title }: FactProps) {
-  return (
-    <div className="flex items-start gap-3">
-      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <dt className="text-xs text-muted-foreground">{label}</dt>
-        <dd className="text-sm font-medium text-pretty" title={title ?? value}>
-          {value}
-        </dd>
-      </div>
-    </div>
-  )
-}
 
 interface TournamentDetailViewProps {
   tournament: TournamentSummary
 }
 
 /**
- * Read-only detail page for a single tournament. Renders the fields available
- * from the live database (name, dates, status, course, tour, purse, season,
- * location, defending champion), degrading gracefully to an em-dash for any
- * field the source has not supplied.
+ * Tournament research hub. Organized for decisions, not database fields: a hero
+ * that answers "what/how big/what conditions" at a glance, an intelligence
+ * layer that frames why the event matters, quick-navigation tabs, and a live
+ * Overview of the verified facts alongside a research sidebar. Sections without
+ * imported data render intentional "Coming soon" placeholders rather than
+ * broken layouts, and never expose raw ids or internal timestamps.
  */
 export function TournamentDetailView({ tournament }: TournamentDetailViewProps) {
-  const tourName = tournament.tour?.name ?? null
-  const location = formatLocation(tournament.location)
-
   return (
     <PageShell>
       <Button
@@ -69,69 +38,18 @@ export function TournamentDetailView({ tournament }: TournamentDetailViewProps) 
         }
       />
 
-      <Card>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex min-w-0 flex-col gap-1">
-              <h1 className="text-2xl font-semibold tracking-tight text-balance md:text-3xl">
-                {tournament.name}
-              </h1>
-              {tournament.officialName && tournament.officialName !== tournament.name ? (
-                <p className="text-sm text-muted-foreground text-pretty">
-                  {tournament.officialName}
-                </p>
-              ) : null}
-            </div>
-            <TournamentStatusBadge status={tournament.status} className="shrink-0" />
-          </div>
+      <TournamentHero tournament={tournament} />
 
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-            <Badge variant="outline" title={tourName ?? undefined}>
-              {tourName ?? EMPTY_VALUE}
-            </Badge>
-            <span aria-hidden>•</span>
-            <span>{formatDateRange(tournament.startDate, tournament.endDate)}</span>
-          </div>
-        </CardContent>
-      </Card>
+      <TournamentIntelligence />
 
-      <Card>
-        <CardContent>
-          <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-            <Fact
-              icon={CalendarDays}
-              label="Dates"
-              value={formatDateRange(tournament.startDate, tournament.endDate)}
-            />
-            <Fact icon={Trophy} label="Status" value={statusLabel(tournament.status)} />
-            <Fact icon={Landmark} label="Tour" value={textDisplay(tourName)} />
-            <Fact icon={CalendarDays} label="Season" value={seasonDisplay(tournament.season)} />
-            <Fact icon={DollarSign} label="Purse" value={formatPurse(tournament.purse)} />
-            <Fact
-              icon={MapPin}
-              label="Course"
-              value={textDisplay(tournament.course)}
-              title={tournament.course ?? undefined}
-            />
-            <Fact icon={MapPin} label="Location" value={location} title={location} />
-            <Fact
-              icon={Award}
-              label="Defending champion"
-              value={textDisplay(tournament.defendingChampion)}
-            />
-          </dl>
-        </CardContent>
-      </Card>
-
-      {tournament.createdAt || tournament.updatedAt ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Clock className="size-3.5 shrink-0" aria-hidden />
-            Added {formatTimestamp(tournament.createdAt)}
-          </span>
-          <span>Last updated {formatTimestamp(tournament.updatedAt)}</span>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <TournamentDetailTabs overview={<TournamentOverview tournament={tournament} />} />
         </div>
-      ) : null}
+        <aside className="lg:col-span-1" aria-label="Tournament research">
+          <TournamentSidebar tournament={tournament} />
+        </aside>
+      </div>
     </PageShell>
   )
 }
