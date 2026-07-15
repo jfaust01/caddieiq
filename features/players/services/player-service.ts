@@ -2,9 +2,11 @@
  * PlayerService — live data access for the Player domain.
  *
  * This is the server-only read layer for the players feature. It reads through
- * `PlayerRepository` (the only layer allowed to touch the database), maps the
- * rows into the UI domain shapes via the pure `player-mapper`, and applies
- * search / filter / sort / pagination against those mapped objects.
+ * `PlayerRepository` (the only layer allowed to touch the database), which
+ * executes search, filtering, sorting, and pagination *in SQL*, and then maps
+ * the returned page of rows into the UI domain shapes via the pure
+ * `player-mapper`. The full table (thousands of players) is never loaded into
+ * memory — only the requested page is fetched.
  *
  * It never fabricates data: everything it returns originates from the live
  * database. The `server-only` import guarantees this module can never be pulled
@@ -22,7 +24,7 @@ import type {
   RankingBand,
   Tour,
 } from "@/features/players/types"
-import { getPlayerRepository } from "@/lib/repositories/player-repository"
+import { getPlayerRepository, type PlayerSearchParams } from "@/lib/repositories/player-repository"
 
 import { mapPlayer, mapPlayerDetail } from "./player-mapper"
 
@@ -41,73 +43,56 @@ const RANKING_BAND_LIMIT: Record<Exclude<RankingBand, "ALL">, number> = {
   TOP_100: 100,
 }
 
-/** Does a mapped player satisfy every active filter in the query? */
-function matchesQuery(player: Player, query: PlayerQuery): boolean {
-  const { filters } = query
-  const search = filters.search.trim().toLowerCase()
-
-  if (search && !player.fullName.toLowerCase().includes(search)) return false
-  if (filters.tour !== "ALL" && player.tour !== filters.tour) return false
-  if (filters.nationality !== "ALL" && player.nationality?.code !== filters.nationality) {
-    return false
-  }
-  if (filters.handedness !== "ALL" && player.handedness !== filters.handedness) {
-    return false
-  }
-  if (filters.status !== "ALL" && player.status !== filters.status) return false
-
-  if (filters.rankingBand !== "ALL") {
-    const limit = RANKING_BAND_LIMIT[filters.rankingBand]
-    // Unranked players never satisfy a "top N" band.
-    if (player.worldRanking === null || player.worldRanking > limit) return false
-  }
-
-  return true
+/**
+ * Database statuses to include for a given UI status filter. The mapper folds
+ * the database `RETIRED` status into the UI `INACTIVE`, so filtering for
+ * `INACTIVE` must include both to stay consistent with what the UI displays.
+ */
+const STATUS_DB_VALUES: Record<Player["status"], string[]> = {
+  ACTIVE: ["ACTIVE"],
+  INJURED: ["INJURED"],
+  INACTIVE: ["INACTIVE", "RETIRED"],
 }
 
-/** Sort by world ranking ascending, unranked players last, then by name. */
-function byRanking(a: Player, b: Player): number {
-  const ra = a.worldRanking
-  const rb = b.worldRanking
-  if (ra !== null && rb !== null && ra !== rb) return ra - rb
-  if (ra === null && rb !== null) return 1
-  if (ra !== null && rb === null) return -1
-  return a.fullName.localeCompare(b.fullName)
-}
-
-function paginate<T>(items: T[], page: number, pageSize: number): PaginatedResult<T> {
-  const total = items.length
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
-  const safePage = Math.min(Math.max(1, page), totalPages)
-  const start = (safePage - 1) * pageSize
+/** Translate UI query state (with its `"ALL"` sentinels) into DB search params. */
+function toSearchParams(query: PlayerQuery): PlayerSearchParams {
+  const { filters, page, pageSize } = query
+  const search = filters.search.trim()
   return {
-    items: items.slice(start, start + pageSize),
-    total,
-    page: safePage,
-    pageSize,
-    totalPages,
+    search: search === "" ? undefined : search,
+    tourType: filters.tour === "ALL" ? undefined : filters.tour,
+    nationality: filters.nationality === "ALL" ? undefined : filters.nationality,
+    handedness: filters.handedness === "ALL" ? undefined : filters.handedness,
+    statuses: filters.status === "ALL" ? undefined : STATUS_DB_VALUES[filters.status],
+    rankingLimit: filters.rankingBand === "ALL" ? undefined : RANKING_BAND_LIMIT[filters.rankingBand],
+    skip: (Math.max(1, page) - 1) * pageSize,
+    take: pageSize,
   }
 }
 
 export const playerService = {
-  /** Return a filtered, paginated slice of the live player directory. */
+  /**
+   * Return a filtered, sorted, paginated page of the live player directory.
+   * All of the work happens in the database; this method only translates the
+   * query, delegates to the repository, and maps the returned page.
+   */
   async getPlayers(query: PlayerQuery): Promise<PaginatedResult<Player>> {
-    const records = await getPlayerRepository().listWithRelations()
-    const players = records.map(mapPlayer)
-    const filtered = players.filter((player) => matchesQuery(player, query)).sort(byRanking)
-    return paginate(filtered, query.page, query.pageSize)
+    const { items, total } = await getPlayerRepository().search(toSearchParams(query))
+    const totalPages = Math.max(1, Math.ceil(total / query.pageSize))
+    const safePage = Math.min(Math.max(1, query.page), totalPages)
+    return {
+      items: items.map(mapPlayer),
+      total,
+      page: safePage,
+      pageSize: query.pageSize,
+      totalPages,
+    }
   },
 
   /** Return a full profile for a live player, or null when not found. */
   async getPlayerById(id: string): Promise<PlayerDetail | null> {
     const record = await getPlayerRepository().findDetailById(id)
     return record ? mapPlayerDetail(record) : null
-  },
-
-  /** All non-deleted player ids — useful for future static generation. */
-  async getPlayerIds(): Promise<string[]> {
-    const records = await getPlayerRepository().listWithRelations()
-    return records.map((record) => record.id)
   },
 
   /** Tour filter options, including the "All" sentinel. */
@@ -123,15 +108,8 @@ export const playerService = {
 
   /** Nationality filter options derived from the players actually in the database. */
   async getNationalityOptions(): Promise<FilterOption[]> {
-    const records = await getPlayerRepository().listWithRelations()
-    const unique = new Map<string, string>()
-    for (const record of records) {
-      const nationality = mapPlayer(record).nationality
-      if (nationality) unique.set(nationality.code, nationality.name)
-    }
-    const options = Array.from(unique.entries())
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => a.label.localeCompare(b.label))
+    const rows = await getPlayerRepository().listReferencedNationalities()
+    const options = rows.map((row) => ({ value: row.code, label: row.name }))
     return [{ value: "ALL", label: "All nationalities" }, ...options]
   },
 }
