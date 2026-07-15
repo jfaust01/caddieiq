@@ -100,8 +100,7 @@ export function useModelLab(initialModelId?: string): UseModelLab {
     try {
       const result = await runModelPreview(model, { limit: PREVIEW_LIMIT })
       if (token === runToken.current) setPreview(result)
-    } catch (error) {
-      console.log('[v0] runModelPreview failed:', error)
+    } catch {
       if (token === runToken.current) setPreview(null)
     } finally {
       if (token === runToken.current) setIsRunning(false)
