@@ -225,6 +225,68 @@ export class TournamentRepository extends BaseRepository {
   }
 
   /**
+   * Load a single tournament for the detail page: the same flattened, joined
+   * shape as {@link search} (tour, season, host course, prior-edition champion)
+   * but for one id. Returns `null` when the id does not exist or the row is
+   * soft-deleted, so the caller can render a proper 404. The id is bound, never
+   * interpolated (injection-safe). Read-only.
+   */
+  async findDetailById(id: string): Promise<TournamentSearchRow | null> {
+    const rows = await this.prisma.$queryRaw<TournamentSearchRow[]>(Prisma.sql`
+      SELECT
+        t.id AS "id",
+        t.name AS "name",
+        t."officialName" AS "officialName",
+        t.slug AS "slug",
+        t.status::text AS "status",
+        t."startDate" AS "startDate",
+        t."endDate" AS "endDate",
+        t.purse::float8 AS "purse",
+        s.year AS "seasonYear",
+        tr.type::text AS "tourType",
+        tr.name AS "tourName",
+        tr.code AS "tourCode",
+        course.name AS "courseName",
+        course.city AS "city",
+        course."stateProvince" AS "stateProvince",
+        course.country AS "country",
+        champ."fullName" AS "defendingChampion"
+      FROM tournaments t
+      JOIN tours tr ON tr.id = t."tourId"
+      LEFT JOIN seasons s ON s.id = t."seasonId"
+      LEFT JOIN LATERAL (
+        SELECT c.name, c.city, c."stateProvince", c.country
+        FROM tournament_courses tc
+        JOIN courses c ON c.id = tc."courseId"
+        WHERE tc."tournamentId" = t.id
+        ORDER BY tc."hostCourse" DESC, c.name ASC
+        LIMIT 1
+      ) course ON true
+      LEFT JOIN LATERAL (
+        SELECT prev.id
+        FROM tournaments prev
+        WHERE prev.name = t.name
+          AND prev."deletedAt" IS NULL
+          AND prev."startDate" IS NOT NULL
+          AND t."startDate" IS NOT NULL
+          AND prev."startDate" < t."startDate"
+        ORDER BY prev."startDate" DESC
+        LIMIT 1
+      ) prev_edition ON true
+      LEFT JOIN LATERAL (
+        SELECT pl."fullName"
+        FROM tournament_fields tf
+        JOIN players pl ON pl.id = tf."playerId"
+        WHERE tf."tournamentId" = prev_edition.id AND tf."finalPosition" = 1
+        LIMIT 1
+      ) champ ON true
+      WHERE t.id = ${id} AND t."deletedAt" IS NULL
+      LIMIT 1
+    `)
+    return rows[0] ?? null
+  }
+
+  /**
    * Distinct tours that actually own at least one non-deleted tournament — the
    * source for the directory's tour filter. Returns `null` results empty so the
    * feature layer can offer only "All" until an import populates events.

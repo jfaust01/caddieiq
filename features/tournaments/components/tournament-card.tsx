@@ -1,7 +1,9 @@
-import { Award, CalendarDays, DollarSign, MapPin } from 'lucide-react'
+import { ArrowUpRight, Award, CalendarDays, DollarSign, MapPin } from 'lucide-react'
+import Link from 'next/link'
 
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { TournamentStatusBadge } from '@/features/tournaments/components/tournament-status-badge'
 import type { TournamentSummary } from '@/features/tournaments/types'
 import {
@@ -53,7 +55,12 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <h3 className="truncate font-medium tracking-tight" title={tournament.name}>
-              {tournament.name}
+              <Link
+                href={`/tournaments/${tournament.id}`}
+                className="outline-none hover:underline focus-visible:underline"
+              >
+                {tournament.name}
+              </Link>
             </h3>
             {tournament.officialName && tournament.officialName !== tournament.name ? (
               <p className="truncate text-xs text-muted-foreground" title={tournament.officialName}>
@@ -98,6 +105,21 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
           ) : null}
         </div>
       </CardContent>
+
+      <CardFooter>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          nativeButton={false}
+          render={
+            <Link href={`/tournaments/${tournament.id}`}>
+              View details
+              <ArrowUpRight data-icon="inline-end" />
+            </Link>
+          }
+        />
+      </CardFooter>
     </Card>
   )
 }
