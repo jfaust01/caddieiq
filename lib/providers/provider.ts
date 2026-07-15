@@ -122,16 +122,18 @@ export interface DataProvider {
  * first implementation; DataGolf may implement the same contract later. Methods
  * return raw, typed provider responses — they never normalize.
  *
- * @typeParam TPlayer      - Raw player shape for the implementing provider.
- * @typeParam TTournament  - Raw tournament shape for the implementing provider.
- * @typeParam TCourse      - Raw course shape for the implementing provider.
- * @typeParam TLeaderboard - Raw leaderboard/field shape for the provider.
+ * @typeParam TPlayer       - Raw player shape for the implementing provider.
+ * @typeParam TTournament   - Raw tournament shape for the implementing provider.
+ * @typeParam TCourse       - Raw course shape for the implementing provider.
+ * @typeParam TLeaderboard  - Raw leaderboard/field shape for the provider.
+ * @typeParam TSeasonStats  - Raw player-season-statistics shape for the provider.
  */
 export interface GolfDataProvider<
   TPlayer = unknown,
   TTournament = unknown,
   TCourse = unknown,
   TLeaderboard = unknown,
+  TSeasonStats = unknown,
 > extends DataProvider {
   /** List players in the provider's catalog. */
   listPlayers(query?: ProviderQuery): Promise<ProviderListResponse<TPlayer>>
@@ -149,6 +151,14 @@ export interface GolfDataProvider<
    * (upcoming) or who competed (completed).
    */
   getLeaderboard(tournamentId: string): Promise<ProviderResponse<TLeaderboard>>
+  /**
+   * List every player's season-level statistics for a given season. This is the
+   * source of a player's aggregate performance (world ranking, events played,
+   * and whatever aggregate metrics the provider tier exposes).
+   */
+  listPlayerSeasonStats(
+    season: number,
+  ): Promise<ProviderListResponse<TSeasonStats>>
 }
 
 /**

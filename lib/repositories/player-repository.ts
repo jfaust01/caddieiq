@@ -39,6 +39,11 @@ const playerReadInclude = {
   rankings: {
     orderBy: { effectiveDate: "desc" },
   },
+  // Season-level statistics, newest season first, so the detail mapper can show
+  // the latest season prominently and prior seasons as history.
+  seasonStatistics: {
+    orderBy: { season: "desc" },
+  },
 } satisfies Prisma.PlayerInclude
 
 /** A player row joined with the relations required by the read surfaces. */

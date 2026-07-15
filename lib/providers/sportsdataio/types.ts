@@ -125,6 +125,51 @@ export interface SdioLeaderboard extends SdioRecord {
   Players?: SdioLeaderboardPlayer[]
 }
 
+/**
+ * Raw SportsDataIO player season-statistics row from
+ * `/json/PlayerSeasonStats/{season}`.
+ *
+ * IMPORTANT — coverage at the current tier: this feed returns ONLY the fields
+ * typed below. The richer PGA metrics one might expect at season level (money,
+ * FedEx Cup points, wins, top-10s, cuts made, scoring average, strokes gained,
+ * driving accuracy/distance, greens in regulation, scrambling, sand saves) are
+ * NOT present in the response, so they are intentionally absent here rather
+ * than typed-as-optional-and-always-undefined. The mapper persists only what is
+ * present and never fabricates the missing metrics.
+ *
+ * `PlayerID` is the provider's native player id; CaddieIQ has no external-id
+ * column, so the statistics importer reconciles a row to an existing `Player`
+ * by the deterministic slug of `Name` (mirroring the field importer).
+ *
+ * Note on `WorldGolfRank`: the current tier is known to obfuscate its precision
+ * (multiple players can share a rank). It is stored verbatim but downstream
+ * consumers treat it as indicative, not authoritative.
+ */
+export interface SdioPlayerSeasonStats extends SdioRecord {
+  /** Provider's native id for this player-season row. */
+  PlayerSeasonID?: number
+  /** Season year (e.g. 2025). */
+  Season?: number
+  /** Provider's native player id. */
+  PlayerID: number
+  /** Display name — the statistics importer's reconciliation key (via slug). */
+  Name?: string
+  /** Official World Golf Ranking position for the season. */
+  WorldGolfRank?: number
+  /** World ranking as of the previous week (movement context). */
+  WorldGolfRankLastWeek?: number
+  /** Events played in the season. */
+  Events?: number
+  /** Average fantasy points per event. */
+  AveragePoints?: number
+  /** Total fantasy points across the season. */
+  TotalPoints?: number
+  /** Fantasy points lost. */
+  PointsLost?: number
+  /** Fantasy points gained. */
+  PointsGained?: number
+}
+
 /** Map of resource key → raw response element type, for typed requests. */
 export interface SdioResourceMap {
   players: SdioPlayer

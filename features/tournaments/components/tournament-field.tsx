@@ -21,11 +21,12 @@ import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 20
 
-type SortKey = 'name-asc' | 'name-desc' | 'status'
+type SortKey = 'name-asc' | 'name-desc' | 'status' | 'rank'
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'name-asc', label: 'Name (A–Z)' },
   { value: 'name-desc', label: 'Name (Z–A)' },
+  { value: 'rank', label: 'World rank' },
   { value: 'status', label: 'Status' },
 ]
 
@@ -63,7 +64,23 @@ interface FieldRowProps {
   entrant: FieldEntrant
 }
 
-/** A single entrant row: country, name (links to the player), status. */
+/**
+ * The player's most recent world rank, shown as a compact `#N` chip. Renders a
+ * muted em-dash when no ranking has been imported, so the column stays aligned
+ * without implying a rank we do not have.
+ */
+function RankChip({ rank }: { rank: number | null }) {
+  return (
+    <span
+      className="w-12 shrink-0 text-right text-xs font-medium tabular-nums text-muted-foreground"
+      title={rank === null ? 'No world ranking available' : `World rank #${rank}`}
+    >
+      {rank === null ? '—' : `#${rank}`}
+    </span>
+  )
+}
+
+/** A single entrant row: country, name (links to the player), world rank, status. */
 function FieldRow({ entrant }: FieldRowProps) {
   return (
     <li className="flex items-center gap-3 py-2.5">
@@ -74,6 +91,7 @@ function FieldRow({ entrant }: FieldRowProps) {
       >
         {entrant.playerName}
       </Link>
+      <RankChip rank={entrant.worldRanking} />
       <FieldStatusBadge status={entrant.status} />
     </li>
   )
@@ -123,6 +141,13 @@ export function TournamentField({ field }: TournamentFieldProps) {
       if (sort === 'status') {
         const byStatus = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
         return byStatus !== 0 ? byStatus : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'rank') {
+        // Lower world-ranking number is better; unranked players sort last, then
+        // fall back to alphabetical so the order is stable.
+        const ra = a.worldRanking ?? Number.POSITIVE_INFINITY
+        const rb = b.worldRanking ?? Number.POSITIVE_INFINITY
+        return ra !== rb ? ra - rb : a.playerName.localeCompare(b.playerName)
       }
       return a.playerName.localeCompare(b.playerName)
     })

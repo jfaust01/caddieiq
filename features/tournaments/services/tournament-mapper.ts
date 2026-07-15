@@ -50,6 +50,7 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     isAlternate: row.isAlternate,
     withdrawn: row.withdrawn,
     cutMade: row.cutMade ?? null,
+    worldRanking: row.worldRanking ?? null,
   }
 }
 

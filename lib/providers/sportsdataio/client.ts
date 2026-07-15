@@ -39,6 +39,7 @@ import type {
   SdioCourse,
   SdioLeaderboard,
   SdioPlayer,
+  SdioPlayerSeasonStats,
   SdioResource,
   SdioTournament,
 } from "./types"
@@ -71,7 +72,14 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
 const MAX_ERROR_BODY = 500
 
 export class SportsDataProvider
-  implements GolfDataProvider<SdioPlayer, SdioTournament, SdioCourse, SdioLeaderboard>
+  implements
+    GolfDataProvider<
+      SdioPlayer,
+      SdioTournament,
+      SdioCourse,
+      SdioLeaderboard,
+      SdioPlayerSeasonStats
+    >
 {
   readonly providerName = PROVIDER
   readonly version = SPORTSDATAIO_CLIENT_VERSION
@@ -199,6 +207,23 @@ export class SportsDataProvider
     const { data, meta } = await this.getOne<SdioLeaderboard>(
       `/json/Leaderboard/${encodeURIComponent(tournamentId)}`,
       "field",
+    )
+    return { data, meta }
+  }
+
+  // --- Capability: player season statistics --------------------------------
+
+  /**
+   * List every player's season statistics via
+   * `/json/PlayerSeasonStats/{season}`. Returns the raw rows — mapping and
+   * player reconciliation happen downstream in the statistics importer.
+   */
+  async listPlayerSeasonStats(
+    season: number,
+  ): Promise<ProviderListResponse<SdioPlayerSeasonStats>> {
+    const { data, meta } = await this.getList<SdioPlayerSeasonStats>(
+      `/json/PlayerSeasonStats/${encodeURIComponent(String(season))}`,
+      "playerSeasonStats",
     )
     return { data, meta }
   }

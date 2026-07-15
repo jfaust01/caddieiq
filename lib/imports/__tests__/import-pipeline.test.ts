@@ -72,6 +72,11 @@ function fakeProvider(config: {
       // touch the leaderboard capability.
       throw new Error("not used")
     },
+    async listPlayerSeasonStats() {
+      // Statistics import is exercised separately; the manager pipeline tests do
+      // not touch the season-stats capability.
+      throw new Error("not used")
+    },
   }
 }
 

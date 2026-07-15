@@ -304,10 +304,11 @@ model Player {
   deletedAt     DateTime?
 
   // Relations
-  nationality      Nationality?        @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
+  nationality      Nationality?            @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
   tourHistory      PlayerTourHistory[]
   rankings         PlayerRanking[]
   tournamentFields TournamentField[]
+  seasonStatistics PlayerSeasonStatistic[]
 
   @@index([slug])
   @@index([lastName])
@@ -374,6 +375,59 @@ model PlayerRanking {
   @@index([rankingSystem])
   @@index([effectiveDate])
   @@map("player_rankings")
+}
+
+/// A player's season-level statistics as reported by the data provider, keyed
+/// by `(playerId, season)` so re-imports update in place rather than
+/// duplicating. Imported independently of the `Player` record it references.
+///
+/// IMPORTANT — provider coverage: this model stores ONLY the season fields the
+/// current SportsDataIO tier actually returns from `/json/PlayerSeasonStats`:
+/// world ranking, events played, and fantasy-points aggregates. Money, FedEx
+/// Cup points, wins, top-10s, cuts made, scoring average, driving, GIR,
+/// scrambling, sand saves, and strokes-gained are NOT provided at season level
+/// by the source, so they are intentionally absent here — CaddieIQ never
+/// fabricates unavailable statistics. `worldRanking` is stored verbatim; the
+/// upstream tier is known to obfuscate its precision (ties), so downstream
+/// consumers must treat it as indicative, not authoritative.
+model PlayerSeasonStatistic {
+  id       String @id @default(cuid())
+  playerId String
+  /// Calendar season year (e.g. 2025), as reported by the provider.
+  season   Int
+
+  // --- Provided by the source (nullable = not reported for this player) ---
+  /// Official World Golf Ranking position for the season.
+  worldRanking         Int?
+  /// World ranking from the previous week (movement context).
+  worldRankingLastWeek Int?
+  /// Events played in the season.
+  events               Int?
+  /// Average fantasy points per event.
+  averagePoints        Float?
+  /// Total fantasy points across the season.
+  totalPoints          Float?
+  /// Fantasy points gained (positive contributions).
+  pointsGained         Float?
+  /// Fantasy points lost (negative contributions).
+  pointsLost           Float?
+
+  /// Provider provenance: the source name and its native season-stat id.
+  source         String  @default("sportsdataio")
+  externalId     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  // One statistics row per player per season.
+  @@unique([playerId, season])
+  @@index([playerId])
+  @@index([season])
+  @@index([worldRanking])
+  @@map("player_season_statistics")
 }
 
 // ---------------------------------------------------------------------------

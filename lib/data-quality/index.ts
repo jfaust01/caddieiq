@@ -56,3 +56,9 @@ export {
 
 // Tournament-field validation (focused; see field-validator.ts for rationale)
 export { validateFieldEntries, type FieldValidationResult } from "./field-validator"
+
+// Player season-statistics validation (focused; see statistics-validator.ts)
+export {
+  validateSeasonStats,
+  type StatisticsValidationResult,
+} from "./statistics-validator"
