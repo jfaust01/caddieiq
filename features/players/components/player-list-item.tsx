@@ -9,7 +9,7 @@ import { PlayerHeadshot } from '@/features/players/components/player-headshot'
 import { PlayerStatusBadge } from '@/features/players/components/player-status-badge'
 import { RecentForm } from '@/features/players/components/recent-form'
 import type { Player } from '@/features/players/types'
-import { tourShortLabel } from '@/features/players/utils/format'
+import { tourShortLabel, worldRankDisplay } from '@/features/players/utils/format'
 
 interface PlayerListItemProps {
   player: Player
@@ -21,8 +21,8 @@ export function PlayerListItem({ player }: PlayerListItemProps) {
     <Card size="sm" className="transition-shadow hover:shadow-md">
       <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <span className="hidden w-10 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground sm:block">
-            #{player.worldRanking}
+          <span className="hidden w-12 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground sm:block">
+            {worldRankDisplay(player.worldRanking)}
           </span>
           <PlayerHeadshot player={player} />
           <div className="flex min-w-0 flex-col gap-0.5">

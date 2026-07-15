@@ -53,6 +53,16 @@ export function statusLabel(status: PlayerStatus): string {
   return STATUS_LABELS[status]
 }
 
+/** World-ranking display: `#12` when ranked, "Unranked" when not. */
+export function worldRankDisplay(rank: number | null): string {
+  return rank === null ? 'Unranked' : `#${rank}`
+}
+
+/** Numeric field display: the number as a string, or an em-dash when unknown. */
+export function numberDisplay(value: number | null): string {
+  return value === null ? EMPTY_VALUE : `${value}`
+}
+
 export function statusTone(status: PlayerStatus): Tone {
   switch (status) {
     case 'ACTIVE':

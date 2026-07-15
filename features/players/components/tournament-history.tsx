@@ -14,7 +14,7 @@ interface TournamentHistoryProps {
   history: TournamentHistoryEntry[]
 }
 
-/** Placeholder tournament-history table. */
+/** Tournament-history table. Renders an empty state until results are ingested. */
 export function TournamentHistory({ history }: TournamentHistoryProps) {
   return (
     <Card>
@@ -22,6 +22,11 @@ export function TournamentHistory({ history }: TournamentHistoryProps) {
         <CardTitle>Tournament History</CardTitle>
       </CardHeader>
       <CardContent>
+        {history.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No tournament results have been imported for this player yet.
+          </p>
+        ) : (
         <Table>
           <TableHeader>
             <TableRow>
@@ -52,6 +57,7 @@ export function TournamentHistory({ history }: TournamentHistoryProps) {
             ))}
           </TableBody>
         </Table>
+        )}
       </CardContent>
     </Card>
   )

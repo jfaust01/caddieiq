@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { CareerSummary as CareerSummaryData } from '@/features/players/types'
 
 interface CareerSummaryProps {
-  summary: CareerSummaryData
+  summary: CareerSummaryData | null
 }
 
 function Figure({ label, value }: { label: string; value: string }) {
@@ -16,8 +16,23 @@ function Figure({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** Career headline figures. Placeholder values until live data is connected. */
+/** Career headline figures. Renders an empty state until history is ingested. */
 export function CareerSummary({ summary }: CareerSummaryProps) {
+  if (!summary) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Career Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Career history hasn&apos;t been imported for this player yet.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const cutRate =
     summary.cutsPossible > 0
       ? `${Math.round((summary.cutsMade / summary.cutsPossible) * 100)}%`
