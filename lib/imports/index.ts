@@ -24,6 +24,7 @@ import type { ImportResult } from "./import-result"
 import type { TournamentImportDeps } from "./tournament-import"
 import { createTournamentRelationResolver } from "./tournament-relations"
 import { linkTournamentCourses, type CourseLinkSummary } from "./course-relations"
+import { importTournamentFields, type FieldImportSummary } from "./field-relations"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -68,6 +69,11 @@ export {
   type CourseLinkSummary,
   type LinkCoursesOptions,
 } from "./course-relations"
+export {
+  importTournamentFields,
+  type FieldImportSummary,
+  type ImportFieldsOptions,
+} from "./field-relations"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -156,4 +162,18 @@ export async function runCourseLinking(
   const provider = SportsDataProvider.fromEnv()
   const response = await provider.listCourses(options.query)
   return linkTournamentCourses(response.data)
+}
+
+/**
+ * Import every tournament's player field into `tournament_fields`, wiring the
+ * Tournament ↔ Player relationship.
+ *
+ * Run this AFTER {@link runTournamentImport} and {@link runPlayerImport} have
+ * populated their tables — entries link only to players that already exist.
+ * Drives the field pipeline per tournament (Provider → Mapper → Validation →
+ * Repository). Idempotent — reconciles each entry on `(tournamentId, playerId)`.
+ * Returns a {@link FieldImportSummary} describing the run.
+ */
+export async function runFieldImport(): Promise<FieldImportSummary> {
+  return importTournamentFields()
 }

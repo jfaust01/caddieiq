@@ -67,6 +67,11 @@ function fakeProvider(config: {
     async listCourses() {
       return listResponse(config.courses ?? [], "courses")
     },
+    async getLeaderboard() {
+      // Field import is exercised separately; the manager pipeline tests do not
+      // touch the leaderboard capability.
+      throw new Error("not used")
+    },
   }
 }
 
