@@ -6,11 +6,13 @@ import { PageShell } from '@/components/shared/page-shell'
 import { TournamentDetailTabs } from '@/features/tournaments/components/tournament-detail-tabs'
 import { TournamentField } from '@/features/tournaments/components/tournament-field'
 import { FieldRankingLeaders } from '@/features/tournaments/components/field-ranking-leaders'
+import { TournamentCourseIntelligence } from '@/features/tournaments/components/tournament-course-intelligence'
 import { TournamentHero } from '@/features/tournaments/components/tournament-hero'
 import { TournamentIntelligence } from '@/features/tournaments/components/tournament-intelligence'
 import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
 import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
+import { courseService } from '@/features/courses/services/course-service'
 import type { TournamentSummary } from '@/features/tournaments/types'
 
 interface TournamentDetailViewProps {
@@ -28,10 +30,13 @@ interface TournamentDetailViewProps {
 export async function TournamentDetailView({ tournament }: TournamentDetailViewProps) {
   // The field powers both the hero "Field size" stat and the Field tab. Field
   // news reads through the request-cached field, so it adds no extra roster
-  // query — only the news lookup itself.
-  const [field, fieldNews] = await Promise.all([
+  // query — only the news lookup itself. The host-course intelligence is loaded
+  // in parallel, and only when the event is actually linked to a venue.
+  const courseRef = tournament.courseRef
+  const [field, fieldNews, courseProfile] = await Promise.all([
     tournamentService.getTournamentField(tournament.id),
     tournamentService.getFieldNews(tournament.id),
+    courseRef ? courseService.getCourseIntelligence(courseRef.id) : Promise.resolve(null),
   ])
 
   return (
@@ -52,6 +57,13 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
       <TournamentHero tournament={tournament} fieldSize={field.size} />
 
       <TournamentIntelligence />
+
+      {courseRef && courseProfile ? (
+        <TournamentCourseIntelligence
+          profile={courseProfile}
+          course={{ id: courseRef.id, name: courseRef.name }}
+        />
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

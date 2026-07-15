@@ -6,6 +6,24 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased]
+
+### Added
+
+**Course Intelligence Engine**
+
+- Pure derivation layer (`lib/domain/course/profile.ts`) that turns verified
+  `Course` + `CourseCharacteristic` data into a normalized, model-ready
+  `CourseProfile`. Every attribute is `verified` or `unknown` — never estimated —
+  and every rating normalizes onto a Low / Medium / High band from documented
+  thresholds.
+- `CourseIntelligencePanel`, surfaced on the Course Page and reused for the host
+  venue on the Tournament Page, with an honest `verified / total` coverage badge.
+- `docs/COURSE_INTELLIGENCE.md` specifying the engine, attribute catalog, and
+  normalization contract.
+
+---
+
 ## [0.1.0] — Foundation
 
 The initial application foundation: a fully navigable, designed shell with the

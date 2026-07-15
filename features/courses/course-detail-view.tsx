@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PageShell } from '@/components/shared/page-shell'
 import { CourseHero } from '@/features/courses/components/course-hero'
+import { CourseIntelligencePanel } from '@/features/courses/components/course-intelligence-panel'
 import { CourseTournaments } from '@/features/courses/components/course-tournaments'
 import type { CourseDetail } from '@/features/courses/types'
 
@@ -33,6 +34,8 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
       />
 
       <CourseHero course={course} />
+
+      <CourseIntelligencePanel profile={course.profile} />
 
       <CourseTournaments tournaments={course.tournaments} />
     </PageShell>

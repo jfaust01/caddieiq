@@ -179,6 +179,8 @@ When writing prompts or PRs that extend the project:
 | [ROADMAP.md](./ROADMAP.md) | Phased delivery plan and status. |
 | [DATABASE.md](./DATABASE.md) | Planned data model and tables. |
 | [FEATURES.md](./FEATURES.md) | Planned features by module. |
+| [MODELS.md](./MODELS.md) | Ranking and rating model specification. |
+| [COURSE_INTELLIGENCE.md](./COURSE_INTELLIGENCE.md) | The Course Intelligence Engine: the normalized course profile. |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | How to contribute and ship changes. |
 | [CODING_STANDARDS.md](./CODING_STANDARDS.md) | Engineering conventions. |
 | [CHANGELOG.md](./CHANGELOG.md) | Release history. |
