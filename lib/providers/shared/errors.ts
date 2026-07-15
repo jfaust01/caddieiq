@@ -12,6 +12,8 @@ export type ProviderErrorCode =
   | "RATE_LIMIT_ERROR"
   | "VALIDATION_ERROR"
   | "CONNECTION_ERROR"
+  | "NETWORK_ERROR"
+  | "TIMEOUT_ERROR"
   | "NOT_IMPLEMENTED"
 
 export interface ProviderErrorOptions {
@@ -114,6 +116,36 @@ export interface ValidationIssue {
   /** Dot-path to the offending field, when known (e.g. "player.countryCode"). */
   path?: string
   message: string
+}
+
+/**
+ * A request could not reach the upstream API (DNS failure, connection reset,
+ * TLS error, offline, …). Retryable — the network may recover.
+ */
+export class NetworkError extends ProviderError {
+  constructor(message = "Network request failed", options: ProviderErrorOptions = {}) {
+    super(message, { retryable: true, ...options, code: "NETWORK_ERROR" })
+    this.name = "NetworkError"
+  }
+}
+
+/**
+ * A request exceeded its configured timeout budget before the upstream API
+ * responded. Retryable — a subsequent attempt may complete in time.
+ */
+export class TimeoutError extends ProviderError {
+  /** The timeout budget (ms) that was exceeded, when known. */
+  readonly timeoutMs?: number
+
+  constructor(
+    message = "Request timed out",
+    options: ProviderErrorOptions & { timeoutMs?: number } = {},
+  ) {
+    const { timeoutMs, ...rest } = options
+    super(message, { retryable: true, ...rest, code: "TIMEOUT_ERROR" })
+    this.name = "TimeoutError"
+    this.timeoutMs = timeoutMs
+  }
 }
 
 /**
