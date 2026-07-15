@@ -21,20 +21,20 @@ function metricsFromTemplate(key: string): ModelMetric[] {
 export function createSeedModels(): Model[] {
   return [
     {
-      id: 'model-open-championship',
-      name: 'My Open Championship',
+      id: 'model-season-leaders',
+      name: 'My Season Leaders',
       description:
-        'Links-leaning build for The Open — wind control and scrambling weighted heavily.',
+        'Season-long body of work first, with fantasy scoring and reliability behind it.',
       origin: 'custom',
-      templateKey: 'links-golf',
+      templateKey: 'season-leaders',
       favorite: true,
-      metrics: metricsFromTemplate('links-golf'),
+      metrics: metricsFromTemplate('season-leaders'),
       versions: [
         {
-          id: 'v-open-1',
+          id: 'v-season-1',
           label: 'v1',
-          note: 'Initial build from the Links Golf template.',
-          metrics: metricsFromTemplate('links-golf'),
+          note: 'Initial build from the Season Leaders template.',
+          metrics: metricsFromTemplate('season-leaders'),
           createdAt: SEED_TIME,
         },
       ],
@@ -42,18 +42,18 @@ export function createSeedModels(): Model[] {
       updatedAt: SEED_TIME,
     },
     {
-      id: 'model-bomber-board',
-      name: 'Bomber Board',
-      description: 'Distance-first model for long, demanding setups.',
+      id: 'model-fantasy-value',
+      name: 'DFS Value Board',
+      description: 'Fantasy scoring rate first, for weekly DFS lineups.',
       origin: 'custom',
-      templateKey: 'long-course',
+      templateKey: 'fantasy-value',
       favorite: false,
-      metrics: metricsFromTemplate('long-course'),
+      metrics: metricsFromTemplate('fantasy-value'),
       versions: [
         {
-          id: 'v-bomber-1',
+          id: 'v-value-1',
           label: 'v1',
-          metrics: metricsFromTemplate('long-course'),
+          metrics: metricsFromTemplate('fantasy-value'),
           createdAt: SEED_TIME,
         },
       ],
@@ -63,16 +63,16 @@ export function createSeedModels(): Model[] {
     {
       id: 'model-hot-hand',
       name: 'Hot Hand',
-      description: 'Chases form and momentum for week-to-week fantasy picks.',
+      description: 'Chases recent form for week-to-week fantasy picks.',
       origin: 'custom',
-      templateKey: 'recent-form',
+      templateKey: 'hot-hand',
       favorite: false,
-      metrics: metricsFromTemplate('recent-form'),
+      metrics: metricsFromTemplate('hot-hand'),
       versions: [
         {
           id: 'v-hot-1',
           label: 'v1',
-          metrics: metricsFromTemplate('recent-form'),
+          metrics: metricsFromTemplate('hot-hand'),
           createdAt: SEED_TIME,
         },
       ],

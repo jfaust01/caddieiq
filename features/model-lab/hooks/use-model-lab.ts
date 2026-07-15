@@ -12,11 +12,9 @@ import type {
 } from '../types'
 import { MODEL_TEMPLATES } from '../templates'
 import { createSeedModels } from '../services/seed'
-import {
-  buildModelSummary,
-  runModelPreview,
-} from '../services/model-lab-service'
-import { buildMetrics, normalizeWeights } from '../utils/weights'
+import { buildModelSummary } from '../services/model-lab-service'
+import { runModelPreview } from '../services/preview-action'
+import { buildMetrics, normalizeWeights, toModelWeights } from '../utils/weights'
 import { createId } from '../utils/helpers'
 
 const PREVIEW_LIMIT = 12
@@ -98,7 +96,10 @@ export function useModelLab(initialModelId?: string): UseModelLab {
     const token = ++runToken.current
     setIsRunning(true)
     try {
-      const result = await runModelPreview(model, { limit: PREVIEW_LIMIT })
+      const result = await runModelPreview({
+        weights: toModelWeights(model.metrics),
+        limit: PREVIEW_LIMIT,
+      })
       if (token === runToken.current) setPreview(result)
     } catch {
       if (token === runToken.current) setPreview(null)

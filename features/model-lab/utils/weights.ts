@@ -1,17 +1,14 @@
 /**
  * Weight math for the Model Lab.
  *
- * Weights are edited as whole-number percentages per metric group. When a model
- * is run, `toRankingWeights` collapses the ten groups into the seven analytics
- * modules the Ranking Engine understands (the three strokes-gained sub-groups
- * sum into `strokes-gained`). The engine normalizes the result, so these values
- * only need to be relative.
+ * Weights are edited as whole-number percentages per pillar. When a model runs,
+ * `toModelWeights` collapses the enabled pillars into normalized fractions that
+ * sum to 1, keyed by analytics metric — exactly what the preview calculator
+ * blends against each player's real analytics scores. Disabled or zero-weight
+ * pillars are omitted.
  */
 
-import type { AnalyticsModuleKey } from '@/lib/analytics/shared/types'
-import type { RankingWeights } from '@/lib/ranking'
-
-import type { MetricGroupKey, ModelMetric } from '../types'
+import type { MetricGroupKey, ModelMetric, ModelWeightMap } from '../types'
 import { METRIC_GROUP_BY_KEY } from './metric-groups'
 
 /** Total weight of the enabled metrics, as a percentage. */
@@ -71,20 +68,31 @@ export function normalizeWeights(metrics: ModelMetric[]): ModelMetric[] {
 }
 
 /**
- * Collapse a model's metric weights into the seven analytics module weights the
- * Ranking Engine consumes. Disabled or zero-weight groups are omitted; the
- * strokes-gained sub-groups accumulate into `strokes-gained`.
+ * Collapse a model's metric weights into normalized fractions (summing to 1)
+ * keyed by analytics metric. Disabled or zero-weight pillars are omitted. The
+ * preview calculator renormalizes per player over whichever of these metrics
+ * that player actually has data for, so the raw percentages only need to be
+ * relative — but returning fractions keeps the blended score on the 0–100
+ * scale.
  */
-export function toRankingWeights(metrics: ModelMetric[]): RankingWeights {
-  const weights: Partial<Record<AnalyticsModuleKey, number>> = {}
+export function toModelWeights(metrics: ModelMetric[]): ModelWeightMap {
+  const raw: ModelWeightMap = {}
+  let total = 0
 
   for (const metric of metrics) {
     if (!metric.enabled || metric.weight <= 0) continue
-    const { module } = METRIC_GROUP_BY_KEY[metric.key]
-    weights[module] = (weights[module] ?? 0) + metric.weight
+    const { key } = METRIC_GROUP_BY_KEY[metric.key]
+    raw[key] = (raw[key] ?? 0) + metric.weight
+    total += metric.weight
   }
 
-  return weights
+  if (total === 0) return {}
+
+  const normalized: ModelWeightMap = {}
+  for (const key of Object.keys(raw) as MetricGroupKey[]) {
+    normalized[key] = (raw[key] as number) / total
+  }
+  return normalized
 }
 
 /** Build a full metric list from a partial weight map (used by templates). */

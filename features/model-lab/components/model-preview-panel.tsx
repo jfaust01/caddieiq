@@ -14,8 +14,9 @@ interface ModelPreviewPanelProps {
 }
 
 /**
- * Right column of the Model Lab workspace: summary cards, the live mock ranking
- * preview, an AI-analysis placeholder, and the recent-changes feed.
+ * Right column of the Model Lab workspace: summary cards, the live ranking
+ * preview (real season analytics), an AI-analysis placeholder, and the
+ * recent-changes feed.
  */
 export function ModelPreviewPanel({
   summary,
@@ -29,7 +30,7 @@ export function ModelPreviewPanel({
       aria-label="Model preview and analysis"
     >
       <ModelSummaryCards summary={summary} />
-      <RankingPreview rows={preview.rows} isLoading={isLoading} />
+      <RankingPreview preview={preview} isLoading={isLoading} />
       <AiInsightCard />
       <RecentChanges changes={changes} />
     </aside>

@@ -1,51 +1,49 @@
 /**
  * View-model types for the Model Lab.
  *
- * Model Lab lets users compose a custom ranking model from ten metric groups,
- * tune each group's weight, and preview a mock ranking produced by the shared
- * Ranking Engine (`@/lib/ranking`). These types describe the shape of a model,
- * its versions, and the workspace state — presentation only, no persistence.
+ * Model Lab lets users compose a custom "overall" rating by weighting the four
+ * analytics pillars the platform actually computes, then preview the global
+ * player ranking those weights produce. The preview is backed by the real
+ * Analytics Engine (`analyticsService.getPopulationAnalytics`) via a server
+ * action — there are no fabricated scores anywhere in this feature.
  *
  * TODO(data): models are held in in-memory client state for v1. Persist them
  * per user (see prisma `Model`/`ModelVersion`) once the Model Lab milestone
  * wires up the database.
  */
 
-import type { AnalyticsModuleKey } from '@/lib/analytics/shared/types'
-import type { RankingWeights } from '@/lib/ranking'
+import type { AnalyticsMetricKey } from '@/lib/analytics/types'
 
 /**
- * The ten metric groups a model can weight. Seven map 1:1 to analytics modules;
- * `driving`, `putting`, and `scrambling` are finer-grained groups that fold into
- * the `strokes-gained` module when the model is handed to the Ranking Engine.
+ * The metric pillars a model can weight. These are exactly the four scores the
+ * Analytics Engine produces per player, so a model is an honest re-weighting of
+ * real analytics rather than a parallel set of invented factors. The key values
+ * are identical to {@link AnalyticsMetricKey} so a model weight maps directly to
+ * a player's analytics score with no translation table.
  */
-export type MetricGroupKey =
-  | 'recent-form'
-  | 'course-fit'
-  | 'strokes-gained'
-  | 'driving'
-  | 'putting'
-  | 'scrambling'
-  | 'wind'
-  | 'consistency'
-  | 'momentum'
-  | 'value'
+export type MetricGroupKey = Extract<
+  AnalyticsMetricKey,
+  'seasonPerformance' | 'recentForm' | 'fantasyProduction' | 'consistency'
+>
 
-/** Static descriptor for a metric group, shown in the builder. */
+/** Grouping label for the builder — one pillar per category. */
+export type MetricCategory = 'Season' | 'Form' | 'Fantasy' | 'Reliability'
+
+/** Static descriptor for a metric pillar, shown in the builder. */
 export interface MetricGroupDefinition {
   key: MetricGroupKey
   label: string
   description: string
-  /** The analytics module this group contributes to in the Ranking Engine. */
-  module: AnalyticsModuleKey
+  /** The analytics metric this pillar weights (identical to `key`). */
+  metricKey: AnalyticsMetricKey
   /** Short category label for grouping in the UI. */
-  category: 'Form' | 'Fit' | 'Skill' | 'Conditions' | 'Market'
+  category: MetricCategory
 }
 
-/** A single metric group's tunable state within a model. */
+/** A single metric pillar's tunable state within a model. */
 export interface ModelMetric {
   key: MetricGroupKey
-  /** Whether the group contributes to the model. */
+  /** Whether the pillar contributes to the model. */
   enabled: boolean
   /** Weight as a whole-number percentage (0–100). */
   weight: number
@@ -89,26 +87,32 @@ export interface ModelTemplate {
   metrics: ModelMetric[]
 }
 
-/** One row in the mock ranking preview. */
+/** Normalized weights (fractions summing to 1) the preview blended, by pillar. */
+export type ModelWeightMap = Partial<Record<MetricGroupKey, number>>
+
+/** One row in the ranking preview — a real player from the season population. */
 export interface ModelPreviewRow {
   rank: number
   playerId: string
   name: string
-  /** Composite 0–100 score behind the rank. */
+  /** ISO country code, when known, for the flag chip. */
+  countryCode: string | null
+  /** Composite 0–100 score from the model's weighted blend of real analytics. */
   score: number
-  movement: 'up' | 'down' | 'flat'
-  /** Positions gained (+) / lost (−) since the previous snapshot. */
-  delta: number
+  /** Letter grade mapped from `score` (shared with the Ranking Engine). */
+  grade: string
 }
 
-/** The result of running a model through the Ranking Engine. */
+/** The result of running a model against the real season population. */
 export interface ModelPreview {
   rows: ModelPreviewRow[]
-  /** Normalized weights the engine applied. */
-  weights: RankingWeights
-  generatedAt: Date
-  /** `true` while the run used placeholder values (always true in v1). */
-  mock: boolean
+  /** Normalized weights the preview applied, by pillar. */
+  weights: ModelWeightMap
+  /** The season the analytics were normalized against, or null when none. */
+  season: number | null
+  /** How many players had enough data to receive a composite score. */
+  ratedPlayers: number
+  generatedAt: string
 }
 
 /** Derived summary metrics for the model summary cards. */
@@ -119,7 +123,7 @@ export interface ModelSummary {
   totalWeight: number
   /** `true` when the total weight exceeds 100%. */
   overweight: boolean
-  /** Placeholder confidence band. */
+  /** Coverage-based confidence in the model's configuration. */
   confidence: 'low' | 'medium' | 'high'
 }
 
