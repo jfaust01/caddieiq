@@ -1,0 +1,672 @@
+import "server-only"
+
+import { prisma } from "@/lib/prisma"
+
+import { coveragePercent, countPresent, rateCoverage } from "./ratings"
+import type {
+  CoverageSection,
+  DataCoverageReport,
+  DomainSummary,
+  HealthCheck,
+  ImportMarker,
+  PlatformHealth,
+} from "./types"
+
+/**
+ * Data Coverage service — the server-only aggregation half of the internal
+ * diagnostics dashboard. It reads (never writes) the normalized data model and
+ * turns raw counts into an honest, provider-aware coverage report.
+ *
+ * Honesty is enforced here, not in the UI:
+ *   - Only genuinely verified rows count toward coverage numerators.
+ *   - Trial-tier scrambled feeds (betting odds, fantasy projections) are marked
+ *     `restricted` rather than reported as low coverage — a limitation is not a
+ *     failure, and a scrambled value is never surfaced as if real.
+ *   - `worldRanking` is known to scramble on the trial tier, so the player
+ *     section carries an explicit caveat instead of implying rank precision.
+ */
+
+/** Nullable analytic attributes that constitute a course "intelligence" profile. */
+const COURSE_PROFILE_ATTRIBUTES = [
+  "style",
+  "fairwayGrass",
+  "greenGrass",
+  "roughGrass",
+  "averageGreenSize",
+  "greenSpeed",
+  "fairwayWidth",
+  "roughLength",
+  "treeLined",
+  "waterHazards",
+  "windExposure",
+  "elevationChange",
+  "walkingDifficulty",
+  "drivingImportance",
+  "approachImportance",
+  "shortGameImportance",
+  "puttingImportance",
+  "scramblingDifficulty",
+  "birdieRate",
+  "bogeyRate",
+  "varianceRating",
+] as const
+
+/** A profile is "verified" once at least this many attributes are populated. */
+const PROFILE_VERIFIED_MIN = 16
+/** A weather snapshot is "fresh" (verified) within this many hours of capture. */
+const WEATHER_FRESH_HOURS = 24
+
+const numberFormatter = new Intl.NumberFormat("en-US")
+
+function formatCount(value: number): string {
+  return numberFormatter.format(value)
+}
+
+function formatPercent(percent: number | null): string {
+  return percent === null ? "—" : `${percent}%`
+}
+
+function formatDateTime(date: Date | null | undefined): string {
+  if (!date) return "Never"
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date)
+}
+
+function formatRelativeAge(date: Date | null | undefined, now: number): string {
+  if (!date) return "Never"
+  const deltaMs = now - date.getTime()
+  if (deltaMs < 0) return "Just now"
+  const minutes = Math.floor(deltaMs / 60_000)
+  if (minutes < 1) return "Just now"
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+function toIso(date: Date | null | undefined): string | null {
+  return date ? date.toISOString() : null
+}
+
+/**
+ * Builds the full coverage report. Every query is scoped to non-soft-deleted
+ * rows where the model supports it, and all independent reads run in parallel.
+ */
+export async function getDataCoverageReport(): Promise<DataCoverageReport> {
+  const now = Date.now()
+
+  const [
+    // Players
+    totalPlayers,
+    activePlayers,
+    playersWithPhoto,
+    playersWithNationality,
+    rankedPlayerRows,
+    tourMembershipRows,
+    // Courses / geolocation
+    totalCourses,
+    verifiedCoords,
+    estimatedCoords,
+    coordAgg,
+    // Course intelligence
+    profileRows,
+    // Tournaments / weather
+    totalTournaments,
+    tournamentVenueRows,
+    weatherSnapshots,
+    // News
+    totalArticles,
+    playerLinkedArticles,
+    newsAgg,
+    playersWithNewsRows,
+    // Fantasy
+    dfsTotal,
+    dfsReal,
+    fantasyProjTotal,
+    fantasyProjAvailable,
+    seasonStatRows,
+    // Betting
+    bettingEvents,
+    bettingMarketsTotal,
+    bettingMarketsAvailable,
+    bettingOutcomesTotal,
+    bettingOutcomesAvailable,
+    // Import markers
+    playerAgg,
+    tournamentAgg,
+    courseAgg,
+    newsUpdatedAgg,
+  ] = await Promise.all([
+    prisma.player.count({ where: { deletedAt: null } }),
+    prisma.player.count({ where: { deletedAt: null, status: "ACTIVE" } }),
+    prisma.player.count({ where: { deletedAt: null, headshotUrl: { not: null } } }),
+    prisma.player.count({ where: { deletedAt: null, nationalityId: { not: null } } }),
+    prisma.playerSeasonStatistic.findMany({
+      where: { worldRanking: { not: null } },
+      distinct: ["playerId"],
+      select: { playerId: true },
+    }),
+    prisma.playerTourHistory.findMany({
+      where: { active: true },
+      distinct: ["playerId"],
+      select: { playerId: true },
+    }),
+    prisma.course.count({ where: { deletedAt: null } }),
+    prisma.course.count({ where: { deletedAt: null, coordinateConfidence: "VERIFIED" } }),
+    prisma.course.count({ where: { deletedAt: null, coordinateConfidence: "ESTIMATED" } }),
+    prisma.course.aggregate({ _max: { coordinatesVerifiedAt: true } }),
+    prisma.courseCharacteristic.findMany({
+      where: { course: { deletedAt: null } },
+      select: Object.fromEntries(
+        COURSE_PROFILE_ATTRIBUTES.map((attr) => [attr, true]),
+      ) as Record<(typeof COURSE_PROFILE_ATTRIBUTES)[number], true>,
+    }),
+    prisma.tournament.count({ where: { deletedAt: null } }),
+    prisma.tournamentCourse.findMany({
+      where: { hostCourse: true },
+      distinct: ["tournamentId"],
+      select: { tournamentId: true },
+    }),
+    prisma.weatherSnapshot.findMany({
+      select: { capturedAt: true, periodCount: true },
+    }),
+    prisma.newsArticle.count(),
+    prisma.newsArticle.count({ where: { playerId: { not: null } } }),
+    prisma.newsArticle.aggregate({ _max: { publishedAt: true, updatedAt: true } }),
+    prisma.newsArticle.findMany({
+      where: { playerId: { not: null } },
+      distinct: ["playerId"],
+      select: { playerId: true },
+    }),
+    prisma.dfsSalary.count(),
+    prisma.dfsSalary.count({ where: { salary: { not: null } } }),
+    prisma.fantasyProjection.count(),
+    prisma.fantasyProjection.count({ where: { available: true } }),
+    prisma.playerSeasonStatistic.count({ where: { averagePoints: { not: null } } }),
+    prisma.bettingEvent.count(),
+    prisma.bettingMarket.count(),
+    prisma.bettingMarket.count({ where: { available: true } }),
+    prisma.bettingOutcome.count(),
+    prisma.bettingOutcome.count({ where: { available: true } }),
+    prisma.player.aggregate({ _max: { updatedAt: true } }),
+    prisma.tournament.aggregate({ _max: { updatedAt: true } }),
+    prisma.course.aggregate({ _max: { updatedAt: true } }),
+    prisma.weatherSnapshot.aggregate({ _max: { capturedAt: true } }),
+  ])
+
+  const sections: CoverageSection[] = []
+
+  // --- Course Geolocation ---------------------------------------------------
+  const unknownCoords = Math.max(totalCourses - verifiedCoords - estimatedCoords, 0)
+  const geoPercent = coveragePercent(verifiedCoords, totalCourses)
+  sections.push({
+    id: "course-geolocation",
+    title: "Course Geolocation",
+    description:
+      "Verified latitude/longitude per course. Only coordinates confirmed against a real golf-course feature count — clubhouse POIs and locality centroids are rejected.",
+    percent: geoPercent,
+    rating: rateCoverage(geoPercent),
+    breakdown: {
+      verified: verifiedCoords,
+      pending: estimatedCoords,
+      missing: unknownCoords,
+      total: totalCourses,
+    },
+    lastUpdated: toIso(coordAgg._max.coordinatesVerifiedAt),
+    metrics: [
+      { id: "total", label: "Total Courses", value: formatCount(totalCourses), count: totalCourses },
+      {
+        id: "verified",
+        label: "Verified Coordinates",
+        value: formatCount(verifiedCoords),
+        count: verifiedCoords,
+        percent: geoPercent,
+      },
+      {
+        id: "missing",
+        label: "Missing Coordinates",
+        value: formatCount(unknownCoords),
+        count: unknownCoords,
+        hint: "Courses still UNKNOWN — never approximated.",
+      },
+      { id: "coverage", label: "Coverage %", value: formatPercent(geoPercent), percent: geoPercent },
+      {
+        id: "last-updated",
+        label: "Last Verified",
+        value: formatDateTime(coordAgg._max.coordinatesVerifiedAt),
+      },
+    ],
+  })
+
+  // --- Course Intelligence --------------------------------------------------
+  const profilePresentCounts = profileRows.map((row) =>
+    countPresent(COURSE_PROFILE_ATTRIBUTES.map((attr) => (row as Record<string, unknown>)[attr])),
+  )
+  const verifiedProfiles = profilePresentCounts.filter((c) => c >= PROFILE_VERIFIED_MIN).length
+  const partialProfiles = profilePresentCounts.filter((c) => c > 0 && c < PROFILE_VERIFIED_MIN).length
+  const emptyProfiles = profilePresentCounts.filter((c) => c === 0).length
+  const unknownProfiles = Math.max(totalCourses - profileRows.length, 0) + emptyProfiles
+  const avgAttributes =
+    profilePresentCounts.length > 0
+      ? profilePresentCounts.reduce((a, b) => a + b, 0) / profilePresentCounts.length
+      : 0
+  const ciPercent = coveragePercent(verifiedProfiles, totalCourses)
+  sections.push({
+    id: "course-intelligence",
+    title: "Course Intelligence",
+    description: `Depth of the course-fit profile. A profile is verified once ${PROFILE_VERIFIED_MIN} of ${COURSE_PROFILE_ATTRIBUTES.length} analytic attributes are populated.`,
+    percent: ciPercent,
+    rating: rateCoverage(ciPercent),
+    breakdown: {
+      verified: verifiedProfiles,
+      pending: partialProfiles,
+      missing: unknownProfiles,
+      total: totalCourses,
+    },
+    metrics: [
+      { id: "total", label: "Total Courses", value: formatCount(totalCourses), count: totalCourses },
+      {
+        id: "verified",
+        label: "Verified Profiles",
+        value: formatCount(verifiedProfiles),
+        count: verifiedProfiles,
+        percent: ciPercent,
+      },
+      { id: "partial", label: "Partial Profiles", value: formatCount(partialProfiles), count: partialProfiles },
+      { id: "unknown", label: "Unknown Profiles", value: formatCount(unknownProfiles), count: unknownProfiles },
+      {
+        id: "avg-attributes",
+        label: "Avg Verified Attributes",
+        value: `${avgAttributes.toFixed(1)} / ${COURSE_PROFILE_ATTRIBUTES.length}`,
+        hint: "Mean populated attributes across courses that have a profile.",
+      },
+      { id: "coverage", label: "Coverage %", value: formatPercent(ciPercent), percent: ciPercent },
+    ],
+  })
+
+  // --- Weather --------------------------------------------------------------
+  const forecastAvailable = weatherSnapshots.length
+  const forecastMissing = Math.max(totalTournaments - forecastAvailable, 0)
+  const freshSnapshots = weatherSnapshots.filter(
+    (s) => now - s.capturedAt.getTime() <= WEATHER_FRESH_HOURS * 3_600_000,
+  ).length
+  const staleSnapshots = forecastAvailable - freshSnapshots
+  const weatherPercent = coveragePercent(forecastAvailable, totalTournaments)
+  const avgFreshnessMs =
+    forecastAvailable > 0
+      ? weatherSnapshots.reduce((acc, s) => acc + (now - s.capturedAt.getTime()), 0) / forecastAvailable
+      : 0
+  const avgFreshnessDate = forecastAvailable > 0 ? new Date(now - avgFreshnessMs) : null
+  const weatherKeyConfigured = Boolean(process.env.OPENWEATHER_API_KEY)
+  sections.push({
+    id: "weather",
+    title: "Weather",
+    description:
+      "Per-tournament forecast coverage. Forecasts are only fetched for events with a VERIFIED host-course coordinate; missing includes events with no verified venue or outside the forecast horizon.",
+    percent: weatherPercent,
+    rating: rateCoverage(weatherPercent),
+    breakdown: {
+      verified: freshSnapshots,
+      pending: staleSnapshots,
+      missing: forecastMissing,
+      total: totalTournaments,
+    },
+    lastUpdated: toIso(weatherSnapshots.length ? new Date(Math.max(...weatherSnapshots.map((s) => s.capturedAt.getTime()))) : null),
+    note: weatherKeyConfigured
+      ? undefined
+      : "OPENWEATHER_API_KEY is not configured — no new forecasts can be fetched until it is set.",
+    metrics: [
+      { id: "total", label: "Total Tournaments", value: formatCount(totalTournaments), count: totalTournaments },
+      {
+        id: "available",
+        label: "Forecast Available",
+        value: formatCount(forecastAvailable),
+        count: forecastAvailable,
+        percent: weatherPercent,
+      },
+      { id: "missing", label: "Forecast Missing", value: formatCount(forecastMissing), count: forecastMissing },
+      { id: "coverage", label: "Weather Coverage %", value: formatPercent(weatherPercent), percent: weatherPercent },
+      {
+        id: "cache-age",
+        label: "Weather Cache Age",
+        value: formatRelativeAge(
+          weatherSnapshots.length
+            ? new Date(Math.max(...weatherSnapshots.map((s) => s.capturedAt.getTime())))
+            : null,
+          now,
+        ),
+        hint: "Age of the most recent captured forecast.",
+      },
+      {
+        id: "avg-freshness",
+        label: "Avg Forecast Freshness",
+        value: formatRelativeAge(avgFreshnessDate, now),
+        hint: "Mean capture age across all stored forecasts.",
+      },
+    ],
+  })
+
+  // --- Player Data ----------------------------------------------------------
+  const rankedPlayers = rankedPlayerRows.length
+  const tourMembers = tourMembershipRows.length
+  const photoPercent = coveragePercent(playersWithPhoto, totalPlayers)
+  const nationalityPercent = coveragePercent(playersWithNationality, totalPlayers)
+  const rankingPercent = coveragePercent(rankedPlayers, totalPlayers)
+  const tourPercent = coveragePercent(tourMembers, totalPlayers)
+  // A player is "verified" when core identity (photo + nationality + ranking) is
+  // all present; "missing" when none is; "pending" otherwise.
+  const rankedIds = rankedPlayerRows.map((r) => r.playerId)
+  const [fullyEnriched, noneEnriched] = await Promise.all([
+    prisma.player.count({
+      where: {
+        deletedAt: null,
+        headshotUrl: { not: null },
+        nationalityId: { not: null },
+        id: { in: rankedIds },
+      },
+    }),
+    prisma.player.count({
+      where: {
+        deletedAt: null,
+        headshotUrl: null,
+        nationalityId: null,
+        id: { notIn: rankedIds.length ? rankedIds : ["__none__"] },
+      },
+    }),
+  ])
+  const pendingPlayers = Math.max(totalPlayers - fullyEnriched - noneEnriched, 0)
+  const playerPercent = coveragePercent(fullyEnriched, totalPlayers)
+  sections.push({
+    id: "player-data",
+    title: "Player Data",
+    description:
+      "Enrichment depth of the player universe. Verified players carry a headshot, nationality, and a world ranking; images and rankings are also summarized as their own domains.",
+    percent: playerPercent,
+    rating: rateCoverage(playerPercent),
+    breakdown: {
+      verified: fullyEnriched,
+      pending: pendingPlayers,
+      missing: noneEnriched,
+      total: totalPlayers,
+    },
+    note: "World rankings read from the trial-tier SportsDataIO feed are known to scramble (ties, #1 = 0); counts reflect players with any stored ranking and should be treated as indicative, not authoritative.",
+    metrics: [
+      { id: "imported", label: "Players Imported", value: formatCount(totalPlayers), count: totalPlayers },
+      {
+        id: "active",
+        label: "Active Players",
+        value: formatCount(activePlayers),
+        count: activePlayers,
+        percent: coveragePercent(activePlayers, totalPlayers),
+      },
+      {
+        id: "rankings",
+        label: "World Rankings",
+        value: formatCount(rankedPlayers),
+        count: rankedPlayers,
+        percent: rankingPercent,
+      },
+      { id: "photos", label: "Photos", value: formatCount(playersWithPhoto), count: playersWithPhoto, percent: photoPercent },
+      {
+        id: "nationality",
+        label: "Nationality",
+        value: formatCount(playersWithNationality),
+        count: playersWithNationality,
+        percent: nationalityPercent,
+      },
+      {
+        id: "tour",
+        label: "Tour Membership",
+        value: formatCount(tourMembers),
+        count: tourMembers,
+        percent: tourPercent,
+      },
+      { id: "coverage", label: "Coverage %", value: formatPercent(playerPercent), percent: playerPercent },
+    ],
+  })
+
+  // --- News -----------------------------------------------------------------
+  const playersWithNews = playersWithNewsRows.length
+  const unlinkedArticles = Math.max(totalArticles - playerLinkedArticles, 0)
+  const newsPercent = coveragePercent(playerLinkedArticles, totalArticles)
+  sections.push({
+    id: "news",
+    title: "News",
+    description:
+      "Editorial coverage. Articles resolve to a player via the provider's numeric id; tournament-level association is not modeled in the schema, so unlinked articles are reported as general news.",
+    percent: newsPercent,
+    rating: rateCoverage(newsPercent),
+    breakdown: {
+      verified: playerLinkedArticles,
+      pending: 0,
+      missing: unlinkedArticles,
+      total: totalArticles,
+    },
+    lastUpdated: toIso(newsAgg._max.publishedAt ?? newsAgg._max.updatedAt),
+    metrics: [
+      { id: "articles", label: "Recent Articles", value: formatCount(totalArticles), count: totalArticles },
+      {
+        id: "players-with-news",
+        label: "Players With News",
+        value: formatCount(playersWithNews),
+        count: playersWithNews,
+        percent: coveragePercent(playersWithNews, totalPlayers),
+      },
+      {
+        id: "general",
+        label: "General / Unlinked",
+        value: formatCount(unlinkedArticles),
+        count: unlinkedArticles,
+        hint: "Tournament-wide or unresolved articles (tournament linkage not modeled).",
+      },
+      { id: "coverage", label: "Player-Linked Coverage", value: formatPercent(newsPercent), percent: newsPercent },
+    ],
+  })
+
+  // --- Fantasy --------------------------------------------------------------
+  // DFS salaries are REAL on the trial tier; projections are scrambled/404.
+  const projectionsRestricted = fantasyProjAvailable === 0
+  const fantasyHasRealData = dfsReal > 0
+  const fantasyPercent = fantasyHasRealData ? coveragePercent(dfsReal, dfsTotal || dfsReal) : null
+  sections.push({
+    id: "fantasy",
+    title: "Fantasy",
+    description:
+      "DFS salaries are real whenever an event is slated; per-tournament projection points are scrambled on the trial tier and are never surfaced as real.",
+    percent: fantasyPercent,
+    rating: fantasyHasRealData ? rateCoverage(fantasyPercent) : "restricted",
+    breakdown: {
+      verified: dfsReal + fantasyProjAvailable,
+      pending: 0,
+      missing: (dfsTotal - dfsReal) + (fantasyProjTotal - fantasyProjAvailable),
+      total: dfsTotal + fantasyProjTotal,
+    },
+    restrictedReason:
+      !fantasyHasRealData && projectionsRestricted
+        ? "Provider Restricted — no real fantasy data on the trial tier. DFS salaries populate for slated events; projection points remain scrambled."
+        : undefined,
+    metrics: [
+      {
+        id: "dfs-salaries",
+        label: "DFS Salaries",
+        value: dfsReal > 0 ? formatCount(dfsReal) : "None slated",
+        count: dfsReal,
+        hint: "Real DraftKings/FanDuel salaries for slated events.",
+      },
+      {
+        id: "fantasy-stats",
+        label: "Fantasy Statistics",
+        value: formatCount(seasonStatRows),
+        count: seasonStatRows,
+        hint: "Season points rows (OWGR-derived per the data catalog — labeled, not DFS scoring).",
+      },
+      {
+        id: "projections",
+        label: "Projection Inputs",
+        value: projectionsRestricted ? "Provider Restricted" : formatCount(fantasyProjAvailable),
+        count: fantasyProjAvailable,
+        hint: "Per-tournament projections; scrambled/404 on the trial tier.",
+      },
+    ],
+  })
+
+  // --- Betting --------------------------------------------------------------
+  const bettingRestricted = bettingEvents === 0 || bettingOutcomesAvailable === 0
+  const bettingPercent = bettingRestricted ? null : coveragePercent(bettingOutcomesAvailable, bettingOutcomesTotal)
+  sections.push({
+    id: "betting",
+    title: "Betting",
+    description:
+      "Odds markets and outcomes. The trial tier scrambles market descriptors and payouts (and returns 404 for the odds feed), so betting awaits a production provider.",
+    percent: bettingPercent,
+    rating: bettingRestricted ? "restricted" : rateCoverage(bettingPercent),
+    breakdown: {
+      verified: bettingOutcomesAvailable,
+      pending: 0,
+      missing: Math.max(bettingOutcomesTotal - bettingOutcomesAvailable, 0),
+      total: bettingOutcomesTotal,
+    },
+    restrictedReason: bettingRestricted
+      ? "Awaiting Production Provider — odds are scrambled/unentitled on the trial tier; no real payouts are surfaced."
+      : undefined,
+    metrics: [
+      {
+        id: "odds",
+        label: "Odds Imported",
+        value: bettingOutcomesAvailable > 0 ? formatCount(bettingOutcomesAvailable) : "None real",
+        count: bettingOutcomesAvailable,
+        hint: "Outcomes with a real (non-scrambled) payout.",
+      },
+      {
+        id: "sportsbooks",
+        label: "Sportsbooks",
+        value: "Not tracked",
+        hint: "Per-book attribution is not modeled by the current feed.",
+      },
+      {
+        id: "markets",
+        label: "Markets",
+        value: `${formatCount(bettingMarketsAvailable)} / ${formatCount(bettingMarketsTotal)}`,
+        count: bettingMarketsAvailable,
+        hint: "Available (non-scrambled) markets out of all imported.",
+      },
+      {
+        id: "coverage",
+        label: "Coverage",
+        value: bettingRestricted ? "Restricted" : formatPercent(bettingPercent),
+        percent: bettingPercent,
+      },
+    ],
+  })
+
+  // --- Platform summary tiles ----------------------------------------------
+  const tournamentsWithVenue = tournamentVenueRows.length
+  const tournamentsPercent = coveragePercent(tournamentsWithVenue, totalTournaments)
+  const summary: DomainSummary[] = [
+    { id: "players", label: "Players", percent: playerPercent, rating: rateCoverage(playerPercent), verified: fullyEnriched, total: totalPlayers },
+    { id: "courses", label: "Courses", percent: geoPercent, rating: rateCoverage(geoPercent), verified: verifiedCoords, total: totalCourses },
+    { id: "tournaments", label: "Tournaments", percent: tournamentsPercent, rating: rateCoverage(tournamentsPercent), verified: tournamentsWithVenue, total: totalTournaments },
+    { id: "weather", label: "Weather", percent: weatherPercent, rating: rateCoverage(weatherPercent), verified: forecastAvailable, total: totalTournaments },
+    { id: "course-intelligence", label: "Course Intelligence", percent: ciPercent, rating: rateCoverage(ciPercent), verified: verifiedProfiles, total: totalCourses },
+    { id: "rankings", label: "Rankings", percent: rankingPercent, rating: rateCoverage(rankingPercent), verified: rankedPlayers, total: totalPlayers },
+    { id: "news", label: "News", percent: newsPercent, rating: rateCoverage(newsPercent), verified: playerLinkedArticles, total: totalArticles },
+    { id: "images", label: "Images", percent: photoPercent, rating: rateCoverage(photoPercent), verified: playersWithPhoto, total: totalPlayers },
+    { id: "fantasy", label: "Fantasy", percent: fantasyPercent, rating: fantasyHasRealData ? rateCoverage(fantasyPercent) : "restricted", verified: dfsReal, total: dfsTotal, restricted: !fantasyHasRealData },
+    { id: "betting", label: "Betting", percent: bettingPercent, rating: bettingRestricted ? "restricted" : rateCoverage(bettingPercent), verified: bettingOutcomesAvailable, total: bettingOutcomesTotal, restricted: bettingRestricted },
+  ]
+
+  const health = await buildPlatformHealth({
+    now,
+    lastPlayerImport: playerAgg._max.updatedAt,
+    lastTournamentImport: tournamentAgg._max.updatedAt,
+    lastCourseImport: courseAgg._max.updatedAt,
+    lastWeatherImport: newsUpdatedAgg._max.capturedAt,
+    lastNewsImport: newsAgg._max.updatedAt,
+    bettingRestricted,
+  })
+
+  return {
+    generatedAt: new Date(now).toISOString(),
+    summary,
+    sections,
+    health,
+  }
+}
+
+interface HealthInputs {
+  now: number
+  lastPlayerImport: Date | null
+  lastTournamentImport: Date | null
+  lastCourseImport: Date | null
+  lastWeatherImport: Date | null
+  lastNewsImport: Date | null
+  bettingRestricted: boolean
+}
+
+async function buildPlatformHealth(inputs: HealthInputs): Promise<PlatformHealth> {
+  let databaseHealthy = false
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    databaseHealthy = true
+  } catch {
+    databaseHealthy = false
+  }
+
+  const sportsDataConfigured = Boolean(process.env.SPORTSDATAIO_API_KEY)
+  const weatherConfigured = Boolean(process.env.OPENWEATHER_API_KEY)
+  const openAiConfigured = Boolean(process.env.OPENAI_API_KEY || process.env.AI_GATEWAY_API_KEY)
+
+  const checks: HealthCheck[] = [
+    {
+      id: "sportsdataio",
+      label: "SportsDataIO",
+      state: sportsDataConfigured ? "connected" : "not-configured",
+      detail: sportsDataConfigured
+        ? "API key present (trial tier — several premium feeds are scrambled)."
+        : "SPORTSDATAIO_API_KEY is not set.",
+    },
+    {
+      id: "openweather",
+      label: "OpenWeather",
+      state: weatherConfigured ? "connected" : "not-configured",
+      detail: weatherConfigured
+        ? "API key present; forecasts can be fetched for verified venues."
+        : "OPENWEATHER_API_KEY is not set — weather cannot be refreshed.",
+    },
+    {
+      id: "odds",
+      label: "Odds Provider",
+      state: inputs.bettingRestricted ? "restricted" : "connected",
+      detail: inputs.bettingRestricted
+        ? "Odds are unentitled/scrambled on the current SportsDataIO tier."
+        : "Real odds are flowing from the configured provider.",
+    },
+    {
+      id: "openai",
+      label: "OpenAI",
+      state: openAiConfigured ? "connected" : "not-configured",
+      detail: openAiConfigured
+        ? "AI credentials present."
+        : "No OPENAI_API_KEY / AI_GATEWAY_API_KEY set — AI features are inactive.",
+    },
+    {
+      id: "database",
+      label: "Database",
+      state: databaseHealthy ? "healthy" : "unreachable",
+      detail: databaseHealthy ? "Neon Postgres responded to a liveness probe." : "Liveness probe failed.",
+    },
+  ]
+
+  const imports: ImportMarker[] = [
+    { id: "players", label: "Players", at: toIso(inputs.lastPlayerImport) },
+    { id: "tournaments", label: "Tournaments", at: toIso(inputs.lastTournamentImport) },
+    { id: "courses", label: "Courses", at: toIso(inputs.lastCourseImport) },
+    { id: "weather", label: "Weather", at: toIso(inputs.lastWeatherImport) },
+    { id: "news", label: "News", at: toIso(inputs.lastNewsImport) },
+  ]
+
+  return { checks, imports }
+}
