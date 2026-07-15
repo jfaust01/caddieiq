@@ -114,7 +114,10 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
         </TabsContent>
 
         <TabsContent value="statistics">
-          <PlayerStatsGrid seasonStatistics={player.seasonStatistics} />
+          <PlayerStatsGrid
+            seasonStatistics={player.seasonStatistics}
+            verifiedWorldRanking={player.worldRanking}
+          />
         </TabsContent>
 
         <TabsContent value="history">
