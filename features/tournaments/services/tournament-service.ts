@@ -17,6 +17,8 @@ import 'server-only'
 import { cache } from 'react'
 
 import type {
+  FieldLeader,
+  FieldRankingLeaders,
   FilterOption,
   PaginatedResult,
   TournamentField,
@@ -25,6 +27,8 @@ import type {
   TourType,
 } from '@/features/tournaments/types'
 import { analyticsService } from '@/lib/analytics/service'
+import { rankingService } from '@/lib/rankings/service'
+import type { RankingBoard, RankingBoardSet, RankingCategory } from '@/lib/rankings/types'
 import { getFieldRepository } from '@/lib/repositories/field-repository'
 import {
   getTournamentRepository,
@@ -53,6 +57,51 @@ const getTournamentByIdCached = cache(
   },
 )
 
+/** How many players each tournament-hub leader list shows. */
+const LEADER_LIMIT = 5
+
+/**
+ * Turn one ranking board into a name-resolved leader list (top {@link
+ * LEADER_LIMIT}). Rows whose player is missing from `nameById` (should not
+ * happen for a field board) are skipped rather than shown without a name.
+ */
+function boardToLeaders(
+  board: RankingBoard | undefined,
+  nameById: Map<string, string>,
+): FieldLeader[] {
+  if (!board) return []
+  const leaders: FieldLeader[] = []
+  for (const row of board.rows) {
+    const playerName = nameById.get(row.playerId)
+    if (!playerName) continue
+    leaders.push({
+      rank: row.rank,
+      playerId: row.playerId,
+      playerName,
+      score: row.score,
+      band: row.band,
+    })
+    if (leaders.length >= LEADER_LIMIT) break
+  }
+  return leaders
+}
+
+/** Build the tournament-hub leader lists from a field-scoped ranking board set. */
+function buildRankingLeaders(
+  boards: RankingBoardSet,
+  nameById: Map<string, string>,
+): FieldRankingLeaders {
+  const boardFor = (category: RankingCategory) =>
+    boards.boards.find((board) => board.category === category)
+  const overall = boardFor('overall')
+  return {
+    season: boards.season,
+    ratedPlayers: overall?.totalRanked ?? 0,
+    topRanked: boardToLeaders(overall, nameById),
+    topForm: boardToLeaders(boardFor('recentForm'), nameById),
+  }
+}
+
 /**
  * Load a tournament's field (size + roster) mapped to UI shapes. Wrapped in
  * React `cache` so it is fetched at most once per request. Returns an empty
@@ -70,7 +119,30 @@ const getTournamentFieldCached = cache(
       repository.listByTournament(tournamentId),
       analyticsService.getFieldAnalyticsSummary(tournamentId),
     ])
-    return { size, entrants: rows.map(mapFieldEntrant), analyticsSummary }
+
+    const playerIds = rows.map((row) => row.playerId)
+
+    // Attach each entrant's overall Ranking Engine score (for field sorting) and
+    // build the hub leader lists. Both derive from the Ranking Engine ordering
+    // the SAME season-normalized analytics used everywhere else, sharing the
+    // request-cached population — so this issues no additional stats query.
+    const [analytics, rankingBoards] = await Promise.all([
+      analyticsService.getAnalyticsForPlayers(playerIds),
+      rankingService.getBoardsForPlayers(playerIds),
+    ])
+    const scoreByPlayer = new Map(
+      analytics.map((a) => [a.playerId, a.isEmpty ? null : a.overallRating]),
+    )
+
+    const entrants = rows.map((row) => ({
+      ...mapFieldEntrant(row),
+      rankingScore: scoreByPlayer.get(row.playerId) ?? null,
+    }))
+
+    const nameById = new Map(entrants.map((entrant) => [entrant.playerId, entrant.playerName]))
+    const rankingLeaders = buildRankingLeaders(rankingBoards, nameById)
+
+    return { size, entrants, analyticsSummary, rankingLeaders }
   },
 )
 

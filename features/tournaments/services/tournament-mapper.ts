@@ -40,7 +40,13 @@ function toFieldStatus(value: string | null): FieldEntryStatus {
     : 'CONFIRMED'
 }
 
-/** Map a flattened field row to the UI `FieldEntrant`. */
+/**
+ * Map a flattened field row to the UI `FieldEntrant`.
+ *
+ * `rankingScore` defaults to null here (this mapper is a pure row translation);
+ * the tournament service enriches it from the Ranking/Analytics engines so the
+ * ranking score stays a single derived source rather than a duplicate here.
+ */
 export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
   return {
     playerId: row.playerId,
@@ -51,6 +57,7 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     withdrawn: row.withdrawn,
     cutMade: row.cutMade ?? null,
     worldRanking: row.worldRanking ?? null,
+    rankingScore: null,
   }
 }
 

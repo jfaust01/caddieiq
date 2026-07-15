@@ -106,7 +106,8 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
           </div>
         </TabsContent>
 
-        <TabsContent value="analytics">
+        <TabsContent value="analytics" className="flex flex-col gap-6">
+          <PlayerRankingBadges profile={player.rankingProfile} />
           <PlayerAnalyticsPanel analytics={player.analytics} />
         </TabsContent>
 

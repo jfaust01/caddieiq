@@ -22,11 +22,12 @@ import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 20
 
-type SortKey = 'name-asc' | 'name-desc' | 'status' | 'rank'
+type SortKey = 'name-asc' | 'name-desc' | 'status' | 'rank' | 'ranking-score'
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'name-asc', label: 'Name (A–Z)' },
   { value: 'name-desc', label: 'Name (Z–A)' },
+  { value: 'ranking-score', label: 'CaddieIQ ranking' },
   { value: 'rank', label: 'World rank' },
   { value: 'status', label: 'Status' },
 ]
@@ -81,7 +82,26 @@ function RankChip({ rank }: { rank: number | null }) {
   )
 }
 
-/** A single entrant row: country, name (links to the player), world rank, status. */
+/**
+ * The player's overall CaddieIQ ranking score (0–100) as a compact chip. Shows
+ * a muted em-dash for unrated players (no season data) so the column stays
+ * aligned without implying a score we cannot ground in data.
+ */
+function ScoreChip({ score }: { score: number | null }) {
+  return (
+    <span
+      className="hidden w-12 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground sm:inline"
+      title={score === null ? 'Unrated — no season data' : `CaddieIQ ranking score ${score}`}
+    >
+      {score === null ? '—' : score}
+    </span>
+  )
+}
+
+/**
+ * A single entrant row: country, name (links to the player), CaddieIQ ranking
+ * score, world rank, and status.
+ */
 function FieldRow({ entrant }: FieldRowProps) {
   return (
     <li className="flex items-center gap-3 py-2.5">
@@ -92,6 +112,7 @@ function FieldRow({ entrant }: FieldRowProps) {
       >
         {entrant.playerName}
       </Link>
+      <ScoreChip score={entrant.rankingScore} />
       <RankChip rank={entrant.worldRanking} />
       <FieldStatusBadge status={entrant.status} />
     </li>
@@ -149,6 +170,13 @@ export function TournamentField({ field }: TournamentFieldProps) {
         const ra = a.worldRanking ?? Number.POSITIVE_INFINITY
         const rb = b.worldRanking ?? Number.POSITIVE_INFINITY
         return ra !== rb ? ra - rb : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'ranking-score') {
+        // Higher CaddieIQ ranking score is better; unrated players (no season
+        // data → null) sort last, then fall back to alphabetical for stability.
+        const sa = a.rankingScore ?? Number.NEGATIVE_INFINITY
+        const sb = b.rankingScore ?? Number.NEGATIVE_INFINITY
+        return sb !== sa ? sb - sa : a.playerName.localeCompare(b.playerName)
       }
       return a.playerName.localeCompare(b.playerName)
     })

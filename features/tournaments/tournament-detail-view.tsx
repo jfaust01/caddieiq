@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { PageShell } from '@/components/shared/page-shell'
 import { TournamentDetailTabs } from '@/features/tournaments/components/tournament-detail-tabs'
 import { TournamentField } from '@/features/tournaments/components/tournament-field'
+import { FieldRankingLeaders } from '@/features/tournaments/components/field-ranking-leaders'
 import { TournamentHero } from '@/features/tournaments/components/tournament-hero'
 import { TournamentIntelligence } from '@/features/tournaments/components/tournament-intelligence'
 import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
@@ -50,7 +51,12 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <TournamentDetailTabs
-            overview={<TournamentOverview tournament={tournament} />}
+            overview={
+              <div className="flex flex-col gap-6">
+                <TournamentOverview tournament={tournament} />
+                <FieldRankingLeaders leaders={field.rankingLeaders} />
+              </div>
+            }
             field={<TournamentField field={field} />}
             fieldCount={field.size}
           />
