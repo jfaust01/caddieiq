@@ -31,6 +31,8 @@
  *   relative to the field.
  * - `seasonPerformance` — overall season standing: total fantasy output blended
  *   with world ranking.
+ * - `rankingMomentum` — an INDEPENDENT signal (see below): the direction and
+ *   size of the player's week-over-week world-ranking change, on its own scale.
  */
 export type AnalyticsMetricKey =
   | "recentForm"
@@ -38,6 +40,16 @@ export type AnalyticsMetricKey =
   | "activity"
   | "fantasyProduction"
   | "seasonPerformance"
+  | "rankingMomentum"
+
+/**
+ * Metric keys that are INDEPENDENT signals — surfaced for context but
+ * deliberately excluded from `overallRating` so adding them never reweights the
+ * composite. `rankingMomentum` is the first: it isolates the week-over-week
+ * ranking movement (already a minor input to `recentForm`) as a standalone
+ * read, without double-counting it into the headline score.
+ */
+export const INDEPENDENT_METRIC_KEYS: readonly AnalyticsMetricKey[] = ["rankingMomentum"]
 
 /**
  * How much real data backed a score. `none` means the required inputs were
@@ -66,6 +78,12 @@ export interface AnalyticsScore {
   band: AnalyticsBand | null
   /** How much real data backed this score. */
   confidence: AnalyticsConfidence
+  /**
+   * When true, this is a context-only signal (see {@link INDEPENDENT_METRIC_KEYS})
+   * that is NOT folded into `overallRating`. Defaults to false/absent for the
+   * core weighted metrics.
+   */
+  independent?: boolean
 }
 
 /**

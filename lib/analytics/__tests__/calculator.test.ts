@@ -88,8 +88,50 @@ describe("computePlayerAnalytics", () => {
     // The top player should score near the top of the field.
     expect(result.overallRating).not.toBeNull()
     expect(result.overallRating!).toBeGreaterThan(70)
-    expect(result.scores).toHaveLength(5)
+    // 5 core weighted metrics + 1 independent signal (rankingMomentum).
+    expect(result.scores).toHaveLength(6)
     expect(result.scores.every((s) => s.value !== null)).toBe(true)
+  })
+
+  it("treats rankingMomentum as an independent signal excluded from the overall rating", () => {
+    const result = computePlayerAnalytics(population[0], pop)
+    const momentum = result.scores.find((s) => s.key === "rankingMomentum")
+    // It IS surfaced, flagged independent, and never part of the composite.
+    expect(momentum).toBeDefined()
+    expect(momentum?.independent).toBe(true)
+
+    // The overall rating equals the mean of ONLY the core (non-independent)
+    // metrics — proving the new signal did not reweight the composite.
+    const coreMean = meanOfScores(
+      result.scores.filter((s) => !s.independent).map((s) => s.value),
+    )
+    expect(result.overallRating).toBe(coreMean)
+  })
+
+  it("scores rankingMomentum above 50 for an improving rank and below 50 for a slipping one", () => {
+    // p1 improved 12 → 1 last week to this week: strong upward momentum.
+    const improving = computePlayerAnalytics(
+      sample({ worldRanking: 5, worldRankingLastWeek: 9 }),
+      pop,
+    )
+    const up = improving.scores.find((s) => s.key === "rankingMomentum")
+    expect(up?.value).toBeGreaterThan(50)
+
+    // A player who slipped down the rankings scores below the neutral midpoint.
+    const slipping = computePlayerAnalytics(
+      sample({ worldRanking: 20, worldRankingLastWeek: 15 }),
+      pop,
+    )
+    const down = slipping.scores.find((s) => s.key === "rankingMomentum")
+    expect(down?.value).toBeLessThan(50)
+  })
+
+  it("emits a null rankingMomentum (never fabricated) without last week's rank", () => {
+    const subject = sample({ worldRankingLastWeek: null })
+    const result = computePlayerAnalytics(subject, buildPopulation([subject], 2025))
+    const momentum = result.scores.find((s) => s.key === "rankingMomentum")
+    expect(momentum?.value).toBeNull()
+    expect(momentum?.confidence).toBe("none")
   })
 
   it("derives consistency intrinsically from gained vs. lost points", () => {
@@ -125,7 +167,8 @@ describe("computePlayerAnalytics", () => {
     const result = computePlayerAnalytics(null, pop)
     expect(result.isEmpty).toBe(true)
     expect(result.overallRating).toBeNull()
-    expect(result.scores).toHaveLength(5)
+    // 5 core weighted metrics + 1 independent signal (rankingMomentum).
+    expect(result.scores).toHaveLength(6)
     expect(result.scores.every((s) => s.value === null)).toBe(true)
   })
 })

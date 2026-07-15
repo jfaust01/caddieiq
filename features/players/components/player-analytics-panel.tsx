@@ -140,6 +140,11 @@ export function PlayerAnalyticsPanel({ analytics }: PlayerAnalyticsPanelProps) {
     )
   }
 
+  // Independent signals (e.g. ranking momentum) are shown apart from the core
+  // metrics because they are deliberately excluded from the overall rating.
+  const coreScores = analytics.scores.filter((score) => !score.independent)
+  const independentScores = analytics.scores.filter((score) => score.independent)
+
   return (
     <Card>
       <CardHeader>
@@ -163,16 +168,35 @@ export function PlayerAnalyticsPanel({ analytics }: PlayerAnalyticsPanelProps) {
           <p className="max-w-xs text-xs leading-relaxed text-muted-foreground text-pretty">
             Normalized against {analytics.sampleSize} ranked players
             {analytics.season === null ? '' : ` in the ${analytics.season} season`}. A blend of the
-            metrics below.
+            core metrics below.
           </p>
         </div>
 
-        {/* Per-metric scores */}
+        {/* Core weighted metrics — these are what the Overall Rating blends. */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {analytics.scores.map((score) => (
+          {coreScores.map((score) => (
             <MetricCard key={score.key} score={score} />
           ))}
         </div>
+
+        {/* Independent signals — surfaced for context, not part of the rating. */}
+        {independentScores.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Independent Signals
+              </span>
+              <span className="text-[0.6875rem] text-muted-foreground/70">
+                Context only — not part of the overall rating
+              </span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {independentScores.map((score) => (
+                <MetricCard key={score.key} score={score} />
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <p className="flex items-start gap-2 text-xs text-muted-foreground">
           <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />

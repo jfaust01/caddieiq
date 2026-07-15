@@ -21,13 +21,17 @@
  * confidence because the provider tier is known to obfuscate rank precision.
  */
 
-import type {
-  AnalyticsBand,
-  AnalyticsConfidence,
-  AnalyticsMetricKey,
-  AnalyticsScore,
-  PlayerAnalytics,
+import {
+  INDEPENDENT_METRIC_KEYS,
+  type AnalyticsBand,
+  type AnalyticsConfidence,
+  type AnalyticsMetricKey,
+  type AnalyticsScore,
+  type PlayerAnalytics,
 } from "./types"
+
+/** Set membership test for independent (non-weighted) metrics. */
+const INDEPENDENT_KEYS = new Set<AnalyticsMetricKey>(INDEPENDENT_METRIC_KEYS)
 
 /**
  * One player's season aggregates — the raw input the calculator consumes. This
@@ -67,6 +71,7 @@ const METRIC_LABELS: Record<AnalyticsMetricKey, string> = {
   activity: "Activity",
   fantasyProduction: "Fantasy Production",
   seasonPerformance: "Season Performance",
+  rankingMomentum: "Ranking Momentum",
 }
 
 /** One-line descriptions of what each analytic measures and its basis. */
@@ -79,15 +84,21 @@ const METRIC_DESCRIPTIONS: Record<AnalyticsMetricKey, string> = {
   fantasyProduction: "Average fantasy points per event, relative to the field.",
   seasonPerformance:
     "Total fantasy output blended with world ranking — overall season standing.",
+  rankingMomentum:
+    "Week-over-week world-ranking movement — an independent trend signal, not part of the overall rating.",
 }
 
-/** Display order for the analytics grid. */
+/**
+ * Display order for the analytics grid. `rankingMomentum` sorts last as an
+ * independent, context-only signal (see {@link INDEPENDENT_METRIC_KEYS}).
+ */
 export const METRIC_ORDER: readonly AnalyticsMetricKey[] = [
   "seasonPerformance",
   "recentForm",
   "fantasyProduction",
   "consistency",
   "activity",
+  "rankingMomentum",
 ]
 
 /** Clamp a number into the inclusive 0–100 range and round to one decimal. */
@@ -164,6 +175,7 @@ function score(
   value: number | null,
   confidence: AnalyticsConfidence,
 ): AnalyticsScore {
+  const independent = INDEPENDENT_KEYS.has(key)
   return {
     key,
     label: METRIC_LABELS[key],
@@ -171,6 +183,7 @@ function score(
     value: value === null ? null : clampScore(value),
     band: value === null ? null : toBand(clampScore(value)),
     confidence: value === null ? "none" : confidence,
+    ...(independent ? { independent: true } : {}),
   }
 }
 
@@ -197,6 +210,27 @@ function recentForm(sample: SeasonStatSample, pop: PopulationContext): Analytics
   // Map movement into a bounded ±25-point adjustment around the standing.
   const movementAdjustment = Math.max(-25, Math.min(25, movement * 2.5))
   return score("recentForm", standing + movementAdjustment, "medium")
+}
+
+/**
+ * Ranking Momentum — an INDEPENDENT trend signal (excluded from the overall
+ * rating). Isolates the week-over-week world-ranking change as a standalone
+ * read centered on 50 (no change): moving UP the rankings (a lower number)
+ * pushes above 50, slipping pushes below. Each spot of movement is worth 5
+ * points, bounded to 0–100, so a ±10-spot swing saturates the scale.
+ *
+ * Requires BOTH the current rank and last week's rank; with only one (or
+ * neither) there is no movement to measure and the signal is null/`none`.
+ * Ranking precision is obfuscated upstream, so confidence is capped at `medium`.
+ */
+function rankingMomentum(sample: SeasonStatSample): AnalyticsScore {
+  if (!has(sample.worldRanking) || !has(sample.worldRankingLastWeek)) {
+    return score("rankingMomentum", null, "none")
+  }
+  // A LOWER ranking number is better, so improvement = lastWeek - current.
+  const movement = sample.worldRankingLastWeek - sample.worldRanking
+  if (movement === 0) return score("rankingMomentum", 50, "medium")
+  return score("rankingMomentum", 50 + movement * 5, "medium")
 }
 
 /**
@@ -299,10 +333,17 @@ export function computePlayerAnalytics(
     activity: activity(sample, pop),
     fantasyProduction: fantasyProduction(sample, pop),
     seasonPerformance: seasonPerformance(sample, pop),
+    rankingMomentum: rankingMomentum(sample),
   }
 
   const scores = METRIC_ORDER.map((key) => computed[key])
-  const overallRating = meanOfScores(scores.map((s) => s.value))
+  // The overall rating is the mean of the CORE weighted metrics only. Independent
+  // signals (e.g. ranking momentum) are surfaced for context but never folded in,
+  // so introducing them leaves the composite — and its implicit weighting —
+  // exactly as it was before.
+  const overallRating = meanOfScores(
+    scores.filter((s) => !s.independent).map((s) => s.value),
+  )
 
   return {
     playerId: sample.playerId,
@@ -311,6 +352,8 @@ export function computePlayerAnalytics(
     overallRating,
     overallBand: overallRating === null ? null : toBand(overallRating),
     scores,
-    isEmpty: scores.every((s) => s.value === null),
+    // Empty only when no CORE metric could be computed; a lone independent
+    // signal doesn't make an otherwise-empty profile "rated".
+    isEmpty: scores.filter((s) => !s.independent).every((s) => s.value === null),
   }
 }

@@ -50,6 +50,7 @@ const METRIC_LABELS: Record<AnalyticsMetricKey, string> = {
   activity: "Activity",
   fantasyProduction: "Fantasy Rating",
   seasonPerformance: "Season Performance",
+  rankingMomentum: "Ranking Momentum",
 }
 
 /**
