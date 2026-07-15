@@ -153,6 +153,15 @@ export class ImportManager {
       }
     }
 
+    acc.validated = valid.length
+    this.logger.stage(
+      { provider, entity: definition.entity, stage: "validate" },
+      valid.length,
+      outcome.evaluated.length > valid.length
+        ? `${outcome.evaluated.length - valid.length} rejected`
+        : undefined,
+    )
+
     // --- Stage 4: persist (repository layer) ------------------------------
     if (valid.length > 0) {
       try {
@@ -161,6 +170,11 @@ export class ImportManager {
         acc.updated += bulk.updated
         acc.skipped += bulk.skipped
         acc.failed += bulk.failed
+        this.logger.stage(
+          { provider, entity: definition.entity, stage: "persist" },
+          bulk.inserted + bulk.updated,
+          `${bulk.inserted} inserted, ${bulk.updated} updated, ${bulk.skipped} skipped, ${bulk.failed} failed`,
+        )
         for (const item of bulk.errors) {
           acc.errors.push(
             RepositoryImportError.wrap(item.error, {
