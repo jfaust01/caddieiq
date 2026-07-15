@@ -25,6 +25,10 @@ import type { TournamentImportDeps } from "./tournament-import"
 import { createTournamentRelationResolver } from "./tournament-relations"
 import { linkTournamentCourses, type CourseLinkSummary } from "./course-relations"
 import { importTournamentFields, type FieldImportSummary } from "./field-relations"
+import {
+  importPlayerStatistics,
+  type StatisticsImportSummary,
+} from "./statistics-relations"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -74,6 +78,12 @@ export {
   type FieldImportSummary,
   type ImportFieldsOptions,
 } from "./field-relations"
+export {
+  importPlayerStatistics,
+  DEFAULT_STAT_SEASONS,
+  type StatisticsImportSummary,
+  type ImportStatisticsOptions,
+} from "./statistics-relations"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -176,4 +186,22 @@ export async function runCourseLinking(
  */
 export async function runFieldImport(): Promise<FieldImportSummary> {
   return importTournamentFields()
+}
+
+/**
+ * Import player season statistics into `player_season_statistics`, attaching
+ * each season's aggregate performance to an existing `Player`.
+ *
+ * Run this AFTER {@link runPlayerImport} has populated the player catalog —
+ * rows link only to players that already exist. Drives the statistics pipeline
+ * per season (Provider → Mapper → Validation → Repository). Idempotent —
+ * reconciles each row on `(playerId, season)`. Returns a
+ * {@link StatisticsImportSummary} describing the run.
+ *
+ * @param seasons - Seasons to import; defaults to {@link DEFAULT_STAT_SEASONS}.
+ */
+export async function runStatisticsImport(
+  seasons?: readonly number[],
+): Promise<StatisticsImportSummary> {
+  return importPlayerStatistics({ seasons })
 }

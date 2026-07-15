@@ -40,3 +40,9 @@ export {
   type FieldEntryRow,
   type FieldPreviewRow,
 } from "./field-repository"
+export {
+  StatisticsRepository,
+  getStatisticsRepository,
+  type ResolvedSeasonStat,
+  type PlayerSeasonStatRow,
+} from "./statistics-repository"
