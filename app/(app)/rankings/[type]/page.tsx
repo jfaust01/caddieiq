@@ -3,37 +3,29 @@ import { notFound } from 'next/navigation'
 
 import { RankingsView } from '@/features/rankings/rankings-view'
 import { getRankingView } from '@/features/rankings/services/rankings-service'
-import {
-  getRankingDefinition,
-  listRankingTypes,
-  type RankingType,
-} from '@/lib/ranking'
+import { rankingTypeFromSlug } from '@/features/rankings/categories'
 
 interface RankingTypePageProps {
   params: Promise<{ type: string }>
-}
-
-function isRankingType(value: string): value is RankingType {
-  return (listRankingTypes() as string[]).includes(value)
 }
 
 export async function generateMetadata({
   params,
 }: RankingTypePageProps): Promise<Metadata> {
   const { type } = await params
-  if (!isRankingType(type)) return { title: 'Rankings' }
-  const definition = getRankingDefinition(type)
+  const option = rankingTypeFromSlug(type)
+  if (!option) return { title: 'Rankings' }
   return {
-    title: `${definition.label} Rankings`,
-    description: definition.description,
+    title: `${option.label} Rankings`,
+    description: option.description,
   }
 }
 
-export default async function RankingTypePage({
-  params,
-}: RankingTypePageProps) {
+export default async function RankingTypePage({ params }: RankingTypePageProps) {
   const { type } = await params
-  if (!isRankingType(type)) notFound()
-  const initialView = await getRankingView(type)
-  return <RankingsView type={type} initialView={initialView} />
+  // Only real engine categories are valid routes; unknown slugs 404 rather than
+  // silently falling back, so links stay honest.
+  if (!rankingTypeFromSlug(type)) notFound()
+  const view = await getRankingView(type)
+  return <RankingsView view={view} />
 }

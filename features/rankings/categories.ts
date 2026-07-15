@@ -10,7 +10,11 @@
  * engine builds from the season-normalized analytics.
  */
 
-import { RANKING_CATEGORY_META, RANKING_CATEGORY_ORDER } from '@/lib/rankings'
+// Import the pure category constants directly from the calculator (and the type
+// from the type module) rather than the package barrel: the barrel re-exports
+// the server-only RankingService, which would pull Prisma into any client that
+// imports this catalog (e.g. the RankingTabs component).
+import { RANKING_CATEGORY_META, RANKING_CATEGORY_ORDER } from '@/lib/rankings/calculator'
 import type { RankingCategory } from '@/lib/rankings/types'
 
 /** A single selectable ranking type in the directory. */
