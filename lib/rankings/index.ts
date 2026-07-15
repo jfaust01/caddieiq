@@ -26,6 +26,7 @@ export {
   RANKING_CATEGORY_META,
   RANKING_CATEGORY_ORDER,
   buildBoardSet,
+  letterGradeForScore,
   ranksByPlayer,
   selectPlayerProfile,
 } from "./calculator"

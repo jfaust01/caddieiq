@@ -19,7 +19,7 @@
  * shared by the server service, the pure calculator, and client UI alike.
  */
 
-import type { AnalyticsBand } from "@/lib/analytics/types"
+import type { AnalyticsBand, AnalyticsConfidence } from "@/lib/analytics/types"
 
 /**
  * The rankings CaddieIQ produces today. Each maps directly onto a value the
@@ -45,6 +45,23 @@ export type RankingCategory =
  * changes which players are in the ordering.
  */
 export type RankingScope = "global" | "field"
+
+/**
+ * How confident the platform is in a ranking, reused verbatim from the
+ * Analytics Engine so a ranking never claims more certainty than the analytics
+ * it orders. For a single-metric category it is that metric's confidence; for
+ * the composite `overall` it is the most conservative (lowest) confidence among
+ * the metrics that contributed.
+ */
+export type RankingConfidence = AnalyticsConfidence
+
+/**
+ * A letter grade (e.g. "A+", "B", "F") mapped from a ranking's 0–100 score.
+ * Because analytics scores are field-relative (percentile-like), the grade
+ * communicates standing among peers — roughly, ~50 is a median "C". `null` when
+ * the player is unranked in the category.
+ */
+export type RankingGrade = string
 
 /** Display metadata for a ranking category. */
 export interface RankingCategoryMeta {
@@ -79,6 +96,20 @@ export interface RankingEntry {
    * `null` when unranked. Derived purely from `rank` and `totalRanked`.
    */
   percentile: number | null
+  /** Letter grade mapped from `score`, or `null` when unranked. */
+  grade: RankingGrade | null
+  /**
+   * Confidence in the score, carried straight from the Analytics Engine so the
+   * ranking is never more certain than its inputs. `"none"` when unranked.
+   */
+  confidence: RankingConfidence
+  /**
+   * The analytics dimensions that drive this ranking — explanation metadata
+   * that is NOT shown to users today but will power future AI explanations, so
+   * they reference stored reasoning rather than inventing it. Empty when
+   * unranked.
+   */
+  factors: string[]
 }
 
 /**
@@ -102,6 +133,12 @@ export interface RankingBoardRow {
   score: number
   band: AnalyticsBand
   percentile: number
+  /** Letter grade mapped from `score`. */
+  grade: RankingGrade
+  /** Confidence carried from the Analytics Engine (never fabricated). */
+  confidence: RankingConfidence
+  /** Explanation metadata: the analytics dimensions behind the ranking. */
+  factors: string[]
 }
 
 /** A single category ranked across a population — an ordered leaderboard. */

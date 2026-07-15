@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest"
 
 import type { AnalyticsBand, AnalyticsScore, PlayerAnalytics } from "@/lib/analytics/types"
 
-import { buildBoardSet, ranksByPlayer, selectPlayerProfile } from "../calculator"
+import {
+  buildBoardSet,
+  letterGradeForScore,
+  ranksByPlayer,
+  selectPlayerProfile,
+} from "../calculator"
 
 /** Minimal analytics-score factory for a single metric. */
 function score(
@@ -75,6 +80,44 @@ describe("buildBoardSet", () => {
     // c(90)=1, a(80)=2, b(80)=2, d(60)=4
     const ranks = Object.fromEntries(overall.rows.map((row) => [row.playerId, row.rank]))
     expect(ranks).toEqual({ c: 1, a: 2, b: 2, d: 4 })
+  })
+})
+
+describe("scoring metadata", () => {
+  it("maps 0–100 scores to letter grades on a field-relative curve", () => {
+    expect(letterGradeForScore(95)).toBe("A+")
+    expect(letterGradeForScore(82)).toBe("A")
+    expect(letterGradeForScore(50)).toBe("C+")
+    expect(letterGradeForScore(35)).toBe("D")
+    expect(letterGradeForScore(10)).toBe("F")
+  })
+
+  it("attaches grade, confidence, and explanation factors to board rows", () => {
+    const boards = buildBoardSet([player("a", 92, 70)], "global", 2025)
+    const overall = boards.boards.find((board) => board.category === "overall")!
+    const row = overall.rows[0]
+    expect(row.grade).toBe("A+")
+    // Overall confidence blends the (available) contributing metrics.
+    expect(row.confidence).toBe("high")
+    // Overall factors are the player's actually-available analytics metrics.
+    expect(row.factors).toEqual(["recentForm"])
+  })
+
+  it("carries a category's confidence straight from the backing analytic", () => {
+    const boards = buildBoardSet([player("a", 60, 40)], "global", 2025)
+    const form = boards.boards.find((board) => board.category === "recentForm")!
+    expect(form.rows[0].confidence).toBe("high")
+    expect(form.rows[0].factors).toEqual(["World Ranking", "Week-over-Week Movement"])
+  })
+
+  it("reports none confidence and no factors for unranked profile entries", () => {
+    const boards = buildBoardSet([player("a", 50, null)], "global", 2025)
+    const profile = selectPlayerProfile(boards, "a")
+    const form = profile.entries.find((entry) => entry.category === "recentForm")!
+    expect(form.rank).toBeNull()
+    expect(form.grade).toBeNull()
+    expect(form.confidence).toBe("none")
+    expect(form.factors).toEqual([])
   })
 })
 

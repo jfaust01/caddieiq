@@ -16,6 +16,7 @@
 
 import type {
   AnalyticsBand,
+  AnalyticsConfidence,
   AnalyticsMetricKey,
   PlayerAnalytics,
 } from "@/lib/analytics/types"
@@ -26,7 +27,9 @@ import type {
   RankingBoardSet,
   RankingCategory,
   RankingCategoryMeta,
+  RankingConfidence,
   RankingEntry,
+  RankingGrade,
   RankingScope,
 } from "./types"
 
@@ -84,17 +87,87 @@ const CATEGORY_METRIC: Record<
   season: "seasonPerformance",
 }
 
-/** The score + band an analytics profile contributes to a given category. */
+/**
+ * Static explanation factors for the single-metric categories — the analytics
+ * inputs each ranking is grounded in. `overall` is intentionally absent: its
+ * factors are the player's actually-available metrics, computed per player (see
+ * {@link factorsForCategory}). This metadata is not shown to users yet; it is
+ * the reasoning future AI explanations will reference instead of inventing.
+ */
+const CATEGORY_FACTORS: Record<Exclude<RankingCategory, "overall">, readonly string[]> = {
+  recentForm: ["World Ranking", "Week-over-Week Movement"],
+  fantasy: ["Fantasy Points per Event"],
+  consistency: ["Positive Fantasy Production Share"],
+  season: ["Total Fantasy Output", "World Ranking"],
+}
+
+/** Confidence levels ordered weakest → strongest, for conservative blending. */
+const CONFIDENCE_RANK: Record<AnalyticsConfidence, number> = {
+  none: 0,
+  low: 1,
+  medium: 2,
+  high: 3,
+}
+
+/**
+ * Map a 0–100 score to a letter grade. Analytics scores are field-relative
+ * (percentile-like), so the grade communicates standing among peers: ~50 (the
+ * median) is a "C", elite scores earn an "A". Deterministic and pure.
+ */
+export function letterGradeForScore(score: number): RankingGrade {
+  if (score >= 90) return "A+"
+  if (score >= 80) return "A"
+  if (score >= 70) return "B+"
+  if (score >= 60) return "B"
+  if (score >= 50) return "C+"
+  if (score >= 40) return "C"
+  if (score >= 30) return "D"
+  return "F"
+}
+
+/**
+ * The most conservative confidence among a set — overall is only as trustworthy
+ * as its weakest contributing metric. Ignores absent (`none`) metrics; returns
+ * `none` when nothing contributed.
+ */
+function aggregateConfidence(levels: readonly AnalyticsConfidence[]): RankingConfidence {
+  const present = levels.filter((level) => level !== "none")
+  if (present.length === 0) return "none"
+  return present.reduce((lowest, level) =>
+    CONFIDENCE_RANK[level] < CONFIDENCE_RANK[lowest] ? level : lowest,
+  )
+}
+
+/** Explanation factors for a category: available metrics for `overall`, else static. */
+function factorsForCategory(analytics: PlayerAnalytics, category: RankingCategory): string[] {
+  if (category === "overall") {
+    return analytics.scores.filter((score) => score.value !== null).map((score) => score.label)
+  }
+  return [...CATEGORY_FACTORS[category]]
+}
+
+/**
+ * The score + band + confidence an analytics profile contributes to a category.
+ * For `overall`, confidence is the conservative blend of the metrics that fed
+ * the composite; for a single-metric category it is that metric's confidence.
+ */
 function categoryValue(
   analytics: PlayerAnalytics,
   category: RankingCategory,
-): { value: number | null; band: AnalyticsBand | null } {
+): { value: number | null; band: AnalyticsBand | null; confidence: RankingConfidence } {
   if (category === "overall") {
-    return { value: analytics.overallRating, band: analytics.overallBand }
+    const confidence = aggregateConfidence(
+      analytics.scores.filter((score) => score.value !== null).map((score) => score.confidence),
+    )
+    return { value: analytics.overallRating, band: analytics.overallBand, confidence }
   }
   const metricKey = CATEGORY_METRIC[category]
   const score = analytics.scores.find((entry) => entry.key === metricKey)
-  return { value: score?.value ?? null, band: score?.band ?? null }
+  return {
+    value: score?.value ?? null,
+    band: score?.band ?? null,
+    confidence: score?.confidence ?? "none",
+  }
 }
 
 /** Percentile (0–100, higher is better) from a rank within a population. */
@@ -117,14 +190,28 @@ function buildBoard(
 ): RankingBoard {
   const meta = RANKING_CATEGORY_META[category]
 
+  type RankableEntry = {
+    playerId: string
+    score: number
+    band: AnalyticsBand
+    confidence: RankingConfidence
+    factors: string[]
+  }
+
   const rankable = players
-    .map((analytics) => {
-      const { value, band } = categoryValue(analytics, category)
+    .map((analytics): RankableEntry | null => {
+      const { value, band, confidence } = categoryValue(analytics, category)
       return value === null || band === null
         ? null
-        : { playerId: analytics.playerId, score: value, band }
+        : {
+            playerId: analytics.playerId,
+            score: value,
+            band,
+            confidence,
+            factors: factorsForCategory(analytics, category),
+          }
     })
-    .filter((entry): entry is { playerId: string; score: number; band: AnalyticsBand } => entry !== null)
+    .filter((entry): entry is RankableEntry => entry !== null)
     .sort((a, b) => (b.score - a.score) || a.playerId.localeCompare(b.playerId))
 
   const totalRanked = rankable.length
@@ -143,6 +230,9 @@ function buildBoard(
       score: entry.score,
       band: entry.band,
       percentile: percentileFromRank(rank, totalRanked),
+      grade: letterGradeForScore(entry.score),
+      confidence: entry.confidence,
+      factors: entry.factors,
     })
   })
 
@@ -197,6 +287,9 @@ export function selectPlayerProfile(
       score: row?.score ?? null,
       band: row?.band ?? null,
       percentile: row?.percentile ?? null,
+      grade: row?.grade ?? null,
+      confidence: row?.confidence ?? "none",
+      factors: row?.factors ?? [],
     }
   })
 
