@@ -42,6 +42,8 @@ import {
   tournamentContextService,
   type TournamentContext,
 } from '@/lib/tournament-context'
+import { getWeatherIntelligenceService } from '@/lib/weather-intelligence/service'
+import type { WeatherIntelligence } from '@/lib/weather-intelligence'
 import type { RankingBoard, RankingBoardSet, RankingCategory } from '@/lib/rankings/types'
 import { getFieldRepository } from '@/lib/repositories/field-repository'
 import { getNewsRepository } from '@/lib/repositories'
@@ -241,6 +243,16 @@ const getFieldFitBoardCached = cache(
   },
 )
 
+/**
+ * Resolve a tournament's Weather Intelligence once per request. Wrapped in React
+ * `cache` and keyed by tournament id so a route that reads it in both
+ * `generateMetadata` and the page only runs the engine once.
+ */
+const getWeatherForTournamentCached = cache(
+  (tournamentId: string): Promise<WeatherIntelligence> =>
+    getWeatherIntelligenceService().getForTournament(tournamentId),
+)
+
 /** How many articles the tournament-hub field-news rail shows in total. */
 const FIELD_NEWS_LIMIT = 6
 /** How many articles per player feed the rail before the global cap. */
@@ -368,6 +380,19 @@ export const tournamentService = {
     const context = await tournamentContextService.getTournamentContext(id)
     const courseId = hasCourseContext(context) ? context.course.id : null
     return getFieldFitBoardCached(id, courseId)
+  },
+
+  /**
+   * The event's Weather Intelligence — a shared signal family attached to the
+   * tournament context (current conditions, per-round forecast, wind/rain
+   * timelines, morning/afternoon wave advantage) with its own
+   * Verified/Partial/Unavailable confidence. Keyed by tournament id, the natural
+   * key for an event's conditions, so it agrees with the rest of the hub. Reads
+   * through the Weather Intelligence Engine; returns an `unavailable` profile
+   * (never a fabricated forecast) when no snapshot has been imported.
+   */
+  getWeatherIntelligence(id: string): Promise<WeatherIntelligence> {
+    return getWeatherForTournamentCached(id)
   },
 
   /**
