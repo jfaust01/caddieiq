@@ -33,3 +33,10 @@ export {
   getTournamentRepository,
   type TournamentPersistInput,
 } from "./tournament-repository"
+export {
+  FieldRepository,
+  getFieldRepository,
+  type ResolvedFieldEntry,
+  type FieldEntryRow,
+  type FieldPreviewRow,
+} from "./field-repository"

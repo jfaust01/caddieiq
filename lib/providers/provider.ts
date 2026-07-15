@@ -122,14 +122,16 @@ export interface DataProvider {
  * first implementation; DataGolf may implement the same contract later. Methods
  * return raw, typed provider responses — they never normalize.
  *
- * @typeParam TPlayer     - Raw player shape for the implementing provider.
- * @typeParam TTournament - Raw tournament shape for the implementing provider.
- * @typeParam TCourse     - Raw course shape for the implementing provider.
+ * @typeParam TPlayer      - Raw player shape for the implementing provider.
+ * @typeParam TTournament  - Raw tournament shape for the implementing provider.
+ * @typeParam TCourse      - Raw course shape for the implementing provider.
+ * @typeParam TLeaderboard - Raw leaderboard/field shape for the provider.
  */
 export interface GolfDataProvider<
   TPlayer = unknown,
   TTournament = unknown,
   TCourse = unknown,
+  TLeaderboard = unknown,
 > extends DataProvider {
   /** List players in the provider's catalog. */
   listPlayers(query?: ProviderQuery): Promise<ProviderListResponse<TPlayer>>
@@ -141,6 +143,12 @@ export interface GolfDataProvider<
   getTournament(tournamentId: string): Promise<ProviderResponse<TTournament>>
   /** List courses in the provider's catalog. */
   listCourses(query?: ProviderQuery): Promise<ProviderListResponse<TCourse>>
+  /**
+   * Fetch the field/leaderboard for a tournament by its native id. This is the
+   * source of a tournament's player field — the roster of everyone entered
+   * (upcoming) or who competed (completed).
+   */
+  getLeaderboard(tournamentId: string): Promise<ProviderResponse<TLeaderboard>>
 }
 
 /**

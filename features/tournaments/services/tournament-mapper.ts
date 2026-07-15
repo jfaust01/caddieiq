@@ -6,10 +6,13 @@
  */
 
 import type {
+  FieldEntrant,
+  FieldEntryStatus,
   TournamentStatus,
   TournamentSummary,
   TourType,
 } from '@/features/tournaments/types'
+import type { FieldEntryRow } from '@/lib/repositories/field-repository'
 import type { TournamentSearchRow } from '@/lib/repositories/tournament-repository'
 
 const TOURNAMENT_STATUSES: readonly TournamentStatus[] = [
@@ -20,6 +23,35 @@ const TOURNAMENT_STATUSES: readonly TournamentStatus[] = [
 ]
 
 const TOUR_TYPES: readonly TourType[] = ['PGA', 'DP_WORLD', 'LIV', 'KORN_FERRY', 'LPGA']
+
+const FIELD_STATUSES: readonly FieldEntryStatus[] = [
+  'CONFIRMED',
+  'ALTERNATE',
+  'WITHDRAWN',
+  'DISQUALIFIED',
+  'CUT',
+  'FINISHED',
+]
+
+/** Narrow a raw field-status string to the UI enum, defaulting to `CONFIRMED`. */
+function toFieldStatus(value: string | null): FieldEntryStatus {
+  return FIELD_STATUSES.includes(value as FieldEntryStatus)
+    ? (value as FieldEntryStatus)
+    : 'CONFIRMED'
+}
+
+/** Map a flattened field row to the UI `FieldEntrant`. */
+export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
+  return {
+    playerId: row.playerId,
+    playerName: row.playerName,
+    countryCode: row.countryCode ?? null,
+    status: toFieldStatus(row.status),
+    isAlternate: row.isAlternate,
+    withdrawn: row.withdrawn,
+    cutMade: row.cutMade ?? null,
+  }
+}
 
 /** Narrow a raw status string to the UI enum, defaulting to `SCHEDULED`. */
 function toStatus(value: string | null): TournamentStatus {

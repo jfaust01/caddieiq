@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { mapSportsDataPlayer } from "../player/mapper"
 import { mapSportsDataCourse } from "../course/mapper"
 import { mapSportsDataTournament } from "../tournament/mapper"
+import { mapSportsDataFieldEntry } from "../field/mapper"
 
 describe("mapSportsDataPlayer", () => {
   it("translates fields and derives fullName + slug", () => {
@@ -119,5 +120,69 @@ describe("mapSportsDataTournament", () => {
   it("defaults to SCHEDULED when not over", () => {
     expect(mapSportsDataTournament({ TournamentID: 1, IsOver: false }).status).toBe("SCHEDULED")
     expect(mapSportsDataTournament({ TournamentID: 2 }).status).toBe("SCHEDULED")
+  })
+})
+
+describe("mapSportsDataFieldEntry", () => {
+  it("maps a completed-event finisher and derives FINISHED", () => {
+    const entry = mapSportsDataFieldEntry(
+      {
+        PlayerID: 40000123,
+        Name: "Rory McIlroy",
+        Country: "IRL",
+        Rank: 3,
+        MadeCut: true,
+        Earnings: 850000,
+      },
+      { tournamentIsOver: true },
+    )
+
+    expect(entry.playerName).toBe("Rory McIlroy")
+    expect(entry.playerSlug).toBe("rory-mcilroy")
+    expect(entry.status).toBe("FINISHED")
+    expect(entry.finalPosition).toBe(3)
+    expect(entry.cutMade).toBe(true)
+    expect(entry.earnings).toBe(850000)
+    expect(entry.externalRef.externalId).toBe("40000123")
+  })
+
+  it("derives CUT for a completed event when the player missed the cut", () => {
+    const entry = mapSportsDataFieldEntry(
+      { PlayerID: 1, Name: "Missed Cutter", MadeCut: false },
+      { tournamentIsOver: true },
+    )
+    expect(entry.status).toBe("CUT")
+    expect(entry.cutMade).toBe(false)
+  })
+
+  it("prioritizes withdrawal and alternate status over result-derived status", () => {
+    const wd = mapSportsDataFieldEntry(
+      { PlayerID: 1, Name: "WD Player", IsWithdrawn: true, MadeCut: true },
+      { tournamentIsOver: true },
+    )
+    expect(wd.status).toBe("WITHDRAWN")
+    expect(wd.withdrawn).toBe(true)
+
+    const alt = mapSportsDataFieldEntry(
+      { PlayerID: 2, Name: "Alt Player", IsAlternate: true },
+      { tournamentIsOver: false },
+    )
+    expect(alt.status).toBe("ALTERNATE")
+    expect(alt.isAlternate).toBe(true)
+  })
+
+  it("defaults an upcoming-event entry to CONFIRMED and never trusts the obfuscated status", () => {
+    const entry = mapSportsDataFieldEntry(
+      { PlayerID: 9, Name: "Entrant", TournamentStatus: "Scrambled" },
+      { tournamentIsOver: false },
+    )
+    expect(entry.status).toBe("CONFIRMED")
+    expect(entry.finalPosition).toBeNull()
+  })
+
+  it("falls back to a placeholder name when absent", () => {
+    const entry = mapSportsDataFieldEntry({ PlayerID: 5 }, { tournamentIsOver: false })
+    expect(entry.playerName).toBe("Unknown Player")
+    expect(entry.playerSlug).toBe("unknown-player")
   })
 })

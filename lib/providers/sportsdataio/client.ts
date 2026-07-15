@@ -35,7 +35,13 @@ import {
   mapSportsDataIoNetworkError,
 } from "./errors"
 import { createSportsDataIoLogger, type SportsDataIoLogger } from "./logger"
-import type { SdioCourse, SdioPlayer, SdioResource, SdioTournament } from "./types"
+import type {
+  SdioCourse,
+  SdioLeaderboard,
+  SdioPlayer,
+  SdioResource,
+  SdioTournament,
+} from "./types"
 
 /** Client implementation version, surfaced in health checks. */
 export const SPORTSDATAIO_CLIENT_VERSION = "1.0.0"
@@ -65,7 +71,7 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
 const MAX_ERROR_BODY = 500
 
 export class SportsDataProvider
-  implements GolfDataProvider<SdioPlayer, SdioTournament, SdioCourse>
+  implements GolfDataProvider<SdioPlayer, SdioTournament, SdioCourse, SdioLeaderboard>
 {
   readonly providerName = PROVIDER
   readonly version = SPORTSDATAIO_CLIENT_VERSION
@@ -178,6 +184,22 @@ export class SportsDataProvider
       query,
     )
     // TODO(normalization): SdioCourse[] → CaddieIQ Course records.
+    return { data, meta }
+  }
+
+  // --- Capability: field / leaderboard -------------------------------------
+
+  /**
+   * Fetch a tournament's field via `/json/Leaderboard/{tournamentid}`. This is
+   * the only feed that enumerates who is in a tournament; each row is both a
+   * field entry and a per-player result. Returns the raw envelope — mapping and
+   * player reconciliation happen downstream in the field importer.
+   */
+  async getLeaderboard(tournamentId: string): Promise<ProviderResponse<SdioLeaderboard>> {
+    const { data, meta } = await this.getOne<SdioLeaderboard>(
+      `/json/Leaderboard/${encodeURIComponent(tournamentId)}`,
+      "field",
+    )
     return { data, meta }
   }
 

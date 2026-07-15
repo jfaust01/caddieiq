@@ -53,3 +53,6 @@ export {
   validateCourses,
   validateTournaments,
 } from "./validator"
+
+// Tournament-field validation (focused; see field-validator.ts for rationale)
+export { validateFieldEntries, type FieldValidationResult } from "./field-validator"
