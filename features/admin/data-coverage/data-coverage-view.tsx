@@ -48,7 +48,7 @@ export function DataCoverageView({ report }: { report: DataCoverageReport }) {
 
       <section aria-label="Platform health" className="flex flex-col gap-4">
         <SectionHeader
-          title="Provider &amp; import health"
+          title="Provider & import health"
           description="Connection state for external dependencies and the last successful import per domain."
         />
         <HealthPanel health={report.health} />

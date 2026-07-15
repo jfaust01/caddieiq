@@ -26,13 +26,6 @@ export default async function DataCoveragePage() {
   })
   if (user?.role !== 'ADMIN') notFound()
 
-  let report
-  try {
-    report = await getDataCoverageReport()
-  } catch (error) {
-    console.log('[v0] data-coverage SERVICE failed:', error instanceof Error ? error.stack : error)
-    throw error
-  }
-  console.log('[v0] data-coverage service OK, sections=', report.sections.length)
+  const report = await getDataCoverageReport()
   return <DataCoverageView report={report} />
 }

@@ -10,6 +10,23 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+**Data Coverage Dashboard (internal)**
+
+- New admin-only diagnostics page at `/admin/data-coverage`
+  (`features/admin/data-coverage` + `lib/data-coverage`) that reports, live from
+  the database, how much of each domain's data is actually **verified** —
+  courses, geolocation, course intelligence, weather, players, rankings,
+  tournaments, news, images, fantasy, and betting. Provider-restricted trial-tier
+  feeds (betting odds, fantasy projections) are labelled **Provider Restricted**
+  and scored `N/A`, so coverage is never inflated by data we cannot trust.
+- The page is intentionally **absent from navigation** and gated at two layers:
+  `proxy.ts` now protects `/admin/*` at the edge, and the route re-checks the
+  session role and returns `notFound()` for non-admins (so its existence is not
+  disclosed).
+- Coverage aggregation lives in a `server-only` service; the rating logic
+  (`ratings.ts`) is pure and unit-tested. `docs/DATA_COVERAGE.md` documents the
+  domains, honesty rules, architecture, and access control.
+
 **Course Geolocation Engine**
 
 - New engine (`lib/imports/course-geolocation.ts` + `lib/providers/geocoding`)
