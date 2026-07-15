@@ -221,12 +221,13 @@ export interface PlayerDetail extends Player {
   tournamentHistory: TournamentHistoryEntry[]
   activity: ActivityEntry[]
   /**
-   * Course Fit for the venue of the player's next upcoming tournament (or their
-   * most recent linked event as a fallback). `null` when the player has no
-   * scheduled or historical event with a linked course to evaluate against.
-   * The `fitContext` describes which event/course the fit was computed for.
+   * The player's single active Tournament Context — their next verified upcoming
+   * event — resolved by the Tournament Context Engine, together with the Course
+   * Fit computed for it. Always present; `status: 'unavailable'` when the player
+   * is in no verified upcoming field (in which case Course Fit is not
+   * calculated). This is the shared context every event-specific model reads.
    */
-  courseFit: PlayerCourseFit | null
+  upcoming: PlayerUpcomingContext
   /**
    * Recent news about the player, newest first, sourced live from the provider
    * news feed. Empty until news has been imported or when the provider has no
@@ -236,25 +237,48 @@ export interface PlayerDetail extends Player {
 }
 
 /**
- * The event/course a player's Course Fit was evaluated against, and whether it
- * is the player's next upcoming event or a most-recent fallback. Lets the UI
- * label the card honestly (e.g. "Next start · Pebble Beach").
+ * A one-line read of how much verified Course Intelligence a host course has.
+ * Sourced from the Course Intelligence Engine's coverage — never estimated.
  */
-export interface PlayerCourseFitContext {
-  tournamentId: string
-  tournamentName: string
-  tournamentSlug: string
-  courseId: string
-  courseName: string
-  /** ISO start date of the event, or null when unscheduled. */
-  startDate: string | null
-  timing: 'UPCOMING' | 'RECENT'
+export interface CourseIntelSummary {
+  /** Whether at least one course characteristic is verified. */
+  verified: boolean
+  /** Verified characteristic count and the total tracked. */
+  scored: number
+  total: number
+  /** Plain-English headline, e.g. "3 of 12 course attributes verified". */
+  headline: string
 }
 
-/** Course Fit result plus the event/course context it was computed for. */
-export interface PlayerCourseFit {
-  context: PlayerCourseFitContext
-  result: CourseFitResult
+/** The resolved event on a player's Tournament Context. */
+export interface PlayerUpcomingTournament {
+  id: string
+  name: string
+  slug: string
+  /** ISO start date of the event, or null when unscheduled. */
+  startDate: string | null
+  /** ISO end date of the event, or null when unknown. */
+  endDate: string | null
+  /** Database tournament status text (e.g. "SCHEDULED"). */
+  status: string
+  timing: 'UPCOMING' | 'LIVE' | 'COMPLETED'
+}
+
+/**
+ * The player's active Tournament Context, ready for the profile UI. Produced by
+ * the player service from the shared Tournament Context Engine. `confidence` is
+ * the ceiling for the Course Fit shown alongside it; `fit` is populated only
+ * when the context is `verified` (a linked host course exists). `detail`
+ * explains partial/unavailable states in plain English.
+ */
+export interface PlayerUpcomingContext {
+  status: 'available' | 'unavailable'
+  confidence: 'verified' | 'partial' | 'unavailable'
+  tournament: PlayerUpcomingTournament | null
+  course: { id: string; name: string } | null
+  courseIntelligence: CourseIntelSummary | null
+  fit: CourseFitResult | null
+  detail: string | null
 }
 
 /** Optional world-ranking band used by the directory filters. */

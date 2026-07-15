@@ -50,19 +50,25 @@ const playerReadInclude = {
 export type PlayerWithRelations = Prisma.PlayerGetPayload<{ include: typeof playerReadInclude }>
 
 /**
- * The resolved course context for a player's Course Fit: the tournament and its
- * host course the fit is evaluated against, plus whether that event is upcoming
- * or the most recent fallback. Returned by
- * {@link PlayerRepository.findNextCourseFitContextById}.
+ * The raw facts for a player's active Tournament Context: their next **upcoming**
+ * event and its linked host course. Consumed by the Tournament Context Engine
+ * (`lib/tournament-context`), which normalizes it into a confidence-graded
+ * context. Returned by {@link PlayerRepository.findUpcomingContextById}.
+ *
+ * The course is nullable on purpose: an upcoming event with no linked host
+ * course is a real, `partial`-confidence context — not a reason to hide the
+ * event. The engine records the missing course as a gap rather than fabricating
+ * one.
  */
-export interface PlayerCourseFitContextRow {
+export interface PlayerUpcomingContextRow {
   tournamentId: string
   tournamentName: string
   tournamentSlug: string
+  tournamentStatus: string
   startDate: Date | null
-  courseId: string
-  courseName: string
-  timing: "UPCOMING" | "RECENT"
+  endDate: Date | null
+  courseId: string | null
+  courseName: string | null
 }
 
 /**
@@ -274,44 +280,45 @@ export class PlayerRepository extends BaseRepository {
   }
 
   /**
-   * Resolve the course a player's Course Fit should be evaluated against: the
-   * host venue of their next upcoming tournament, falling back to the most
-   * recent linked event when nothing is scheduled ahead.
+   * Resolve the raw facts for a player's active Tournament Context: their next
+   * **upcoming** event they are confirmed in (nearest first), plus its linked
+   * host course when one exists.
    *
-   * Only rows with a real linked host course are considered, so the caller can
-   * treat a `null` result as an honest "no course to evaluate against" state
-   * rather than fabricating one. Ordering prefers future events (nearest first)
-   * and then past events (most recent first); the `timing` flag tells the UI
-   * which case was chosen. Read-only.
+   * Forward-looking by design — only events with `startDate >= now()` are
+   * considered, so a past result is never selected. The host course is a
+   * LEFT JOIN, so an upcoming event without a linked course still resolves (the
+   * Tournament Context Engine grades that as a `partial` context and records the
+   * missing course as a gap, rather than hiding the event or fabricating a
+   * course). Returns `null` when the player is in no upcoming field. Read-only.
    */
-  async findNextCourseFitContextById(playerId: string): Promise<PlayerCourseFitContextRow | null> {
-    const rows = await this.prisma.$queryRaw<PlayerCourseFitContextRow[]>(Prisma.sql`
+  async findUpcomingContextById(playerId: string): Promise<PlayerUpcomingContextRow | null> {
+    const rows = await this.prisma.$queryRaw<PlayerUpcomingContextRow[]>(Prisma.sql`
       SELECT
         t.id            AS "tournamentId",
         t.name          AS "tournamentName",
         t.slug          AS "tournamentSlug",
+        t.status::text  AS "tournamentStatus",
         t."startDate"   AS "startDate",
+        t."endDate"     AS "endDate",
         c.id            AS "courseId",
-        c.name          AS "courseName",
-        CASE WHEN t."startDate" >= now() THEN 'UPCOMING' ELSE 'RECENT' END AS "timing"
+        c.name          AS "courseName"
       FROM tournament_fields tf
       JOIN tournaments t ON t.id = tf."tournamentId"
-      JOIN LATERAL (
+      LEFT JOIN LATERAL (
         SELECT tc."courseId"
         FROM tournament_courses tc
         WHERE tc."tournamentId" = t.id
         ORDER BY tc."hostCourse" DESC, tc.year DESC
         LIMIT 1
       ) host ON true
-      JOIN courses c ON c.id = host."courseId" AND c."deletedAt" IS NULL
+      LEFT JOIN courses c ON c.id = host."courseId" AND c."deletedAt" IS NULL
       WHERE tf."playerId" = ${playerId}
         AND tf.withdrawn = false
         AND t."deletedAt" IS NULL
         AND t.status <> 'CANCELED'
         AND t."startDate" IS NOT NULL
-      ORDER BY
-        (CASE WHEN t."startDate" >= now() THEN 0 ELSE 1 END) ASC,
-        ABS(EXTRACT(EPOCH FROM (t."startDate" - now()))) ASC
+        AND t."startDate" >= now()
+      ORDER BY t."startDate" ASC
       LIMIT 1
     `)
     return rows[0] ?? null

@@ -16,25 +16,32 @@
 import "server-only"
 
 import type {
+  CourseIntelSummary,
   FilterOption,
   PaginatedResult,
   Player,
-  PlayerCourseFit,
   PlayerDetail,
   PlayerQuery,
+  PlayerUpcomingContext,
   RankingBand,
   Tour,
 } from "@/features/players/types"
 import { courseService } from "@/features/courses/services/course-service"
 import { analyticsService } from "@/lib/analytics/service"
 import { computeCourseFit } from "@/lib/analytics/course-fit"
+import type { CourseProfile } from "@/lib/domain/course"
 import { rankingService } from "@/lib/rankings/service"
 import { getNewsRepository, type NewsArticleView } from "@/lib/repositories"
 import {
   getPlayerRepository,
-  type PlayerCourseFitContextRow,
   type PlayerSearchParams,
 } from "@/lib/repositories/player-repository"
+import {
+  hasCourseContext,
+  isContextAvailable,
+  tournamentContextService,
+  type TournamentContext,
+} from "@/lib/tournament-context"
 import type { PlayerAnalytics } from "@/lib/analytics/types"
 import type { PlayerNewsItem } from "@/features/players/types"
 
@@ -44,46 +51,104 @@ import { mapPlayer, mapPlayerDetail } from "./player-mapper"
 /** Number of recent articles surfaced on a player's profile. */
 const PLAYER_NEWS_LIMIT = 6
 
+/** One-line, coverage-based read of a course's verified intelligence. */
+function summarizeCourseIntel(profile: CourseProfile): CourseIntelSummary {
+  const { verified, total } = profile.coverage
+  return {
+    verified: verified > 0,
+    scored: verified,
+    total,
+    headline:
+      verified > 0
+        ? `${verified} of ${total} course attributes verified`
+        : 'Course profile pending verification',
+  }
+}
+
 /**
- * Resolve a player's Course Fit against the venue of their next **upcoming**
- * verified tournament entry. Returns `null` — so the UI shows a neutral
- * placeholder — whenever there is no such context: no upcoming entry, a
- * historical-only fallback, or an upcoming event without a linked host course.
- * Course Fit is forward-looking by design; we never compute or display it from a
- * past event, and we never fabricate a fit.
+ * Turn the player's shared {@link TournamentContext} into the profile-ready
+ * {@link PlayerUpcomingContext}, computing Course Fit **only** when the context
+ * is `verified` (a linked host course exists).
  *
- * The player's skill profile is built from verified analytics only (all-`null`
- * today, so the model reports low/none confidence), and the course profile is
- * sourced from the Course Intelligence Engine. This is the only place the two
- * halves of a player-vs-course fit are joined for the profile page.
+ * Course selection is not decided here — it flows in from the Tournament Context
+ * Engine, the single authority for a player's active event. This function just
+ * attaches the event-specific Course Fit, whose confidence is capped by the
+ * context's confidence. It never fabricates: no upcoming context yields an
+ * `unavailable` state, and a course-less (`partial`) context skips Course Fit
+ * rather than inventing one. The player's skill profile is built from verified
+ * analytics only (all-`null` today, so the model reports low/none confidence).
  */
-async function resolveCourseFit(
+async function buildUpcomingContext(
   playerId: string,
   analytics: PlayerAnalytics,
-  contextRow: PlayerCourseFitContextRow | null,
-): Promise<PlayerCourseFit | null> {
-  // Only a verified upcoming entry yields a fit; a most-recent fallback does not.
-  if (!contextRow || contextRow.timing !== 'UPCOMING') return null
-  const courseProfile = await courseService.getCourseIntelligence(contextRow.courseId)
-  if (!courseProfile) return null
+  context: TournamentContext,
+): Promise<PlayerUpcomingContext> {
+  if (!isContextAvailable(context)) {
+    return {
+      status: 'unavailable',
+      confidence: 'unavailable',
+      tournament: null,
+      course: null,
+      courseIntelligence: null,
+      fit: null,
+      detail: context.detail,
+    }
+  }
 
-  const result = computeCourseFit({
+  const tournament = {
+    id: context.tournament.id,
+    name: context.tournament.name,
+    slug: context.tournament.slug,
+    startDate: context.tournament.startDate,
+    endDate: context.tournament.endDate,
+    status: context.tournament.status,
+    timing: context.timing,
+  }
+
+  // Partial context: an upcoming event with no linked host course yet — Course
+  // Fit and Course Intelligence are not available, and are never guessed.
+  if (!hasCourseContext(context)) {
+    return {
+      status: 'available',
+      confidence: context.confidence,
+      tournament,
+      course: context.course,
+      courseIntelligence: null,
+      fit: null,
+      detail: 'Course Fit becomes available once a host course is linked to this tournament.',
+    }
+  }
+
+  // Verified context: join the verified player skill profile with the host
+  // course's intelligence profile — the only place the two halves of a
+  // player-vs-course fit meet for the profile page.
+  const courseProfile = await courseService.getCourseIntelligence(context.course.id)
+  if (!courseProfile) {
+    return {
+      status: 'available',
+      confidence: 'partial',
+      tournament,
+      course: context.course,
+      courseIntelligence: null,
+      fit: null,
+      detail: 'The linked host course could not be loaded, so Course Fit is unavailable.',
+    }
+  }
+
+  const fit = computeCourseFit({
     playerId,
     courseProfile,
     skills: buildPlayerSkillProfile(analytics),
   })
 
   return {
-    context: {
-      tournamentId: contextRow.tournamentId,
-      tournamentName: contextRow.tournamentName,
-      tournamentSlug: contextRow.tournamentSlug,
-      courseId: contextRow.courseId,
-      courseName: contextRow.courseName,
-      startDate: contextRow.startDate ? contextRow.startDate.toISOString() : null,
-      timing: contextRow.timing,
-    },
-    result,
+    status: 'available',
+    confidence: 'verified',
+    tournament,
+    course: context.course,
+    courseIntelligence: summarizeCourseIntel(courseProfile),
+    fit,
+    detail: null,
   }
 }
 
