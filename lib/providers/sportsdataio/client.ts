@@ -36,11 +36,14 @@ import {
 } from "./errors"
 import { createSportsDataIoLogger, type SportsDataIoLogger } from "./logger"
 import type {
+  SdioBettingEvent,
   SdioCourse,
+  SdioDfsSlate,
   SdioLeaderboard,
   SdioNewsArticle,
   SdioPlayer,
   SdioPlayerSeasonStats,
+  SdioPlayerTournamentProjection,
   SdioResource,
   SdioTournament,
 } from "./types"
@@ -237,6 +240,59 @@ export class SportsDataProvider
    */
   async listNews(): Promise<ProviderListResponse<SdioNewsArticle>> {
     const { data, meta } = await this.getList<SdioNewsArticle>("/json/News", "news")
+    return { data, meta }
+  }
+
+  // --- Capability: betting -------------------------------------------------
+
+  /**
+   * List betting events (with nested markets + outcomes) for a date via
+   * `/odds/json/BettingEventsByDate/{date}`. Payout values arrive scrambled on
+   * the trial tier; the betting importer detects sentinels downstream. `date`
+   * is `YYYY-MM-DD`.
+   */
+  async listBettingEventsByDate(
+    date: string,
+  ): Promise<ProviderListResponse<SdioBettingEvent>> {
+    const { data, meta } = await this.getList<SdioBettingEvent>(
+      `/odds/json/BettingEventsByDate/${encodeURIComponent(date)}`,
+      "bettingEvents",
+    )
+    return { data, meta }
+  }
+
+  // --- Capability: fantasy projections -------------------------------------
+
+  /**
+   * List per-player tournament fantasy projections via
+   * `/projections/json/PlayerTournamentProjectionStats/{tournamentId}`. Projected
+   * points arrive scrambled on the trial tier; the projections importer detects
+   * sentinels downstream.
+   */
+  async listPlayerTournamentProjections(
+    tournamentId: string,
+  ): Promise<ProviderListResponse<SdioPlayerTournamentProjection>> {
+    const { data, meta } = await this.getList<SdioPlayerTournamentProjection>(
+      `/projections/json/PlayerTournamentProjectionStats/${encodeURIComponent(tournamentId)}`,
+      "projections",
+    )
+    return { data, meta }
+  }
+
+  // --- Capability: DFS salaries --------------------------------------------
+
+  /**
+   * List DFS slates (with nested slate players + salaries) for a tournament via
+   * `/json/DfsSlatesByTournament/{tournamentId}`. Salaries are real when an
+   * event is slated, so no scramble gate is applied downstream.
+   */
+  async listDfsSlatesByTournament(
+    tournamentId: string,
+  ): Promise<ProviderListResponse<SdioDfsSlate>> {
+    const { data, meta } = await this.getList<SdioDfsSlate>(
+      `/json/DfsSlatesByTournament/${encodeURIComponent(tournamentId)}`,
+      "dfsSlates",
+    )
     return { data, meta }
   }
 

@@ -30,6 +30,8 @@ import {
   type StatisticsImportSummary,
 } from "./statistics-relations"
 import { importNews, type NewsImportSummary } from "./news-import"
+import { importBetting, type BettingImportSummary } from "./betting-import"
+import { importFantasy, type FantasyImportSummary } from "./fantasy-import"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -90,6 +92,16 @@ export {
   type NewsImportSummary,
   type ImportNewsOptions,
 } from "./news-import"
+export {
+  importBetting,
+  type BettingImportSummary,
+  type ImportBettingOptions,
+} from "./betting-import"
+export {
+  importFantasy,
+  type FantasyImportSummary,
+  type ImportFantasyOptions,
+} from "./fantasy-import"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -223,4 +235,38 @@ export async function runStatisticsImport(
  */
 export async function runNewsImport(): Promise<NewsImportSummary> {
   return importNews()
+}
+
+/**
+ * Import betting events (with markets + outcomes) into `betting_events` /
+ * `betting_markets` / `betting_outcomes`, linking events to tournaments and
+ * outcomes to players.
+ *
+ * On the current SportsDataIO trial tier payout VALUES arrive scrambled; the
+ * pipeline stores the full structure with `available:false` + null payouts so
+ * nothing fake is surfaced and real odds flow automatically once a production
+ * key is installed. Run AFTER {@link runTournamentImport} and
+ * {@link runPlayerImport} so the id bridges resolve. Idempotent. `dates` are
+ * `YYYY-MM-DD`; defaults to today (UTC).
+ */
+export async function runBettingImport(
+  dates?: readonly string[],
+): Promise<BettingImportSummary> {
+  return importBetting({ dates })
+}
+
+/**
+ * Import fantasy projections into `fantasy_projections` and DFS salaries into
+ * `dfs_salaries`, linking both to tournaments and players.
+ *
+ * Projection VALUES are scrambled on the trial tier and stored with
+ * `available:false` + null points; DFS salaries are real and stored as-is. Run
+ * AFTER {@link runTournamentImport} and {@link runPlayerImport}. Idempotent.
+ * When `tournamentExternalIds` is omitted every bridgeable catalog tournament
+ * is imported.
+ */
+export async function runFantasyImport(
+  tournamentExternalIds?: readonly string[],
+): Promise<FantasyImportSummary> {
+  return importFantasy({ tournamentExternalIds })
 }

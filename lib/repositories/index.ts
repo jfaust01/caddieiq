@@ -52,3 +52,16 @@ export {
   type ResolvedNewsArticle,
   type NewsArticleView,
 } from "./news-repository"
+export {
+  BettingRepository,
+  getBettingRepository,
+  type ResolvedBettingEvent,
+  type BettingOutcomeView,
+} from "./betting-repository"
+export {
+  FantasyRepository,
+  getFantasyRepository,
+  type ResolvedFantasyProjection,
+  type ResolvedDfsSalary,
+  type FantasyProjectionView,
+} from "./fantasy-repository"
