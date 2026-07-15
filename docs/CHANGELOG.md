@@ -10,6 +10,32 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+**Weather Intelligence Engine**
+
+- New signal family (`lib/weather-intelligence`) that turns a verified,
+  imported forecast into an event's playing conditions — current conditions,
+  round-by-round outlook, wind/rain timelines, and morning/afternoon tee-time
+  (wave) edge — realizing the **Wind** model in `MODELS.md` §2.5. A pure core
+  (`intelligence.ts` + `signals.ts` / `characteristics.ts` / `waves.ts`) grades
+  every profile `verified` / `partial` / `unavailable` from forecast **age** and
+  **round coverage**, capped by the Tournament Context Engine, and a `server-only`
+  service resolves it per tournament. Every field is nullable end to end, so an
+  absent signal reads as "no signal", never a fabricated `0`.
+- New `weather_snapshots` / `weather_periods` tables (one snapshot per
+  tournament, nullable per-signal periods) and a transactional
+  `WeatherRepository` that atomically replaces a tournament's snapshot.
+- New OpenWeather provider client (`lib/providers/weather`, timeout-guarded,
+  retrying, rate-limited) and importer (`runWeatherImport`) that fetches only
+  for tournaments with a linked host course + coordinates inside the forecast
+  horizon — events without a venue are skipped, never fetched for a fabricated
+  location. Requires `OPENWEATHER_API_KEY`; until it is set the surface reports
+  `unavailable` rather than stub data.
+- **Tournament Page** gains a Weather Intelligence section (conditions,
+  round-by-round table, wind/rain timelines, wave edge, confidence badge) and the
+  hero weather chip now reads from the same profile, so header and section agree.
+- `docs/WEATHER_INTELLIGENCE.md` specifying the engine, its confidence rules,
+  data model, importer, and consumer contract.
+
 **Tournament Context Engine**
 
 - New shared engine (`lib/tournament-context`) that is the single authoritative

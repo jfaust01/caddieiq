@@ -51,6 +51,7 @@ Legend for **Fidelity**: 🟢 real & usable now · 🟡 real but sparse/seasonal
 | `PlayerTournamentProjectionStats/{id}` | ⚪🔴 | envelope real; `FantasyPoints*`, per-stat projections scrambled | *new* `fantasy_projections` | Pipeline built. **2026-07-15 probe: HTTP 404 at `/golf/v2/projections/json/…` on the trial tier — not entitled/usable now** (see §7). Even when live, projections are estimates, not a superior source for *actual* production (§4). |
 | `BettingEvents…` / `v3/golf/odds` | ⚪🔴 | `BettingEventID`, structure real; `BettingMarkets[].BettingBetType`, outcomes scrambled | *new* `betting_events`, `betting_markets`, `betting_outcomes` | Pipeline built. **2026-07-15 probe: HTTP 404 at `/golf/v2/odds/json/BettingEventsByDate/{date}` on the trial tier — not entitled/usable now** (see §7). |
 | `Leaderboard/{id}` | 🟡 | `Rank`, `TotalScore`, round scores | `player_rounds` / `tournament_fields` | Populated only for in-progress/completed events in-season. |
+| **OpenWeather** `forecast` (external — *not* SportsDataIO) | 🟢 | `dt`, `main.temp/feels_like/humidity/pressure`, `wind.speed/gust/deg`, `pop`, `rain.3h`, `clouds.all`, `visibility`, `weather[].id/main`, `city.coord/timezone` | *new* `weather_snapshots`, `weather_periods` | Powers the **Weather Intelligence Engine** ([WEATHER_INTELLIGENCE.md](./WEATHER_INTELLIGENCE.md)). Fetched per tournament by its linked host-course coordinates; ~5-day / 3-hour horizon. Requires `OPENWEATHER_API_KEY` — absent key ⇒ surface reports `unavailable`, never stub data. Every period column is nullable; an absent field reads as "no signal", never `0`. Additive; replaces no SportsDataIO field. |
 | DraftKings **fantasy points** (season aggregate) | ⚪ | — | — | Not in season-stats feed at any tier; only per-tournament, and scrambled on trial. |
 | Strokes Gained (external) | ⚪ | — | — | Not entitled on this key. Blocks SG-based signals. |
 | Multi-season history (pre-2025) | ⚪ | — | — | Only 2025 present. Blocks trend/momentum-over-seasons. |
@@ -111,11 +112,15 @@ Maps the models in `docs/MODELS.md` to the data that unblocks them.
 | Momentum / Trend | multi-season history | ⚪ no | pre-2025 backfill |
 | DFS Value | real fantasy points + salaries | 🔴 partial | production tier (salaries real, points scrambled) |
 | Betting Value | real odds | 🔴 no | production tier |
-| Course Fit / Wind | course + weather data | ⚪ no | course characteristics + weather ingestion |
+| Course Fit | course characteristics + player shot profiles | 🟡 partial | player shot profiles (course model shipped) |
+| Wind / Weather | venue coordinates + weather forecast | 🟢 **yes** (engine shipped) | `OPENWEATHER_API_KEY` + host-course coordinates per event |
 
 **Bottom line:** OWGR-based signals and all content/media (images, news) are
-production-ready today. Fantasy and betting are *fully plumbed but value-gated*
-behind a production key. SG, multi-season, and course/weather remain data-blocked.
+production-ready today. **Weather/Wind is now ingested** — the Weather
+Intelligence Engine is live and reports honest `verified / partial / unavailable`
+confidence per event once a key and venue coordinates exist. Fantasy and betting
+are *fully plumbed but value-gated* behind a production key. SG and multi-season
+history remain data-blocked.
 
 ---
 

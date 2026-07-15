@@ -313,6 +313,15 @@ For each: **Purpose · Inputs · Outputs · Confidence · Future enhancements.**
 
 ### 2.5 Wind
 
+> **Status:** The conditions half of this model is **shipped** as the
+> **Weather Intelligence Engine** (`lib/weather-intelligence`, see
+> [WEATHER_INTELLIGENCE.md](./WEATHER_INTELLIGENCE.md)). It ingests a verified
+> per-event forecast and derives current conditions, round-by-round outlook,
+> wind/rain timelines, and morning/afternoon tee-time (wave) edge, each graded
+> `verified / partial / unavailable`. What remains for the *player-level* Wind
+> **Fit** modifier below is the per-player historical wind sample, which is still
+> data-blocked (see §1.5 / DATA_CATALOG §5).
+
 - **Purpose:** Identify players who hold up (or fall apart) in wind, a
   high-variance driver of scoring that the field is unevenly equipped for.
 - **Inputs:** Historical performance bucketed by wind speed/regime, ball-flight
@@ -323,8 +332,9 @@ For each: **Purpose · Inputs · Outputs · Confidence · Future enhancements.**
   on both a sufficient historical wind sample per player *and* a forecast that
   may change. Confidence must reflect forecast volatility, not just data volume.
 - **Future enhancements:** Round- and tee-time-specific wind (morning vs.
-  afternoon waves), gust vs. sustained-wind separation, and live in-round
-  updating.
+  afternoon waves) **— shipped in the Weather Intelligence Engine**; gust vs.
+  sustained-wind separation (gusts are now captured per period); and live
+  in-round updating.
 
 ### 2.6 Momentum
 
@@ -350,9 +360,10 @@ honor:
 - **Single source of derived truth.** Specialist models consume the shared
   analytics/ratings rather than recomputing player strength from raw stats, so
   every surface agrees.
-- **Single source of event context.** Every event-specific model (Course Fit,
-  and future Weather / DFS / Betting / AI Coach) resolves *which* tournament and
-  host course it evaluates from the shared **Tournament Context Engine**
+- **Single source of event context.** Every event-specific model (Course Fit
+  and Weather Intelligence today; future DFS / Betting / AI Coach) resolves
+  *which* tournament and host course it evaluates from the shared **Tournament
+  Context Engine**
   (`lib/tournament-context`, see [TOURNAMENT_CONTEXT_ENGINE.md](./TOURNAMENT_CONTEXT_ENGINE.md)),
   never independently. The context's `verified / partial / unavailable`
   confidence is the ceiling for the model built on it.
