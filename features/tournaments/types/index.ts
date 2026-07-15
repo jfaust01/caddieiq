@@ -192,6 +192,25 @@ export interface TournamentField {
   rankingLeaders: FieldRankingLeaders
 }
 
+/**
+ * A news article surfaced on the tournament hub, sourced live from the provider
+ * news feed and linked to a player in this event's field. Carries the player
+ * attribution (`playerId`/`playerName`) so the hub can label and link each
+ * headline. Every field except `title`/`playerName` is nullable and means "not
+ * reported by the source" — the UI never fabricates a summary, outlet, or date.
+ */
+export interface TournamentNewsItem {
+  id: string
+  title: string
+  summary: string | null
+  url: string | null
+  outlet: string | null
+  publishedAt: string | null
+  /** The field player this article is about. */
+  playerId: string
+  playerName: string
+}
+
 /** Directory filter state. `ALL` sentinels keep the controls fully typed. */
 export interface TournamentFilters {
   search: string

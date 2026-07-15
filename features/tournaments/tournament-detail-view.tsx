@@ -26,8 +26,13 @@ interface TournamentDetailViewProps {
  * than broken layouts, and never expose raw ids or internal timestamps.
  */
 export async function TournamentDetailView({ tournament }: TournamentDetailViewProps) {
-  // The field powers both the hero "Field size" stat and the Field tab.
-  const field = await tournamentService.getTournamentField(tournament.id)
+  // The field powers both the hero "Field size" stat and the Field tab. Field
+  // news reads through the request-cached field, so it adds no extra roster
+  // query — only the news lookup itself.
+  const [field, fieldNews] = await Promise.all([
+    tournamentService.getTournamentField(tournament.id),
+    tournamentService.getFieldNews(tournament.id),
+  ])
 
   return (
     <PageShell>
@@ -62,7 +67,11 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
           />
         </div>
         <aside className="lg:col-span-1" aria-label="Tournament research">
-          <TournamentSidebar tournament={tournament} />
+          <TournamentSidebar
+            tournament={tournament}
+            fieldNews={fieldNews}
+            hasField={field.size > 0}
+          />
         </aside>
       </div>
     </PageShell>

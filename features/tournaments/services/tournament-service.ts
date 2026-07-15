@@ -22,6 +22,7 @@ import type {
   FilterOption,
   PaginatedResult,
   TournamentField,
+  TournamentNewsItem,
   TournamentQuery,
   TournamentSummary,
   TourType,
@@ -30,6 +31,7 @@ import { analyticsService } from '@/lib/analytics/service'
 import { rankingService } from '@/lib/rankings/service'
 import type { RankingBoard, RankingBoardSet, RankingCategory } from '@/lib/rankings/types'
 import { getFieldRepository } from '@/lib/repositories/field-repository'
+import { getNewsRepository } from '@/lib/repositories'
 import {
   getTournamentRepository,
   type TournamentSearchParams,
@@ -163,6 +165,60 @@ const getTournamentFieldCached = cache(
   },
 )
 
+/** How many articles the tournament-hub field-news rail shows in total. */
+const FIELD_NEWS_LIMIT = 6
+/** How many articles per player feed the rail before the global cap. */
+const FIELD_NEWS_PER_PLAYER = 1
+
+/**
+ * Assemble the tournament-hub "Field news" rail: recent articles about the
+ * players in this event's field, newest first, capped at {@link
+ * FIELD_NEWS_LIMIT}. Reuses the request-cached field (so it issues no extra
+ * roster query) for player ids + names, then reads the news repository. Returns
+ * an empty list when the field is empty or no linked articles exist, so the hub
+ * degrades to its placeholder rather than fabricating headlines.
+ */
+const getFieldNewsCached = cache(
+  async (tournamentId: string): Promise<TournamentNewsItem[]> => {
+    const field = await getTournamentFieldCached(tournamentId)
+    if (field.entrants.length === 0) return []
+
+    const nameById = new Map(
+      field.entrants.map((entrant) => [entrant.playerId, entrant.playerName]),
+    )
+    const byPlayer = await getNewsRepository().latestForPlayers(
+      [...nameById.keys()],
+      FIELD_NEWS_PER_PLAYER,
+    )
+
+    const items: TournamentNewsItem[] = []
+    for (const [playerId, articles] of byPlayer) {
+      const playerName = nameById.get(playerId)
+      if (!playerName) continue
+      for (const article of articles) {
+        items.push({
+          id: article.id,
+          title: article.title,
+          summary: article.content,
+          url: article.url,
+          outlet: article.outlet,
+          publishedAt: article.publishedAt ? article.publishedAt.toISOString() : null,
+          playerId,
+          playerName,
+        })
+      }
+    }
+
+    // Newest first; articles without a published date sort last but are kept.
+    items.sort((a, b) => {
+      const at = a.publishedAt ? Date.parse(a.publishedAt) : Number.NEGATIVE_INFINITY
+      const bt = b.publishedAt ? Date.parse(b.publishedAt) : Number.NEGATIVE_INFINITY
+      return bt - at
+    })
+    return items.slice(0, FIELD_NEWS_LIMIT)
+  },
+)
+
 /** Translate UI query state (with its `"ALL"` sentinels) into DB search params. */
 function toSearchParams(query: TournamentQuery): TournamentSearchParams {
   const { filters, page, pageSize } = query
@@ -212,6 +268,14 @@ export const tournamentService = {
    */
   getTournamentField(id: string): Promise<TournamentField> {
     return getTournamentFieldCached(id)
+  },
+
+  /**
+   * Return recent news about this event's field players for the hub research
+   * rail. Reads through the news repository — never fabricates headlines.
+   */
+  getFieldNews(id: string): Promise<TournamentNewsItem[]> {
+    return getFieldNewsCached(id)
   },
 
   /** Tour filter options derived from the tours actually referenced by events. */
