@@ -12,6 +12,7 @@ import { MorningBrief } from '@/features/tournaments/command-center/morning-brie
 import { TournamentStory } from '@/features/tournaments/command-center/tournament-story'
 import { TrendingPlayers } from '@/features/tournaments/command-center/trending-players'
 import { AiCoachWidget } from '@/features/tournaments/command-center/ai-coach-widget'
+import { CaddieChat } from '@/features/caddie/components/caddie-chat'
 import { TournamentDetailTabs } from '@/features/tournaments/components/tournament-detail-tabs'
 import { TournamentField } from '@/features/tournaments/components/tournament-field'
 import { FieldRankingLeaders } from '@/features/tournaments/components/field-ranking-leaders'
@@ -172,7 +173,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
 
         <CommandCenterWidget
           id="ai-coach"
-          title="AI Caddie"
+          title="AI Coach"
           subtitle="Explainable plays from the value & fit engines"
           icon={<Target className="size-4 text-primary" aria-hidden />}
         >
@@ -207,6 +208,15 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         icon={<Newspaper className="size-4 text-primary" aria-hidden />}
       >
         <TournamentStory story={story} />
+      </CommandCenterWidget>
+
+      <CommandCenterWidget
+        id="ask-caddie"
+        title="Ask the Caddie"
+        subtitle="Chat with every engine — grounded, cited answers"
+        icon={<Sparkles className="size-4 text-primary" aria-hidden />}
+      >
+        <CaddieChat tournamentId={tournament.id} compact />
       </CommandCenterWidget>
 
       {/* Verified intelligence engines, each collapsible */}
