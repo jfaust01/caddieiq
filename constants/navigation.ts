@@ -10,6 +10,7 @@ import {
   Settings,
   ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
   Trophy,
   Users,
 } from 'lucide-react'
@@ -37,6 +38,12 @@ export const primaryNavigation: NavSection[] = [
         href: '/dashboard',
         icon: LayoutDashboard,
         description: 'Your command center for models and picks.',
+      },
+      {
+        title: 'AI Caddie',
+        href: '/caddie',
+        icon: Sparkles,
+        description: 'Ask about cash plays, course fit, form, odds, and weather.',
       },
       {
         title: 'Analytics',
