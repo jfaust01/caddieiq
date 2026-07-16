@@ -54,7 +54,11 @@ function leadDriver(r: DfsValueResult): string {
  * boards. Input order does not matter — each board sorts independently.
  */
 export function buildDfsBoards(rated: readonly DfsValueResult[]): DfsBoard[] {
-  const byValue = (a: DfsValueResult, b: DfsValueResult) => (b.score ?? 0) - (a.score ?? 0)
+  // A stable playerId tiebreaker keeps every board fully deterministic — board
+  // output must not depend on the order the field happened to arrive in.
+  const tie = (a: DfsValueResult, b: DfsValueResult) => a.playerId.localeCompare(b.playerId)
+  const byValue = (a: DfsValueResult, b: DfsValueResult) =>
+    (b.score ?? 0) - (a.score ?? 0) || tie(a, b)
 
   const sortedByValue = [...rated].sort(byValue)
 
@@ -63,14 +67,17 @@ export function buildDfsBoards(rated: readonly DfsValueResult[]): DfsBoard[] {
   const valueTier = sortedByValue.filter((r) => r.salaryTier === "value")
 
   const byConfidenceThenValue = [...rated].sort(
-    (a, b) => CONF_RANK[b.confidence] - CONF_RANK[a.confidence] || (b.score ?? 0) - (a.score ?? 0),
+    (a, b) =>
+      CONF_RANK[b.confidence] - CONF_RANK[a.confidence] ||
+      (b.score ?? 0) - (a.score ?? 0) ||
+      tie(a, b),
   )
 
   // GPP targets: high projected quality but lower certainty — boom potential the
   // field may under-own. Rank by strength, biased toward less certain plays.
   const riskyGpp = [...rated]
     .filter((r) => r.strength != null && (r.confidence === "low" || r.confidence === "medium"))
-    .sort((a, b) => (b.strength ?? 0) - (a.strength ?? 0))
+    .sort((a, b) => (b.strength ?? 0) - (a.strength ?? 0) || tie(a, b))
 
   return [
     {

@@ -1,7 +1,7 @@
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
-import { getOddsRepository, getPlayerSkillRepository } from "@/lib/repositories"
+import { getFantasyRepository, getOddsRepository, getPlayerSkillRepository } from "@/lib/repositories"
 import { SOURCEABLE_SKILL_KEYS } from "@/lib/player-skill-intelligence"
 
 import { coveragePercent, countPresent, rateCoverage } from "./ratings"
@@ -134,6 +134,8 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     oddsCoverage,
     // Player Skill (fifth Signal Family — real strokes-gained coverage)
     skillCoverage,
+    // DFS Value Model (flagship composite — real DraftKings salary readiness)
+    dfsSalaryCoverage,
     // Import markers
     playerAgg,
     tournamentAgg,
@@ -188,6 +190,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     prisma.playerSeasonStatistic.count({ where: { averagePoints: { not: null } } }),
     getOddsRepository().getCoverageCounts(),
     getPlayerSkillRepository().getCoverageCounts(),
+    getFantasyRepository().getSalaryCoverageCounts(),
     prisma.player.aggregate({ _max: { updatedAt: true } }),
     prisma.tournament.aggregate({ _max: { updatedAt: true } }),
     prisma.course.aggregate({ _max: { updatedAt: true } }),
@@ -673,6 +676,85 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     ],
   })
 
+  // --- DFS Value Model (flagship composite) --------------------------------
+  // Unlike the raw feeds above, DFS Value is a DERIVED model: it fuses every
+  // Signal Family with each player's real DraftKings salary. Its "coverage" is
+  // therefore READINESS, gated by two independent inputs:
+  //   1. Real DraftKings salaries (the denominator of value), and
+  //   2. At least one gradable QUALITY family (skill SG or linked betting odds)
+  //      so a strength composite can actually be computed.
+  // When either input is missing the model is `restricted` (a limitation, not a
+  // low score) — value is never fabricated from salary alone.
+  const dfsPriced = dfsSalaryCoverage.pricedRows
+  const dfsHasSalaries = dfsPriced > 0
+  const qualityFamilyLive = !skillRestricted || !bettingEmpty
+  const dfsRestricted = !dfsHasSalaries || !qualityFamilyLive
+  const dfsPercent = dfsHasSalaries
+    ? coveragePercent(dfsSalaryCoverage.pricedRows, dfsSalaryCoverage.totalRows || dfsPriced)
+    : null
+  const dfsRestrictedReason = !dfsHasSalaries
+    ? "No DraftKings salaries captured yet — DFS value ranks automatically once a slate is imported and at least one quality family (player skill or betting market) is gradable. Nothing is estimated."
+    : !qualityFamilyLive
+      ? "DraftKings salaries are held, but no quality family (strokes-gained player skill or linked betting market) is gradable yet, so quality-per-dollar cannot be computed. Value is never fabricated from salary alone."
+      : undefined
+  sections.push({
+    id: "dfs-value",
+    title: "DFS Value Model",
+    description:
+      "The flagship composite: salary-adjusted value fusing every signal family (player skill, course fit, form, betting market, weather) with each player's real DraftKings salary. Readiness tracks priced players and whether a quality family is gradable — value is never fabricated from salary alone.",
+    percent: dfsPercent,
+    rating: dfsRestricted ? "restricted" : rateCoverage(dfsPercent),
+    breakdown: {
+      verified: dfsPriced,
+      pending: 0,
+      missing: Math.max(dfsSalaryCoverage.totalRows - dfsPriced, 0),
+      total: dfsSalaryCoverage.totalRows,
+    },
+    lastUpdated: toIso(dfsSalaryCoverage.latestCapturedAt),
+    restrictedReason: dfsRestrictedReason,
+    metrics: [
+      {
+        id: "priced-players",
+        label: "Priced Players",
+        value: dfsHasSalaries ? formatCount(dfsSalaryCoverage.pricedPlayers) : "None slated",
+        count: dfsSalaryCoverage.pricedPlayers,
+        hint: "Distinct players carrying a real DraftKings salary (value's denominator).",
+      },
+      {
+        id: "priced-tournaments",
+        label: "Slated Tournaments",
+        value: formatCount(dfsSalaryCoverage.tournamentsWithSalaries),
+        count: dfsSalaryCoverage.tournamentsWithSalaries,
+        hint: "Tournaments with at least one priced entrant.",
+      },
+      {
+        id: "quality-family",
+        label: "Quality Family Live",
+        value: qualityFamilyLive ? "Yes" : "Not yet",
+        hint: "Whether player skill (SG) or a linked betting market can be scored — required to grade quality-per-dollar.",
+      },
+      {
+        id: "operators",
+        label: "DFS Operators",
+        value: dfsSalaryCoverage.operators > 0 ? formatCount(dfsSalaryCoverage.operators) : "None",
+        count: dfsSalaryCoverage.operators,
+        hint: "Distinct salary providers held (DraftKings preferred by the model).",
+      },
+      {
+        id: "freshness",
+        label: "Newest Salary",
+        value: formatRelativeAge(dfsSalaryCoverage.latestCapturedAt, now),
+        hint: "Age of the most recent captured salary slate.",
+      },
+      {
+        id: "readiness",
+        label: "Pricing Readiness %",
+        value: dfsHasSalaries ? formatPercent(dfsPercent) : "No data",
+        percent: dfsPercent,
+      },
+    ],
+  })
+
   // --- Platform summary tiles ----------------------------------------------
   const tournamentsWithVenue = tournamentVenueRows.length
   const tournamentsPercent = coveragePercent(tournamentsWithVenue, totalTournaments)
@@ -688,6 +770,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     { id: "fantasy", label: "Fantasy", percent: fantasyPercent, rating: fantasyHasRealData ? rateCoverage(fantasyPercent) : "restricted", verified: dfsReal, total: dfsTotal, restricted: !fantasyHasRealData },
     { id: "betting", label: "Betting", percent: bettingPercent, rating: bettingEmpty ? "restricted" : rateCoverage(bettingPercent), verified: oddsEventsLinked, total: oddsEvents, restricted: bettingEmpty },
     { id: "player-skill", label: "Player Skill", percent: skillPercent, rating: skillRestricted ? "restricted" : rateCoverage(skillPercent), verified: skillCoverage.roundsWithStrokesGained, total: skillCoverage.roundStatistics, restricted: skillRestricted },
+    { id: "dfs-value", label: "DFS Value", percent: dfsPercent, rating: dfsRestricted ? "restricted" : rateCoverage(dfsPercent), verified: dfsPriced, total: dfsSalaryCoverage.totalRows, restricted: dfsRestricted },
   ]
 
   const health = await buildPlatformHealth({

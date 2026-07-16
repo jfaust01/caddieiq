@@ -460,12 +460,15 @@ function summarize(
 }
 
 function byValueDesc(a: DfsValueResult, b: DfsValueResult): number {
-  // Available first, then by score, then by strength as a tiebreak.
+  // Available first, then by score, then strength, then a stable playerId
+  // tiebreak so the canonical ordering never depends on input order.
   if (a.status !== b.status) return a.status === "available" ? -1 : 1
   const as = a.score ?? -1
   const bs = b.score ?? -1
   if (bs !== as) return bs - as
-  return (b.strength ?? -1) - (a.strength ?? -1)
+  const strengthDelta = (b.strength ?? -1) - (a.strength ?? -1)
+  if (strengthDelta !== 0) return strengthDelta
+  return a.playerId.localeCompare(b.playerId)
 }
 
 function modalConfidence(rated: readonly DfsValueResult[]): DfsConfidence {

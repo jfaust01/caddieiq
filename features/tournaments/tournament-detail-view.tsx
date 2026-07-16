@@ -10,6 +10,7 @@ import { TournamentCourseIntelligence } from '@/features/tournaments/components/
 import { TournamentWeatherIntelligence } from '@/features/tournaments/components/tournament-weather-intelligence'
 import { TournamentOddsIntelligence } from '@/features/tournaments/components/tournament-odds-intelligence'
 import { TournamentSkillLeaderboards } from '@/features/tournaments/components/tournament-skill-leaderboards'
+import { TournamentDfsLeaderboards } from '@/features/tournaments/components/tournament-dfs-leaderboards'
 import { FieldFitBoard } from '@/features/tournaments/components/field-fit-board'
 import { TournamentHero } from '@/features/tournaments/components/tournament-hero'
 import { TournamentIntelligence } from '@/features/tournaments/components/tournament-intelligence'
@@ -51,15 +52,17 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
   // query — only the news lookup itself. The host-course intelligence is loaded
   // in parallel, and only when the event is actually linked to a venue.
   const courseRef = tournament.courseRef
-  const [field, fieldNews, courseProfile, fitBoard, weather, odds, skillLeaderboards] = await Promise.all([
-    tournamentService.getTournamentField(tournament.id),
-    tournamentService.getFieldNews(tournament.id),
-    courseRef ? courseService.getCourseIntelligence(courseRef.id) : Promise.resolve(null),
-    tournamentService.getFieldFitBoard(tournament.id),
-    tournamentService.getWeatherIntelligence(tournament.id),
-    tournamentService.getOddsIntelligence(tournament.id),
-    tournamentService.getSkillLeaderboards(tournament.id),
-  ])
+  const [field, fieldNews, courseProfile, fitBoard, weather, odds, skillLeaderboards, dfsField] =
+    await Promise.all([
+      tournamentService.getTournamentField(tournament.id),
+      tournamentService.getFieldNews(tournament.id),
+      courseRef ? courseService.getCourseIntelligence(courseRef.id) : Promise.resolve(null),
+      tournamentService.getFieldFitBoard(tournament.id),
+      tournamentService.getWeatherIntelligence(tournament.id),
+      tournamentService.getOddsIntelligence(tournament.id),
+      tournamentService.getSkillLeaderboards(tournament.id),
+      tournamentService.getDfsValueField(tournament.id),
+    ])
 
   return (
     <PageShell>
@@ -83,6 +86,8 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
       />
 
       <TournamentIntelligence />
+
+      {field.size > 0 ? <TournamentDfsLeaderboards field={dfsField} /> : null}
 
       {courseRef && courseProfile ? (
         <TournamentCourseIntelligence
