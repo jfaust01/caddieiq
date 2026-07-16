@@ -15,14 +15,7 @@
  */
 
 import { PrismaClient } from "@/lib/generated/prisma/client"
-import {
-  enrichCourseCharacteristics,
-  type CharacteristicsEnrichmentResult,
-  type DerivedCharacteristics,
-} from "@/lib/analytics/course-characteristics-engine"
-import { CourseRepository } from "@/lib/repositories/course-repository"
-
-const BATCH_SIZE = 500
+import { enrichCourseCharacteristicsTable } from "@/lib/services/course-enrichment-service"
 
 interface Options {
   dryRun: boolean
@@ -45,66 +38,20 @@ function logError(message: string): void {
   console.error(`[enrich-courses] ERROR: ${message}`)
 }
 
-async function enrichCourseCharacteristicsTable(options: Options): Promise<CharacteristicsEnrichmentResult> {
+async function runEnrichment(options: Options) {
   const prisma = new PrismaClient()
-  const repository = new CourseRepository(prisma)
-
-  const result: CharacteristicsEnrichmentResult = {
-    totalCourses: 0,
-    enrichedCount: 0,
-    skippedCount: 0,
-    createdCount: 0,
-    updatedCount: 0,
-    errors: [],
-  }
 
   try {
-    // Step 1: Fetch all non-deleted courses in batches.
     log(`Fetching courses from database...`)
-    const allCourses = await prisma.course.findMany({
-      where: { deletedAt: null },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        par: true,
-        yardage: true,
-        altitudeFt: true,
-      },
-      orderBy: { name: "asc" },
-    })
-
-    result.totalCourses = allCourses.length
-    log(`Found ${result.totalCourses} courses to process.`)
-
-    if (result.totalCourses === 0) {
-      log("No courses found. Exiting.")
-      return result
-    }
-
-    // Step 2: Enrich in batches.
-    const characteristicsToPersist: DerivedCharacteristics[] = []
-
-    for (const course of allCourses) {
-      try {
-        const derived = enrichCourseCharacteristics(course as any)
-        characteristicsToPersist.push(derived)
-        result.enrichedCount++
-
+    
+    const result = await enrichCourseCharacteristicsTable(prisma, {
+      dryRun: options.dryRun,
+      onProgress: (progress) => {
         if (options.verbose) {
-          log(
-            `Enriched: ${course.name} (${course.id}) — ${derived.drivingImportance ? `driving=${derived.drivingImportance.toFixed(2)}` : "no weighting"}`,
-          )
+          log(`Processed ${progress.processedCourses}/${progress.totalCourses} courses...`)
         }
-      } catch (error) {
-        result.skippedCount++
-        result.errors.push({
-          courseId: course.id,
-          error: error instanceof Error ? error.message : String(error),
-        })
-        logError(`Failed to enrich ${course.name} (${course.id}): ${error}`)
-      }
-    }
+      },
+    })
 
     log(`Enriched ${result.enrichedCount} courses.`)
 
@@ -112,43 +59,14 @@ async function enrichCourseCharacteristicsTable(options: Options): Promise<Chara
       logError(`Skipped ${result.skippedCount} courses due to errors.`)
     }
 
-    // Step 3: Persist in batches (or dry-run log).
     if (options.dryRun) {
-      log(`[DRY RUN] Would have persisted ${characteristicsToPersist.length} characteristic records.`)
-      log(`Sample record: ${JSON.stringify(characteristicsToPersist[0], null, 2)}`)
-    } else {
-      log(`Persisting ${characteristicsToPersist.length} characteristic records...`)
-
-      for (let i = 0; i < characteristicsToPersist.length; i += BATCH_SIZE) {
-        const batch = characteristicsToPersist.slice(i, i + BATCH_SIZE)
-        const batchResult = await repository.bulkUpsertCharacteristics(batch)
-
-        result.createdCount += batchResult.inserted
-        result.updatedCount += batchResult.updated
-
-        if (batchResult.failed > 0) {
-          result.errors.push(
-            ...batchResult.errors.map((error) => ({
-              courseId: error.courseId ?? "UNKNOWN",
-              error: error.message ?? String(error),
-            }))
-          )
-
-          logError(
-            `Batch completed with ${batchResult.failed} failed writes.`
-          )
-        }
-
-        log(
-          `Persisted batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(characteristicsToPersist.length / BATCH_SIZE)}`
-        )
-      }
+      log(`[DRY RUN] Would have created ${result.createdCount} and updated ${result.updatedCount} records.`)
     }
+
+    return result
   } finally {
     await prisma.$disconnect()
   }
-
-  return result
 }
 
 async function main(): Promise<void> {
@@ -157,7 +75,7 @@ async function main(): Promise<void> {
   log(`Starting enrichment pipeline...`)
   log(`Options: dryRun=${options.dryRun}, verbose=${options.verbose}`)
 
-  const result = await enrichCourseCharacteristicsTable(options)
+  const result = await runEnrichment(options)
 
   // Summary report.
   console.log("\n========== ENRICHMENT SUMMARY ==========")

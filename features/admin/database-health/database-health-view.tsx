@@ -6,6 +6,7 @@ import type { DatabaseHealthReport } from "@/lib/system-health/database-health"
 import { HealthOverview } from "./health-overview"
 import { ImportPipelines } from "./import-pipelines"
 import { KpiCards } from "./kpi-cards"
+import { RebuildCourseIntelligence } from "./rebuild-course-intelligence"
 import { SystemWarningsPanel } from "./system-warnings-panel"
 import { TableHealthPanel } from "./table-health-panel"
 
@@ -63,6 +64,15 @@ export function DatabaseHealthView({ report }: { report: DatabaseHealthReport })
           description="Status, recency, and performance of data import processes"
         />
         <ImportPipelines pipelines={report.pipelines} />
+      </section>
+
+      {/* Rebuild Course Intelligence */}
+      <section aria-label="Administrative actions" className="flex flex-col gap-4">
+        <SectionHeader
+          title="Administrative Actions"
+          description="Tools for rebuilding and maintaining platform intelligence"
+        />
+        <RebuildCourseIntelligence />
       </section>
 
       <p className="text-xs text-muted-foreground">
