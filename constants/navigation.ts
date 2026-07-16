@@ -9,7 +9,6 @@ import {
   Settings,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
   Trophy,
   Users,
 } from 'lucide-react'
@@ -49,12 +48,6 @@ export const primaryNavigation: NavSection[] = [
   {
     title: 'Golf Intelligence',
     items: [
-      {
-        title: 'AI Caddie',
-        href: '/caddie',
-        icon: Sparkles,
-        description: 'Ask any question — grounded in verified engines.',
-      },
       {
         title: 'Players',
         href: '/players',

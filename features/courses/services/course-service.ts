@@ -46,7 +46,6 @@ async function queryCourses(options: {
     search: options.search,
     skip: options.skip,
     take: options.take,
-    orderBy: { field: 'name', direction: 'asc' },
   })
 
   return {

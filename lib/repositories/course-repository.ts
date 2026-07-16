@@ -111,16 +111,15 @@ export class CourseRepository extends BaseRepository {
     search?: string
     skip?: number
     take?: number
-    orderBy?: { field: string; direction: 'asc' | 'desc' }
   } = {}): Promise<{ courses: CourseRecord[]; total: number }> {
-    const { search, skip = 0, take = 25, orderBy } = options
+    const { search, skip = 0, take = 25 } = options
 
-    // Build the where clause, handling optional search filter
-    const whereClause: Prisma.CourseWhereInput = {
+    // Build the where clause
+    const whereClause: Record<string, unknown> = {
       deletedAt: null,
     }
 
-    if (search) {
+    if (search && search.trim()) {
       whereClause.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { city: { contains: search, mode: 'insensitive' } },
@@ -129,19 +128,14 @@ export class CourseRepository extends BaseRepository {
       ]
     }
 
-    // Build the order by clause
-    const orderByClause = orderBy
-      ? { [orderBy.field]: orderBy.direction }
-      : { name: 'asc' as const }
-
     const [courses, total] = await Promise.all([
       this.prisma.course.findMany({
         where: whereClause,
         skip,
         take,
-        orderBy: orderByClause as Prisma.CourseOrderByWithRelationInput,
-      }),
-      this.prisma.course.count({ where: whereClause }),
+        orderBy: { name: 'asc' },
+      } as any),
+      this.prisma.course.count({ where: whereClause } as any),
     ])
 
     return { courses, total }
