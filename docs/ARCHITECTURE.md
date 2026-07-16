@@ -204,7 +204,10 @@ the Analytics and Rankings surfaces.
 - **Explainability** — the [Model Explainability Engine](./EXPLAINABILITY.md)
   (`lib/explainability/`) maps every model's output into one canonical
   `Explanation`, powering the "Why?" surfaces, the AI insight cards, and the
-  admin debug view without recomputing any model.
+  admin debug view without recomputing any model. The
+  [Decision Trace Engine](./DECISION_TRACE_ENGINE.md) derives an ordered,
+  pipeline-shaped view from that same `Explanation` for the "Why?" timeline, the
+  AI Coach card, and the admin Developer Trace.
 
 ---
 
@@ -221,8 +224,9 @@ internal operations tooling:
 - **Data quality** — review and correct player, course, and tournament records.
 - **Explainability debug** — `/admin/explainability` inspects the canonical
   `Explanation` any model produces for a chosen entity (rendered breakdown,
-  deterministic narrative, and raw JSON). See
-  [EXPLAINABILITY.md](./EXPLAINABILITY.md).
+  deterministic narrative, raw JSON, and the dense **Developer Trace**). See
+  [EXPLAINABILITY.md](./EXPLAINABILITY.md) and
+  [DECISION_TRACE_ENGINE.md](./DECISION_TRACE_ENGINE.md).
 
 Access control reuses the existing role model; no separate admin auth system is
 introduced.

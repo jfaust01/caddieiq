@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { PlayerAnalytics } from "@/lib/analytics/types"
-import { deterministicNarrator, toOverallRatingExplanation } from "@/lib/explainability"
+import { toDecisionTrace, narrateFromTrace, toOverallRatingExplanation } from "@/lib/explainability"
 import { WhyButton } from "@/features/explainability/components/why-button"
 
 interface AiSummaryCardProps {
@@ -14,13 +14,14 @@ interface AiSummaryCardProps {
 }
 
 /**
- * AI Player Insight — a grounded, plain-language read of the player's Overall
- * Rating. The prose is produced by the deterministic Explanation narrator from
- * the same canonical Explanation that powers the "Why?" breakdown, so the
- * summary can never disagree with the numbers or invent a factor. When the
- * platform has no rating for the player, the card says so honestly instead of
- * fabricating an insight. The narrator sits behind a swappable interface, so an
- * LLM narrator can later produce richer prose from the identical Explanation.
+ * AI Player Insight — a grounded, plain-language walkthrough of how the player's
+ * Overall Rating was decided. The prose is produced by narrating the model's
+ * Decision Trace (the same ordered pipeline that powers the "Why?" timeline),
+ * which is itself derived from the canonical Explanation. It therefore restates
+ * only verified stages — a step-by-step read that can never disagree with the
+ * timeline or invent a factor. When the platform has no rating, the card says so
+ * honestly. The narrator is a pure function, so an LLM narrator can later produce
+ * richer prose from the identical trace.
  */
 export function AiSummaryCard({ analytics, playerName }: AiSummaryCardProps) {
   const explanation = toOverallRatingExplanation(analytics, {
@@ -28,7 +29,8 @@ export function AiSummaryCard({ analytics, playerName }: AiSummaryCardProps) {
     id: analytics.playerId,
     label: playerName,
   })
-  const narrative = deterministicNarrator.narrate(explanation)
+  const trace = toDecisionTrace(explanation)
+  const narrative = narrateFromTrace(trace)
   const hasRating = explanation.headline.value !== null
 
   return (
@@ -49,22 +51,33 @@ export function AiSummaryCard({ analytics, playerName }: AiSummaryCardProps) {
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <p className="text-sm leading-relaxed text-foreground text-pretty">{narrative.summary}</p>
-        {narrative.bullets.length > 0 ? (
-          <ul className="flex flex-col gap-1.5">
-            {narrative.bullets.map((bullet, i) => (
+        {narrative.steps.length > 0 ? (
+          <ol className="flex flex-col gap-1.5">
+            {narrative.steps.map((step, i) => (
               <li
                 key={i}
                 className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground text-pretty"
               >
-                <span className="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground/50" aria-hidden />
-                <span>{bullet}</span>
+                <span
+                  className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[0.625rem] font-medium text-primary"
+                  aria-hidden
+                >
+                  {i + 1}
+                </span>
+                <span>{step}</span>
               </li>
             ))}
-          </ul>
+          </ol>
+        ) : null}
+        {narrative.caveat ? (
+          <p className="text-xs leading-relaxed text-muted-foreground text-pretty">
+            <span className="font-medium text-foreground">Caveat: </span>
+            {narrative.caveat}
+          </p>
         ) : null}
         <p className="text-[0.6875rem] text-muted-foreground/70 text-pretty">
-          Generated deterministically from CaddieIQ&apos;s Overall Rating explanation — every statement
-          is grounded in the model&apos;s own data, never invented.
+          Narrated deterministically from CaddieIQ&apos;s Overall Rating decision trace — every statement
+          restates a verified pipeline stage, never invented.
         </p>
       </CardContent>
     </Card>

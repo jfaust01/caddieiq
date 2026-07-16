@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { ExplanationBreakdown } from '@/features/explainability/components/explanation-breakdown'
 import { deterministicNarrator, type Explanation } from '@/lib/explainability'
 
+import { DeveloperTrace } from './developer-trace'
 import type { EntityOption } from './entity-options'
 import { ExplainabilityPicker } from './explainability-picker'
 import { JsonInspector } from './json-inspector'
@@ -113,6 +114,21 @@ export function ExplainabilityDebugView({
               <JsonInspector value={explanation} />
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {explanation ? (
+        <div className="flex flex-col gap-3">
+          <SectionHeader
+            title="Developer Trace"
+            description="The engineering view of the Decision Trace: every pipeline stage with its raw input, normalized value, weight, and signed contribution, plus the derived category, impact, confidence, and whether it influenced the outcome."
+            as="h2"
+          />
+          <Card>
+            <CardContent className="pt-6">
+              <DeveloperTrace explanation={explanation} />
+            </CardContent>
+          </Card>
         </div>
       ) : null}
     </PageShell>

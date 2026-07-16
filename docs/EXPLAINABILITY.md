@@ -127,6 +127,9 @@ number absent from the explanation).
 
 ## 8. Related documents
 
+- [`DECISION_TRACE_ENGINE.md`](./DECISION_TRACE_ENGINE.md) — the ordered,
+  pipeline-shaped view derived from the `Explanation` that powers the "Why?"
+  timeline, the AI Coach, and the admin Developer Trace.
 - [`MODELS.md`](./MODELS.md) — the model specifications and the confidence
   discipline this engine passes through.
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — where the engine sits in the platform.
