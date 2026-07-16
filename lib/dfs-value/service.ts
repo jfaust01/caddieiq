@@ -43,6 +43,7 @@ import {
   type DfsSignalInput,
   type DfsValueField,
   type DfsValueResult,
+  type PlayerDfsValue,
 } from "."
 
 /** A named field entrant — the minimal roster the model needs. */
@@ -159,22 +160,22 @@ export class DfsValueService {
     }
   }
 
+  /**
+   * The full DFS Value board for a tournament — the Tournament hub entry point.
+   * Resolves the confirmed field itself, then delegates to {@link getFieldValue}.
+   * Returns an all-`unavailable` board (never fabricated) when the field is
+   * empty, so the hub renders its honest placeholder rather than a broken board.
+   */
+  async getFieldValueForTournament(tournamentId: string): Promise<DfsValueField> {
+    const entrants = await this.resolveFieldEntrants(tournamentId)
+    return this.getFieldValue(tournamentId, entrants)
+  }
+
   /** Resolve a tournament's confirmed field as model entrants. */
   private async resolveFieldEntrants(tournamentId: string): Promise<DfsFieldEntrant[]> {
     const rows = await getFieldRepository().listByTournament(tournamentId)
     return rows.map((row) => ({ playerId: row.playerId, playerName: row.playerName }))
   }
-}
-
-/** A player's DFS Value in the context of their upcoming event. */
-export interface PlayerDfsValue {
-  tournamentId: string
-  tournamentName: string
-  courseName: string | null
-  ceiling: DfsContextCeiling
-  fieldSize: number
-  ratedPlayers: number
-  result: DfsValueResult
 }
 
 /* ------------------------------------------------------------------ */

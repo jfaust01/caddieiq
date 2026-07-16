@@ -12,6 +12,7 @@ import { CareerSummary } from '@/features/players/components/career-summary'
 import { PlayerRankingPanel } from '@/features/players/components/player-ranking-panel'
 import { PlayerStatsGrid } from '@/features/players/components/player-stats-grid'
 import { PlayerAnalyticsPanel } from '@/features/players/components/player-analytics-panel'
+import { PlayerDfsValueCard } from '@/features/players/components/player-dfs-value-card'
 import { PlayerOddsCard } from '@/features/players/components/player-odds-card'
 import { PlayerSkillCard } from '@/features/players/components/player-skill-card'
 import { UpcomingTournamentCard } from '@/features/players/components/upcoming-tournament-card'
@@ -113,6 +114,7 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
 
         <TabsContent value="analytics" className="flex flex-col gap-6">
           <PlayerRankingCards profile={player.rankingProfile} />
+          <PlayerDfsValueCard playerId={player.id} />
           <PlayerSkillCard playerId={player.id} />
           <PlayerOddsCard playerId={player.id} />
           <PlayerAnalyticsPanel analytics={player.analytics} />

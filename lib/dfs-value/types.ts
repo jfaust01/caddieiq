@@ -232,6 +232,21 @@ export interface DfsBoard {
   readonly entries: readonly DfsBoardEntry[]
 }
 
+/**
+ * A single player's DFS Value in the context of their upcoming event. This is
+ * the shape the Player Page consumes — one entrant's full result plus the field
+ * framing (size, rated count, context ceiling) needed to read the value fairly.
+ */
+export interface PlayerDfsValue {
+  readonly tournamentId: string
+  readonly tournamentName: string
+  readonly courseName: string | null
+  readonly ceiling: DfsContextCeiling
+  readonly fieldSize: number
+  readonly ratedPlayers: number
+  readonly result: DfsValueResult
+}
+
 /** The full field-level DFS view for the tournament hub. */
 export interface DfsValueField {
   /** Every player's full result, best value first. */

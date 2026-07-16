@@ -20,6 +20,8 @@ import { getOddsIntelligenceService } from '@/lib/odds-intelligence/service'
 import type { PlayerOddsView } from '@/lib/odds-intelligence'
 import { getPlayerSkillIntelligenceService } from '@/lib/player-skill-intelligence/service'
 import type { PlayerSkillProfile } from '@/lib/player-skill-intelligence'
+import { getDfsValueService } from '@/lib/dfs-value/service'
+import type { PlayerDfsValue } from '@/lib/dfs-value'
 
 import { playerService } from './player-service'
 
@@ -91,6 +93,26 @@ export async function fetchPlayerSkillProfile(
     }
   } catch (error) {
     logFailure('fetchPlayerSkillProfile', error)
+    return { ok: false, error: 'DATABASE_UNAVAILABLE' }
+  }
+}
+
+/**
+ * Fetch a player's DFS Value — the flagship model that fuses every Signal
+ * Family (Player Skill, Course Fit, Form, Betting Market, Weather) with the
+ * player's real DraftKings salary into one salary-adjusted value score, ranked
+ * within their current event's field. Returns `null` (not an error) when the
+ * player is not in an active field, so the card renders its honest "no active
+ * event" state. When families are thin the score still computes but its
+ * confidence is capped — nothing is fabricated.
+ */
+export async function fetchPlayerDfsValue(
+  playerId: string,
+): Promise<ActionResult<PlayerDfsValue | null>> {
+  try {
+    return { ok: true, data: await getDfsValueService().getPlayerValue(playerId) }
+  } catch (error) {
+    logFailure('fetchPlayerDfsValue', error)
     return { ok: false, error: 'DATABASE_UNAVAILABLE' }
   }
 }

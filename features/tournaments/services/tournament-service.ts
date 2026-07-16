@@ -48,6 +48,8 @@ import { getOddsIntelligenceService } from '@/lib/odds-intelligence/service'
 import type { TournamentOddsView } from '@/lib/odds-intelligence'
 import { getPlayerSkillIntelligenceService } from '@/lib/player-skill-intelligence/service'
 import type { SkillLeaderboards } from '@/lib/player-skill-intelligence'
+import { getDfsValueService } from '@/lib/dfs-value/service'
+import type { DfsValueField } from '@/lib/dfs-value'
 import type { FitSkillKey as CourseFitSkillKey } from '@/lib/analytics/course-fit/types'
 import type { RankingBoard, RankingBoardSet, RankingCategory } from '@/lib/rankings/types'
 import { getFieldRepository } from '@/lib/repositories/field-repository'
@@ -279,6 +281,17 @@ const getOddsForTournamentCached = cache(
 )
 
 /**
+ * Resolve a tournament's DFS Value board once per request. Wrapped in React
+ * `cache` and keyed by tournament id, mirroring the other intelligence engines,
+ * so the flagship composite (which itself fans out across every Signal Family)
+ * runs at most once per tournament per request.
+ */
+const getDfsValueForTournamentCached = cache(
+  (tournamentId: string): Promise<DfsValueField> =>
+    getDfsValueService().getFieldValueForTournament(tournamentId),
+)
+
+/**
  * The field's Player Skill Intelligence in a single pass: the tournament-hub
  * skill leaderboards PLUS the per-player Course-Fit-shaped skill profile the fit
  * board consumes. Both derive from the same normalized profiles, so the hub's
@@ -492,6 +505,19 @@ export const tournamentService = {
     const season = summary?.season ?? null
     const { boards } = await getSkillIntelligenceForField(id, season)
     return boards
+  },
+
+  /**
+   * Return this event's DFS Value board — the flagship composite for the whole
+   * field. Every entrant's salary-adjusted value is ranked into DFS leaderboards
+   * (top values, high-end plays, mid-range, value plays, highest confidence,
+   * risky GPP targets), fusing every Signal Family with the player's real
+   * DraftKings salary. Keyed by tournament id so it agrees with the rest of the
+   * hub. Reads through the DFS Value service, which returns an all-`unavailable`
+   * board (never fabricated) when the field or its salaries are not yet held.
+   */
+  getDfsValueField(id: string): Promise<DfsValueField> {
+    return getDfsValueForTournamentCached(id)
   },
 
   /**
