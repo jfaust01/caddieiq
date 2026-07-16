@@ -10,6 +10,8 @@ import { prisma } from "@/lib/prisma"
  * POST /api/setup/admin
  * Body: { name: string, email: string, password: string }
  */
+export const dynamic = "force-dynamic"
+
 export async function POST(request: NextRequest) {
   // Only allow in development
   if (process.env.NODE_ENV !== "development") {
