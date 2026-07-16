@@ -1,3 +1,5 @@
+'use client'
+
 import { Database, Users, Clock, XCircle } from "lucide-react"
 
 import { Card } from "@/components/ui/card"

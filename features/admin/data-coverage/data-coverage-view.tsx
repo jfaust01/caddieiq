@@ -12,8 +12,9 @@ import { SummaryGrid } from './summary-grid'
 
 /** Human-readable "generated at" stamp, rendered deterministically (UTC). */
 function formatGeneratedAt(iso: string): string {
-  const date = new Date(iso)
-  return `${date.toISOString().slice(0, 16).replace('T', ' ')} UTC`
+  // Parse ISO string directly without creating Date to avoid hydration mismatch
+  // Format: "2024-01-15T14:30:45Z" → "2024-01-15 14:30 UTC"
+  return `${iso.slice(0, 16).replace('T', ' ')} UTC`
 }
 
 /**

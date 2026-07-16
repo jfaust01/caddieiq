@@ -18,7 +18,9 @@ export function CopyReportButton({ report }: { report: DataCoverageReport }) {
     try {
       await navigator.clipboard.writeText(JSON.stringify(report, null, 2))
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      if (typeof window !== 'undefined') {
+        setTimeout(() => setCopied(false), 2000)
+      }
     } catch {
       // Clipboard can be unavailable (insecure context); fail silently.
     }

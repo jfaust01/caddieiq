@@ -1,4 +1,7 @@
+'use client'
+
 import { RefreshCw } from "lucide-react"
+import { useState, useEffect } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,6 +13,11 @@ import type { ImportPipelineCard } from "@/lib/system-health/database-health"
  * Display import pipeline cards with status, recency, and performance metrics.
  */
 export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[] }) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Healthy":
@@ -65,7 +73,9 @@ export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[]
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Last Run:</span>
-              <span className="font-mono text-xs">{formatLastRun(pipeline.lastRunAt)}</span>
+              <span className="font-mono text-xs">
+                {mounted ? formatLastRun(pipeline.lastRunAt) : pipeline.lastRunAt?.slice(0, 10) || "Never run"}
+              </span>
             </div>
 
             {pipeline.durationMs !== null && (

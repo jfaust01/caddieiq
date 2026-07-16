@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Search } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +23,11 @@ import type { TableHealthReport, TableStatus } from "@/lib/system-health/databas
 export function TableHealthPanel({ tables }: { tables: TableHealthReport[] }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<TableStatus | "all">("all")
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const statusOptions: Array<TableStatus | "all"> = [
     "all",
@@ -140,7 +145,7 @@ export function TableHealthPanel({ tables }: { tables: TableHealthReport[] }) {
                   </TableCell>
                   <TableCell className="text-center">{table.expected ? "✓" : "○"}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {table.lastUpdatedAt ? formatTimestamp(table.lastUpdatedAt) : "—"}
+                    {mounted && table.lastUpdatedAt ? formatTimestamp(table.lastUpdatedAt) : table.lastUpdatedAt?.slice(0, 10) || "—"}
                   </TableCell>
                   <TableCell className={cn("text-right font-mono text-sm font-medium", getHealthScoreColor(table.healthScore))}>
                     {table.healthScore}%
