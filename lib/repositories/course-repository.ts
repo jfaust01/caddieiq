@@ -166,18 +166,33 @@ export class CourseRepository extends BaseRepository {
   }
 
   /**
-   * List courses whose coordinates are not yet VERIFIED (i.e. UNKNOWN or the
-   * reserved ESTIMATED), newest first, excluding soft-deleted rows. This is the
-   * geolocation engine's work queue — a VERIFIED course is never returned, so a
-   * completed course is never re-geocoded. Read-only.
+   * List courses the geolocation engine still has work to do on, newest first,
+   * excluding soft-deleted rows. Read-only.
+   *
+   * Two tiers, controlled by `includeApproximate`:
+   *   - Default (`false`): return only courses with NO usable coordinate yet —
+   *     UNKNOWN or the reserved ESTIMATED. A VERIFIED or APPROXIMATE course is
+   *     treated as resolved and never re-geocoded, so routine re-runs are cheap
+   *     and idempotent.
+   *   - Upgrade mode (`true`): also return APPROXIMATE courses, so a later run
+   *     can retry the course-precise (OSM) provider and upgrade a city-level
+   *     fallback to a VERIFIED match. Still never returns a VERIFIED course.
    *
    * @param limit - Optional cap on rows returned, to bound a single run.
+   * @param options.includeApproximate - Include APPROXIMATE courses for upgrade.
    */
-  async findCoursesNeedingCoordinates(limit?: number): Promise<CourseGeocodeTargetRow[]> {
+  async findCoursesNeedingCoordinates(
+    limit?: number,
+    options: { includeApproximate?: boolean } = {},
+  ): Promise<CourseGeocodeTargetRow[]> {
+    const excluded = options.includeApproximate
+      ? [CoordinateConfidence.VERIFIED]
+      : [CoordinateConfidence.VERIFIED, CoordinateConfidence.APPROXIMATE]
+
     const courses = await this.prisma.course.findMany({
       where: {
         deletedAt: null,
-        coordinateConfidence: { not: CoordinateConfidence.VERIFIED },
+        coordinateConfidence: { notIn: excluded },
       },
       select: { id: true, name: true, city: true, stateProvince: true, country: true },
       orderBy: { createdAt: "desc" },
@@ -230,6 +245,65 @@ export class CourseRepository extends BaseRepository {
       const repoError = toRepositoryError(error, {
         entity: "course",
         operation: "setVerifiedCoordinates",
+        reference: courseId,
+      })
+      this.logger.failure(courseId, repoError.message, { code: repoError.code })
+      return fail<CourseRecord>(repoError)
+    }
+  }
+
+  /**
+   * Persist an APPROXIMATE (city-level) coordinate for a course — atomically and
+   * only when doing so does not overwrite a better value.
+   *
+   * The write is a conditional `updateMany` filtered on
+   * `coordinateConfidence NOT IN (VERIFIED, APPROXIMATE)`, which encodes two
+   * guarantees at once:
+   *   - Never downgrade: a VERIFIED (course-precise) coordinate is never
+   *     replaced by a city centroid.
+   *   - Idempotent: a course already APPROXIMATE is left untouched, so re-runs
+   *     don't churn the row or waste writes.
+   *
+   * Returns `true`/`updated` when this call wrote the coordinate, `skipped`
+   * when it was a benign no-op (already VERIFIED/APPROXIMATE, or missing).
+   * Never throws for the no-op case.
+   */
+  async setApproximateCoordinates(
+    courseId: string,
+    coords: VerifiedCoordinatesInput,
+  ): Promise<RepositoryResult<CourseRecord>> {
+    try {
+      const result = await this.prisma.course.updateMany({
+        where: {
+          id: courseId,
+          deletedAt: null,
+          // Only fill in courses with no usable coordinate; never downgrade a
+          // verified one, and never re-write an existing approximate one.
+          coordinateConfidence: {
+            notIn: [CoordinateConfidence.VERIFIED, CoordinateConfidence.APPROXIMATE],
+          },
+        },
+        data: {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          coordinateConfidence: CoordinateConfidence.APPROXIMATE,
+          coordinateSource: coords.source,
+          coordinatesVerifiedAt: coords.verifiedAt ?? new Date(),
+        },
+      })
+
+      if (result.count === 0) {
+        this.logger.skip(courseId, { reason: "already-resolved-or-missing" })
+        return { outcome: "skipped" }
+      }
+
+      const record = await this.prisma.course.findUnique({ where: { id: courseId } })
+      this.logger.update(courseId)
+      return record ? ok(record, "updated") : { outcome: "updated" }
+    } catch (error) {
+      const repoError = toRepositoryError(error, {
+        entity: "course",
+        operation: "setApproximateCoordinates",
         reference: courseId,
       })
       this.logger.failure(courseId, repoError.message, { code: repoError.code })

@@ -483,11 +483,13 @@ model Course {
   latitude        Float?
   longitude       Float?
   // Coordinate provenance (Course Geolocation Engine, Sprint 3.9).
-  // `coordinateConfidence` is the source of truth for whether lat/lng may be
-  // trusted: only VERIFIED coordinates are consumed downstream (Weather, Maps).
-  // UNKNOWN means "not yet located"; ESTIMATED is reserved and never written
-  // automatically. `coordinateSource` records which provider verified them
-  // (e.g. "osm-nominatim"); `coordinatesVerifiedAt` stamps when.
+  // `coordinateConfidence` is the source of truth for how far lat/lng may be
+  // trusted: VERIFIED = course-precise (Maps + Weather); APPROXIMATE =
+  // city-level fallback (Weather only, surfaced as "city-level" in the UI);
+  // UNKNOWN = not yet located; ESTIMATED reserved and never written
+  // automatically. `coordinateSource` records which provider resolved them
+  // (e.g. "osm-nominatim" or "openweather-geocoding"); `coordinatesVerifiedAt`
+  // stamps when.
   coordinateConfidence CoordinateConfidence @default(UNKNOWN)
   coordinateSource     String?
   coordinatesVerifiedAt DateTime?
@@ -512,13 +514,23 @@ model Course {
   @@map("courses")
 }
 
-/// Trust level for a course's stored latitude/longitude. Only VERIFIED
-/// coordinates are consumed by Weather Intelligence, Maps, and other spatial
-/// features. ESTIMATED is reserved for a future heuristic path and is never
-/// written automatically this sprint; UNKNOWN is the un-located default.
+/// Trust level for a course's stored latitude/longitude, in descending
+/// precision. Weather Intelligence consumes VERIFIED and APPROXIMATE (a
+/// city-level forecast is adequate for a regional weather model); Maps and
+/// other course-precise features consume only VERIFIED.
 enum CoordinateConfidence {
+  /// The provider resolved the query to an actual golf-course feature (e.g. an
+  /// OSM `leisure=golf_course` polygon). Course-precise; safe for maps.
   VERIFIED
+  /// A city/locality centroid (from OpenWeather's Geocoding API) used as a
+  /// fallback when no course-precise match exists. Accurate to the town, NOT
+  /// the course — good enough for regional weather, which is why the weather
+  /// engine accepts it, but it MUST be surfaced to users as "city-level".
+  APPROXIMATE
+  /// Reserved, non-authoritative estimate. Not produced by any pipeline today;
+  /// kept for backward compatibility and never persisted automatically.
   ESTIMATED
+  /// No coordinate resolved yet. The geolocation engine's work queue.
   UNKNOWN
 }
 

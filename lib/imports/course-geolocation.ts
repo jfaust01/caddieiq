@@ -30,21 +30,27 @@ import {
   type CourseRepository,
 } from "@/lib/repositories"
 
-/** Why a single course was not given verified coordinates on this run. */
+/** Why a single course was not given a coordinate on this run. */
 export type GeolocationSkipReason =
-  | "already-verified" // handled by the repository's work-queue filter
-  | "not-found" // provider had no golf-course match
-  | "unverified-match" // provider matched, but not at "verified" confidence
+  | "already-resolved" // handled by the repository's work-queue filter
+  | "not-found" // no provider (course-precise or city-level) could locate it
+
+/**
+ * The confidence tier a coordinate was persisted at:
+ *   - `verified`   — course-precise (OSM golf-course feature)
+ *   - `approximate` — city-level fallback (OpenWeather locality centroid)
+ */
+export type ResolvedTier = "verified" | "approximate"
 
 /** The outcome of attempting to locate one course. */
 export interface GeolocationOutcome {
   courseId: string
   courseName: string
-  status: "verified" | "skipped" | "failed"
+  status: "verified" | "approximate" | "skipped" | "failed"
   /** Present when `status === "skipped"`. */
   reason?: GeolocationSkipReason
-  /** Present when `status === "verified"`. */
-  coordinates?: { latitude: number; longitude: number; source: string }
+  /** Present when a coordinate was persisted (verified or approximate). */
+  coordinates?: { latitude: number; longitude: number; source: string; tier: ResolvedTier }
   /** Present when `status === "failed"`. */
   error?: string
 }
@@ -52,9 +58,11 @@ export interface GeolocationOutcome {
 /** Aggregate result of a geolocation run, suitable for an import report. */
 export interface GeolocationSummary {
   coursesConsidered: number
+  /** Course-precise matches (OSM). */
   verified: number
+  /** City-level fallback matches (OpenWeather). */
+  approximate: number
   skippedNotFound: number
-  skippedUnverified: number
   failed: number
   notes: string[]
 }
@@ -65,6 +73,12 @@ export interface GeolocateOptions {
   /** Cap the number of courses processed in one run (bounds cost + time). */
   limit?: number
   maxNotes?: number
+  /**
+   * Upgrade mode: also re-attempt courses that currently hold an APPROXIMATE
+   * (city-level) coordinate, to try to promote them to a VERIFIED match. Off by
+   * default so routine runs only touch courses with no usable coordinate yet.
+   */
+  includeApproximate?: boolean
 }
 
 /**
