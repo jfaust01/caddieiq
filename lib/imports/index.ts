@@ -337,7 +337,7 @@ export async function runNewsImport(): Promise<NewsImportSummary> {
       updated: s.updated,
       failed: s.failed,
       summary: `${s.inserted} inserted, ${s.updated} updated, ${s.linkedToPlayer} player-linked, ${s.general} general, ${s.failed} failed`,
-      error: s.notes[0] ?? null,
+      error: s.failed > 0 ? (s.notes[0] ?? null) : null,
     }),
   })
 }
@@ -486,7 +486,7 @@ export async function runWeatherImport(
       skipped: s.skippedNoCourse + s.skippedNoCoordinates,
       failed: s.failed,
       summary: `${s.stored} snapshots (${s.periodsStored} periods); ${s.skippedNoCourse} no-course, ${s.skippedNoCoordinates} no-coords, ${s.failed} failed`,
-      error: s.notes[0] ?? null,
+      error: s.failed > 0 ? (s.notes[0] ?? null) : null,
     }),
   })
 }
@@ -514,7 +514,7 @@ export async function runOddsImport(): Promise<OddsImportSummary> {
       updated: s.updated,
       failed: s.failed,
       summary: `${s.inserted} inserted, ${s.updated} updated; ${s.quotesBuilt} quotes, ${s.linkedToTournament} events linked, ${s.quotesLinkedToPlayer} quotes player-linked, ${s.distinctBookmakers} books`,
-      error: s.notes[0] ?? null,
+      error: s.failed > 0 ? (s.notes[0] ?? null) : null,
     }),
   })
 }

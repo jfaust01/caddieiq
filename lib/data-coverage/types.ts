@@ -84,17 +84,50 @@ export interface HealthCheck {
   detail: string
 }
 
-/** A "last successful import" marker for a data domain. */
-export interface ImportMarker {
+/** Outcome of a recorded import run, mirroring the `ImportRunStatus` enum. */
+export type ImportRunOutcome = "SUCCESS" | "PARTIAL" | "FAILURE" | "never"
+
+/**
+ * The real, recorded health of one import pipeline — read from the append-only
+ * `import_runs` audit trail, NOT inferred from a table's `max(updatedAt)`. Every
+ * field is a genuine fact about the last time the pipeline actually ran; when a
+ * pipeline has never run, `outcome` is `"never"` and the counts are null so the
+ * UI can say "Never run" instead of implying a zero-row success.
+ */
+export interface ImportRunHealth {
+  /** Logical entity/pipeline id (e.g. "statistics", "weather"). */
   id: string
+  /** Human label for the pipeline. */
   label: string
-  /** ISO timestamp of the most recent write, or null if never imported. */
+  /** Upstream provider the last run pulled from, or null when never run. */
+  provider: string | null
+  /** Recorded outcome of the most recent run. */
+  outcome: ImportRunOutcome
+  /** ISO timestamp the last run started, or null when never run. */
   at: string | null
+  /** Duration of the last run in ms, or null when never run. */
+  durationMs: number | null
+  /** Rows created by the last run, or null when never run. */
+  inserted: number | null
+  /** Rows updated by the last run, or null when never run. */
+  updated: number | null
+  /** Rows intentionally skipped by the last run, or null when never run. */
+  skipped: number | null
+  /** Rows that errored in the last run, or null when never run. */
+  failed: number | null
+  /** One-line summary from the last run, or null. */
+  summary: string | null
+  /** Representative error from the last run when degraded/failed, else null. */
+  error: string | null
 }
 
 export interface PlatformHealth {
   checks: HealthCheck[]
-  imports: ImportMarker[]
+  /**
+   * Real per-pipeline run health from the `import_runs` audit trail. This is the
+   * honest replacement for the old `updatedAt`-proxy markers.
+   */
+  runs: ImportRunHealth[]
 }
 
 /**

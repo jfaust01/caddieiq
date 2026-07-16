@@ -1,7 +1,12 @@
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
-import { getFantasyRepository, getOddsRepository, getPlayerSkillRepository } from "@/lib/repositories"
+import {
+  getFantasyRepository,
+  getImportRunRepository,
+  getOddsRepository,
+  getPlayerSkillRepository,
+} from "@/lib/repositories"
 import { getTournamentRepository } from "@/lib/repositories/tournament-repository"
 import { SOURCEABLE_SKILL_KEYS } from "@/lib/player-skill-intelligence"
 import { deriveFieldIntelligence } from "@/lib/tournament-context"
@@ -14,7 +19,7 @@ import type {
   FieldIntelligenceReport,
   FieldIntelligenceReportRow,
   HealthCheck,
-  ImportMarker,
+  ImportRunHealth,
   PlatformHealth,
 } from "./types"
 
@@ -140,11 +145,6 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     skillCoverage,
     // DFS Value Model (flagship composite — real DraftKings salary readiness)
     dfsSalaryCoverage,
-    // Import markers
-    playerAgg,
-    tournamentAgg,
-    courseAgg,
-    newsUpdatedAgg,
   ] = await Promise.all([
     prisma.player.count({ where: { deletedAt: null } }),
     prisma.player.count({ where: { deletedAt: null, status: "ACTIVE" } }),
@@ -195,10 +195,6 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     getOddsRepository().getCoverageCounts(),
     getPlayerSkillRepository().getCoverageCounts(),
     getFantasyRepository().getSalaryCoverageCounts(),
-    prisma.player.aggregate({ _max: { updatedAt: true } }),
-    prisma.tournament.aggregate({ _max: { updatedAt: true } }),
-    prisma.course.aggregate({ _max: { updatedAt: true } }),
-    prisma.weatherSnapshot.aggregate({ _max: { capturedAt: true } }),
   ])
 
   const sections: CoverageSection[] = []
@@ -779,11 +775,6 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
 
   const health = await buildPlatformHealth({
     now,
-    lastPlayerImport: playerAgg._max.updatedAt,
-    lastTournamentImport: tournamentAgg._max.updatedAt,
-    lastCourseImport: courseAgg._max.updatedAt,
-    lastWeatherImport: newsUpdatedAgg._max.capturedAt,
-    lastNewsImport: newsAgg._max.updatedAt,
     bettingRestricted: bettingEmpty,
   })
 
@@ -859,12 +850,86 @@ async function buildFieldIntelligence(now: Date): Promise<FieldIntelligenceRepor
 
 interface HealthInputs {
   now: number
-  lastPlayerImport: Date | null
-  lastTournamentImport: Date | null
-  lastCourseImport: Date | null
-  lastWeatherImport: Date | null
-  lastNewsImport: Date | null
   bettingRestricted: boolean
+}
+
+/**
+ * Human labels and stable ordering for the pipelines the dashboard reports on.
+ * Keyed by the `entity` string each `runXImport()` records. Any entity that has
+ * run but is not listed here still surfaces (appended, title-cased) so a new
+ * pipeline is never silently hidden.
+ */
+const IMPORT_RUN_LABELS: ReadonlyArray<{ id: string; label: string }> = [
+  { id: "player", label: "Players" },
+  { id: "tournament", label: "Tournaments" },
+  { id: "course", label: "Courses" },
+  { id: "field", label: "Tournament Fields" },
+  { id: "statistics", label: "Player Statistics" },
+  { id: "geolocation", label: "Course Geolocation" },
+  { id: "weather", label: "Weather" },
+  { id: "news", label: "News" },
+  { id: "betting", label: "Betting" },
+  { id: "odds", label: "Odds" },
+  { id: "fantasy", label: "Fantasy / DFS" },
+  { id: "course-link", label: "Course Linking" },
+]
+
+function titleCaseEntity(entity: string): string {
+  return entity
+    .split(/[-_\s]+/)
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ")
+}
+
+/**
+ * Real per-pipeline import health, read from the append-only `import_runs`
+ * audit trail. Pipelines that have a recorded run report their genuine last
+ * outcome and row counts; pipelines that have never run report `"never"` with
+ * null counts — no `updatedAt` guessing, no implied zero-row success.
+ */
+async function buildImportRunHealth(): Promise<ImportRunHealth[]> {
+  const latest = await getImportRunRepository().latestPerEntity()
+  const byEntity = new Map(latest.map((r) => [r.entity, r]))
+
+  const knownIds = new Set(IMPORT_RUN_LABELS.map((l) => l.id))
+  const extraEntities = latest
+    .filter((r) => !knownIds.has(r.entity))
+    .map((r) => ({ id: r.entity, label: titleCaseEntity(r.entity) }))
+  const ordered = [...IMPORT_RUN_LABELS, ...extraEntities]
+
+  return ordered.map(({ id, label }) => {
+    const run = byEntity.get(id)
+    if (!run) {
+      return {
+        id,
+        label,
+        provider: null,
+        outcome: "never" as const,
+        at: null,
+        durationMs: null,
+        inserted: null,
+        updated: null,
+        skipped: null,
+        failed: null,
+        summary: null,
+        error: null,
+      }
+    }
+    return {
+      id,
+      label,
+      provider: run.provider,
+      outcome: run.status,
+      at: run.startedAt.toISOString(),
+      durationMs: run.durationMs,
+      inserted: run.inserted,
+      updated: run.updated,
+      skipped: run.skipped,
+      failed: run.failed,
+      summary: run.summary,
+      error: run.error,
+    }
+  })
 }
 
 async function buildPlatformHealth(inputs: HealthInputs): Promise<PlatformHealth> {
@@ -921,13 +986,7 @@ async function buildPlatformHealth(inputs: HealthInputs): Promise<PlatformHealth
     },
   ]
 
-  const imports: ImportMarker[] = [
-    { id: "players", label: "Players", at: toIso(inputs.lastPlayerImport) },
-    { id: "tournaments", label: "Tournaments", at: toIso(inputs.lastTournamentImport) },
-    { id: "courses", label: "Courses", at: toIso(inputs.lastCourseImport) },
-    { id: "weather", label: "Weather", at: toIso(inputs.lastWeatherImport) },
-    { id: "news", label: "News", at: toIso(inputs.lastNewsImport) },
-  ]
+  const runs = await buildImportRunHealth()
 
-  return { checks, imports }
+  return { checks, runs }
 }

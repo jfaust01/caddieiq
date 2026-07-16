@@ -189,6 +189,8 @@ When writing prompts or PRs that extend the project:
 | [PLAYER_SKILL_INTELLIGENCE.md](./PLAYER_SKILL_INTELLIGENCE.md) | The Player Skill Intelligence Engine: normalized golf-skill ratings, field leaderboards, and the Course Fit skill source. |
 | [DFS_VALUE_MODEL.md](./DFS_VALUE_MODEL.md) | The DFS Value Model: the flagship composite fusing every signal family with real DraftKings salary into salary-adjusted value. |
 | [DATA_COVERAGE.md](./DATA_COVERAGE.md) | The internal Data Coverage Dashboard: admin-only, honest coverage diagnostics. |
+| [DATA_CATALOG.md](./DATA_CATALOG.md) | What external data is actually available (SportsDataIO tier reality), its fidelity, and where it lands. |
+| [DATA_INTEGRITY.md](./DATA_INTEGRITY.md) | Data integrity audit: per-pipeline findings, the import-run history audit trail, and the rankings architecture. |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | How to contribute and ship changes. |
 | [CODING_STANDARDS.md](./CODING_STANDARDS.md) | Engineering conventions. |
 | [CHANGELOG.md](./CHANGELOG.md) | Release history. |

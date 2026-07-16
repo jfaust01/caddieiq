@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { ratingLabel, type CoverageRating } from "@/lib/data-coverage"
-import type { HealthState } from "@/lib/data-coverage/types"
+import type { HealthState, ImportRunOutcome } from "@/lib/data-coverage/types"
 
 /** Fill color per rating for the coverage bar. */
 const BAR_COLOR: Record<CoverageRating, string> = {
@@ -81,5 +81,30 @@ export function HealthStatus({ state }: { state: HealthState }) {
       <span className={cn("size-2 shrink-0 rounded-full", HEALTH_DOT[state])} aria-hidden />
       {HEALTH_LABEL[state]}
     </span>
+  )
+}
+
+const RUN_BADGE_COLOR: Record<ImportRunOutcome, string> = {
+  SUCCESS: "bg-success/12 text-success",
+  // PARTIAL is the honest state for a knowingly-degraded feed (e.g. trial-tier
+  // scrambling) — warning-toned, not a failure.
+  PARTIAL: "bg-warning/15 text-warning-foreground",
+  FAILURE: "bg-destructive/12 text-destructive",
+  never: "bg-muted text-muted-foreground",
+}
+
+const RUN_BADGE_LABEL: Record<ImportRunOutcome, string> = {
+  SUCCESS: "Success",
+  PARTIAL: "Partial",
+  FAILURE: "Failed",
+  never: "Never run",
+}
+
+/** A pill communicating the recorded outcome of a pipeline's last import run. */
+export function ImportRunBadge({ outcome }: { outcome: ImportRunOutcome }) {
+  return (
+    <Badge className={cn("border-transparent", RUN_BADGE_COLOR[outcome])}>
+      {RUN_BADGE_LABEL[outcome]}
+    </Badge>
   )
 }

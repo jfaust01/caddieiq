@@ -64,6 +64,11 @@ export function normalizeImportResult(result: ImportResult): RunOutcome {
   }
 }
 
+/** The minimal persistence surface {@link recordImportRun} needs. */
+export interface RunSink {
+  record: (input: ImportRunInput) => Promise<unknown>
+}
+
 /** Everything needed to record one run around a unit of import work. */
 export interface RecordRunOptions<T> {
   provider: string
@@ -71,14 +76,21 @@ export interface RecordRunOptions<T> {
   run: () => Promise<T>
   /** Project the native result onto the common counters. */
   normalize: (result: T) => RunOutcome
+  /**
+   * Persistence sink. Defaults to the shared import-run repository; injectable
+   * so tests can assert the recorded row without a database.
+   */
+  sink?: RunSink
 }
 
 /**
  * Derive the run status from its counters unless the caller forced one:
  * FAILURE when nothing succeeded and something failed, PARTIAL when there were
  * failures alongside successes, otherwise SUCCESS.
+ *
+ * Exported for unit testing — this is the core honesty rule.
  */
-function deriveStatus(outcome: RunOutcome): ImportRunStatus {
+export function deriveStatus(outcome: RunOutcome): ImportRunStatus {
   if (outcome.status) return outcome.status
   const failed = outcome.failed ?? 0
   const succeeded = (outcome.inserted ?? 0) + (outcome.updated ?? 0)
@@ -87,9 +99,9 @@ function deriveStatus(outcome: RunOutcome): ImportRunStatus {
 }
 
 /** Persist one run row; never throws (history must not break imports). */
-async function persist(input: ImportRunInput): Promise<void> {
+async function persist(input: ImportRunInput, sink: RunSink): Promise<void> {
   try {
-    await getImportRunRepository().record(input)
+    await sink.record(input)
   } catch (error) {
     console.error(
       `[v0] Failed to record import run for ${input.entity} (${input.provider}):`,
@@ -98,8 +110,8 @@ async function persist(input: ImportRunInput): Promise<void> {
   }
 }
 
-/** Coerce any thrown value into a bounded, readable message. */
-function messageOf(error: unknown): string {
+/** Coerce any thrown value into a bounded, readable message. Exported for tests. */
+export function messageOf(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error)
   return raw.length > 1000 ? `${raw.slice(0, 1000)}…` : raw
 }
@@ -111,46 +123,53 @@ function messageOf(error: unknown): string {
  * keep their existing error semantics.
  */
 export async function recordImportRun<T>(options: RecordRunOptions<T>): Promise<T> {
+  const sink: RunSink = options.sink ?? getImportRunRepository()
   const startedAt = new Date()
   try {
     const result = await options.run()
     const outcome = options.normalize(result)
     const finishedAt = new Date()
-    await persist({
-      provider: options.provider,
-      entity: options.entity,
-      status: deriveStatus(outcome),
-      startedAt,
-      finishedAt,
-      durationMs: finishedAt.getTime() - startedAt.getTime(),
-      processed: outcome.processed ?? 0,
-      inserted: outcome.inserted ?? 0,
-      updated: outcome.updated ?? 0,
-      skipped: outcome.skipped ?? 0,
-      failed: outcome.failed ?? 0,
-      warnings: outcome.warnings ?? 0,
-      summary: outcome.summary ?? null,
-      error: outcome.error ?? null,
-    })
+    await persist(
+      {
+        provider: options.provider,
+        entity: options.entity,
+        status: deriveStatus(outcome),
+        startedAt,
+        finishedAt,
+        durationMs: finishedAt.getTime() - startedAt.getTime(),
+        processed: outcome.processed ?? 0,
+        inserted: outcome.inserted ?? 0,
+        updated: outcome.updated ?? 0,
+        skipped: outcome.skipped ?? 0,
+        failed: outcome.failed ?? 0,
+        warnings: outcome.warnings ?? 0,
+        summary: outcome.summary ?? null,
+        error: outcome.error ?? null,
+      },
+      sink,
+    )
     return result
   } catch (error) {
     const finishedAt = new Date()
-    await persist({
-      provider: options.provider,
-      entity: options.entity,
-      status: "FAILURE",
-      startedAt,
-      finishedAt,
-      durationMs: finishedAt.getTime() - startedAt.getTime(),
-      processed: 0,
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-      failed: 0,
-      warnings: 0,
-      summary: "Run threw before completing.",
-      error: messageOf(error),
-    })
+    await persist(
+      {
+        provider: options.provider,
+        entity: options.entity,
+        status: "FAILURE",
+        startedAt,
+        finishedAt,
+        durationMs: finishedAt.getTime() - startedAt.getTime(),
+        processed: 0,
+        inserted: 0,
+        updated: 0,
+        skipped: 0,
+        failed: 0,
+        warnings: 0,
+        summary: "Run threw before completing.",
+        error: messageOf(error),
+      },
+      sink,
+    )
     throw error
   }
 }
