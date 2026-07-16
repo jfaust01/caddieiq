@@ -11,7 +11,27 @@ import {
   buildWeatherIntelligence,
   unavailableIntelligence,
 } from "./intelligence"
+import { computeWeatherStatus, FORECAST_HORIZON_DAYS } from "./status"
 import type { WeatherIntelligence, WeatherRawPeriod, WeatherVenue } from "./types"
+
+/**
+ * A serializable summary of a tournament's weather import history, for admin
+ * surfaces (the tournament page's refresh control and metadata line). Dates are
+ * ISO strings so it crosses the server/client boundary cleanly. Every field is
+ * drawn from real rows — `null` means "never", never a fabricated placeholder.
+ */
+export interface WeatherImportStatus {
+  /** When the most recent import *attempt* (any outcome) ran, or null. */
+  lastAttemptAt: string | null
+  /** Outcome of that most recent attempt, or null when never attempted. */
+  lastResult: "STORED" | "SKIPPED" | "FAILED" | null
+  /** When conditions were last successfully stored (the snapshot capture), or null. */
+  lastSuccessAt: string | null
+  /** Compact provider response / error from the last attempt, when present. */
+  providerResponse: string | null
+  /** Why the last attempt was skipped, when it was a SKIP. */
+  skippedReason: string | null
+}
 
 /**
  * Weather Intelligence service — the server-only half of the engine.
@@ -38,6 +58,8 @@ export class WeatherIntelligenceService {
     const venue = await this.repo.findWeatherVenueById(tournamentId)
 
     if (!venue) {
+      // A tournament that does not exist has no timing, so the status engine is
+      // not meaningful here — the default (coordinates-unavailable) is honest.
       return unavailableIntelligence(
         [{ code: "tournament-not-found" }],
         "This tournament could not be found, so no weather context is available.",
@@ -45,19 +67,36 @@ export class WeatherIntelligenceService {
     }
 
     const venueMeta = venueDisplay(venue)
+    const hasCoordinates = venue.latitude !== null && venue.longitude !== null
+
+    // Load the latest per-tournament import log so status can distinguish a
+    // *failed* last attempt from one that simply has not run yet.
+    const latestLog = await this.repo.findLatestImportLog(tournamentId)
+    const snapshot = hasCoordinates ? await this.repo.findByTournamentId(tournamentId) : null
+    const hasSnapshot = Boolean(snapshot && snapshot.periods.length > 0)
+
+    // The single source of lifecycle truth, shared by every unavailable branch
+    // (and recomputed inside the pure core for the available branch).
+    const statusReport = computeWeatherStatus({
+      startDate: venue.startDate,
+      endDate: venue.endDate,
+      hasCoordinates,
+      hasSnapshot,
+      lastImportFailed: latestLog?.result === "FAILED",
+      providerSupportsHistorical: false,
+    })
 
     // No linked venue coordinates → we will not fetch or fabricate a location.
-    if (venue.latitude === null || venue.longitude === null) {
+    if (!hasCoordinates) {
       return unavailableIntelligence(
         [{ code: venue.courseId ? "course-missing-coordinates" : "no-host-course" }],
         venue.courseId
           ? "The host course has no coordinates yet, so a forecast cannot be located."
           : "No host course is linked to this tournament, so a forecast cannot be located.",
         venueMeta,
+        statusReport,
       )
     }
-
-    const snapshot = await this.repo.findByTournamentId(tournamentId)
 
     if (!snapshot || snapshot.periods.length === 0) {
       // Distinguish "expected — the event is still off in the future" from
@@ -70,12 +109,14 @@ export class WeatherIntelligenceService {
           [{ code: "beyond-forecast-horizon", detail: String(daysOut) }],
           `This event starts in ${daysOut} days, beyond the ~${FORECAST_HORIZON_DAYS}-day forecast horizon. The forecast will populate automatically as the event approaches.`,
           venueMeta,
+          statusReport,
         )
       }
       return unavailableIntelligence(
         [{ code: "no-snapshot" }],
         "No forecast has been imported for this tournament yet.",
         venueMeta,
+        statusReport,
       )
     }
 
@@ -99,13 +140,6 @@ export class WeatherIntelligenceService {
     })
   }
 }
-
-/**
- * OpenWeather's free 5-day/3-hour forecast reaches ~5 days out. Events beyond
- * this simply have no forecast yet (expected), rather than a missing import.
- * Kept in sync with the importer's selection horizon intent.
- */
-const FORECAST_HORIZON_DAYS = 5
 
 /** Whole days from now until `date` (future positive); null when no date. */
 function daysUntil(date: Date | null): number | null {

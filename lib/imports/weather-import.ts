@@ -22,6 +22,8 @@ import { OpenWeatherClient } from "@/lib/providers/weather/client"
 import type { OwmForecastEntry, OwmForecastResponse } from "@/lib/providers/weather/types"
 import {
   getWeatherRepository,
+  type WeatherImportLogInput,
+  type WeatherImportResultCode,
   type WeatherPeriodInput,
   type WeatherRepository,
   type WeatherSnapshotInput,
@@ -66,6 +68,12 @@ export interface ImportWeatherOptions {
   /** Skip a refresh if the stored snapshot is younger than this (ms). */
   minRefreshIntervalMs?: number
   maxNotes?: number
+  /**
+   * The aggregate `ImportRun` id to stamp on each per-tournament log row, when
+   * this import is executed as part of a tracked run. Optional — a standalone
+   * or manual import still writes logs, just without a run linkage.
+   */
+  importRunId?: string | null
 }
 
 /**
@@ -122,28 +130,70 @@ export async function importWeather(
   }
 
   for (const tournamentId of tournamentIds) {
+    const startedAt = Date.now()
     const venue = await repository.findWeatherVenueById(tournamentId)
+
+    // Base log fields shared by every branch. `forecastEligible` is only true
+    // once we know the venue is located (set below).
+    const baseLog = {
+      importRunId: options.importRunId ?? null,
+      tournamentId,
+      tournamentName: venue?.tournamentName ?? tournamentId,
+      courseId: venue?.courseId ?? null,
+      courseName: venue?.courseName ?? null,
+      latitude: venue?.latitude ?? null,
+      longitude: venue?.longitude ?? null,
+      forecastEligible: false,
+    } satisfies Partial<WeatherImportLogInput>
+
+    /** Persist one per-tournament log row (best-effort; never throws). */
+    const recordLog = (
+      result: WeatherImportResultCode,
+      extra: Partial<WeatherImportLogInput> = {},
+    ) =>
+      repository.createImportLog({
+        ...baseLog,
+        result,
+        durationMs: Date.now() - startedAt,
+        ...extra,
+      })
+
     if (!venue) {
       summary.failed += 1
       note(`Tournament ${tournamentId} not found.`)
+      await recordLog("FAILED", { providerResponse: "Tournament not found." })
       continue
     }
     if (!venue.courseId) {
       summary.skippedNoCourse += 1
       note(`${venue.tournamentName}: no host course linked; skipped.`)
+      await recordLog("SKIPPED", { skippedReason: "No host course linked to tournament." })
       continue
     }
     if (venue.latitude === null || venue.longitude === null) {
       summary.skippedNoCoordinates += 1
       note(`${venue.tournamentName}: host course has no coordinates; skipped.`)
+      await recordLog("SKIPPED", { skippedReason: "Host course has no coordinates." })
       continue
     }
 
+    // The venue is located, so the event is eligible to be fetched.
+    const eligible = true
+
+    // Read the prior snapshot timestamp once: it powers both the freshness
+    // guard and an honest inserted-vs-updated distinction in the log (the
+    // upsert itself cannot tell us which occurred).
+    const priorCapturedAt = await repository.getCapturedAt(tournamentId)
+    const hadSnapshot = priorCapturedAt !== null
+
     // Respect a caller-provided refresh interval to avoid burning quota.
-    if (options.minRefreshIntervalMs != null) {
-      const capturedAt = await repository.getCapturedAt(tournamentId)
-      if (capturedAt && Date.now() - capturedAt.getTime() < options.minRefreshIntervalMs) {
+    if (options.minRefreshIntervalMs != null && priorCapturedAt) {
+      if (Date.now() - priorCapturedAt.getTime() < options.minRefreshIntervalMs) {
         note(`${venue.tournamentName}: snapshot still fresh; skipped.`)
+        await recordLog("SKIPPED", {
+          forecastEligible: eligible,
+          skippedReason: "Existing snapshot still within the minimum refresh interval.",
+        })
         continue
       }
     }
@@ -158,12 +208,21 @@ export async function importWeather(
     } catch (error) {
       summary.failed += 1
       note(`${venue.tournamentName}: forecast fetch failed: ${(error as Error).message}`)
+      await recordLog("FAILED", {
+        forecastEligible: eligible,
+        providerResponse: `Forecast fetch failed: ${(error as Error).message}`,
+      })
       continue
     }
 
     const snapshot = toSnapshotInput(tournamentId, venue.courseId, venue.latitude, venue.longitude, forecast)
     if (snapshot.periods.length === 0) {
       note(`${venue.tournamentName}: provider returned no usable periods; snapshot not written.`)
+      await recordLog("SKIPPED", {
+        forecastEligible: eligible,
+        providerResponse: `${forecast.list?.length ?? 0} entries · 0 usable periods`,
+        skippedReason: "Provider returned no usable forecast periods.",
+      })
       continue
     }
 
@@ -171,6 +230,10 @@ export async function importWeather(
     if (result.outcome === "failed") {
       summary.failed += 1
       note(`${venue.tournamentName}: persist failed: ${result.error?.message ?? "unknown error"}`)
+      await recordLog("FAILED", {
+        forecastEligible: eligible,
+        providerResponse: `Persist failed: ${result.error?.message ?? "unknown error"}`,
+      })
     } else {
       summary.stored += 1
       summary.periodsStored += snapshot.periods.length
@@ -181,6 +244,13 @@ export async function importWeather(
         summary.storedCityLevel += 1
         note(`${venue.tournamentName}: forecast fetched for city-level (APPROXIMATE) coordinate.`)
       }
+      await recordLog("STORED", {
+        forecastEligible: eligible,
+        providerResponse: `200 · ${snapshot.periods.length} periods`,
+        rowsInserted: hadSnapshot ? 0 : 1,
+        rowsUpdated: hadSnapshot ? 1 : 0,
+        periodsWritten: snapshot.periods.length,
+      })
     }
   }
 

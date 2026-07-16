@@ -34,10 +34,12 @@ function venueRow(overrides: Partial<WeatherVenueRow> = {}): WeatherVenueRow {
 function fakeRepo(
   venue: WeatherVenueRow | null,
   snapshot: WeatherSnapshotRow | null = null,
+  latestLog: Awaited<ReturnType<WeatherRepository["findLatestImportLog"]>> = null,
 ): WeatherRepository {
   return {
     findWeatherVenueById: async () => venue,
     findByTournamentId: async () => snapshot,
+    findLatestImportLog: async () => latestLog,
   } as unknown as WeatherRepository
 }
 
@@ -65,6 +67,29 @@ describe("WeatherIntelligenceService — honest empty states", () => {
     expect(wx.family.status).toBe("unavailable")
     expect(wx.gaps.map((g) => g.code)).toContain("no-snapshot")
     expect(wx.gaps.map((g) => g.code)).not.toContain("beyond-forecast-horizon")
+  })
+
+  it("surfaces a failed last import as the weather-import-failed status", async () => {
+    const venue = venueRow({ startDate: new Date(Date.now() + 2 * DAY_MS) })
+    const failedLog = {
+      id: "log_1",
+      tournamentId: "t_1",
+      tournamentName: "Test Open",
+      courseName: "Test Links",
+      forecastEligible: true,
+      result: "FAILED" as const,
+      providerResponse: "429 Too Many Requests",
+      skippedReason: null,
+      durationMs: 120,
+      createdAt: new Date(),
+    }
+    const service = new WeatherIntelligenceService(fakeRepo(venue, null, failedLog))
+
+    const wx = await service.getForTournament("t_1")
+
+    expect(wx.statusReport.code).toBe("weather-import-failed")
+    expect(wx.statusReport.tone).toBe("warning")
+    expect(wx.statusReport.refreshEligible).toBe(true)
   })
 
   it("does not claim a horizon gap when the venue has no coordinates", async () => {
