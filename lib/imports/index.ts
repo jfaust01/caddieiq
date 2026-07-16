@@ -33,6 +33,7 @@ import { importNews, type NewsImportSummary } from "./news-import"
 import { importBetting, type BettingImportSummary } from "./betting-import"
 import { importFantasy, type FantasyImportSummary } from "./fantasy-import"
 import { importWeather, type WeatherImportSummary } from "./weather-import"
+import { importOdds, type OddsImportSummary } from "./odds-import"
 import {
   importCourseCoordinates,
   type GeolocationSummary,
@@ -120,6 +121,11 @@ export {
   type GeolocationSkipReason,
   type GeolocateOptions,
 } from "./course-geolocation"
+export {
+  importOdds,
+  type OddsImportSummary,
+  type ImportOddsOptions,
+} from "./odds-import"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -321,4 +327,20 @@ export async function runWeatherImport(
   tournamentIds?: readonly string[],
 ): Promise<WeatherImportSummary> {
   return importWeather({ tournamentIds })
+}
+
+/**
+ * Import golf betting odds from The Odds API into `odds_events` / `odds_quotes`,
+ * then link each event to a CaddieIQ tournament and each quote to a known player.
+ *
+ * Prices are real bookmaker quotes — nothing is fabricated. Run this AFTER
+ * {@link runTournamentImport} and {@link runPlayerImport} so the tournament and
+ * player id bridges resolve (unlinked events/quotes are still stored, they just
+ * won't surface on a hub until a future run links them). Idempotent: the
+ * repository reconciles on stable keys and only overwrites a quote when the
+ * incoming price is newer, so re-running is safe and cheap. This is the feed
+ * behind both the tournament and player Odds Intelligence cards.
+ */
+export async function runOddsImport(): Promise<OddsImportSummary> {
+  return importOdds()
 }
