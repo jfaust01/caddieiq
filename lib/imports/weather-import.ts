@@ -42,6 +42,18 @@ export interface WeatherImportSummary {
   skippedNoCoordinates: number
   failed: number
   periodsStored: number
+  /**
+   * How the run chose its tournaments: `explicit` when the caller passed ids,
+   * `auto` when it selected upcoming/in-progress events within the horizon.
+   */
+  selectionMode: "explicit" | "auto"
+  /** The auto-selection forecast horizon in days (0 when explicit ids given). */
+  horizonDays: number
+  /**
+   * Why zero tournaments were considered, when that happens on an auto run —
+   * so an empty result is explained, never silent. `null` when ≥1 considered.
+   */
+  emptyReason: string | null
   notes: string[]
 }
 
@@ -72,6 +84,7 @@ export async function importWeather(
   const repository = options.repository ?? getWeatherRepository()
   const maxNotes = options.maxNotes ?? 25
 
+  const explicit = options.tournamentIds && options.tournamentIds.length > 0
   const summary: WeatherImportSummary = {
     tournamentsConsidered: 0,
     fetched: 0,
@@ -81,6 +94,9 @@ export async function importWeather(
     skippedNoCoordinates: 0,
     failed: 0,
     periodsStored: 0,
+    selectionMode: explicit ? "explicit" : "auto",
+    horizonDays: explicit ? 0 : DEFAULT_HORIZON_DAYS,
+    emptyReason: null,
     notes: [],
   }
   const note = (message: string) => {
@@ -89,6 +105,17 @@ export async function importWeather(
 
   const tournamentIds = await resolveTournamentIds(prisma, options.tournamentIds)
   summary.tournamentsConsidered = tournamentIds.length
+
+  // A zero-consideration auto run must never be silent: explain exactly why the
+  // window is empty (and name the nearest event) so operators can distinguish
+  // "expected — nothing forecastable yet" from a real misconfiguration.
+  if (tournamentIds.length === 0) {
+    summary.emptyReason = explicit
+      ? "No tournament ids were supplied to import."
+      : await describeEmptyWindow(prisma)
+    note(summary.emptyReason)
+    return summary
+  }
 
   for (const tournamentId of tournamentIds) {
     const venue = await repository.findWeatherVenueById(tournamentId)
@@ -176,6 +203,83 @@ async function resolveTournamentIds(
     orderBy: { startDate: "asc" },
   })
   return rows.map((r) => r.id)
+}
+
+/**
+ * Build a human-readable explanation for why an auto run selected zero
+ * tournaments. Names the nearest upcoming event and how far out it is, framing
+ * the common, expected case (nothing within OpenWeather's ~5-day forecast reach)
+ * as normal rather than a failure.
+ */
+async function describeEmptyWindow(prisma: PrismaClient): Promise<string> {
+  const nearest = await prisma.tournament.findFirst({
+    where: { deletedAt: null, status: { not: "CANCELED" }, startDate: { gt: new Date() } },
+    select: { name: true, startDate: true },
+    orderBy: { startDate: "asc" },
+  })
+  if (!nearest?.startDate) {
+    return `No upcoming tournaments are scheduled, so there is nothing to fetch within the ${DEFAULT_HORIZON_DAYS}-day forecast window.`
+  }
+  const days = Math.max(0, Math.ceil((nearest.startDate.getTime() - Date.now()) / 86_400_000))
+  return (
+    `No tournament falls within the ${DEFAULT_HORIZON_DAYS}-day forecast window. ` +
+    `The nearest event, "${nearest.name}", starts in ${days} day${days === 1 ? "" : "s"} ` +
+    `(${nearest.startDate.toISOString().slice(0, 10)}) — beyond OpenWeather's ~5-day forecast reach. ` +
+    `Nothing to import yet; this is expected, not a failure.`
+  )
+}
+
+/** Result of a lightweight provider health probe. */
+export interface WeatherProviderHealth {
+  ok: boolean
+  /** HTTP status when the probe reached the API; null on a connection error. */
+  status: number | null
+  /** Round-trip latency of the probe request, in milliseconds. */
+  latencyMs: number
+  /** Number of forecast periods the probe received (0 on failure). */
+  periods: number
+  /** Machine-usable failure reason, or null when healthy. */
+  error: string | null
+}
+
+/** A stable, well-known coordinate for the probe (Trump National Doral). */
+const PROBE_COORDINATE = { latitude: 25.8181219, longitude: -80.3467972 } as const
+
+/**
+ * Probe OpenWeather with a single real forecast request for a fixed coordinate.
+ * Used by the admin System Health page to show provider status without waiting
+ * for a scheduled import. Never throws — a failure is returned as `ok: false`
+ * with a redacted reason so the page can render it safely.
+ */
+export async function probeWeatherProvider(
+  client?: OpenWeatherClient,
+): Promise<WeatherProviderHealth> {
+  const startedAt = Date.now()
+  try {
+    // Construct inside the try: `fromEnv()` throws synchronously when the API
+    // key is unset, and that must surface as a health failure, not an exception.
+    const owm = client ?? OpenWeatherClient.fromEnv()
+    const forecast = await owm.fetchForecast(PROBE_COORDINATE)
+    return {
+      ok: true,
+      status: 200,
+      latencyMs: Date.now() - startedAt,
+      periods: forecast.list?.length ?? 0,
+      error: null,
+    }
+  } catch (error) {
+    const status =
+      error && typeof error === "object" && "details" in error
+        ? ((error.details as { status?: number } | undefined)?.status ?? null)
+        : null
+    return {
+      ok: false,
+      status,
+      latencyMs: Date.now() - startedAt,
+      periods: 0,
+      error: error instanceof Error ? error.message : "Provider probe failed.",
+    }
+  }
 }
 
 /** Map a raw OpenWeather envelope into a snapshot ready for the repository. */
