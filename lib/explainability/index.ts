@@ -32,3 +32,15 @@ export { toTournamentContextExplanation } from "./adapters/tournament-context"
 
 // Narrator — deterministic prose generation (LLM-ready seam).
 export * from "./narrator"
+
+// Decision Trace — derived, ordered pipeline view of an Explanation.
+export * from "./decision-trace-types"
+export {
+  classifyContributor,
+  narrateFromTrace,
+  toDecisionTrace,
+  toNarratedTrace,
+  weightToStars,
+  TRACE_CATEGORY_META,
+  TRACE_PIPELINE_ORDER,
+} from "./decision-trace"

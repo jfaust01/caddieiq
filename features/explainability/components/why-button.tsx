@@ -17,7 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useIsMobile } from "@/hooks/use-mobile"
 import type { Explanation } from "@/lib/explainability"
 
-import { ExplanationBreakdown } from "./explanation-breakdown"
+import { DecisionTraceTimeline } from "./decision-trace-timeline"
 
 export interface WhyButtonProps {
   /** The explanation to reveal. Narrated automatically if it has no prose yet. */
@@ -58,13 +58,13 @@ export function WhyButton({ explanation, label = "Why?", srContext, className }:
         <SheetTrigger render={trigger} />
         <SheetContent side="bottom" className="max-h-[85vh]">
           <SheetHeader>
-            <SheetTitle>Why this score?</SheetTitle>
+            <SheetTitle>How this was decided</SheetTitle>
             <SheetDescription>
-              How {explanation.model.label} was computed, and what it relies on.
+              The step-by-step trace of how {explanation.model.label} reached this result.
             </SheetDescription>
           </SheetHeader>
           <ScrollArea className="min-h-0 flex-1 px-4 pb-6">
-            <ExplanationBreakdown explanation={explanation} />
+            <DecisionTraceTimeline explanation={explanation} />
           </ScrollArea>
         </SheetContent>
       </Sheet>
@@ -76,7 +76,7 @@ export function WhyButton({ explanation, label = "Why?", srContext, className }:
       <PopoverTrigger render={trigger} />
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-2rem)] p-0">
         <ScrollArea className="max-h-[70vh]">
-          <ExplanationBreakdown explanation={explanation} className="p-4" />
+          <DecisionTraceTimeline explanation={explanation} className="p-4" />
         </ScrollArea>
       </PopoverContent>
     </Popover>
