@@ -38,6 +38,7 @@ import {
   importCourseCoordinates,
   type GeolocationSummary,
 } from "./course-geolocation"
+import { recordImportRun } from "./run-recorder"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -126,6 +127,7 @@ export {
   type OddsImportSummary,
   type ImportOddsOptions,
 } from "./odds-import"
+export { recordImportRun, type RunOutcome } from "./run-recorder"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -151,19 +153,31 @@ function resolveManager(options: RunImportOptions): ImportManager {
  */
 export function runPlayerImport(options: RunImportOptions = {}): Promise<ImportResult> {
   const manager = resolveManager(options)
-  return manager.runPlayerImport(
-    { provider: SportsDataProvider.fromEnv(), repository: getPlayerRepository() },
-    options.query,
-  )
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "player",
+    run: () =>
+      manager.runPlayerImport(
+        { provider: SportsDataProvider.fromEnv(), repository: getPlayerRepository() },
+        options.query,
+      ),
+    normalize: normalizeImportResult,
+  })
 }
 
 /** Run the full course pipeline against SportsDataIO and the Course repository. */
 export function runCourseImport(options: RunImportOptions = {}): Promise<ImportResult> {
   const manager = resolveManager(options)
-  return manager.runCourseImport(
-    { provider: SportsDataProvider.fromEnv(), repository: getCourseRepository() },
-    options.query,
-  )
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "course",
+    run: () =>
+      manager.runCourseImport(
+        { provider: SportsDataProvider.fromEnv(), repository: getCourseRepository() },
+        options.query,
+      ),
+    normalize: normalizeImportResult,
+  })
 }
 
 /**
@@ -189,14 +203,20 @@ export async function runTournamentImport(
   const resolveRelations =
     options.resolveRelations ??
     (await createTournamentRelationResolver({ tourCode: options.tourCode }))
-  return manager.runTournamentImport(
-    {
-      provider: SportsDataProvider.fromEnv(),
-      repository: getTournamentRepository(),
-      resolveRelations,
-    },
-    options.query,
-  )
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "tournament",
+    run: () =>
+      manager.runTournamentImport(
+        {
+          provider: SportsDataProvider.fromEnv(),
+          repository: getTournamentRepository(),
+          resolveRelations,
+        },
+        options.query,
+      ),
+    normalize: normalizeImportResult,
+  })
 }
 
 /**
@@ -211,9 +231,24 @@ export async function runTournamentImport(
 export async function runCourseLinking(
   options: RunImportOptions = {},
 ): Promise<CourseLinkSummary> {
-  const provider = SportsDataProvider.fromEnv()
-  const response = await provider.listCourses(options.query)
-  return linkTournamentCourses(response.data)
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "course-link",
+    run: async () => {
+      const provider = SportsDataProvider.fromEnv()
+      const response = await provider.listCourses(options.query)
+      return linkTournamentCourses(response.data)
+    },
+    normalize: (s) => ({
+      processed: s.processed,
+      inserted: s.linked,
+      updated: s.updated,
+      skipped: s.skipped,
+      failed: s.failed,
+      summary: `${s.linked} linked, ${s.updated} updated, ${s.skipped} skipped, ${s.failed} failed`,
+      error: s.notes[0] ?? null,
+    }),
+  })
 }
 
 /**
@@ -227,7 +262,19 @@ export async function runCourseLinking(
  * Returns a {@link FieldImportSummary} describing the run.
  */
 export async function runFieldImport(): Promise<FieldImportSummary> {
-  return importTournamentFields()
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "field",
+    run: () => importTournamentFields(),
+    normalize: (s) => ({
+      processed: s.entriesSeen,
+      inserted: s.inserted,
+      updated: s.updated,
+      skipped: s.entriesUnmatchedPlayer,
+      failed: s.entriesInvalid,
+      summary: `${s.tournamentsWithField}/${s.tournamentsConsidered} fields; ${s.inserted} inserted, ${s.updated} updated, ${s.entriesUnmatchedPlayer} unmatched, ${s.entriesInvalid} invalid`,
+    }),
+  })
 }
 
 /**
@@ -245,7 +292,19 @@ export async function runFieldImport(): Promise<FieldImportSummary> {
 export async function runStatisticsImport(
   seasons?: readonly number[],
 ): Promise<StatisticsImportSummary> {
-  return importPlayerStatistics({ seasons })
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "statistics",
+    run: () => importPlayerStatistics({ seasons }),
+    normalize: (s) => ({
+      processed: s.rowsSeen,
+      inserted: s.inserted,
+      updated: s.updated,
+      skipped: s.rowsUnmatchedPlayer,
+      failed: s.rowsInvalid,
+      summary: `${s.seasonsWithData}/${s.seasonsConsidered} seasons; ${s.inserted} inserted, ${s.updated} updated, ${s.rowsUnmatchedPlayer} unmatched, ${s.rowsInvalid} invalid`,
+    }),
+  })
 }
 
 /**
@@ -258,7 +317,19 @@ export async function runStatisticsImport(
  * provider `externalId` (NewsID). Returns a {@link NewsImportSummary}.
  */
 export async function runNewsImport(): Promise<NewsImportSummary> {
-  return importNews()
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "news",
+    run: () => importNews(),
+    normalize: (s) => ({
+      processed: s.articlesSeen,
+      inserted: s.inserted,
+      updated: s.updated,
+      failed: s.failed,
+      summary: `${s.inserted} inserted, ${s.updated} updated, ${s.linkedToPlayer} player-linked, ${s.general} general, ${s.failed} failed`,
+      error: s.notes[0] ?? null,
+    }),
+  })
 }
 
 /**
@@ -276,7 +347,29 @@ export async function runNewsImport(): Promise<NewsImportSummary> {
 export async function runBettingImport(
   dates?: readonly string[],
 ): Promise<BettingImportSummary> {
-  return importBetting({ dates })
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "betting",
+    run: () => importBetting({ dates }),
+    normalize: (s) => ({
+      processed: s.eventsSeen,
+      inserted: s.inserted,
+      updated: s.updated,
+      failed: s.failed,
+      skipped: s.scrambledOutcomes,
+      // Trial-tier payout VALUES arrive scrambled; the structure imports but no
+      // real odds are available, so a run with zero available outcomes is
+      // honestly PARTIAL rather than a clean SUCCESS.
+      status:
+        s.failed > 0
+          ? undefined
+          : s.availableOutcomes === 0 && s.scrambledOutcomes > 0
+            ? "PARTIAL"
+            : undefined,
+      summary: `${s.inserted} inserted, ${s.updated} updated; ${s.availableOutcomes} available / ${s.scrambledOutcomes} scrambled outcomes`,
+      error: s.notes[0] ?? null,
+    }),
+  })
 }
 
 /**
@@ -292,7 +385,25 @@ export async function runBettingImport(
 export async function runFantasyImport(
   tournamentExternalIds?: readonly string[],
 ): Promise<FantasyImportSummary> {
-  return importFantasy({ tournamentExternalIds })
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "fantasy",
+    run: () => importFantasy({ tournamentExternalIds }),
+    normalize: (s) => {
+      const inserted = s.projectionsInserted + s.salariesInserted
+      const updated = s.projectionsUpdated + s.salariesUpdated
+      const failed = s.projectionsFailed + s.salariesFailed
+      return {
+        processed: s.projectionsSeen + s.salariesSeen,
+        inserted,
+        updated,
+        failed,
+        skipped: s.projectionsScrambled,
+        summary: `salaries: ${s.salariesInserted}+${s.salariesUpdated} (real); projections: ${s.projectionsAvailable} available / ${s.projectionsScrambled} scrambled`,
+        error: s.notes[0] ?? null,
+      }
+    },
+  })
 }
 
 /**
@@ -307,7 +418,19 @@ export async function runFantasyImport(
  * with no verified golf-course match is left UNKNOWN. `limit` bounds one run.
  */
 export async function runCourseGeolocation(limit?: number): Promise<GeolocationSummary> {
-  return importCourseCoordinates({ limit })
+  return recordImportRun({
+    provider: "osm-nominatim",
+    entity: "geolocation",
+    run: () => importCourseCoordinates({ limit }),
+    normalize: (s) => ({
+      processed: s.coursesConsidered,
+      updated: s.verified,
+      skipped: s.skippedNotFound + s.skippedUnverified,
+      failed: s.failed,
+      summary: `${s.verified} verified, ${s.skippedNotFound} not found, ${s.skippedUnverified} unverified, ${s.failed} failed`,
+      error: s.notes[0] ?? null,
+    }),
+  })
 }
 
 /**
@@ -326,7 +449,19 @@ export async function runCourseGeolocation(limit?: number): Promise<GeolocationS
 export async function runWeatherImport(
   tournamentIds?: readonly string[],
 ): Promise<WeatherImportSummary> {
-  return importWeather({ tournamentIds })
+  return recordImportRun({
+    provider: "openweather",
+    entity: "weather",
+    run: () => importWeather({ tournamentIds }),
+    normalize: (s) => ({
+      processed: s.tournamentsConsidered,
+      updated: s.stored,
+      skipped: s.skippedNoCourse + s.skippedNoCoordinates,
+      failed: s.failed,
+      summary: `${s.stored} snapshots (${s.periodsStored} periods); ${s.skippedNoCourse} no-course, ${s.skippedNoCoordinates} no-coords, ${s.failed} failed`,
+      error: s.notes[0] ?? null,
+    }),
+  })
 }
 
 /**
