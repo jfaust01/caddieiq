@@ -185,6 +185,7 @@ When writing prompts or PRs that extend the project:
 | [COURSE_FIT_MODEL.md](./COURSE_FIT_MODEL.md) | The Course Fit Model: player-vs-course fit scoring. |
 | [COURSE_GEOLOCATION.md](./COURSE_GEOLOCATION.md) | The Course Geolocation Engine: verified venue coordinates from a swappable geocoder. |
 | [WEATHER_INTELLIGENCE.md](./WEATHER_INTELLIGENCE.md) | The Weather Intelligence Engine: per-event conditions, forecast, and wave edge. |
+| [PLAYER_SKILL_INTELLIGENCE.md](./PLAYER_SKILL_INTELLIGENCE.md) | The Player Skill Intelligence Engine: normalized golf-skill ratings, field leaderboards, and the Course Fit skill source. |
 | [DATA_COVERAGE.md](./DATA_COVERAGE.md) | The internal Data Coverage Dashboard: admin-only, honest coverage diagnostics. |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | How to contribute and ship changes. |
 | [CODING_STANDARDS.md](./CODING_STANDARDS.md) | Engineering conventions. |
