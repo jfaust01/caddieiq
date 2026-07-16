@@ -4,6 +4,7 @@ import * as React from "react"
 import { ArrowDown, ArrowUp, ChevronDown, Flag, Info, Minus, Star } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import {
   toDecisionTrace,
@@ -148,11 +149,27 @@ function StageCard({ stage, isLast }: { stage: DecisionTraceStage; isLast: boole
                 </dl>
               ) : null}
               {!isFinal ? (
-                <Badge
-                  className={cn("border text-[0.625rem]", CONFIDENCE_CHIP[stage.confidence])}
-                >
-                  {CONFIDENCE_LABEL[stage.confidence]} confidence
-                </Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      className={cn("border text-[0.625rem] cursor-help", CONFIDENCE_CHIP[stage.confidence])}
+                    >
+                      {CONFIDENCE_LABEL[stage.confidence]} confidence
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <p className="text-xs">
+                      {stage.confidence === "high" &&
+                        "High confidence: Strong agreement between input signals and minimal missing data."}
+                      {stage.confidence === "medium" &&
+                        "Medium confidence: Some signals agree or minor missing data affects the result."}
+                      {stage.confidence === "low" &&
+                        "Low confidence: Signals are mixed or substantial data is unavailable."}
+                      {stage.confidence === "none" &&
+                        "No confidence: Insufficient data to assess reliability."}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
               ) : null}
             </div>
           ) : null}
