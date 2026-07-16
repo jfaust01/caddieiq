@@ -493,7 +493,7 @@ export async function runWeatherImport(
       updated: s.stored,
       skipped: s.skippedNoCourse + s.skippedNoCoordinates,
       failed: s.failed,
-      summary: `${s.stored} snapshots (${s.periodsStored} periods); ${s.skippedNoCourse} no-course, ${s.skippedNoCoordinates} no-coords, ${s.failed} failed`,
+      summary: `${s.stored} snapshots (${s.periodsStored} periods, ${s.storedCityLevel} city-level); ${s.skippedNoCourse} no-course, ${s.skippedNoCoordinates} no-coords, ${s.failed} failed`,
       error: s.failed > 0 ? (s.notes[0] ?? null) : null,
     }),
   })
