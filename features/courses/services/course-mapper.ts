@@ -14,6 +14,8 @@ import type {
   CourseTournamentRow,
 } from '@/lib/repositories/course-repository'
 
+import { buildProfileFromRow } from './course-intelligence'
+
 const TOURNAMENT_STATUSES: readonly TournamentStatus[] = [
   'SCHEDULED',
   'ACTIVE',
@@ -55,7 +57,7 @@ function mapCourseTournament(row: CourseTournamentRow): CourseTournament {
 
 /** Map the flattened course-detail row to the UI `CourseDetail`. */
 export function mapCourseDetail(row: CourseDetailRow): CourseDetail {
-  const { course, tournaments } = row
+  const { course, characteristic, tournaments } = row
   return {
     id: course.id,
     name: course.name,
@@ -64,6 +66,9 @@ export function mapCourseDetail(row: CourseDetailRow): CourseDetail {
     country: course.country ?? null,
     par: toNumber(course.par),
     yardage: toNumber(course.yardage),
+    // Derived purely from verified `course` + `characteristic` records; the
+    // engine emits `unknown` signals for any gap rather than fabricating.
+    profile: buildProfileFromRow({ course, characteristic }),
     tournaments: tournaments.map(mapCourseTournament),
   }
 }

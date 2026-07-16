@@ -50,6 +50,28 @@ const playerReadInclude = {
 export type PlayerWithRelations = Prisma.PlayerGetPayload<{ include: typeof playerReadInclude }>
 
 /**
+ * The raw facts for a player's active Tournament Context: their next **upcoming**
+ * event and its linked host course. Consumed by the Tournament Context Engine
+ * (`lib/tournament-context`), which normalizes it into a confidence-graded
+ * context. Returned by {@link PlayerRepository.findUpcomingContextById}.
+ *
+ * The course is nullable on purpose: an upcoming event with no linked host
+ * course is a real, `partial`-confidence context — not a reason to hide the
+ * event. The engine records the missing course as a gap rather than fabricating
+ * one.
+ */
+export interface PlayerUpcomingContextRow {
+  tournamentId: string
+  tournamentName: string
+  tournamentSlug: string
+  tournamentStatus: string
+  startDate: Date | null
+  endDate: Date | null
+  courseId: string | null
+  courseName: string | null
+}
+
+/**
  * Fully-resolved, database-ready parameters for {@link PlayerRepository.search}.
  * The feature service translates UI filter state (with its `"ALL"` sentinels)
  * into this shape; every field here is an active constraint. `skip`/`take` are
@@ -221,6 +243,85 @@ export class PlayerRepository extends BaseRepository {
       WHERE p."deletedAt" IS NULL
     `)
     return { withTour: rows[0]?.with_tour ?? 0, total: rows[0]?.total ?? 0 }
+  }
+
+  /**
+   * Compact display metadata for a set of player ids — full name, country code,
+   * and active tour type — for surfaces (like the rankings directory) that get
+   * their ordering from the derived engines but still need to label each player.
+   *
+   * Batched into a single query and returned unordered; the caller restores the
+   * engine's ordering. Ids that are missing or soft-deleted are simply absent
+   * from the result rather than fabricated. Read-only.
+   */
+  async findDirectoryMetadataByIds(
+    ids: readonly string[],
+  ): Promise<Array<{ id: string; fullName: string; countryCode: string | null; tourType: string | null }>> {
+    if (ids.length === 0) return []
+    return this.prisma.$queryRaw<
+      Array<{ id: string; fullName: string; countryCode: string | null; tourType: string | null }>
+    >(Prisma.sql`
+      SELECT
+        p.id,
+        p."fullName",
+        COALESCE(n.iso3, p."countryCode") AS "countryCode",
+        (
+          SELECT t.type::text
+          FROM player_tour_histories th
+          JOIN tours t ON t.id = th."tourId"
+          WHERE th."playerId" = p.id AND th.active = true
+          ORDER BY th."joinedAt" DESC
+          LIMIT 1
+        ) AS "tourType"
+      FROM players p
+      LEFT JOIN nationalities n ON n.id = p."nationalityId"
+      WHERE p."deletedAt" IS NULL AND p.id IN (${Prisma.join([...ids])})
+    `)
+  }
+
+  /**
+   * Resolve the raw facts for a player's active Tournament Context: their next
+   * **upcoming** event they are confirmed in (nearest first), plus its linked
+   * host course when one exists.
+   *
+   * Forward-looking by design — only events with `startDate >= now()` are
+   * considered, so a past result is never selected. The host course is a
+   * LEFT JOIN, so an upcoming event without a linked course still resolves (the
+   * Tournament Context Engine grades that as a `partial` context and records the
+   * missing course as a gap, rather than hiding the event or fabricating a
+   * course). Returns `null` when the player is in no upcoming field. Read-only.
+   */
+  async findUpcomingContextById(playerId: string): Promise<PlayerUpcomingContextRow | null> {
+    const rows = await this.prisma.$queryRaw<PlayerUpcomingContextRow[]>(Prisma.sql`
+      SELECT
+        t.id            AS "tournamentId",
+        t.name          AS "tournamentName",
+        t.slug          AS "tournamentSlug",
+        t.status::text  AS "tournamentStatus",
+        t."startDate"   AS "startDate",
+        t."endDate"     AS "endDate",
+        c.id            AS "courseId",
+        c.name          AS "courseName"
+      FROM tournament_fields tf
+      JOIN tournaments t ON t.id = tf."tournamentId"
+      LEFT JOIN LATERAL (
+        SELECT tc."courseId"
+        FROM tournament_courses tc
+        WHERE tc."tournamentId" = t.id
+        ORDER BY tc."hostCourse" DESC, tc.year DESC
+        LIMIT 1
+      ) host ON true
+      LEFT JOIN courses c ON c.id = host."courseId" AND c."deletedAt" IS NULL
+      WHERE tf."playerId" = ${playerId}
+        AND tf.withdrawn = false
+        AND t."deletedAt" IS NULL
+        AND t.status <> 'CANCELED'
+        AND t."startDate" IS NOT NULL
+        AND t."startDate" >= now()
+      ORDER BY t."startDate" ASC
+      LIMIT 1
+    `)
+    return rows[0] ?? null
   }
 
   /** Find a player by internal id, with read relations. Excludes soft-deleted rows. */

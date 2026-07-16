@@ -16,6 +16,8 @@ import type {
   PlayerDetail,
   PlayerQuery,
 } from '@/features/players/types'
+import { getOddsIntelligenceService } from '@/lib/odds-intelligence/service'
+import type { PlayerOddsView } from '@/lib/odds-intelligence'
 
 import { playerService } from './player-service'
 
@@ -49,6 +51,23 @@ export async function fetchPlayerDetail(
     return { ok: true, data: await playerService.getPlayerById(playerId) }
   } catch (error) {
     logFailure('fetchPlayerDetail', error)
+    return { ok: false, error: 'DATABASE_UNAVAILABLE' }
+  }
+}
+
+/**
+ * Fetch a player's Odds Intelligence — their de-vigged consensus standing in
+ * the outright-winner market of the event they're currently priced in. Returns
+ * `null` (not an error) when the player has no verified quotes, so the card can
+ * render its honest "no market" state.
+ */
+export async function fetchPlayerOdds(
+  playerId: string,
+): Promise<ActionResult<PlayerOddsView | null>> {
+  try {
+    return { ok: true, data: await getOddsIntelligenceService().getPlayerOddsView(playerId) }
+  } catch (error) {
+    logFailure('fetchPlayerOdds', error)
     return { ok: false, error: 'DATABASE_UNAVAILABLE' }
   }
 }

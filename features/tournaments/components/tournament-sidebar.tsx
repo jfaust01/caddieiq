@@ -2,7 +2,8 @@ import { CloudSun, Newspaper, UserMinus } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ComingSoonCard } from '@/features/tournaments/components/coming-soon-card'
-import type { TournamentSummary } from '@/features/tournaments/types'
+import { TournamentFieldNews } from '@/features/tournaments/components/tournament-field-news'
+import type { TournamentNewsItem, TournamentSummary } from '@/features/tournaments/types'
 import { cn } from '@/lib/utils'
 
 interface ResearchRow {
@@ -37,18 +38,24 @@ function ResearchStatusRow({ label, ready }: ResearchRow) {
 
 interface TournamentSidebarProps {
   tournament: TournamentSummary
+  /** Recent news about the field's players; empty falls back to a placeholder. */
+  fieldNews: TournamentNewsItem[]
+  /** Whether a field has been imported for this event (drives Research status). */
+  hasField: boolean
 }
 
 /**
- * Desktop research rail. News, withdrawals, and weather alerts are reserved
- * placeholders awaiting their feeds; the Research Status card is live today,
- * reflecting which core data has actually been imported for this event.
+ * Desktop research rail. The Field news card is live when the provider has
+ * articles for this event's field players; withdrawals and weather alerts
+ * remain reserved placeholders awaiting their feeds. The Research Status card
+ * is live today, reflecting which core data has actually been imported.
  */
-export function TournamentSidebar({ tournament }: TournamentSidebarProps) {
+export function TournamentSidebar({ tournament, fieldNews, hasField }: TournamentSidebarProps) {
   const research: ResearchRow[] = [
     { label: 'Schedule & dates', ready: Boolean(tournament.startDate) },
     { label: 'Host course', ready: Boolean(tournament.course) },
-    { label: 'Player field', ready: false },
+    { label: 'Player field', ready: hasField },
+    { label: 'Latest news', ready: fieldNews.length > 0 },
     { label: 'Weather forecast', ready: false },
     { label: 'Betting markets', ready: false },
   ]
@@ -68,11 +75,15 @@ export function TournamentSidebar({ tournament }: TournamentSidebarProps) {
         </CardContent>
       </Card>
 
-      <ComingSoonCard
-        icon={Newspaper}
-        title="Latest news"
-        description="Headlines and pre-tournament storylines for this event as they break."
-      />
+      {fieldNews.length > 0 ? (
+        <TournamentFieldNews news={fieldNews} />
+      ) : (
+        <ComingSoonCard
+          icon={Newspaper}
+          title="Latest news"
+          description="Headlines and pre-tournament storylines for this event as they break."
+        />
+      )}
       <ComingSoonCard
         icon={UserMinus}
         title="Withdrawals"

@@ -9,6 +9,10 @@
  * when the live data layer is connected.
  */
 
+import type { CourseFitResult } from '@/lib/analytics/course-fit'
+import type { PlayerAnalytics } from '@/lib/analytics/types'
+import type { PlayerRankingProfile } from '@/lib/rankings/types'
+
 /** Professional tours a player can compete on. */
 export type Tour = 'PGA' | 'DP_WORLD' | 'LIV' | 'KORN_FERRY' | 'CHAMPIONS'
 
@@ -169,6 +173,28 @@ export interface ActivityEntry {
   date: string
 }
 
+/**
+ * A news article about the player, sourced live from the provider news feed and
+ * associated via the provider's native player id. Every field except `title`
+ * is nullable and means "not reported by the source"; the UI never fabricates a
+ * summary, outlet, or date.
+ */
+export interface PlayerNewsItem {
+  id: string
+  /** Headline. */
+  title: string
+  /** Body / summary, or null when the source supplied none. */
+  summary: string | null
+  /** Canonical article URL, or null when unavailable. */
+  url: string | null
+  /** Publishing outlet (e.g. "RotoBaller"), or null when unavailable. */
+  outlet: string | null
+  /** Byline, or null when unavailable. */
+  author: string | null
+  /** ISO publish timestamp, or null when unreported. */
+  publishedAt: string | null
+}
+
 /** Full profile payload for the detail page. */
 export interface PlayerDetail extends Player {
   /** Headline career figures, or null when no historical data is ingested. */
@@ -177,9 +203,82 @@ export interface PlayerDetail extends Player {
   statistics: PlayerStatistic[]
   /** Season statistics (newest first), sourced live. Empty until imported. */
   seasonStatistics: PlayerSeasonStat[]
+  /**
+   * Derived analytics from the Analytics Engine, normalized against the current
+   * season's field. The engine is the single source of this intelligence; the
+   * profile is honest (its `isEmpty` flag is set) when the player has no data
+   * in the normalization season.
+   */
+  analytics: PlayerAnalytics
+  /**
+   * The player's placements across every ranking category, from the Ranking
+   * Engine (global scope). Rendered as ranking badges. Built by ordering the
+   * same analytics above — never a parallel calculation — and honestly
+   * unranked (`isRanked: false`) when the player has no season data.
+   */
+  rankingProfile: PlayerRankingProfile
   courseHistory: CourseHistoryEntry[]
   tournamentHistory: TournamentHistoryEntry[]
   activity: ActivityEntry[]
+  /**
+   * The player's single active Tournament Context — their next verified upcoming
+   * event — resolved by the Tournament Context Engine, together with the Course
+   * Fit computed for it. Always present; `status: 'unavailable'` when the player
+   * is in no verified upcoming field (in which case Course Fit is not
+   * calculated). This is the shared context every event-specific model reads.
+   */
+  upcoming: PlayerUpcomingContext
+  /**
+   * Recent news about the player, newest first, sourced live from the provider
+   * news feed. Empty until news has been imported or when the provider has no
+   * articles linked to this player.
+   */
+  news: PlayerNewsItem[]
+}
+
+/**
+ * A one-line read of how much verified Course Intelligence a host course has.
+ * Sourced from the Course Intelligence Engine's coverage — never estimated.
+ */
+export interface CourseIntelSummary {
+  /** Whether at least one course characteristic is verified. */
+  verified: boolean
+  /** Verified characteristic count and the total tracked. */
+  scored: number
+  total: number
+  /** Plain-English headline, e.g. "3 of 12 course attributes verified". */
+  headline: string
+}
+
+/** The resolved event on a player's Tournament Context. */
+export interface PlayerUpcomingTournament {
+  id: string
+  name: string
+  slug: string
+  /** ISO start date of the event, or null when unscheduled. */
+  startDate: string | null
+  /** ISO end date of the event, or null when unknown. */
+  endDate: string | null
+  /** Database tournament status text (e.g. "SCHEDULED"). */
+  status: string
+  timing: 'UPCOMING' | 'LIVE' | 'COMPLETED'
+}
+
+/**
+ * The player's active Tournament Context, ready for the profile UI. Produced by
+ * the player service from the shared Tournament Context Engine. `confidence` is
+ * the ceiling for the Course Fit shown alongside it; `fit` is populated only
+ * when the context is `verified` (a linked host course exists). `detail`
+ * explains partial/unavailable states in plain English.
+ */
+export interface PlayerUpcomingContext {
+  status: 'available' | 'unavailable'
+  confidence: 'verified' | 'partial' | 'unavailable'
+  tournament: PlayerUpcomingTournament | null
+  course: { id: string; name: string } | null
+  courseIntelligence: CourseIntelSummary | null
+  fit: CourseFitResult | null
+  detail: string | null
 }
 
 /** Optional world-ranking band used by the directory filters. */

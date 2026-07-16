@@ -68,6 +68,11 @@ interface TournamentHeroProps {
   tournament: TournamentSummary
   /** Number of players in the imported field; 0 when none imported yet. */
   fieldSize: number
+  /**
+   * Short current-conditions summary (e.g. "72°F · 12 mph") from the Weather
+   * Intelligence Engine, or `null` when no forecast is imported yet.
+   */
+  weatherSummary?: string | null
 }
 
 /**
@@ -76,7 +81,7 @@ interface TournamentHeroProps {
  * statistics. Course is sourced live; field size, weather, and difficulty show
  * intentional placeholders until those feeds are imported.
  */
-export function TournamentHero({ tournament, fieldSize }: TournamentHeroProps) {
+export function TournamentHero({ tournament, fieldSize, weatherSummary }: TournamentHeroProps) {
   const tourName = tournament.tour?.name ?? null
 
   // Compose "Par 72 · 7,475 yds" from whichever course specs are available.
@@ -143,7 +148,12 @@ export function TournamentHero({ tournament, fieldSize }: TournamentHeroProps) {
             value={fieldSizeLabel ?? 'Awaiting import'}
             pending={!fieldSizeLabel}
           />
-          <HeroStat icon={CloudSun} label="Weather" value="Awaiting import" pending />
+          <HeroStat
+            icon={CloudSun}
+            label="Weather"
+            value={weatherSummary ?? 'Awaiting import'}
+            pending={!weatherSummary}
+          />
         </div>
       </CardContent>
     </Card>

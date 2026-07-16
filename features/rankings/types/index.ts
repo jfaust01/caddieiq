@@ -1,85 +1,42 @@
 /**
- * View-model types for the Rankings Experience.
+ * View-model types for the live Rankings directory.
  *
- * The Ranking Engine (`@/lib/ranking`) produces provider-agnostic
- * `PlayerRankingResult`s. This feature layer enriches those with presentation
- * metadata (nationality, tour, headshot, recent-form strip) and reshapes the
- * per-module breakdown into fixed columns the table renders.
- *
- * TODO(data): the enrichment metadata is mock; real player records will replace
- * `ranking-metadata.ts` once the data platform is connected.
+ * The directory renders the CaddieIQ Ranking Engine (`@/lib/rankings`) — the
+ * platform's real "opinion layer" — as a filterable, paginated leaderboard.
+ * Every row is a real engine board row (rank, score, grade, band, confidence)
+ * joined with live player display metadata (name, country, tour). There is no
+ * fabricated data here: columns and insights that the engine cannot back
+ * (course-fit, wind, momentum, market value, rank movement) are intentionally
+ * absent rather than mocked.
  */
 
-import type { ConfidenceLevel } from '@/lib/analytics/shared/types'
-import type {
-  RankingExplanation,
-  RankingMovement,
-  RankingType,
-  RankingWeights,
-} from '@/lib/ranking'
-import type { FormResult, Nationality, Tour } from '@/features/players/types'
-
-/** The seven analytics module scores, flattened for column access (0–100). */
-export interface RankingModuleScores {
-  recentForm: number
-  courseFit: number
-  value: number
-  momentum: number
-  wind: number
-  strokesGained: number
-  consistency: number
-}
+import type { AnalyticsBand, AnalyticsConfidence } from '@/lib/analytics/types'
+import type { RankingCategory } from '@/lib/rankings/types'
 
 /**
- * A single enriched ranking row — the atomic unit the table and preview panel
- * render. Combines engine output (`rank`, `movement`, `overallScore`, …) with
- * mock presentation metadata.
+ * A single directory row: an engine board row (the ordering + score metadata)
+ * plus the live metadata needed to label the player. Finishing positions,
+ * movement, and market value are absent — the engine does not produce them.
  */
 export interface RankingRow {
+  /** 1-based placement in the active board (ties share a rank). */
   rank: number
-  previousRank: number | null
-  movement: RankingMovement
-  /** Positions gained (+) / lost (−) since the previous snapshot. */
-  delta: number
   playerId: string
   name: string
-  nationality: Nationality
-  tour: Tour
-  /** Events played this season — powers the "Minimum Events" filter. */
-  events: number
-  headshotUrl: string | null
-  /** Recent finishes, newest first. */
-  recentForm: FormResult[]
-  /** Composite 0–100 score behind the rank. */
-  overallScore: number
-  confidence: ConfidenceLevel
-  moduleScores: RankingModuleScores
-  /** Placeholder AI rationale from the engine. */
-  explanation?: RankingExplanation
-}
-
-/** The full, enriched result of a ranking run for one type. */
-export interface RankingView {
-  type: RankingType
-  results: RankingRow[]
-  /** Normalized weights the engine applied. */
-  weights: RankingWeights
-  generatedAt: Date
-  /** `true` while any part of the run used placeholder values. */
-  mock: boolean
-}
-
-/** Coarse recent-form band used by the "Recent Form" filter. */
-export type RankingFormFilter = 'ALL' | 'HOT' | 'STEADY' | 'COLD'
-
-/** Rankings toolbar filter state. `ALL` sentinels keep controls fully typed. */
-export interface RankingFiltersState {
-  search: string
-  tour: Tour | 'ALL'
-  nationality: string | 'ALL'
-  minEvents: number
-  form: RankingFormFilter
-  favoritesOnly: boolean
+  /** ISO-ish country code, or null when unknown (never fabricated). */
+  countryCode: string | null
+  /** Active tour type (e.g. "PGA"), or null when no membership is recorded. */
+  tour: string | null
+  /** Composite/board score, 0–100. */
+  score: number
+  /** Letter grade mapped from `score` by the engine. */
+  grade: string
+  /** Qualitative tier, shared with the Analytics Engine. */
+  band: AnalyticsBand
+  /** Confidence carried from the analytics behind the score. */
+  confidence: AnalyticsConfidence
+  /** Percentile standing among ranked players (0–100). */
+  percentile: number
 }
 
 /** A `<Select>` option descriptor. */
@@ -88,38 +45,42 @@ export interface FilterOption {
   label: string
 }
 
-/** Which insight a summary card presents. */
-export type RankingInsightKind =
-  | 'risers'
-  | 'fallers'
-  | 'value'
-  | 'form'
-  | 'course'
-  | 'wind'
-
-/** A single row inside an insight card. */
-export interface RankingInsightEntry {
-  playerId: string
-  name: string
-  nationality: Nationality
-  /** Formatted headline metric, e.g. "+4" or "88". */
-  value: string
-  /** Optional supporting text. */
-  detail?: string
+/**
+ * The fully-resolved live view for one ranking type: the ordered rows plus the
+ * metadata the directory chrome needs. Computed on the server (the engine runs
+ * in an RSC) and passed to the client controller.
+ */
+export interface RankingView {
+  /** URL slug of the active ranking type. */
+  slug: string
+  /** Engine category the slug resolved to. */
+  category: RankingCategory
+  /** Full label for headings/tabs. */
+  typeLabel: string
+  /** One-line description of the active board. */
+  typeDescription: string
+  /** Season the rankings were normalized against, or null when none. */
+  season: number | null
+  /** Total players ranked in this board (the directory denominator). */
+  totalRanked: number
+  /** Every ranked row, best-first. */
+  rows: RankingRow[]
+  /** Tour filter options derived from the ranked players actually present. */
+  tourOptions: FilterOption[]
+  /** Season filter options derived from the seasons with data. */
+  seasonOptions: FilterOption[]
 }
 
-/** A professional summary card for the insight panel. */
-export interface RankingInsight {
-  kind: RankingInsightKind
-  title: string
-  description: string
-  entries: RankingInsightEntry[]
+/** Rankings toolbar filter state. `ALL` sentinels keep controls fully typed. */
+export interface RankingFiltersState {
+  search: string
+  tour: string | 'ALL'
+  season: string | 'ALL'
 }
 
 /** Data for the top summary bar. */
 export interface RankingSummary {
-  tournamentLabel: string
   typeLabel: string
+  seasonLabel: string
   playersRanked: number
-  lastUpdatedLabel: string
 }

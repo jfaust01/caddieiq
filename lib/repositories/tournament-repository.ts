@@ -109,6 +109,26 @@ export interface TournamentDetailRow extends TournamentSearchRow {
   updatedAt: Date | null
 }
 
+/**
+ * The raw facts for a tournament's Tournament Context: identity, status, dates,
+ * its linked host course (nullable), and whether a field has been imported.
+ * Consumed by the Tournament Context Engine (`lib/tournament-context`), which
+ * normalizes it into a confidence-graded context shared by every event-specific
+ * model. Returned by {@link TournamentRepository.findContextById}.
+ */
+export interface TournamentContextRow {
+  tournamentId: string
+  tournamentName: string
+  tournamentSlug: string
+  tournamentStatus: string
+  startDate: Date | null
+  endDate: Date | null
+  courseId: string | null
+  courseName: string | null
+  /** Number of (non-withdrawn) entrants imported for the event. */
+  fieldCount: number
+}
+
 export class TournamentRepository extends BaseRepository {
   constructor(prisma: PrismaClient = prismaClient, sink?: RepositoryLogSink) {
     super(prisma, "tournament", sink)
@@ -305,6 +325,46 @@ export class TournamentRepository extends BaseRepository {
         WHERE tf."tournamentId" = prev_edition.id AND tf."finalPosition" = 1
         LIMIT 1
       ) champ ON true
+      WHERE t.id = ${id} AND t."deletedAt" IS NULL
+      LIMIT 1
+    `)
+    return rows[0] ?? null
+  }
+
+  /**
+   * Resolve the raw facts for a tournament's Tournament Context: identity,
+   * status, dates, its linked host course (nullable), and its imported field
+   * size. The host course is a LEFT JOIN, so an event with no linked venue still
+   * resolves (the Tournament Context Engine grades that as `partial`). Returns
+   * `null` for a missing or soft-deleted id, so the engine reports an honest
+   * `unavailable` context. The id is bound, never interpolated. Read-only.
+   */
+  async findContextById(id: string): Promise<TournamentContextRow | null> {
+    const rows = await this.prisma.$queryRaw<TournamentContextRow[]>(Prisma.sql`
+      SELECT
+        t.id            AS "tournamentId",
+        t.name          AS "tournamentName",
+        t.slug          AS "tournamentSlug",
+        t.status::text  AS "tournamentStatus",
+        t."startDate"   AS "startDate",
+        t."endDate"     AS "endDate",
+        course.id       AS "courseId",
+        course.name     AS "courseName",
+        COALESCE(field.count, 0)::int AS "fieldCount"
+      FROM tournaments t
+      LEFT JOIN LATERAL (
+        SELECT c.id, c.name
+        FROM tournament_courses tc
+        JOIN courses c ON c.id = tc."courseId" AND c."deletedAt" IS NULL
+        WHERE tc."tournamentId" = t.id
+        ORDER BY tc."hostCourse" DESC, c.name ASC
+        LIMIT 1
+      ) course ON true
+      LEFT JOIN LATERAL (
+        SELECT count(*) AS count
+        FROM tournament_fields tf
+        WHERE tf."tournamentId" = t.id AND tf.withdrawn = false
+      ) field ON true
       WHERE t.id = ${id} AND t."deletedAt" IS NULL
       LIMIT 1
     `)

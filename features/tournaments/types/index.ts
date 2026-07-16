@@ -8,6 +8,8 @@
  * (renders an em-dash) rather than fabricating a value.
  */
 
+import type { AnalyticsBand, FieldAnalyticsSummary } from '@/lib/analytics/types'
+
 /** Lifecycle status of a tournament (mirrors the database enum). */
 export type TournamentStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
 
@@ -113,6 +115,56 @@ export interface FieldEntrant {
    * treated as indicative given the provider tier's known rank obfuscation.
    */
   worldRanking: number | null
+  /**
+   * The player's overall Ranking Engine score (0–100) for the current season,
+   * or null when they have no season data (unrated). This is the same score the
+   * Ranking Engine orders global rankings by, so sorting the field by it mirrors
+   * the platform ranking rather than being a separate calculation.
+   */
+  rankingScore: number | null
+  /**
+   * The player's Recent Form score (0–100), or null when unrated. Lets the
+   * field be sorted by who is playing best right now, using the same analytic
+   * the Form ranking is built from.
+   */
+  formScore: number | null
+  /**
+   * The player's Fantasy Production score (0–100), or null when unrated. Lets
+   * the field be sorted by fantasy value, using the same analytic the Fantasy
+   * ranking is built from.
+   */
+  fantasyScore: number | null
+}
+
+/**
+ * One player's placement in a tournament-hub leader list. `band` is the
+ * qualitative tier reused from the Analytics Engine, so leaders read
+ * consistently with player pages.
+ */
+export interface FieldLeader {
+  rank: number
+  playerId: string
+  playerName: string
+  score: number
+  band: AnalyticsBand
+}
+
+/**
+ * Field-scoped ranking leaders for the tournament hub, produced by the Ranking
+ * Engine over just this field's entrants. Each list is empty when no entrant
+ * has season data, so the hub degrades honestly rather than inventing leaders.
+ */
+export interface FieldRankingLeaders {
+  /** The season the rankings were normalized against, or null when none. */
+  season: number | null
+  /** How many entrants were rankable (the denominator behind the lists). */
+  ratedPlayers: number
+  /** Highest overall CaddieIQ rating in the field, best-first. */
+  topRanked: FieldLeader[]
+  /** Best recent form in the field, best-first. */
+  topForm: FieldLeader[]
+  /** Best fantasy production ("best value") in the field, best-first. */
+  topFantasy: FieldLeader[]
 }
 
 /**
@@ -124,6 +176,39 @@ export interface FieldEntrant {
 export interface TournamentField {
   size: number
   entrants: FieldEntrant[]
+  /**
+   * Field-level analytics from the Analytics Engine (average strength, form,
+   * and reliability of the assembled field). Consumes the same per-player
+   * analytics as every other surface — never a parallel computation. Its
+   * `ratedPlayers` is 0 when no entrant has season data, so the UI can stay
+   * honest instead of showing invented aggregates.
+   */
+  analyticsSummary: FieldAnalyticsSummary
+  /**
+   * Field-scoped ranking leaders (top overall + top form) from the Ranking
+   * Engine, shown on the tournament hub. Ordered from the same analytics as
+   * every other surface — never a separate calculation.
+   */
+  rankingLeaders: FieldRankingLeaders
+}
+
+/**
+ * A news article surfaced on the tournament hub, sourced live from the provider
+ * news feed and linked to a player in this event's field. Carries the player
+ * attribution (`playerId`/`playerName`) so the hub can label and link each
+ * headline. Every field except `title`/`playerName` is nullable and means "not
+ * reported by the source" — the UI never fabricates a summary, outlet, or date.
+ */
+export interface TournamentNewsItem {
+  id: string
+  title: string
+  summary: string | null
+  url: string | null
+  outlet: string | null
+  publishedAt: string | null
+  /** The field player this article is about. */
+  playerId: string
+  playerName: string
 }
 
 /** Directory filter state. `ALL` sentinels keep the controls fully typed. */

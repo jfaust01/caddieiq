@@ -20,8 +20,8 @@ interface ModelLabViewProps {
 /**
  * Model Lab workspace: a three-column builder for composing custom ranking
  * models. Left = saved models + templates, center = the weight builder, right =
- * a live mock ranking preview (via the Ranking Engine), summary, AI-analysis
- * placeholder, and change history.
+ * a live ranking preview (real season analytics via a server action), summary,
+ * AI-analysis placeholder, and change history.
  *
  * All state is in-memory for v1 (see `useModelLab`).
  * TODO(data): persist models per user once the database milestone lands.

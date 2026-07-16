@@ -1,0 +1,205 @@
+/**
+ * Course Geolocation Engine.
+ *
+ * The permanent, reusable layer that gives every golf course a *verified*
+ * latitude/longitude — the prerequisite for Weather Intelligence, maps, travel,
+ * and historical weather. It is deliberately thin orchestration over three
+ * seams that each own one concern:
+ *
+ *   Repository → which courses still need coordinates (not yet VERIFIED)
+ *   Provider   → resolve a course to a coordinate (swappable geocoder)
+ *   Repository → persist ONLY verified coordinates, never overwriting a
+ *                previously verified value
+ *
+ * Honest by construction:
+ *   - Coordinates are never hardcoded or fabricated.
+ *   - Only `verified` provider matches are persisted; `estimated` is ignored
+ *     this sprint and UNKNOWN stays UNKNOWN.
+ *   - A course that already has VERIFIED coordinates is skipped entirely — the
+ *     lookup is never even attempted, so cost and rate budget go only to work
+ *     that matters.
+ *   - Provider/infrastructure failures are captured per course; one bad lookup
+ *     never aborts the run and never throws to the caller.
+ */
+
+import { ProviderError } from "@/lib/providers/shared/errors"
+import { createGeocodingProvider, type GeocodingProvider } from "@/lib/providers/geocoding"
+import {
+  getCourseRepository,
+  type CourseGeocodeTargetRow,
+  type CourseRepository,
+} from "@/lib/repositories"
+
+/** Why a single course was not given verified coordinates on this run. */
+export type GeolocationSkipReason =
+  | "already-verified" // handled by the repository's work-queue filter
+  | "not-found" // provider had no golf-course match
+  | "unverified-match" // provider matched, but not at "verified" confidence
+
+/** The outcome of attempting to locate one course. */
+export interface GeolocationOutcome {
+  courseId: string
+  courseName: string
+  status: "verified" | "skipped" | "failed"
+  /** Present when `status === "skipped"`. */
+  reason?: GeolocationSkipReason
+  /** Present when `status === "verified"`. */
+  coordinates?: { latitude: number; longitude: number; source: string }
+  /** Present when `status === "failed"`. */
+  error?: string
+}
+
+/** Aggregate result of a geolocation run, suitable for an import report. */
+export interface GeolocationSummary {
+  coursesConsidered: number
+  verified: number
+  skippedNotFound: number
+  skippedUnverified: number
+  failed: number
+  notes: string[]
+}
+
+export interface GeolocateOptions {
+  repository?: CourseRepository
+  provider?: GeocodingProvider
+  /** Cap the number of courses processed in one run (bounds cost + time). */
+  limit?: number
+  maxNotes?: number
+}
+
+/**
+ * The Course Geolocation service. Constructed with its two collaborators so it
+ * is trivially testable with fakes; the defaults wire the real repository and
+ * the environment-selected geocoding provider.
+ */
+export class CourseGeolocationService {
+  constructor(
+    private readonly repository: CourseRepository,
+    private readonly provider: GeocodingProvider,
+  ) {}
+
+  /** Wire the real repository + configured provider. */
+  static create(): CourseGeolocationService {
+    return new CourseGeolocationService(getCourseRepository(), createGeocodingProvider())
+  }
+
+  /**
+   * Locate a single course by its facts and persist the result if — and only
+   * if — the provider returns a `verified` golf-course match. Pure of control
+   * flow surprises: returns a structured {@link GeolocationOutcome} and only
+   * ever throws if the repository write itself throws unexpectedly (it is
+   * designed not to).
+   */
+  async locateCourse(course: CourseGeocodeTargetRow): Promise<GeolocationOutcome> {
+    let match
+    try {
+      match = await this.provider.geocodeCourse({
+        courseName: course.name,
+        city: course.city,
+        stateProvince: course.stateProvince,
+        country: course.country,
+      })
+    } catch (error) {
+      const message = error instanceof ProviderError ? error.message : String(error)
+      return { courseId: course.id, courseName: course.name, status: "failed", error: message }
+    }
+
+    if (!match) {
+      return { courseId: course.id, courseName: course.name, status: "skipped", reason: "not-found" }
+    }
+    // Honesty gate: never persist anything short of a verified match.
+    if (match.confidence !== "verified") {
+      return {
+        courseId: course.id,
+        courseName: course.name,
+        status: "skipped",
+        reason: "unverified-match",
+      }
+    }
+
+    const result = await this.repository.setVerifiedCoordinates(course.id, {
+      latitude: match.latitude,
+      longitude: match.longitude,
+      source: match.source,
+    })
+
+    if (result.outcome === "failed") {
+      return {
+        courseId: course.id,
+        courseName: course.name,
+        status: "failed",
+        error: result.error?.message ?? "persist failed",
+      }
+    }
+    if (result.outcome === "skipped") {
+      // The course became verified between selection and write (idempotent).
+      return { courseId: course.id, courseName: course.name, status: "skipped", reason: "already-verified" }
+    }
+
+    return {
+      courseId: course.id,
+      courseName: course.name,
+      status: "verified",
+      coordinates: { latitude: match.latitude, longitude: match.longitude, source: match.source },
+    }
+  }
+
+  /**
+   * Locate every course that still needs coordinates, one at a time (the
+   * provider enforces its own request spacing). Returns an aggregate summary.
+   * Verified courses are excluded by the repository query, so this is safe and
+   * cheap to re-run: it only ever works on the remaining backlog.
+   */
+  async locatePendingCourses(limit?: number, maxNotes = 25): Promise<GeolocationSummary> {
+    const targets = await this.repository.findCoursesNeedingCoordinates(limit)
+    const summary: GeolocationSummary = {
+      coursesConsidered: targets.length,
+      verified: 0,
+      skippedNotFound: 0,
+      skippedUnverified: 0,
+      failed: 0,
+      notes: [],
+    }
+    const note = (message: string) => {
+      if (summary.notes.length < maxNotes) summary.notes.push(message)
+    }
+
+    for (const course of targets) {
+      const outcome = await this.locateCourse(course)
+      switch (outcome.status) {
+        case "verified":
+          summary.verified += 1
+          break
+        case "failed":
+          summary.failed += 1
+          note(`${course.name}: ${outcome.error ?? "failed"}.`)
+          break
+        case "skipped":
+          if (outcome.reason === "unverified-match") {
+            summary.skippedUnverified += 1
+            note(`${course.name}: matched but not verified; left UNKNOWN.`)
+          } else if (outcome.reason === "not-found") {
+            summary.skippedNotFound += 1
+            note(`${course.name}: no verified golf-course match found.`)
+          }
+          break
+      }
+    }
+
+    return summary
+  }
+}
+
+/**
+ * Convenience entry point for import jobs and admin tooling: run the geolocation
+ * backlog with the real, environment-configured collaborators.
+ */
+export async function importCourseCoordinates(
+  options: GeolocateOptions = {},
+): Promise<GeolocationSummary> {
+  const service = new CourseGeolocationService(
+    options.repository ?? getCourseRepository(),
+    options.provider ?? createGeocodingProvider(),
+  )
+  return service.locatePendingCourses(options.limit, options.maxNotes)
+}

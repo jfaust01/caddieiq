@@ -29,6 +29,15 @@ import {
   importPlayerStatistics,
   type StatisticsImportSummary,
 } from "./statistics-relations"
+import { importNews, type NewsImportSummary } from "./news-import"
+import { importBetting, type BettingImportSummary } from "./betting-import"
+import { importFantasy, type FantasyImportSummary } from "./fantasy-import"
+import { importWeather, type WeatherImportSummary } from "./weather-import"
+import { importOdds, type OddsImportSummary } from "./odds-import"
+import {
+  importCourseCoordinates,
+  type GeolocationSummary,
+} from "./course-geolocation"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -84,6 +93,39 @@ export {
   type StatisticsImportSummary,
   type ImportStatisticsOptions,
 } from "./statistics-relations"
+export {
+  importNews,
+  type NewsImportSummary,
+  type ImportNewsOptions,
+} from "./news-import"
+export {
+  importBetting,
+  type BettingImportSummary,
+  type ImportBettingOptions,
+} from "./betting-import"
+export {
+  importFantasy,
+  type FantasyImportSummary,
+  type ImportFantasyOptions,
+} from "./fantasy-import"
+export {
+  importWeather,
+  type WeatherImportSummary,
+  type ImportWeatherOptions,
+} from "./weather-import"
+export {
+  CourseGeolocationService,
+  importCourseCoordinates,
+  type GeolocationSummary,
+  type GeolocationOutcome,
+  type GeolocationSkipReason,
+  type GeolocateOptions,
+} from "./course-geolocation"
+export {
+  importOdds,
+  type OddsImportSummary,
+  type ImportOddsOptions,
+} from "./odds-import"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -204,4 +246,101 @@ export async function runStatisticsImport(
   seasons?: readonly number[],
 ): Promise<StatisticsImportSummary> {
   return importPlayerStatistics({ seasons })
+}
+
+/**
+ * Import recent news into `news_articles`, linking each article to a player
+ * when its provider `PlayerID` resolves to one in our catalog.
+ *
+ * Run this AFTER {@link runPlayerImport} has populated the player catalog so the
+ * `PlayerID → slug → Player.id` bridge can resolve. Unresolvable articles are
+ * still stored as general news. Idempotent — reconciles each article on its
+ * provider `externalId` (NewsID). Returns a {@link NewsImportSummary}.
+ */
+export async function runNewsImport(): Promise<NewsImportSummary> {
+  return importNews()
+}
+
+/**
+ * Import betting events (with markets + outcomes) into `betting_events` /
+ * `betting_markets` / `betting_outcomes`, linking events to tournaments and
+ * outcomes to players.
+ *
+ * On the current SportsDataIO trial tier payout VALUES arrive scrambled; the
+ * pipeline stores the full structure with `available:false` + null payouts so
+ * nothing fake is surfaced and real odds flow automatically once a production
+ * key is installed. Run AFTER {@link runTournamentImport} and
+ * {@link runPlayerImport} so the id bridges resolve. Idempotent. `dates` are
+ * `YYYY-MM-DD`; defaults to today (UTC).
+ */
+export async function runBettingImport(
+  dates?: readonly string[],
+): Promise<BettingImportSummary> {
+  return importBetting({ dates })
+}
+
+/**
+ * Import fantasy projections into `fantasy_projections` and DFS salaries into
+ * `dfs_salaries`, linking both to tournaments and players.
+ *
+ * Projection VALUES are scrambled on the trial tier and stored with
+ * `available:false` + null points; DFS salaries are real and stored as-is. Run
+ * AFTER {@link runTournamentImport} and {@link runPlayerImport}. Idempotent.
+ * When `tournamentExternalIds` is omitted every bridgeable catalog tournament
+ * is imported.
+ */
+export async function runFantasyImport(
+  tournamentExternalIds?: readonly string[],
+): Promise<FantasyImportSummary> {
+  return importFantasy({ tournamentExternalIds })
+}
+
+/**
+ * Give every golf course a VERIFIED latitude/longitude via the Course
+ * Geolocation Engine — the prerequisite for weather, maps, and travel.
+ *
+ * Run this AFTER {@link runCourseImport} has populated the course catalog, and
+ * BEFORE {@link runWeatherImport} (weather only fetches for verified courses).
+ * Idempotent and incremental: only courses not already VERIFIED are looked up,
+ * so re-running processes just the remaining backlog and never overwrites a
+ * previously verified coordinate. Coordinates are never fabricated — a course
+ * with no verified golf-course match is left UNKNOWN. `limit` bounds one run.
+ */
+export async function runCourseGeolocation(limit?: number): Promise<GeolocationSummary> {
+  return importCourseCoordinates({ limit })
+}
+
+/**
+ * Import OpenWeather forecasts into `weather_snapshots` / `weather_periods`, one
+ * snapshot per tournament, keyed off its linked host course's VERIFIED
+ * coordinates.
+ *
+ * Run this AFTER {@link runTournamentImport}, {@link runCourseLinking}, and
+ * {@link runCourseGeolocation} so each event has a venue with verified
+ * coordinates to locate a forecast for. Tournaments with no host course or no
+ * verified coordinates are skipped (never fetched for a fabricated location).
+ * Idempotent — re-running atomically replaces each snapshot. When
+ * `tournamentIds` is omitted, upcoming/in-progress events within the provider's
+ * useful forecast horizon are refreshed.
+ */
+export async function runWeatherImport(
+  tournamentIds?: readonly string[],
+): Promise<WeatherImportSummary> {
+  return importWeather({ tournamentIds })
+}
+
+/**
+ * Import golf betting odds from The Odds API into `odds_events` / `odds_quotes`,
+ * then link each event to a CaddieIQ tournament and each quote to a known player.
+ *
+ * Prices are real bookmaker quotes — nothing is fabricated. Run this AFTER
+ * {@link runTournamentImport} and {@link runPlayerImport} so the tournament and
+ * player id bridges resolve (unlinked events/quotes are still stored, they just
+ * won't surface on a hub until a future run links them). Idempotent: the
+ * repository reconciles on stable keys and only overwrites a quote when the
+ * incoming price is newer, so re-running is safe and cheap. This is the feed
+ * behind both the tournament and player Odds Intelligence cards.
+ */
+export async function runOddsImport(): Promise<OddsImportSummary> {
+  return importOdds()
 }

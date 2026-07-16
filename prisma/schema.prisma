@@ -304,11 +304,16 @@ model Player {
   deletedAt     DateTime?
 
   // Relations
-  nationality      Nationality?            @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
-  tourHistory      PlayerTourHistory[]
-  rankings         PlayerRanking[]
-  tournamentFields TournamentField[]
-  seasonStatistics PlayerSeasonStatistic[]
+  nationality        Nationality?            @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
+  tourHistory        PlayerTourHistory[]
+  rankings           PlayerRanking[]
+  tournamentFields   TournamentField[]
+  seasonStatistics   PlayerSeasonStatistic[]
+  newsArticles       NewsArticle[]
+  bettingOutcomes    BettingOutcome[]
+  fantasyProjections FantasyProjection[]
+  dfsSalaries        DfsSalary[]
+  oddsQuotes         OddsQuote[]
 
   @@index([slug])
   @@index([lastName])
@@ -319,13 +324,13 @@ model Player {
 
 /// A country / nationality reference used by players.
 model Nationality {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  iso2      String   @unique
-  iso3      String   @unique
+  iso2      String    @unique
+  iso3      String    @unique
   flagEmoji String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   // Relations
@@ -413,8 +418,8 @@ model PlayerSeasonStatistic {
   pointsLost           Float?
 
   /// Provider provenance: the source name and its native season-stat id.
-  source         String  @default("sportsdataio")
-  externalId     String?
+  source     String  @default("sportsdataio")
+  externalId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -428,6 +433,48 @@ model PlayerSeasonStatistic {
   @@index([season])
   @@index([worldRanking])
   @@map("player_season_statistics")
+}
+
+/// A news article from the data provider (SportsDataIO `/json/News`).
+///
+/// Player association is OPTIONAL: the news feed carries only the provider's
+/// native numeric `PlayerID` (no name), which is reconciled to a `Player` at
+/// import time via the Players feed (PlayerID → name → deterministic slug).
+/// Articles with no resolvable player — general or tournament-wide news — are
+/// retained with `playerId` null rather than discarded. Keyed by the provider's
+/// native `externalId` (NewsID) so re-imports update in place, never duplicate.
+///
+/// Every field is stored verbatim from the source. Nothing is fabricated; a
+/// null field means the provider did not supply it.
+model NewsArticle {
+  id          String    @id @default(cuid())
+  /// Provider's native news id (SportsDataIO `NewsID`). Unique for idempotency.
+  externalId  String    @unique
+  title       String
+  /// Article body/summary as provided (may be absent).
+  content     String?
+  url         String?
+  /// The publishing outlet as reported by the feed (e.g. "RotoBaller").
+  outlet      String?
+  author      String?
+  /// Comma-separated provider categories (stored verbatim).
+  categories  String?
+  /// When the provider last updated the article.
+  publishedAt DateTime?
+  /// Optional player association (null = general/tournament news).
+  playerId    String?
+  /// Provider provenance (the upstream data source, not the news outlet).
+  source      String    @default("sportsdataio")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  player Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([playerId])
+  @@index([publishedAt])
+  @@map("news_articles")
 }
 
 // ---------------------------------------------------------------------------
@@ -444,6 +491,15 @@ model Course {
   country         String?
   latitude        Float?
   longitude       Float?
+  // Coordinate provenance (Course Geolocation Engine, Sprint 3.9).
+  // `coordinateConfidence` is the source of truth for whether lat/lng may be
+  // trusted: only VERIFIED coordinates are consumed downstream (Weather, Maps).
+  // UNKNOWN means "not yet located"; ESTIMATED is reserved and never written
+  // automatically. `coordinateSource` records which provider verified them
+  // (e.g. "osm-nominatim"); `coordinatesVerifiedAt` stamps when.
+  coordinateConfidence CoordinateConfidence @default(UNKNOWN)
+  coordinateSource     String?
+  coordinatesVerifiedAt DateTime?
   par             Int?
   yardage         Int?
   altitudeFt      Int?
@@ -455,41 +511,53 @@ model Course {
   deletedAt       DateTime?
 
   // Relations
-  characteristic     CourseCharacteristic?
-  tournamentCourses  TournamentCourse[]
+  characteristic    CourseCharacteristic?
+  tournamentCourses TournamentCourse[]
 
   @@index([slug])
   @@index([country])
+  // Lets the geolocation engine cheaply find courses still needing coordinates.
+  @@index([coordinateConfidence])
   @@map("courses")
+}
+
+/// Trust level for a course's stored latitude/longitude. Only VERIFIED
+/// coordinates are consumed by Weather Intelligence, Maps, and other spatial
+/// features. ESTIMATED is reserved for a future heuristic path and is never
+/// written automatically this sprint; UNKNOWN is the un-located default.
+enum CoordinateConfidence {
+  VERIFIED
+  ESTIMATED
+  UNKNOWN
 }
 
 /// Analytics describing how a course plays. One record per course.
 model CourseCharacteristic {
-  id                  String       @id @default(cuid())
-  courseId            String       @unique
-  style               CourseStyle?
-  fairwayGrass        GrassType?
-  greenGrass          GrassType?
-  roughGrass          GrassType?
-  averageGreenSize    Float?
-  greenSpeed          Float?
-  fairwayWidth        Float?
-  roughLength         Float?
-  treeLined           Boolean?
-  waterHazards        Int?
-  windExposure        Float?
-  elevationChange     Float?
-  walkingDifficulty   Float?
-  drivingImportance   Float?
-  approachImportance  Float?
-  shortGameImportance Float?
-  puttingImportance   Float?
+  id                   String       @id @default(cuid())
+  courseId             String       @unique
+  style                CourseStyle?
+  fairwayGrass         GrassType?
+  greenGrass           GrassType?
+  roughGrass           GrassType?
+  averageGreenSize     Float?
+  greenSpeed           Float?
+  fairwayWidth         Float?
+  roughLength          Float?
+  treeLined            Boolean?
+  waterHazards         Int?
+  windExposure         Float?
+  elevationChange      Float?
+  walkingDifficulty    Float?
+  drivingImportance    Float?
+  approachImportance   Float?
+  shortGameImportance  Float?
+  puttingImportance    Float?
   scramblingDifficulty Float?
-  birdieRate          Float?
-  bogeyRate           Float?
-  varianceRating      Float?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  birdieRate           Float?
+  bogeyRate            Float?
+  varianceRating       Float?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   // Relations
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -528,11 +596,16 @@ model Tournament {
   deletedAt          DateTime?
 
   // Relations
-  tour              Tour               @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  season            Season?            @relation(fields: [seasonId], references: [id], onDelete: SetNull)
-  tournamentCourses TournamentCourse[]
-  field             TournamentField[]
-  rounds            Round[]
+  tour               Tour                @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  season             Season?             @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  tournamentCourses  TournamentCourse[]
+  field              TournamentField[]
+  rounds             Round[]
+  bettingEvents      BettingEvent[]
+  fantasyProjections FantasyProjection[]
+  dfsSalaries        DfsSalary[]
+  weatherSnapshot    WeatherSnapshot?
+  oddsEvents         OddsEvent[]
 
   @@index([slug])
   @@index([tourId])
@@ -656,8 +729,8 @@ model PlayerRound {
   updatedAt         DateTime  @updatedAt
 
   // Relations
-  round           Round            @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  tournamentField TournamentField  @relation(fields: [tournamentFieldId], references: [id], onDelete: Cascade)
+  round           Round           @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  tournamentField TournamentField @relation(fields: [tournamentFieldId], references: [id], onDelete: Cascade)
   statistic       RoundStatistic?
 
   // A player has exactly one record per round.
@@ -708,4 +781,324 @@ model RoundStatistic {
   @@unique([playerRoundId])
   @@index([playerRoundId])
   @@map("round_statistics")
+}
+
+// ---------------------------------------------------------------------------
+// Betting & Fantasy
+//
+// These pipelines are fully built, but on the current SportsDataIO trial tier
+// the *values* arrive scrambled (see docs/DATA_CATALOG.md §scrambling). Each
+// scramble-prone model therefore carries an `available` flag: when the importer
+// detects a sentinel it persists the real STRUCTURE (ids, relationships) with
+// `available = false` and null values, so nothing fake is ever surfaced and
+// real values flow automatically once a production key is installed. DFS
+// salaries are the exception — they are real when an event is slated — so
+// `DfsSalary` has no `available` gate.
+// ---------------------------------------------------------------------------
+
+/// A bookmaker betting event tied to a tournament (SportsDataIO BettingEvent).
+/// Keyed by the provider's `BettingEventID` for idempotent re-imports.
+model BettingEvent {
+  id           String    @id @default(cuid())
+  /// Provider's native BettingEventID.
+  externalId   String    @unique
+  /// Resolved CaddieIQ tournament (via slug), or null when unresolved.
+  tournamentId String?
+  name         String?
+  startDate    DateTime?
+  source       String    @default("sportsdataio")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tournament Tournament?     @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  markets    BettingMarket[]
+
+  @@index([tournamentId])
+  @@map("betting_events")
+}
+
+/// A market within a betting event (e.g. "Tournament Winner"). `available` is
+/// false when the provider scrambled the market descriptor, in which case
+/// `betType` is null and its outcomes carry no real payouts.
+model BettingMarket {
+  id             String   @id @default(cuid())
+  /// Provider's native BettingMarketID.
+  externalId     String   @unique
+  bettingEventId String
+  betType        String?
+  name           String?
+  /// True only when the market descriptor was NOT scrambled.
+  available      Boolean  @default(false)
+  source         String   @default("sportsdataio")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  event    BettingEvent     @relation(fields: [bettingEventId], references: [id], onDelete: Cascade)
+  outcomes BettingOutcome[]
+
+  @@index([bettingEventId])
+  @@map("betting_markets")
+}
+
+/// A single selection within a market (typically a player to win). Payout
+/// fields are null and `available` is false when the value was scrambled.
+model BettingOutcome {
+  id              String   @id @default(cuid())
+  /// Provider's native BettingOutcomeID.
+  externalId      String   @unique
+  bettingMarketId String
+  /// Resolved CaddieIQ player (via slug), or null when unresolved / non-player.
+  playerId        String?
+  label           String?
+  /// American odds (e.g. +500); null when scrambled.
+  payoutAmerican  Int?
+  /// Decimal odds; null when scrambled.
+  payoutDecimal   Decimal?
+  /// True only when the payout was NOT scrambled.
+  available       Boolean  @default(false)
+  source          String   @default("sportsdataio")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  market BettingMarket @relation(fields: [bettingMarketId], references: [id], onDelete: Cascade)
+  player Player?       @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([bettingMarketId])
+  @@index([playerId])
+  @@map("betting_outcomes")
+}
+
+/// Per-tournament fantasy projection for a player. `available` is false when the
+/// projected points were scrambled/implausible on the trial tier, in which case
+/// the point fields are null. Keyed by a composite tournament+player external id.
+model FantasyProjection {
+  id                      String   @id @default(cuid())
+  /// Composite `tournamentExternalId:playerExternalId` idempotency key.
+  externalId              String   @unique
+  tournamentId            String?
+  playerId                String?
+  /// Projected DraftKings fantasy points; null when scrambled.
+  fantasyPointsDraftKings Decimal?
+  /// Projected FanDuel fantasy points; null when scrambled.
+  fantasyPointsFanDuel    Decimal?
+  /// True only when at least one projection value was NOT scrambled.
+  available               Boolean  @default(false)
+  source                  String   @default("sportsdataio")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  player     Player?     @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([tournamentId])
+  @@index([playerId])
+  @@map("fantasy_projections")
+}
+
+/// A DFS operator salary for a player on a slate. Salaries are REAL whenever an
+/// event is slated (upcoming/recent), so there is no scramble gate here — an
+/// absent salary simply means the provider did not supply one. Keyed by a
+/// composite slate+operator-player external id.
+model DfsSalary {
+  id                 String   @id @default(cuid())
+  /// Composite `slateId:operatorPlayerId` idempotency key.
+  externalId         String   @unique
+  tournamentId       String?
+  playerId           String?
+  /// DFS operator, e.g. "DraftKings" or "FanDuel".
+  operator           String
+  slateId            String?
+  operatorPlayerName String?
+  /// Salary in whole dollars; null when the operator did not price the player.
+  salary             Int?
+  source             String   @default("sportsdataio")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  player     Player?     @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([tournamentId])
+  @@index([playerId])
+  @@map("dfs_salaries")
+}
+
+// ---------------------------------------------------------------------------
+// Odds Intelligence Engine (Sprint 8.7)
+//
+// The Market Signal Family. Sourced from The Odds API (a *real*, multi-book
+// odds feed — distinct from the SportsDataIO betting tables above, which are
+// single-book and scrambled on the trial tier). The Odds API golf coverage is
+// tournament-WINNER outrights across several sportsbooks, which is exactly the
+// multi-book breadth consensus requires. Each row is one sportsbook's price for
+// one selection; consensus is DERIVED across books by the Odds Intelligence
+// engine, never persisted pre-chewed. Verified odds only: a quote is written
+// only when the provider returned a real price. Idempotent + freshness-guarded
+// (see OddsQuote.lastUpdate) so re-imports never overwrite newer odds with older.
+// ---------------------------------------------------------------------------
+
+/// The market a quote belongs to. The Odds API golf currently offers only
+/// TOURNAMENT_WINNER; the remaining markets are modeled so the engine can expose
+/// them the moment the provider (or a future feed) offers verified prices —
+/// they are never fabricated in the interim.
+enum OddsMarketType {
+  TOURNAMENT_WINNER
+  TOP_5
+  TOP_10
+  TOP_20
+  MAKE_CUT
+  MISS_CUT
+}
+
+/// A betting event pulled from The Odds API and (when resolvable) linked to a
+/// CaddieIQ tournament. Keyed by the provider event id for idempotent refresh.
+/// `capturedAt` records when this event's book of quotes was last refreshed and
+/// drives the freshness component of market confidence.
+model OddsEvent {
+  id              String   @id @default(cuid())
+  /// The Odds API event id (idempotency key).
+  providerEventId String   @unique
+  /// The Odds API sport key, e.g. "golf_the_open_championship_winner".
+  sportKey        String
+  sportTitle      String?
+  /// Resolved CaddieIQ tournament (matched by name/slug), or null when unmatched.
+  tournamentId    String?
+  /// Scheduled tee-off per the provider, when supplied.
+  commenceTime    DateTime?
+  /// Data source; always a real feed. Never fabricated.
+  source          String   @default("the-odds-api")
+  /// When this event's quotes were last captured from the provider.
+  capturedAt      DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  quotes     OddsQuote[]
+
+  @@index([tournamentId])
+  @@index([sportKey])
+  @@map("odds_events")
+}
+
+/// One sportsbook's price for one selection (player) in one market of an event.
+/// Consensus (book count, spread, variance, consensus probability) is computed
+/// across the sibling quotes for the same (event, market, selection) — this row
+/// stores only verified raw facts. Uniqueness on
+/// (event, market, bookmaker, selection) makes refresh idempotent; the importer
+/// only overwrites a quote when the incoming `lastUpdate` is newer.
+model OddsQuote {
+  id             String         @id @default(cuid())
+  oddsEventId    String
+  market         OddsMarketType
+  /// Bookmaker key, e.g. "draftkings".
+  bookmakerKey   String
+  /// Human-friendly bookmaker label, e.g. "DraftKings".
+  bookmakerTitle String
+  /// Raw selection label from the provider (player name).
+  selection      String
+  /// Deterministic slug derived from the selection, used to resolve to a Player.
+  selectionSlug  String
+  /// Resolved CaddieIQ player, or null when unmatched / non-player selection.
+  playerId       String?
+  /// Decimal odds exactly as provided (source of truth).
+  decimalOdds    Decimal
+  /// American odds derived from the decimal price.
+  americanOdds   Int
+  /// Raw implied probability (0..1) derived from the decimal price (includes vig).
+  impliedProbability Decimal
+  /// The provider's `last_update` for this bookmaker's market; the freshness key.
+  lastUpdate     DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  event  OddsEvent @relation(fields: [oddsEventId], references: [id], onDelete: Cascade)
+  player Player?   @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@unique([oddsEventId, market, bookmakerKey, selectionSlug])
+  @@index([oddsEventId])
+  @@index([playerId])
+  @@index([oddsEventId, market])
+  @@map("odds_quotes")
+}
+
+// ---------------------------------------------------------------------------
+// Weather Intelligence Engine (Sprint 4.x)
+// ---------------------------------------------------------------------------
+
+/// A single captured forecast for a tournament venue — the raw, verified facts
+/// the Weather Intelligence Engine normalizes into signals. One (latest) snapshot
+/// per tournament; re-importing replaces it. `capturedAt` + `forecast*` bounds
+/// drive the confidence grade (forecast age, horizon, coverage). Never holds
+/// fabricated data: if the provider returns nothing usable, no snapshot is
+/// written and the engine reports weather as unavailable.
+model WeatherSnapshot {
+  id               String   @id @default(cuid())
+  tournamentId     String   @unique
+  /// Host course this forecast was fetched for (venue coordinates), when linked.
+  courseId         String?
+  /// Data source, e.g. "openweather". Never a fabricated feed.
+  source           String   @default("openweather")
+  /// Venue coordinates the forecast was requested for.
+  latitude         Float
+  longitude        Float
+  /// Seconds offset from UTC at the venue — used to bucket periods into local
+  /// days and morning/afternoon waves.
+  utcOffsetSeconds Int      @default(0)
+  /// When this forecast was captured from the provider (drives forecast age).
+  capturedAt       DateTime @default(now())
+  /// Earliest / latest forecast validity times covered by this snapshot.
+  forecastStart    DateTime?
+  forecastEnd      DateTime?
+  /// Number of stored forecast periods (coverage signal).
+  periodCount      Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tournament Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  periods    WeatherPeriod[]
+
+  @@index([tournamentId])
+  @@map("weather_snapshots")
+}
+
+/// A single forecast period (a 3-hour provider bucket) within a snapshot. Every
+/// signal is nullable: a value is stored only when the provider supplied it, so
+/// the normalizer degrades gracefully rather than reading a fabricated zero.
+model WeatherPeriod {
+  id                String   @id @default(cuid())
+  snapshotId        String
+  /// Forecast validity time (UTC).
+  forecastTime      DateTime
+  /// Air temperature, degrees Celsius.
+  temperatureC      Float?
+  /// Apparent ("feels like") temperature, degrees Celsius.
+  feelsLikeC        Float?
+  /// Sustained wind speed, metres per second.
+  windSpeedMs       Float?
+  /// Wind gust, metres per second.
+  windGustMs        Float?
+  /// Wind origin direction, meteorological degrees (0 = N, 90 = E).
+  windDeg           Int?
+  /// Probability of precipitation, 0..1.
+  precipProbability Float?
+  /// Rain volume over the period, millimetres.
+  rainMm            Float?
+  /// Relative humidity, percent.
+  humidity          Int?
+  /// Cloud cover, percent.
+  cloudCover        Int?
+  /// Sea-level pressure, hectopascals.
+  pressureHpa       Int?
+  /// Visibility, metres.
+  visibilityM       Int?
+  /// Provider condition code (e.g. OpenWeather 500) and short label.
+  conditionCode     Int?
+  conditionLabel    String?
+  createdAt         DateTime @default(now())
+
+  snapshot WeatherSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId])
+  @@index([forecastTime])
+  @@map("weather_periods")
 }

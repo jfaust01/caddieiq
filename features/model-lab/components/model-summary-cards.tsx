@@ -51,9 +51,9 @@ export function ModelSummaryCards({ summary }: ModelSummaryCardsProps) {
           : 'default',
     },
     {
-      label: 'Ranking Confidence',
+      label: 'Model Confidence',
       value: CONFIDENCE_LABEL[summary.confidence],
-      hint: 'Estimated (placeholder)',
+      hint: 'Based on pillar coverage',
       icon: Activity,
     },
   ]

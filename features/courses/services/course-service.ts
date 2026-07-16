@@ -14,9 +14,11 @@ import 'server-only'
 import { cache } from 'react'
 
 import type { CourseDetail } from '@/features/courses/types'
+import type { CourseProfile } from '@/lib/domain/course'
 import { getCourseRepository } from '@/lib/repositories'
 
 import { mapCourseDetail } from './course-mapper'
+import { buildProfileFromRow } from './course-intelligence'
 
 /**
  * Load one course by id, mapped to the UI shape, or `null` when it does not
@@ -31,6 +33,20 @@ const getCourseByIdCached = cache(
   },
 )
 
+/**
+ * Derive the Course Intelligence profile for a course id, or `null` when no such
+ * course exists. Loads only the verified profile inputs (course core +
+ * `CourseCharacteristic`) — a lighter read than the full detail — so callers
+ * that only need intelligence (e.g. the Tournament hub) don't pull the hosted
+ * tournaments list. React-cached per request.
+ */
+const getCourseIntelligenceCached = cache(
+  async (id: string): Promise<CourseProfile | null> => {
+    const inputs = await getCourseRepository().findProfileInputsById(id)
+    return inputs ? buildProfileFromRow(inputs) : null
+  },
+)
+
 export const courseService = {
   /**
    * Return a single course by id for the detail page, or `null` when no such
@@ -39,5 +55,15 @@ export const courseService = {
    */
   getCourseById(id: string): Promise<CourseDetail | null> {
     return getCourseByIdCached(id)
+  },
+
+  /**
+   * Return the normalized Course Intelligence profile for a course id, or `null`
+   * when the course does not exist. Used by other features (e.g. the Tournament
+   * hub) to surface the host venue's intelligence. Never fabricates data — every
+   * unresolved characteristic is reported as `unknown`.
+   */
+  getCourseIntelligence(id: string): Promise<CourseProfile | null> {
+    return getCourseIntelligenceCached(id)
   },
 }

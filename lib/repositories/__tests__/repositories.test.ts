@@ -16,6 +16,7 @@ import type { Tournament } from "@/lib/domain/tournament/types"
 import { CourseRepository } from "../course-repository"
 import { PlayerRepository } from "../player-repository"
 import { TournamentRepository } from "../tournament-repository"
+import { StatisticsRepository, type ResolvedSeasonStat } from "../statistics-repository"
 import { silentRepositorySink } from "../logger"
 
 /* ------------------------------------------------------------------ */
@@ -227,5 +228,91 @@ describe("TournamentRepository", () => {
     const updated = await repo.upsert({ tournament: tournament({ status: "ACTIVE" }) })
     expect(updated.outcome).toBe("updated")
     expect(delegate.rows.size).toBe(1)
+  })
+})
+
+/* ------------------------------------------------------------------ */
+/* Statistics — world-ranking anti-regression guard                   */
+/* ------------------------------------------------------------------ */
+
+/** Minimal fake of the season-statistics delegate (composite playerId_season). */
+function fakeStatisticsPrisma() {
+  const rows = new Map<string, Record<string, unknown>>()
+  const keyOf = (w: { playerId_season: { playerId: string; season: number } }) =>
+    `${w.playerId_season.playerId}:${w.playerId_season.season}`
+  const delegate = {
+    rows,
+    async findUnique(args: {
+      where: { playerId_season: { playerId: string; season: number } }
+    }) {
+      return rows.get(keyOf(args.where)) ?? null
+    },
+    async upsert(args: {
+      where: { playerId_season: { playerId: string; season: number } }
+      create: Record<string, unknown>
+      update: Record<string, unknown>
+    }) {
+      const k = keyOf(args.where)
+      const existing = rows.get(k)
+      const row = existing
+        ? { ...existing, ...args.update }
+        : { id: `stat_${rows.size + 1}`, ...args.create }
+      rows.set(k, row)
+      return row
+    },
+  }
+  return { prisma: { playerSeasonStatistic: delegate } as never, delegate }
+}
+
+function seasonStat(
+  worldRanking: number | null,
+  worldRankingLastWeek: number | null,
+): ResolvedSeasonStat {
+  return {
+    playerId: "player_1",
+    stat: {
+      playerName: "Rory McIlroy",
+      playerSlug: "rory-mcilroy",
+      season: 2025,
+      worldRanking,
+      worldRankingLastWeek,
+      events: 31,
+      averagePoints: 3.7,
+      totalPoints: 279.5,
+      pointsGained: 0,
+      pointsLost: 0,
+      externalRef: { source: "sportsdataio", externalId: "40000965" },
+    },
+  }
+}
+
+describe("StatisticsRepository world-ranking guard", () => {
+  it("does not let a null (scrambled) rank overwrite a real stored rank", async () => {
+    const { prisma, delegate } = fakeStatisticsPrisma()
+    const repo = new StatisticsRepository(prisma, silentRepositorySink)
+
+    // First import lands a real rank.
+    const first = await repo.upsert(seasonStat(2, 3))
+    expect(first.outcome).toBe("inserted")
+
+    // A later scrambled import (rank mapped to null) must PRESERVE the real rank.
+    const second = await repo.upsert(seasonStat(null, null))
+    expect(second.outcome).toBe("updated")
+    const stored = delegate.rows.get("player_1:2025")
+    expect(stored?.worldRanking).toBe(2)
+    expect(stored?.worldRankingLastWeek).toBe(3)
+    // Non-ranking fields still update normally.
+    expect(stored?.events).toBe(31)
+  })
+
+  it("updates the rank when a real value arrives", async () => {
+    const { prisma, delegate } = fakeStatisticsPrisma()
+    const repo = new StatisticsRepository(prisma, silentRepositorySink)
+
+    await repo.upsert(seasonStat(50, 55))
+    await repo.upsert(seasonStat(48, 50))
+    const stored = delegate.rows.get("player_1:2025")
+    expect(stored?.worldRanking).toBe(48)
+    expect(stored?.worldRankingLastWeek).toBe(50)
   })
 })

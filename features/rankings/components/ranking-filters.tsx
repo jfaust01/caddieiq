@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Star, X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -8,7 +8,6 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '@/components/ui/input-group'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -16,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 
 import type { FilterOption, RankingFiltersState } from '../types'
@@ -29,13 +27,7 @@ interface FilterSelectProps {
   className?: string
 }
 
-function FilterSelect({
-  label,
-  value,
-  options,
-  onValueChange,
-  className,
-}: FilterSelectProps) {
+function FilterSelect({ label, value, options, onValueChange, className }: FilterSelectProps) {
   return (
     <Select value={value} onValueChange={(next) => onValueChange(String(next))}>
       <SelectTrigger aria-label={label} size="sm" className={cn('w-full', className)}>
@@ -54,12 +46,7 @@ function FilterSelect({
 
 interface RankingFiltersProps {
   filters: RankingFiltersState
-  options: {
-    tour: FilterOption[]
-    nationality: FilterOption[]
-    minEvents: FilterOption[]
-    form: FilterOption[]
-  }
+  options: { tour: FilterOption[]; season: FilterOption[] }
   setSearch: (value: string) => void
   setFilter: <K extends keyof RankingFiltersState>(
     key: K,
@@ -69,7 +56,12 @@ interface RankingFiltersProps {
   onReset: () => void
 }
 
-/** Rankings toolbar: search, tour, nationality, min events, form, favorites. */
+/**
+ * Live directory toolbar: search by name plus Tour and Season filters. Only
+ * these three controls are offered because they are the dimensions the live
+ * data can actually partition — there are no fabricated "form band", "minimum
+ * events", or "favorites" filters here.
+ */
 export function RankingFilters({
   filters,
   options,
@@ -79,8 +71,8 @@ export function RankingFilters({
   onReset,
 }: RankingFiltersProps) {
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
-      <InputGroup className="lg:w-64">
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <InputGroup className="sm:w-64">
         <InputGroupAddon>
           <Search />
         </InputGroupAddon>
@@ -92,60 +84,29 @@ export function RankingFilters({
         />
       </InputGroup>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex lg:flex-wrap lg:items-center">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
         <FilterSelect
           label="Filter by tour"
           value={filters.tour}
           options={options.tour}
-          onValueChange={(value) =>
-            setFilter('tour', value as RankingFiltersState['tour'])
-          }
-          className="lg:w-36"
+          onValueChange={(value) => setFilter('tour', value as RankingFiltersState['tour'])}
+          className="sm:w-40"
         />
         <FilterSelect
-          label="Filter by nationality"
-          value={filters.nationality}
-          options={options.nationality}
-          onValueChange={(value) => setFilter('nationality', value)}
-          className="lg:w-40"
-        />
-        <FilterSelect
-          label="Filter by minimum events"
-          value={String(filters.minEvents)}
-          options={options.minEvents}
-          onValueChange={(value) => setFilter('minEvents', Number(value))}
-          className="lg:w-36"
-        />
-        <FilterSelect
-          label="Filter by recent form"
-          value={filters.form}
-          options={options.form}
-          onValueChange={(value) =>
-            setFilter('form', value as RankingFiltersState['form'])
-          }
-          className="lg:w-36"
+          label="Filter by season"
+          value={filters.season}
+          options={options.season}
+          onValueChange={(value) => setFilter('season', value as RankingFiltersState['season'])}
+          className="sm:w-36"
         />
       </div>
 
-      <div className="flex items-center gap-4 lg:ml-auto">
-        <Label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-          <Switch
-            checked={filters.favoritesOnly}
-            onCheckedChange={(checked) => setFilter('favoritesOnly', checked)}
-          />
-          <span className="inline-flex items-center gap-1">
-            <Star className="size-3.5" aria-hidden />
-            Favorites
-          </span>
-        </Label>
-
-        {hasActiveFilters ? (
-          <Button variant="ghost" size="sm" onClick={onReset}>
-            <X data-icon="inline-start" />
-            Clear
-          </Button>
-        ) : null}
-      </div>
+      {hasActiveFilters ? (
+        <Button variant="ghost" size="sm" onClick={onReset} className="sm:ml-auto">
+          <X data-icon="inline-start" />
+          Clear
+        </Button>
+      ) : null}
     </div>
   )
 }

@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { FieldStatusBadge } from '@/features/tournaments/components/field-status-badge'
 import { TournamentPagination } from '@/features/tournaments/components/tournament-pagination'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
@@ -21,14 +22,39 @@ import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 20
 
-type SortKey = 'name-asc' | 'name-desc' | 'status' | 'rank'
+type SortKey =
+  | 'name-asc'
+  | 'name-desc'
+  | 'status'
+  | 'rank'
+  | 'ranking-score'
+  | 'form-score'
+  | 'fantasy-score'
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'name-asc', label: 'Name (A–Z)' },
   { value: 'name-desc', label: 'Name (Z–A)' },
+  { value: 'ranking-score', label: 'CaddieIQ ranking' },
+  { value: 'form-score', label: 'Recent form' },
+  { value: 'fantasy-score', label: 'Fantasy value' },
   { value: 'rank', label: 'World rank' },
   { value: 'status', label: 'Status' },
 ]
+
+/**
+ * Which entrant score the "score" column shows, driven by the active sort so
+ * the visible number always matches the ordering. Defaults to the overall
+ * CaddieIQ ranking for the non-score sorts.
+ */
+const SCORE_FIELD_BY_SORT: Record<SortKey, { key: 'rankingScore' | 'formScore' | 'fantasyScore'; label: string }> = {
+  'name-asc': { key: 'rankingScore', label: 'CaddieIQ ranking score' },
+  'name-desc': { key: 'rankingScore', label: 'CaddieIQ ranking score' },
+  status: { key: 'rankingScore', label: 'CaddieIQ ranking score' },
+  rank: { key: 'rankingScore', label: 'CaddieIQ ranking score' },
+  'ranking-score': { key: 'rankingScore', label: 'CaddieIQ ranking score' },
+  'form-score': { key: 'formScore', label: 'Recent form score' },
+  'fantasy-score': { key: 'fantasyScore', label: 'Fantasy production score' },
+}
 
 /** Order statuses so the "most notable" participation states sort first. */
 const STATUS_ORDER: Record<FieldEntryStatus, number> = {
@@ -62,6 +88,8 @@ function CountryChip({ code }: CountryChipProps) {
 
 interface FieldRowProps {
   entrant: FieldEntrant
+  scoreKey: 'rankingScore' | 'formScore' | 'fantasyScore'
+  scoreLabel: string
 }
 
 /**
@@ -80,8 +108,28 @@ function RankChip({ rank }: { rank: number | null }) {
   )
 }
 
-/** A single entrant row: country, name (links to the player), world rank, status. */
-function FieldRow({ entrant }: FieldRowProps) {
+/**
+ * A CaddieIQ score (0–100) as a compact chip. `label` names which score is
+ * shown (it tracks the active sort). Shows a muted em-dash for unrated players
+ * (no season data) so the column stays aligned without implying a score we
+ * cannot ground in data.
+ */
+function ScoreChip({ score, label }: { score: number | null; label: string }) {
+  return (
+    <span
+      className="hidden w-12 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground sm:inline"
+      title={score === null ? 'Unrated — no season data' : `${label} ${Math.round(score)}`}
+    >
+      {score === null ? '—' : Math.round(score)}
+    </span>
+  )
+}
+
+/**
+ * A single entrant row: country, name (links to the player), the active
+ * CaddieIQ score, world rank, and status.
+ */
+function FieldRow({ entrant, scoreKey, scoreLabel }: FieldRowProps) {
   return (
     <li className="flex items-center gap-3 py-2.5">
       <CountryChip code={entrant.countryCode} />
@@ -91,6 +139,7 @@ function FieldRow({ entrant }: FieldRowProps) {
       >
         {entrant.playerName}
       </Link>
+      <ScoreChip score={entrant[scoreKey]} label={scoreLabel} />
       <RankChip rank={entrant.worldRanking} />
       <FieldStatusBadge status={entrant.status} />
     </li>
@@ -149,6 +198,15 @@ export function TournamentField({ field }: TournamentFieldProps) {
         const rb = b.worldRanking ?? Number.POSITIVE_INFINITY
         return ra !== rb ? ra - rb : a.playerName.localeCompare(b.playerName)
       }
+      if (sort === 'ranking-score' || sort === 'form-score' || sort === 'fantasy-score') {
+        // Higher score is better; unrated players (no season data → null) sort
+        // last, then fall back to alphabetical for a stable order. The scored
+        // field tracks the active sort so the column and ordering always agree.
+        const field = SCORE_FIELD_BY_SORT[sort].key
+        const sa = a[field] ?? Number.NEGATIVE_INFINITY
+        const sb = b[field] ?? Number.NEGATIVE_INFINITY
+        return sb !== sa ? sb - sa : a.playerName.localeCompare(b.playerName)
+      }
       return a.playerName.localeCompare(b.playerName)
     })
     return result
@@ -171,6 +229,8 @@ export function TournamentField({ field }: TournamentFieldProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      <FieldAnalyticsSummary summary={field.analyticsSummary} />
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchBar
           placeholder="Search players by name..."
@@ -235,7 +295,12 @@ export function TournamentField({ field }: TournamentFieldProps) {
       ) : (
         <ul className={cn('divide-y divide-border')}>
           {pageItems.map((entrant) => (
-            <FieldRow key={entrant.playerId} entrant={entrant} />
+            <FieldRow
+              key={entrant.playerId}
+              entrant={entrant}
+              scoreKey={SCORE_FIELD_BY_SORT[sort].key}
+              scoreLabel={SCORE_FIELD_BY_SORT[sort].label}
+            />
           ))}
         </ul>
       )}

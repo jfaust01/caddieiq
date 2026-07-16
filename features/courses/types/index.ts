@@ -8,6 +8,8 @@
  * em-dash) rather than fabricating a value.
  */
 
+import type { CourseProfile } from '@/lib/domain/course'
+
 /** Lifecycle status of a tournament (mirrors the database enum). */
 export type TournamentStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
 
@@ -43,6 +45,12 @@ export interface CourseDetail {
   country: string | null
   par: number | null
   yardage: number | null
+  /**
+   * The normalized Course Intelligence profile derived from verified course
+   * facts. Always present and stably shaped: every modeled characteristic is
+   * included, `unknown` until real data exists (never fabricated).
+   */
+  profile: CourseProfile
   /** Tournaments hosted at this course, newest first. */
   tournaments: CourseTournament[]
 }

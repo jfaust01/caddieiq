@@ -16,17 +16,154 @@
 import "server-only"
 
 import type {
+  CourseIntelSummary,
   FilterOption,
   PaginatedResult,
   Player,
   PlayerDetail,
   PlayerQuery,
+  PlayerUpcomingContext,
   RankingBand,
   Tour,
 } from "@/features/players/types"
-import { getPlayerRepository, type PlayerSearchParams } from "@/lib/repositories/player-repository"
+import { courseService } from "@/features/courses/services/course-service"
+import { analyticsService } from "@/lib/analytics/service"
+import { computeCourseFit } from "@/lib/analytics/course-fit"
+import type { CourseProfile } from "@/lib/domain/course"
+import { rankingService } from "@/lib/rankings/service"
+import { getNewsRepository, type NewsArticleView } from "@/lib/repositories"
+import {
+  getPlayerRepository,
+  type PlayerSearchParams,
+} from "@/lib/repositories/player-repository"
+import {
+  hasCourseContext,
+  isContextAvailable,
+  tournamentContextService,
+  type TournamentContext,
+} from "@/lib/tournament-context"
+import type { PlayerAnalytics } from "@/lib/analytics/types"
+import type { PlayerNewsItem } from "@/features/players/types"
 
+import { buildPlayerSkillProfile } from "./player-course-fit"
 import { mapPlayer, mapPlayerDetail } from "./player-mapper"
+
+/** Number of recent articles surfaced on a player's profile. */
+const PLAYER_NEWS_LIMIT = 6
+
+/** One-line, coverage-based read of a course's verified intelligence. */
+function summarizeCourseIntel(profile: CourseProfile): CourseIntelSummary {
+  const { verified, total } = profile.coverage
+  return {
+    verified: verified > 0,
+    scored: verified,
+    total,
+    headline:
+      verified > 0
+        ? `${verified} of ${total} course attributes verified`
+        : 'Course profile pending verification',
+  }
+}
+
+/**
+ * Turn the player's shared {@link TournamentContext} into the profile-ready
+ * {@link PlayerUpcomingContext}, computing Course Fit **only** when the context
+ * is `verified` (a linked host course exists).
+ *
+ * Course selection is not decided here — it flows in from the Tournament Context
+ * Engine, the single authority for a player's active event. This function just
+ * attaches the event-specific Course Fit, whose confidence is capped by the
+ * context's confidence. It never fabricates: no upcoming context yields an
+ * `unavailable` state, and a course-less (`partial`) context skips Course Fit
+ * rather than inventing one. The player's skill profile is built from verified
+ * analytics only (all-`null` today, so the model reports low/none confidence).
+ */
+async function buildUpcomingContext(
+  playerId: string,
+  analytics: PlayerAnalytics,
+  context: TournamentContext,
+): Promise<PlayerUpcomingContext> {
+  if (!isContextAvailable(context)) {
+    return {
+      status: 'unavailable',
+      confidence: 'unavailable',
+      tournament: null,
+      course: null,
+      courseIntelligence: null,
+      fit: null,
+      detail: context.detail,
+    }
+  }
+
+  const tournament = {
+    id: context.tournament.id,
+    name: context.tournament.name,
+    slug: context.tournament.slug,
+    startDate: context.tournament.startDate,
+    endDate: context.tournament.endDate,
+    status: context.tournament.status,
+    timing: context.timing,
+  }
+
+  // Partial context: an upcoming event with no linked host course yet — Course
+  // Fit and Course Intelligence are not available, and are never guessed.
+  if (!hasCourseContext(context)) {
+    return {
+      status: 'available',
+      confidence: context.confidence,
+      tournament,
+      course: context.course,
+      courseIntelligence: null,
+      fit: null,
+      detail: 'Course Fit becomes available once a host course is linked to this tournament.',
+    }
+  }
+
+  // Verified context: join the verified player skill profile with the host
+  // course's intelligence profile — the only place the two halves of a
+  // player-vs-course fit meet for the profile page.
+  const courseProfile = await courseService.getCourseIntelligence(context.course.id)
+  if (!courseProfile) {
+    return {
+      status: 'available',
+      confidence: 'partial',
+      tournament,
+      course: context.course,
+      courseIntelligence: null,
+      fit: null,
+      detail: 'The linked host course could not be loaded, so Course Fit is unavailable.',
+    }
+  }
+
+  const fit = computeCourseFit({
+    playerId,
+    courseProfile,
+    skills: buildPlayerSkillProfile(analytics),
+  })
+
+  return {
+    status: 'available',
+    confidence: 'verified',
+    tournament,
+    course: context.course,
+    courseIntelligence: summarizeCourseIntel(courseProfile),
+    fit,
+    detail: null,
+  }
+}
+
+/** Map a persisted news row into the UI news item (dates → ISO strings). */
+function mapPlayerNews(row: NewsArticleView): PlayerNewsItem {
+  return {
+    id: row.id,
+    title: row.title,
+    summary: row.content,
+    url: row.url,
+    outlet: row.outlet,
+    author: row.author,
+    publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
+  }
+}
 
 const TOUR_LABELS: Record<Tour, string> = {
   PGA: "PGA Tour",
@@ -99,10 +236,38 @@ export const playerService = {
     }
   },
 
-  /** Return a full profile for a live player, or null when not found. */
+  /**
+   * Return a full profile for a live player, or null when not found. The pure
+   * mapper builds the persisted sections; the Analytics Engine supplies the
+   * derived intelligence so analytics stay the platform's single source rather
+   * than being recomputed here.
+   */
   async getPlayerById(id: string): Promise<PlayerDetail | null> {
     const record = await getPlayerRepository().findDetailById(id)
-    return record ? mapPlayerDetail(record) : null
+    if (!record) return null
+    // Analytics are the single source of derived intelligence; the Ranking
+    // Engine orders those same analytics into the player's global placements.
+    // News is live provider content linked to this player at import time.
+    const [analytics, rankingProfile, newsRows, context] = await Promise.all([
+      analyticsService.getPlayerAnalytics(id),
+      rankingService.getPlayerRankingProfile(id),
+      getNewsRepository().listByPlayer(id, PLAYER_NEWS_LIMIT),
+      // The Tournament Context Engine is the single authority for which event a
+      // player's forward-looking models run against; the profile never picks a
+      // tournament on its own.
+      tournamentContextService.getPlayerActiveContext(id),
+    ])
+    // Attach the event-specific Course Fit to the shared context. Resolved after
+    // analytics so the verified skill profile is available; adds one course read
+    // at most, and only when the context is verified.
+    const upcoming = await buildUpcomingContext(id, analytics, context)
+    return {
+      ...mapPlayerDetail(record),
+      analytics,
+      rankingProfile,
+      news: newsRows.map(mapPlayerNews),
+      upcoming,
+    }
   },
 
   /** Tour filter options, including the "All" sentinel. */

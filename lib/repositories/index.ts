@@ -27,7 +27,12 @@ export { BaseRepository, type UpsertPlan, type SlugDelegate } from "./base-repos
 
 // Concrete repositories + lazily-constructed default instances
 export { PlayerRepository, getPlayerRepository } from "./player-repository"
-export { CourseRepository, getCourseRepository } from "./course-repository"
+export {
+  CourseRepository,
+  getCourseRepository,
+  type CourseGeocodeTargetRow,
+  type VerifiedCoordinatesInput,
+} from "./course-repository"
 export {
   TournamentRepository,
   getTournamentRepository,
@@ -46,3 +51,42 @@ export {
   type ResolvedSeasonStat,
   type PlayerSeasonStatRow,
 } from "./statistics-repository"
+export {
+  NewsRepository,
+  getNewsRepository,
+  type ResolvedNewsArticle,
+  type NewsArticleView,
+} from "./news-repository"
+export {
+  BettingRepository,
+  getBettingRepository,
+  type ResolvedBettingEvent,
+  type BettingOutcomeView,
+} from "./betting-repository"
+export {
+  FantasyRepository,
+  getFantasyRepository,
+  type ResolvedFantasyProjection,
+  type ResolvedDfsSalary,
+  type FantasyProjectionView,
+} from "./fantasy-repository"
+export {
+  WeatherRepository,
+  getWeatherRepository,
+  type WeatherSnapshotInput,
+  type WeatherPeriodInput,
+  type WeatherSnapshotRow,
+  type WeatherPeriodRow,
+  type WeatherVenueRow,
+} from "./weather-repository"
+export {
+  OddsRepository,
+  getOddsRepository,
+  type OddsMarket,
+  type ResolvedOddsQuote,
+  type ResolvedOddsEvent,
+  type OddsQuoteRow,
+  type OddsEventRow,
+  type PlayerOddsQuoteRow,
+  type OddsCoverageCounts,
+} from "./odds-repository"

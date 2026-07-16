@@ -1,112 +1,64 @@
 /**
- * The ten Model Lab metric groups and their metadata.
+ * The four Model Lab metric pillars and their metadata.
  *
- * Each group maps to an analytics module in the Ranking Engine. The three
- * strokes-gained sub-groups (`driving`, `putting`, `scrambling`) roll up into
- * the `strokes-gained` module when a model is evaluated (see `weights.ts`), so
- * users can express fine-grained preferences without the engine needing new
- * modules.
+ * Each pillar maps 1:1 to an Analytics Engine metric (the `key` IS the analytics
+ * key), so weighting a pillar directly re-weights that player's real analytics
+ * score. There are deliberately only four — the exact set the Analytics Engine
+ * computes — so the builder never offers a factor the platform cannot ground in
+ * data.
  */
 
-import type { MetricGroupDefinition, MetricGroupKey } from '../types'
+import type { MetricCategory, MetricGroupDefinition, MetricGroupKey } from '../types'
 
 export const METRIC_GROUPS: MetricGroupDefinition[] = [
   {
-    key: 'recent-form',
+    key: 'seasonPerformance',
+    label: 'Season Performance',
+    description: "Overall season standing — total fantasy output blended with world ranking.",
+    metricKey: 'seasonPerformance',
+    category: 'Season',
+  },
+  {
+    key: 'recentForm',
     label: 'Recent Form',
-    description: 'Results and trajectory over the last several starts.',
-    module: 'recent-form',
+    description: 'Current trajectory — world-ranking standing and week-over-week movement.',
+    metricKey: 'recentForm',
     category: 'Form',
   },
   {
-    key: 'momentum',
-    label: 'Momentum',
-    description: 'How sharply a player is trending right now.',
-    module: 'momentum',
-    category: 'Form',
-  },
-  {
-    key: 'course-fit',
-    label: 'Course Fit',
-    description: 'How well a player’s game suits the venue profile.',
-    module: 'course-fit',
-    category: 'Fit',
-  },
-  {
-    key: 'strokes-gained',
-    label: 'Strokes Gained',
-    description: 'Total strokes gained across all facets of the game.',
-    module: 'strokes-gained',
-    category: 'Skill',
-  },
-  {
-    key: 'driving',
-    label: 'Driving',
-    description: 'Distance and accuracy off the tee (rolls into Strokes Gained).',
-    module: 'strokes-gained',
-    category: 'Skill',
-  },
-  {
-    key: 'putting',
-    label: 'Putting',
-    description: 'Strokes gained on the greens (rolls into Strokes Gained).',
-    module: 'strokes-gained',
-    category: 'Skill',
-  },
-  {
-    key: 'scrambling',
-    label: 'Scrambling',
-    description: 'Getting up and down to save par (rolls into Strokes Gained).',
-    module: 'strokes-gained',
-    category: 'Skill',
-  },
-  {
-    key: 'wind',
-    label: 'Wind',
-    description: 'Expected performance in windy conditions.',
-    module: 'wind',
-    category: 'Conditions',
+    key: 'fantasyProduction',
+    label: 'Fantasy Production',
+    description: 'Scoring rate — average fantasy points per event, relative to the field.',
+    metricKey: 'fantasyProduction',
+    category: 'Fantasy',
   },
   {
     key: 'consistency',
     label: 'Consistency',
-    description: 'Round-to-round reliability and low variance.',
-    module: 'consistency',
-    category: 'Conditions',
-  },
-  {
-    key: 'value',
-    label: 'Value',
-    description: 'Model strength relative to market price.',
-    module: 'value',
-    category: 'Market',
+    description: 'Reliability — the share of a player’s fantasy activity that is positive.',
+    metricKey: 'consistency',
+    category: 'Reliability',
   },
 ]
 
-/** Fast lookup of a metric group's definition by key. */
+/** Fast lookup of a pillar's definition by key. */
 export const METRIC_GROUP_BY_KEY: Record<MetricGroupKey, MetricGroupDefinition> =
   Object.fromEntries(METRIC_GROUPS.map((group) => [group.key, group])) as Record<
     MetricGroupKey,
     MetricGroupDefinition
   >
 
-/** Ordered list of every metric group key. */
+/** Ordered list of every pillar key. */
 export const METRIC_GROUP_KEYS: MetricGroupKey[] = METRIC_GROUPS.map(
   (group) => group.key,
 )
 
-/** Metric groups bucketed by category, preserving order. */
+/** Pillars bucketed by category, preserving order. */
 export function metricGroupsByCategory(): Array<{
-  category: MetricGroupDefinition['category']
+  category: MetricCategory
   groups: MetricGroupDefinition[]
 }> {
-  const order: MetricGroupDefinition['category'][] = [
-    'Form',
-    'Fit',
-    'Skill',
-    'Conditions',
-    'Market',
-  ]
+  const order: MetricCategory[] = ['Season', 'Form', 'Fantasy', 'Reliability']
   return order.map((category) => ({
     category,
     groups: METRIC_GROUPS.filter((group) => group.category === category),

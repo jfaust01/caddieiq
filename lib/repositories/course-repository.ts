@@ -11,16 +11,22 @@
 
 import type { Course } from "@/lib/domain/course/types"
 import type { ExternalReference } from "@/lib/domain/shared/types"
-// `Prisma` is imported as a value (not type-only): the detail read below uses
-// `Prisma.sql` to compose a safe, parameterized raw query.
-import { Prisma } from "@/lib/generated/prisma/client"
-import type { Course as CourseRecord, PrismaClient } from "@/lib/generated/prisma/client"
+// `Prisma` and `CoordinateConfidence` are imported as values (not type-only):
+// the detail read below uses `Prisma.sql` to compose a safe, parameterized raw
+// query, and the geolocation writer references the enum's members.
+import { CoordinateConfidence, Prisma } from "@/lib/generated/prisma/client"
+import type {
+  Course as CourseRecord,
+  CourseCharacteristic as CourseCharacteristicRecord,
+  PrismaClient,
+} from "@/lib/generated/prisma/client"
 
 import prismaClient from "@/lib/prisma"
 
 import { BaseRepository, type UpsertPlan } from "./base-repository"
+import { toRepositoryError } from "./errors"
 import type { RepositoryLogSink } from "./logger"
-import type { BulkRepositoryResult, RepositoryResult } from "./repository-result"
+import { fail, ok, type BulkRepositoryResult, type RepositoryResult } from "./repository-result"
 
 /**
  * A single tournament that has been played on a course, flattened for the
@@ -41,12 +47,49 @@ export interface CourseTournamentRow {
 }
 
 /**
+ * The verified inputs the Course Intelligence Engine derives a profile from:
+ * the course core record plus its optional analytics record. `characteristic`
+ * is `null` when no analytics have been imported for the course, so the engine
+ * degrades to an all-unknown profile rather than fabricating values.
+ */
+export interface CourseProfileInputsRow {
+  course: CourseRecord
+  characteristic: CourseCharacteristicRecord | null
+}
+
+/**
  * A course plus every tournament linked to it, for the detail page. Read-only
- * shape assembled by {@link CourseRepository.findDetailById}.
+ * shape assembled by {@link CourseRepository.findDetailById}. Carries the
+ * verified `characteristic` record (or `null`) so the detail page can render
+ * Course Intelligence without a second round trip.
  */
 export interface CourseDetailRow {
   course: CourseRecord
+  characteristic: CourseCharacteristicRecord | null
   tournaments: CourseTournamentRow[]
+}
+
+/**
+ * The minimal course facts the Course Geolocation Engine needs to build a
+ * geocoding query. Returned by {@link CourseRepository.findCoursesNeedingCoordinates}
+ * for courses whose coordinates are not yet VERIFIED.
+ */
+export interface CourseGeocodeTargetRow {
+  id: string
+  name: string
+  city: string | null
+  stateProvince: string | null
+  country: string | null
+}
+
+/** A verified coordinate to persist, with the provider that vouched for it. */
+export interface VerifiedCoordinatesInput {
+  latitude: number
+  longitude: number
+  /** Provider identity, stored as `coordinateSource` (e.g. "osm-nominatim"). */
+  source: string
+  /** When the coordinate was verified. Defaults to now. */
+  verifiedAt?: Date
 }
 
 export class CourseRepository extends BaseRepository {
@@ -61,14 +104,30 @@ export class CourseRepository extends BaseRepository {
   }
 
   /**
+   * Load the verified inputs the Course Intelligence Engine needs for a course:
+   * the core record plus its optional `CourseCharacteristic` analytics row.
+   * Returns `null` when the course does not exist or is soft-deleted. Read-only.
+   * Reused by both the course detail page and the tournament host-course view.
+   */
+  async findProfileInputsById(id: string): Promise<CourseProfileInputsRow | null> {
+    const course = await this.findById(id)
+    if (!course) return null
+    const characteristic = await this.prisma.courseCharacteristic.findUnique({
+      where: { courseId: id },
+    })
+    return { course, characteristic }
+  }
+
+  /**
    * Load a course for the detail page: the course record plus every tournament
    * linked to it via `tournament_courses`, newest first. Returns `null` when
    * the id does not exist or the row is soft-deleted, so the caller can render a
    * proper 404. The id is bound, never interpolated (injection-safe). Read-only.
    */
   async findDetailById(id: string): Promise<CourseDetailRow | null> {
-    const course = await this.findById(id)
-    if (!course) return null
+    const inputs = await this.findProfileInputsById(id)
+    if (!inputs) return null
+    const { course, characteristic } = inputs
 
     const tournaments = await this.prisma.$queryRaw<CourseTournamentRow[]>(Prisma.sql`
       SELECT
@@ -88,7 +147,7 @@ export class CourseRepository extends BaseRepository {
       ORDER BY tc.year DESC, t."startDate" DESC NULLS LAST, t.name ASC
     `)
 
-    return { course, tournaments }
+    return { course, characteristic, tournaments }
   }
 
   /**
@@ -106,6 +165,78 @@ export class CourseRepository extends BaseRepository {
     return null
   }
 
+  /**
+   * List courses whose coordinates are not yet VERIFIED (i.e. UNKNOWN or the
+   * reserved ESTIMATED), newest first, excluding soft-deleted rows. This is the
+   * geolocation engine's work queue — a VERIFIED course is never returned, so a
+   * completed course is never re-geocoded. Read-only.
+   *
+   * @param limit - Optional cap on rows returned, to bound a single run.
+   */
+  async findCoursesNeedingCoordinates(limit?: number): Promise<CourseGeocodeTargetRow[]> {
+    const courses = await this.prisma.course.findMany({
+      where: {
+        deletedAt: null,
+        coordinateConfidence: { not: CoordinateConfidence.VERIFIED },
+      },
+      select: { id: true, name: true, city: true, stateProvince: true, country: true },
+      orderBy: { createdAt: "desc" },
+      ...(limit != null ? { take: limit } : {}),
+    })
+    return courses
+  }
+
+  /**
+   * Persist a VERIFIED coordinate for a course — atomically and only when the
+   * course is not already VERIFIED.
+   *
+   * The write is a conditional `updateMany` filtered on
+   * `coordinateConfidence != VERIFIED`, so a course that a provider verified
+   * earlier is never overwritten, even under a race. Returns `true` when this
+   * call wrote the coordinate, `false` when it was a no-op (already verified or
+   * course missing/soft-deleted). Never throws for the no-op case.
+   */
+  async setVerifiedCoordinates(
+    courseId: string,
+    coords: VerifiedCoordinatesInput,
+  ): Promise<RepositoryResult<CourseRecord>> {
+    try {
+      const result = await this.prisma.course.updateMany({
+        where: {
+          id: courseId,
+          deletedAt: null,
+          // The guard that makes "never overwrite verified" atomic.
+          coordinateConfidence: { not: CoordinateConfidence.VERIFIED },
+        },
+        data: {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          coordinateConfidence: CoordinateConfidence.VERIFIED,
+          coordinateSource: coords.source,
+          coordinatesVerifiedAt: coords.verifiedAt ?? new Date(),
+        },
+      })
+
+      if (result.count === 0) {
+        // Already verified, or no such live course: a benign skip, not a failure.
+        this.logger.skip(courseId, { reason: "already-verified-or-missing" })
+        return { outcome: "skipped" }
+      }
+
+      const record = await this.prisma.course.findUnique({ where: { id: courseId } })
+      this.logger.update(courseId)
+      return record ? ok(record, "updated") : { outcome: "updated" }
+    } catch (error) {
+      const repoError = toRepositoryError(error, {
+        entity: "course",
+        operation: "setVerifiedCoordinates",
+        reference: courseId,
+      })
+      this.logger.failure(courseId, repoError.message, { code: repoError.code })
+      return fail<CourseRecord>(repoError)
+    }
+  }
+
   /** Idempotently persist a single validated course domain object. */
   async upsert(course: Course): Promise<RepositoryResult<CourseRecord>> {
     return this.upsertBySlug(this.prisma.course, toUpsertPlan(course), "course")
@@ -121,7 +252,18 @@ export class CourseRepository extends BaseRepository {
   }
 }
 
-/** Translate a validated `Course` into a Prisma upsert plan keyed by slug. */
+/**
+ * Translate a validated `Course` into a Prisma upsert plan keyed by slug.
+ *
+ * IMPORTANT: this deliberately writes NO coordinate columns (`latitude`,
+ * `longitude`, `coordinateConfidence`, `coordinateSource`,
+ * `coordinatesVerifiedAt`). Coordinates are owned exclusively by the Course
+ * Geolocation Engine via {@link CourseRepository.setVerifiedCoordinates}. The
+ * SportsDataIO course feed carries no coordinates, so re-importing courses must
+ * never touch — and therefore never clobber — verified coordinates. Omitting
+ * the fields (rather than setting them to `null`) leaves existing values intact
+ * on update and defaults new rows to `UNKNOWN`.
+ */
 function toUpsertPlan(course: Course): UpsertPlan<Prisma.CourseCreateInput, Prisma.CourseUpdateInput> {
   const common = {
     name: course.name,

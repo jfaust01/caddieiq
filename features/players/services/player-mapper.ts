@@ -128,19 +128,51 @@ const RANKING_LABELS: Record<RankingSystem, string> = {
 }
 
 /**
+ * OWGR standing from season statistics, used as an honest fallback when the
+ * dedicated `player_rankings` table has no OWGR row yet. Both the rank and last
+ * week's rank are real provider data; movement is derived, never fabricated.
+ * A LOWER ranking number is better, so `previous - current` is the improvement.
+ */
+function owgrFromSeasonStats(
+  record: PlayerWithRelations,
+): { rank: number; movement: PlayerRanking["movement"]; delta: number } | null {
+  const season = record.seasonStatistics.find((s) => s.worldRanking !== null)
+  if (!season || season.worldRanking === null) return null
+  const last = season.worldRankingLastWeek
+  const delta = last === null ? 0 : last - season.worldRanking
+  const movement: PlayerRanking["movement"] =
+    delta === 0 ? "flat" : delta > 0 ? "up" : "down"
+  return { rank: season.worldRanking, movement, delta: Math.abs(delta) }
+}
+
+/**
  * Build the rankings panel from live ranking rows. Every tracked system is
  * always represented (rank null when not yet ingested); the user's own model
- * rank stays flagged as coming soon until the Model Lab ships.
+ * rank stays flagged as coming soon until the Model Lab ships. OWGR falls back
+ * to season-statistics world ranking so we surface the real standing we have.
  */
 function buildRankings(record: PlayerWithRelations): PlayerRanking[] {
   const liveSystems: RankingSystem[] = ["OWGR", "DATAGOLF", "CADDIEIQ"]
-  const live = liveSystems.map((system) => ({
-    system,
-    label: RANKING_LABELS[system],
-    rank: latestRank(record, system),
-    movement: "flat" as const,
-    delta: 0,
-  }))
+  const owgrFallback = owgrFromSeasonStats(record)
+  const live = liveSystems.map((system) => {
+    const primaryRank = latestRank(record, system)
+    if (system === "OWGR" && primaryRank === null && owgrFallback) {
+      return {
+        system,
+        label: RANKING_LABELS[system],
+        rank: owgrFallback.rank,
+        movement: owgrFallback.movement,
+        delta: owgrFallback.delta,
+      }
+    }
+    return {
+      system,
+      label: RANKING_LABELS[system],
+      rank: primaryRank,
+      movement: "flat" as const,
+      delta: 0,
+    }
+  })
   return [
     ...live,
     {
@@ -173,15 +205,24 @@ function buildSeasonStatistics(record: PlayerWithRelations): PlayerSeasonStat[] 
 }
 
 /**
- * Map a database player row (+ relations) into the full detail payload.
+ * Map a database player row (+ relations) into the persisted detail payload.
  *
  * `seasonStatistics` is populated live from the season-stats import. The
  * remaining sections without a live source (career summary, the legacy
  * strokes-gained `statistics` grid, course & tournament history, activity)
  * resolve to null/empty so the detail view renders its "not available yet"
  * states instead of placeholder numbers.
+ *
+ * Note: `analytics`, `rankingProfile`, `news`, and `upcoming` are intentionally
+ * NOT produced here — analytics/ranking are derived by their engines, news comes
+ * from a separate repository, and `upcoming` is resolved by the Tournament
+ * Context Engine (which also carries Course Fit). All are composed onto the
+ * payload in the (async) service layer, keeping this mapper pure and free of
+ * cross-source computation.
  */
-export function mapPlayerDetail(record: PlayerWithRelations): PlayerDetail {
+export function mapPlayerDetail(
+  record: PlayerWithRelations,
+): Omit<PlayerDetail, "analytics" | "rankingProfile" | "news" | "upcoming"> {
   return {
     ...mapPlayer(record),
     careerSummary: null,

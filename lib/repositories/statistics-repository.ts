@@ -86,10 +86,21 @@ export class StatisticsRepository extends BaseRepository {
       const existing = await this.prisma.playerSeasonStatistic.findUnique({
         where: { playerId_season: { playerId, season: stat.season } },
       })
+      // Backward-compat / anti-regression guard: never let a null incoming world
+      // ranking overwrite a real stored one. On the trial tier the ranking field
+      // scrambles intermittently (mapped to null by `cleanRanking`), so a
+      // re-import must preserve the last good rank rather than wipe it. Other
+      // fields update normally. See docs/DATA_CATALOG.md §7.
+      const update = {
+        ...data,
+        worldRanking: data.worldRanking ?? existing?.worldRanking ?? null,
+        worldRankingLastWeek:
+          data.worldRankingLastWeek ?? existing?.worldRankingLastWeek ?? null,
+      }
       const record = await this.prisma.playerSeasonStatistic.upsert({
         where: { playerId_season: { playerId, season: stat.season } },
         create: { playerId, season: stat.season, ...data },
-        update: data,
+        update,
       })
       const created = !existing
       created ? this.logger.insert(reference) : this.logger.update(reference)

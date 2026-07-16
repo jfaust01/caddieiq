@@ -170,6 +170,116 @@ export interface SdioPlayerSeasonStats extends SdioRecord {
   PointsGained?: number
 }
 
+/**
+ * Raw SportsDataIO news article from `/json/News`.
+ *
+ * The feed carries only the provider's native numeric `PlayerID` to associate
+ * an article with a player — never a name. Since CaddieIQ has no external-id
+ * column, the news importer bridges `PlayerID → deterministic slug` using the
+ * Players feed, then resolves that slug to a `Player.id`. Articles whose
+ * `PlayerID` does not resolve (general / tournament-wide news, or a player not
+ * in our catalog) are retained with a null player rather than discarded.
+ *
+ * Every field is optional except the ids; the mapper persists only what is
+ * present and never fabricates missing fields.
+ */
+export interface SdioNewsArticle extends SdioRecord {
+  /** Provider's native news id. Idempotency key for re-imports. */
+  NewsID: number
+  Title?: string
+  /** Article body / summary. */
+  Content?: string
+  Url?: string
+  /** Publishing outlet (e.g. "RotoBaller"). */
+  Source?: string
+  Author?: string
+  /** Comma-separated provider categories. */
+  Categories?: string
+  /** When the provider last updated the article (ISO-ish). */
+  Updated?: string
+  /** Native player id this article is about (0 / absent = general news). */
+  PlayerID?: number
+}
+
+/**
+ * Raw SportsDataIO betting outcome (a selection within a market) from
+ * `/json/BettingEventsByDate` (nested under markets). Payout values arrive
+ * SCRAMBLED on the trial tier — the mapper detects sentinels and nulls them
+ * rather than persisting fake odds.
+ */
+export interface SdioBettingOutcome extends SdioRecord {
+  BettingOutcomeID: number
+  /** Native player id the selection is about (0 / absent for non-player bets). */
+  PlayerID?: number
+  /** Human label, e.g. the player name or selection text. */
+  SportsBook?: string
+  Value?: string
+  Label?: string
+  /** American odds — scrambled on trial tier. */
+  PayoutAmerican?: number
+  /** Decimal odds — scrambled on trial tier. */
+  PayoutDecimal?: number
+}
+
+/** Raw SportsDataIO betting market (e.g. "Tournament Winner"). */
+export interface SdioBettingMarket extends SdioRecord {
+  BettingMarketID: number
+  BetType?: string
+  Name?: string
+  BettingOutcomes?: SdioBettingOutcome[]
+}
+
+/**
+ * Raw SportsDataIO betting event from `/json/BettingEventsByDate/{date}`.
+ * Carries the native `TournamentID` we bridge to a CaddieIQ tournament.
+ */
+export interface SdioBettingEvent extends SdioRecord {
+  BettingEventID: number
+  TournamentID?: number
+  Name?: string
+  StartDate?: string
+  BettingMarkets?: SdioBettingMarket[]
+}
+
+/**
+ * Raw SportsDataIO fantasy/projection row from
+ * `/projections/json/PlayerTournamentProjectionStats/{tournamentId}`. Projected
+ * fantasy points arrive SCRAMBLED on the trial tier.
+ */
+export interface SdioPlayerTournamentProjection extends SdioRecord {
+  PlayerID: number
+  TournamentID?: number
+  Name?: string
+  /** Projected DraftKings points — scrambled on trial tier. */
+  FantasyPointsDraftKings?: number
+  /** Projected FanDuel points — scrambled on trial tier. */
+  FantasyPointsFanDuel?: number
+}
+
+/**
+ * Raw SportsDataIO DFS slate player from `/json/DfsSlatesByTournament/{id}`
+ * (nested under slates → slate players). Salaries are REAL when an event is
+ * slated, so no scramble gate is applied to this feed.
+ */
+export interface SdioDfsSlatePlayer extends SdioRecord {
+  SlatePlayerID: number
+  PlayerID?: number
+  OperatorPlayerID?: string
+  OperatorPlayerName?: string
+  /** Salary in whole dollars, or null when the operator did not price them. */
+  OperatorSalary?: number
+}
+
+/** Raw SportsDataIO DFS slate grouping slate players under one operator. */
+export interface SdioDfsSlate extends SdioRecord {
+  SlateID: number
+  TournamentID?: number
+  Operator?: string
+  /** Operator name, e.g. "DraftKings". */
+  OperatorName?: string
+  DfsSlatePlayers?: SdioDfsSlatePlayer[]
+}
+
 /** Map of resource key → raw response element type, for typed requests. */
 export interface SdioResourceMap {
   players: SdioPlayer
