@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { TournamentDetailView } from '@/features/tournaments/tournament-detail-view'
+import { TournamentCommandCenter } from '@/features/tournaments/command-center/tournament-command-center'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
 
 interface TournamentDetailPageProps {
@@ -47,5 +47,5 @@ export default async function TournamentDetailPage({
     notFound()
   }
 
-  return <TournamentDetailView tournament={tournament} />
+  return <TournamentCommandCenter tournament={tournament} />
 }
