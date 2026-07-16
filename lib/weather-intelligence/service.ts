@@ -139,6 +139,26 @@ export class WeatherIntelligenceService {
       },
     })
   }
+
+  /**
+   * The tournament's weather import history summary, for admin surfaces. Every
+   * field is drawn from real rows — the latest per-tournament log for the last
+   * *attempt*, and the stored snapshot's capture time for the last *success*.
+   * Returns all-null when the event has never been imported.
+   */
+  async getWeatherImportStatus(tournamentId: string): Promise<WeatherImportStatus> {
+    const [latestLog, lastSuccessAt] = await Promise.all([
+      this.repo.findLatestImportLog(tournamentId),
+      this.repo.getCapturedAt(tournamentId),
+    ])
+    return {
+      lastAttemptAt: latestLog?.createdAt.toISOString() ?? null,
+      lastResult: latestLog?.result ?? null,
+      lastSuccessAt: lastSuccessAt?.toISOString() ?? null,
+      providerResponse: latestLog?.providerResponse ?? null,
+      skippedReason: latestLog?.skippedReason ?? null,
+    }
+  }
 }
 
 /** Whole days from now until `date` (future positive); null when no date. */

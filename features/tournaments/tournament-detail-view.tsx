@@ -19,6 +19,7 @@ import { TournamentOverview } from '@/features/tournaments/components/tournament
 import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
 import { courseService } from '@/features/courses/services/course-service'
+import { isCurrentUserAdmin } from '@/lib/session'
 import type { TournamentSummary } from '@/features/tournaments/types'
 import type { WeatherIntelligence } from '@/lib/weather-intelligence'
 
@@ -26,12 +27,17 @@ interface TournamentDetailViewProps {
   tournament: TournamentSummary
 }
 
+/** Status codes for which a live/loaded forecast reading exists to summarize. */
+const FORECAST_STATUS_CODES = new Set(['forecast-available', 'live-forecast', 'historical-available'])
+
 /**
  * Build the hero's one-line weather chip (e.g. "72°F · 12 mph") from the current
- * conditions. Returns `null` when unavailable so the hero shows its honest
- * "Awaiting import" placeholder instead of a fabricated reading.
+ * conditions. Returns `null` unless the Weather Status Engine classifies a real
+ * forecast as loaded — so a completed or too-far-out event shows the hero's
+ * honest status placeholder instead of a stale or fabricated reading.
  */
 function weatherSummary(weather: WeatherIntelligence): string | null {
+  if (!FORECAST_STATUS_CODES.has(weather.statusReport.code)) return null
   if (weather.status !== 'available' || !weather.current) return null
   const parts: string[] = []
   if (weather.current.temperatureF !== null) parts.push(`${Math.round(weather.current.temperatureF)}\u00b0F`)
@@ -53,18 +59,39 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
   // query — only the news lookup itself. The host-course intelligence is loaded
   // in parallel, and only when the event is actually linked to a venue.
   const courseRef = tournament.courseRef
-  const [field, fieldReport, fieldNews, courseProfile, fitBoard, weather, odds, skillLeaderboards, dfsField] =
-    await Promise.all([
-      tournamentService.getTournamentField(tournament.id),
-      tournamentService.getFieldReport(tournament.id),
-      tournamentService.getFieldNews(tournament.id),
-      courseRef ? courseService.getCourseIntelligence(courseRef.id) : Promise.resolve(null),
-      tournamentService.getFieldFitBoard(tournament.id),
-      tournamentService.getWeatherIntelligence(tournament.id),
-      tournamentService.getOddsIntelligence(tournament.id),
-      tournamentService.getSkillLeaderboards(tournament.id),
-      tournamentService.getDfsValueField(tournament.id),
-    ])
+  const [
+    field,
+    fieldReport,
+    fieldNews,
+    courseProfile,
+    fitBoard,
+    weather,
+    odds,
+    skillLeaderboards,
+    dfsField,
+    isAdmin,
+  ] = await Promise.all([
+    tournamentService.getTournamentField(tournament.id),
+    tournamentService.getFieldReport(tournament.id),
+    tournamentService.getFieldNews(tournament.id),
+    courseRef ? courseService.getCourseIntelligence(courseRef.id) : Promise.resolve(null),
+    tournamentService.getFieldFitBoard(tournament.id),
+    tournamentService.getWeatherIntelligence(tournament.id),
+    tournamentService.getOddsIntelligence(tournament.id),
+    tournamentService.getSkillLeaderboards(tournament.id),
+    tournamentService.getDfsValueField(tournament.id),
+    isCurrentUserAdmin(),
+  ])
+
+  // Admins get a manual refresh control + import metadata on the weather card.
+  // The extra query runs only for admins, so the common visitor path is
+  // untouched.
+  const weatherAdmin = isAdmin
+    ? {
+        tournamentId: tournament.id,
+        importStatus: await tournamentService.getWeatherImportStatus(tournament.id),
+      }
+    : undefined
 
   return (
     <PageShell>
@@ -85,6 +112,7 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
         tournament={tournament}
         fieldSize={field.size}
         weatherSummary={weatherSummary(weather)}
+        weatherPlaceholder={weather.statusReport.label}
       />
 
       <TournamentFieldBanner report={fieldReport} />
@@ -100,7 +128,7 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
         />
       ) : null}
 
-      <TournamentWeatherIntelligence weather={weather} />
+      <TournamentWeatherIntelligence weather={weather} admin={weatherAdmin} />
 
       <TournamentOddsIntelligence odds={odds} />
 

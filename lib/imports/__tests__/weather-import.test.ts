@@ -41,6 +41,9 @@ function fakeRepository(overrides: Partial<WeatherRepository> = {}): WeatherRepo
     findWeatherVenueById: vi.fn(async () => venue),
     getCapturedAt: vi.fn(async () => null),
     replaceSnapshot: vi.fn(async () => ({ outcome: "updated" as const, data: {} as WeatherSnapshotRow })),
+    // The importer now writes a per-tournament audit log for every considered
+    // event; the double records the calls so tests can assert on them.
+    createImportLog: vi.fn(async () => {}),
     ...overrides,
   } as unknown as WeatherRepository
 }
@@ -105,6 +108,17 @@ describe("importWeather – selection transparency (no silent failures)", () => 
     expect(summary.periodsStored).toBe(8)
     expect(summary.emptyReason).toBeNull()
     expect(repo.replaceSnapshot).toHaveBeenCalledOnce()
+    // A STORED per-tournament log is recorded with an honest provider response.
+    expect(repo.createImportLog).toHaveBeenCalledOnce()
+    expect(repo.createImportLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tournamentId: "t1",
+        result: "STORED",
+        forecastEligible: true,
+        periodsWritten: 8,
+        rowsInserted: 1,
+      }),
+    )
   })
 
   it("skips a venue with no coordinates with an explicit note, never fetching", async () => {
@@ -123,6 +137,14 @@ describe("importWeather – selection transparency (no silent failures)", () => 
     expect(summary.fetched).toBe(0)
     expect(client.fetchForecast).not.toHaveBeenCalled()
     expect(summary.notes.some((n) => n.includes("no coordinates"))).toBe(true)
+    // The skip is recorded as a SKIPPED, forecast-ineligible log with a reason.
+    expect(repo.createImportLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: "SKIPPED",
+        forecastEligible: false,
+        skippedReason: expect.stringContaining("coordinates"),
+      }),
+    )
   })
 })
 
