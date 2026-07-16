@@ -106,6 +106,8 @@ function course(overrides: Partial<Course> = {}): Course {
     country: "USA",
     par: 72,
     yardage: 7475,
+    latitude: null,
+    longitude: null,
     ...overrides,
   }
 }
@@ -199,6 +201,32 @@ describe("CourseRepository", () => {
     expect((await repo.upsert(course())).outcome).toBe("inserted")
     expect((await repo.upsert(course({ par: 71 }))).outcome).toBe("updated")
     expect(delegate.rows.size).toBe(1)
+  })
+
+  it("writes NO coordinate columns when the course has no provider coordinates", async () => {
+    const { prisma, delegate } = fakePrisma("course")
+    const repo = new CourseRepository(prisma, silentRepositorySink)
+
+    await repo.upsert(course()) // latitude/longitude default to null
+    const row = [...delegate.rows.values()][0] as Record<string, unknown>
+
+    // Omitted entirely (not nulled) so the Geolocation Engine's values survive.
+    expect("latitude" in row).toBe(false)
+    expect("coordinateConfidence" in row).toBe(false)
+    expect("coordinateSource" in row).toBe(false)
+  })
+
+  it("promotes provider coordinates to a VERIFIED coordinate sourced 'sportsdataio'", async () => {
+    const { prisma, delegate } = fakePrisma("course")
+    const repo = new CourseRepository(prisma, silentRepositorySink)
+
+    await repo.upsert(course({ latitude: 33.5021, longitude: -82.0215 }))
+    const row = [...delegate.rows.values()][0] as Record<string, unknown>
+
+    expect(row.latitude).toBe(33.5021)
+    expect(row.longitude).toBe(-82.0215)
+    expect(row.coordinateConfidence).toBe("VERIFIED")
+    expect(row.coordinateSource).toBe("sportsdataio")
   })
 })
 

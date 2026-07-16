@@ -58,7 +58,7 @@ course. `coordinateSource` records which one supplied the stored value.
 
 | # | Source | Precision | `coordinateSource` | When it is used |
 | - | ------ | --------- | ------------------ | --------------- |
-| 1 | **SportsDataIO** (the course feed) | `VERIFIED` | `sportsdataio` | **If the feed ever supplies lat/lng.** Verified live: the golf tier's course record (`SdioCourse`) exposes only `Venue`/`Location`/`City`/`State`/`Country`/`Par`/`Yards` — **no coordinate fields** — so today it supplies none and the importer writes none. |
+| 1 | **SportsDataIO** (the course feed) | `VERIFIED` | `sportsdataio` | Whenever the feed supplies a valid lat/lng pair. The ingestion path is **implemented and tested** (`SdioCourse.Latitude/Longitude` → mapper → `toUpsertPlan` writes `VERIFIED`), but currently **dormant**: verified live against `/json/Courses` (622 rows), the golf tier exposes only `Venue`/`Location`/`City`/`State`/`Country`/`Par`/`Yards` — **no coordinate fields** — so no coordinates are written today. If a future tier adds them, they flow through automatically with no code change. |
 | 2 | **OpenStreetMap / Nominatim** | `VERIFIED` | `osm-nominatim` | Course name resolves to a real `leisure=golf_course` feature (course-precise). |
 | 3 | **OpenWeather Geocoding** | `APPROXIMATE` | `openweather-geocoding` | No course-precise match exists, but the city/state/country resolves to a locality centroid. Invoked **only** when coordinates are genuinely unavailable from the tiers above. |
 | — | _none_ | — (`UNKNOWN`) | `null` | No confident match anywhere. Left for review, never fabricated. |

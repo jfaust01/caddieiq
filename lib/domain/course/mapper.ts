@@ -21,6 +21,34 @@ import type { Course } from "./types"
 const US_STATE_CODE = /^[A-Z]{2}$/
 
 /**
+ * Resolve provider-supplied coordinates, all-or-nothing.
+ *
+ * Both latitude and longitude must be present and within valid geographic
+ * ranges; otherwise the pair is rejected as `null`. This prevents a half-set or
+ * out-of-range coordinate (e.g. lat present, lng missing) from ever being
+ * promoted to a VERIFIED coordinate downstream. The `(0, 0)` "null island"
+ * point is treated as absent, since the feed uses empty/zero for "unknown".
+ */
+function resolveCoordinates(raw: SdioCourse): {
+  latitude: number | null
+  longitude: number | null
+} {
+  const latitude = cleanNumber(raw.Latitude)
+  const longitude = cleanNumber(raw.Longitude)
+
+  const valid =
+    latitude !== null &&
+    longitude !== null &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180 &&
+    !(latitude === 0 && longitude === 0)
+
+  return valid ? { latitude, longitude } : { latitude: null, longitude: null }
+}
+
+/**
  * Resolve city/state from the structured fields, falling back to the free-text
  * `Location`. Conservative by design: the locality's first segment becomes the
  * city, and the second segment sets the state **only** when it looks like a US
@@ -62,6 +90,7 @@ export function mapSportsDataCourse(raw: SdioCourse): Course {
   const name = cleanString(raw.Venue) ?? UNKNOWN_COURSE_NAME
   const slug = slugify(name)
   const { city, stateProvince } = resolveLocality(raw)
+  const { latitude, longitude } = resolveCoordinates(raw)
 
   return {
     name,
@@ -72,6 +101,10 @@ export function mapSportsDataCourse(raw: SdioCourse): Course {
     par: cleanNumber(raw.Par),
     // SportsDataIO uses `Yards`; the domain uses `yardage`.
     yardage: cleanNumber(raw.Yards),
+    // Almost always null today (the golf tier supplies no coordinates); the
+    // repository promotes a non-null pair to a VERIFIED coordinate.
+    latitude,
+    longitude,
     externalRef: {
       source: "sportsdataio",
       // No upstream CourseID exists; the deterministic slug is the stable,

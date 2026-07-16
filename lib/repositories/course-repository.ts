@@ -326,20 +326,30 @@ export class CourseRepository extends BaseRepository {
   }
 }
 
+/** `coordinateSource` value stamped on coordinates that came from the feed. */
+const PROVIDER_COORDINATE_SOURCE = "sportsdataio"
+
 /**
  * Translate a validated `Course` into a Prisma upsert plan keyed by slug.
  *
- * IMPORTANT: this deliberately writes NO coordinate columns (`latitude`,
- * `longitude`, `coordinateConfidence`, `coordinateSource`,
- * `coordinatesVerifiedAt`). Coordinates are owned exclusively by the Course
- * Geolocation Engine via {@link CourseRepository.setVerifiedCoordinates}. The
- * SportsDataIO course feed carries no coordinates, so re-importing courses must
- * never touch — and therefore never clobber — verified coordinates. Omitting
- * the fields (rather than setting them to `null`) leaves existing values intact
- * on update and defaults new rows to `UNKNOWN`.
+ * Coordinate handling follows the source-priority order (see
+ * docs/COURSE_GEOLOCATION.md):
+ *
+ *   - **Provider coordinates present** (both lat/lng non-null): the feed is the
+ *     highest-priority source, so they are written as a `VERIFIED` coordinate
+ *     (`coordinateSource="sportsdataio"`). This pre-empts geocoding — the
+ *     Geolocation Engine's work queue skips any VERIFIED course. (SportsDataIO's
+ *     golf tier supplies none today, so this branch is currently dormant but
+ *     ready.)
+ *   - **Provider coordinates absent** (the norm): NO coordinate columns are
+ *     written. Coordinates are then owned exclusively by the Geolocation Engine
+ *     ({@link CourseRepository.setVerifiedCoordinates} /
+ *     {@link CourseRepository.setApproximateCoordinates}). Omitting the fields
+ *     (rather than nulling them) leaves any engine-resolved value intact on
+ *     re-import and defaults new rows to `UNKNOWN`.
  */
 function toUpsertPlan(course: Course): UpsertPlan<Prisma.CourseCreateInput, Prisma.CourseUpdateInput> {
-  const common = {
+  const base = {
     name: course.name,
     slug: course.slug,
     city: course.city,
@@ -348,6 +358,21 @@ function toUpsertPlan(course: Course): UpsertPlan<Prisma.CourseCreateInput, Pris
     par: course.par,
     yardage: course.yardage,
   }
+
+  // The mapper only sets both coordinates together (all-or-nothing), so testing
+  // one is sufficient; testing both keeps the type narrowing explicit.
+  if (course.latitude === null || course.longitude === null) {
+    return { slug: course.slug, create: base, update: base }
+  }
+
+  const coordinates = {
+    latitude: course.latitude,
+    longitude: course.longitude,
+    coordinateConfidence: CoordinateConfidence.VERIFIED,
+    coordinateSource: PROVIDER_COORDINATE_SOURCE,
+    coordinatesVerifiedAt: new Date(),
+  }
+  const common = { ...base, ...coordinates }
   return { slug: course.slug, create: common, update: common }
 }
 

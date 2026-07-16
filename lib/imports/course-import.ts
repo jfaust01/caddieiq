@@ -40,6 +40,11 @@ const MERGEABLE_FIELDS = [
   "Country",
   "Par",
   "Yards",
+  // Currently always absent from the feed, but merged for the same reason as
+  // the rest: if a future tier populates coordinates on only some venue rows, a
+  // sparse row is completed by a richer sibling before mapping.
+  "Latitude",
+  "Longitude",
 ] as const satisfies readonly (keyof SdioCourse)[]
 
 /**
