@@ -129,6 +129,41 @@ export interface TournamentContextRow {
   fieldCount: number
 }
 
+/**
+ * Field-sync timestamps for a single event: when the roster was first imported
+ * and most recently updated, plus the current entrant count. Powers the
+ * Tournament Page's "Official Field Confirmed" panel (confirmation + last-sync
+ * times). Returned by {@link TournamentRepository.getFieldSyncStats}.
+ */
+export interface FieldSyncStatsRow {
+  playerCount: number
+  /** ISO timestamp the field was first imported, or `null` when never imported. */
+  firstImportedAt: Date | null
+  /** ISO timestamp of the most recent field row write, or `null`. */
+  lastUpdatedAt: Date | null
+}
+
+/**
+ * One row of the admin Tournament Field Intelligence panel: an upcoming or live
+ * event with its imported roster size, the prior edition's field size (the
+ * honest "expected" baseline), and its most recent field sync. Returned by
+ * {@link TournamentRepository.listFieldIntelligence}.
+ */
+export interface FieldIntelligenceRow {
+  id: string
+  name: string
+  slug: string
+  status: string
+  startDate: Date | null
+  endDate: Date | null
+  /** Imported (non-withdrawn) entrants for this edition. */
+  playersImported: number
+  /** Non-withdrawn field size of the most recent prior edition, or `null`. */
+  expectedPlayers: number | null
+  /** Most recent field-row write for this edition, or `null`. */
+  lastSync: Date | null
+}
+
 export class TournamentRepository extends BaseRepository {
   constructor(prisma: PrismaClient = prismaClient, sink?: RepositoryLogSink) {
     super(prisma, "tournament", sink)
@@ -369,6 +404,75 @@ export class TournamentRepository extends BaseRepository {
       LIMIT 1
     `)
     return rows[0] ?? null
+  }
+
+  /**
+   * Field-sync timestamps for one event: current non-withdrawn entrant count,
+   * plus the earliest `createdAt` (first import → "confirmed at") and latest
+   * `updatedAt` ("last synced") across its field rows. Both timestamps are
+   * `null` when no field has been imported. The id is bound, never interpolated.
+   * Read-only.
+   */
+  async getFieldSyncStats(id: string): Promise<FieldSyncStatsRow> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ playerCount: number; firstImportedAt: Date | null; lastUpdatedAt: Date | null }>
+    >(Prisma.sql`
+      SELECT
+        count(*)::int      AS "playerCount",
+        min(tf."createdAt") AS "firstImportedAt",
+        max(tf."updatedAt") AS "lastUpdatedAt"
+      FROM tournament_fields tf
+      WHERE tf."tournamentId" = ${id} AND tf.withdrawn = false
+    `)
+    return rows[0] ?? { playerCount: 0, firstImportedAt: null, lastUpdatedAt: null }
+  }
+
+  /**
+   * Upcoming and live (non-completed, non-deleted) events for the admin
+   * Tournament Field Intelligence panel, soonest first. Each row carries its
+   * imported roster size, its most recent field sync, and the non-withdrawn
+   * field size of the most recent *prior* edition of the same event — the
+   * honest "expected players" baseline (`null` when no prior edition exists,
+   * never a fabricated number). Read-only.
+   */
+  async listFieldIntelligence(limit = 25): Promise<FieldIntelligenceRow[]> {
+    return this.prisma.$queryRaw<FieldIntelligenceRow[]>(Prisma.sql`
+      SELECT
+        t.id            AS "id",
+        t.name          AS "name",
+        t.slug          AS "slug",
+        t.status::text  AS "status",
+        t."startDate"   AS "startDate",
+        t."endDate"     AS "endDate",
+        COALESCE(field.count, 0)::int AS "playersImported",
+        prior.count                   AS "expectedPlayers",
+        field."lastSync"              AS "lastSync"
+      FROM tournaments t
+      LEFT JOIN LATERAL (
+        SELECT count(*)::int AS count, max(tf."updatedAt") AS "lastSync"
+        FROM tournament_fields tf
+        WHERE tf."tournamentId" = t.id AND tf.withdrawn = false
+      ) field ON true
+      LEFT JOIN LATERAL (
+        SELECT (
+          SELECT count(*)::int
+          FROM tournament_fields tf
+          WHERE tf."tournamentId" = prev.id AND tf.withdrawn = false
+        ) AS count
+        FROM tournaments prev
+        WHERE prev.name = t.name
+          AND prev."deletedAt" IS NULL
+          AND prev."startDate" IS NOT NULL
+          AND t."startDate" IS NOT NULL
+          AND prev."startDate" < t."startDate"
+        ORDER BY prev."startDate" DESC
+        LIMIT 1
+      ) prior ON true
+      WHERE t."deletedAt" IS NULL
+        AND t.status::text <> 'COMPLETED'
+      ORDER BY t."startDate" ASC NULLS LAST, t.name ASC
+      LIMIT ${limit}
+    `)
   }
 
   /**

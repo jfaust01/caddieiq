@@ -22,6 +22,7 @@ import type {
   FilterOption,
   PaginatedResult,
   TournamentField,
+  TournamentFieldReport,
   TournamentNewsItem,
   TournamentQuery,
   TournamentSummary,

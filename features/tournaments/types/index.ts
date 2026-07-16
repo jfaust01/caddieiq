@@ -9,9 +9,38 @@
  */
 
 import type { AnalyticsBand, FieldAnalyticsSummary } from '@/lib/analytics/types'
+import type {
+  ContextTiming,
+  FieldConfidence,
+  FieldStatus,
+} from '@/lib/tournament-context/types'
 
 /** Lifecycle status of a tournament (mirrors the database enum). */
 export type TournamentStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
+
+/**
+ * The official-field lifecycle report the Tournament Page banner renders: the
+ * lifecycle state and confidence from the Tournament Context Engine, plus the
+ * field-sync timestamps that back the "Official Field Confirmed" panel. Every
+ * field is honest: counts and times are `null` until real data exists, never a
+ * fabricated placeholder.
+ */
+export interface TournamentFieldReport {
+  /** Where the event sits in the official field lifecycle. */
+  status: FieldStatus
+  /** Certainty that the presented field is the final, official one. */
+  confidence: FieldConfidence
+  /** Where the event sits in time (drives whether field messaging is retired). */
+  timing: ContextTiming | null
+  /** The PGA Tour commitment deadline (ISO), or null when the start date is unknown. */
+  releaseTime: string | null
+  /** Imported (non-withdrawn) entrant count when known, else null. */
+  playerCount: number | null
+  /** When the official field was first imported (ISO), or null. */
+  confirmedAt: string | null
+  /** Most recent field sync (ISO), or null. */
+  lastUpdated: string | null
+}
 
 /** Professional tours an event can belong to (mirrors the database enum). */
 export type TourType = 'PGA' | 'DP_WORLD' | 'LIV' | 'KORN_FERRY' | 'LPGA'

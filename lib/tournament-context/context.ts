@@ -18,6 +18,7 @@
  * field boards) additionally check `fieldConfirmed`.
  */
 
+import { deriveFieldIntelligence } from './field-status'
 import type {
   ContextGap,
   ContextSource,
@@ -43,6 +44,12 @@ export interface RawTournamentContext {
   course: { id: string; name: string } | null
   /** Whether a field (roster) exists for the event. */
   fieldConfirmed: boolean
+  /**
+   * Known imported (non-withdrawn) entrant count, or `null` when the count is
+   * not available (e.g. the player source, which confirms membership but not the
+   * total field size). Feeds the official-field lifecycle intelligence.
+   */
+  fieldPlayerCount?: number | null
 }
 
 /** Derive where the event sits in time from its dates (and status as a hint). */
@@ -98,6 +105,15 @@ export function normalizeTournamentContext(raw: RawTournamentContext): Tournamen
   const isVerified = course !== null && tournament.startDate !== null
   const confidence: 'verified' | 'partial' = isVerified ? 'verified' : 'partial'
 
+  // Official field lifecycle — derived by the single pure rule set, never guessed.
+  const fieldIntel = deriveFieldIntelligence({
+    status: tournament.status,
+    startDate: tournament.startDate,
+    endDate: tournament.endDate,
+    fieldConfirmed,
+    fieldPlayerCount: raw.fieldPlayerCount ?? null,
+  })
+
   return {
     status: 'available',
     confidence,
@@ -113,6 +129,10 @@ export function normalizeTournamentContext(raw: RawTournamentContext): Tournamen
     },
     course: course ? { id: course.id, name: course.name } : null,
     fieldConfirmed,
+    fieldStatus: fieldIntel.fieldStatus,
+    fieldReleaseTime: fieldIntel.fieldReleaseTime,
+    fieldConfidence: fieldIntel.fieldConfidence,
+    fieldPlayerCount: fieldIntel.fieldPlayerCount,
     gaps,
   }
 }
