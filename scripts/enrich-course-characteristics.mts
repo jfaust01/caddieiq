@@ -123,17 +123,25 @@ async function enrichCourseCharacteristicsTable(options: Options): Promise<Chara
         const batch = characteristicsToPersist.slice(i, i + BATCH_SIZE)
         const batchResult = await repository.bulkUpsertCharacteristics(batch)
 
-        if (batchResult.ok) {
-          result.createdCount += batchResult.data.filter((_, idx) => idx < batch.length / 2).length
-          result.updatedCount += batchResult.data.filter((_, idx) => idx >= batch.length / 2).length
-          log(`Persisted batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(characteristicsToPersist.length / BATCH_SIZE)}`)
-        } else {
-          result.errors.push({
-            courseId: "BATCH",
-            error: `Batch upsert failed: ${batchResult.error.message}`,
-          })
-          logError(`Batch upsert failed: ${batchResult.error.message}`)
+        result.createdCount += batchResult.inserted
+        result.updatedCount += batchResult.updated
+
+        if (batchResult.failed > 0) {
+          result.errors.push(
+            ...batchResult.errors.map((error) => ({
+              courseId: error.courseId ?? "UNKNOWN",
+              error: error.message ?? String(error),
+            }))
+          )
+
+          logError(
+            `Batch completed with ${batchResult.failed} failed writes.`
+          )
         }
+
+        log(
+          `Persisted batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(characteristicsToPersist.length / BATCH_SIZE)}`
+        )
       }
     }
   } finally {
