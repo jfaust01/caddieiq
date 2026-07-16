@@ -90,3 +90,8 @@ export {
   type PlayerOddsQuoteRow,
   type OddsCoverageCounts,
 } from "./odds-repository"
+export {
+  PlayerSkillRepository,
+  getPlayerSkillRepository,
+  type PlayerSkillCoverageCounts,
+} from "./player-skill-repository"

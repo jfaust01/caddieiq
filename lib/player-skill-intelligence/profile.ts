@@ -23,6 +23,7 @@ import {
   skillExplanationLabel,
   trendDirection,
 } from "./normalize"
+import type { FitSkillKey as CourseFitSkillKey } from "@/lib/analytics/course-fit/types"
 import type {
   PlayerSkillProfile,
   PlayerSkillProfileInput,
@@ -460,4 +461,41 @@ function rankByConfidence(
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100
+}
+
+/* ------------------------------------------------------------------ */
+/* Course Fit adapter                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The five Course Fit families expressed in this engine's skill keys. Each Fit
+ * family is backed by the single most representative sourced skill so the
+ * mapping stays honest: if that skill is Unknown for a player, the Fit family is
+ * `null` (Course Fit already treats `null` as "no signal"), never a guess.
+ */
+const FIT_SKILL_SOURCE: Readonly<Record<CourseFitSkillKey, SkillKey>> = {
+  driving: "sgOffTheTee",
+  approach: "sgApproach",
+  shortGame: "sgAroundGreen",
+  putting: "sgPutting",
+  scrambling: "scrambling",
+}
+
+/**
+ * Project a rich {@link PlayerSkillProfile} down to the compact
+ * `Record<FitSkillKey, number | null>` that the Course Fit model consumes. This
+ * is the single, canonical bridge between the Player Skill Signal Family and
+ * Course Fit — Course Fit no longer needs its own skill logic, it just reads
+ * these normalized 0–100 scores. Unknown skills map to `null`.
+ */
+export function toCourseFitSkillProfile(
+  profile: PlayerSkillProfile,
+): Record<CourseFitSkillKey, number | null> {
+  const byKey = new Map(profile.skills.map((s) => [s.key, s] as const))
+  const out = {} as Record<CourseFitSkillKey, number | null>
+  for (const fitKey of Object.keys(FIT_SKILL_SOURCE) as CourseFitSkillKey[]) {
+    const signal = byKey.get(FIT_SKILL_SOURCE[fitKey])
+    out[fitKey] = signal ? signal.value : null
+  }
+  return out
 }
