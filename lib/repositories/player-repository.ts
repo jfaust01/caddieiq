@@ -25,9 +25,11 @@ import type { BulkRepositoryResult, RepositoryResult } from "./repository-result
 
 /**
  * Relations the read/directory surfaces need alongside the base player row:
- * the resolved nationality, the active tour membership (with its tour), and the
- * player's ranking history (newest first) so callers can derive the current
- * world ranking without a second query.
+ * the resolved nationality and the active tour membership (with its tour). The
+ * authoritative Official World Golf Ranking rides on the newest season's
+ * `worldRanking` in `seasonStatistics`, so the detail mapper derives the current
+ * rank from there — no separate ranking table is joined (the vestigial
+ * `player_rankings` table was removed in the 2026-07 data-integrity audit).
  */
 const playerReadInclude = {
   nationality: true,
@@ -36,11 +38,9 @@ const playerReadInclude = {
     include: { tour: true },
     orderBy: { joinedAt: "desc" },
   },
-  rankings: {
-    orderBy: { effectiveDate: "desc" },
-  },
   // Season-level statistics, newest season first, so the detail mapper can show
-  // the latest season prominently and prior seasons as history.
+  // the latest season prominently and prior seasons as history — and read the
+  // current OWGR from the latest season's `worldRanking`.
   seasonStatistics: {
     orderBy: { season: "desc" },
   },
@@ -149,13 +149,18 @@ export class PlayerRepository extends BaseRepository {
 
     const where = Prisma.join(conditions, " AND ")
     // Latest OWGR rank per player, joined once and reused for both the ranking
-    // filter (WHERE) and the ranking sort (ORDER BY).
+    // filter (WHERE) and the ranking sort (ORDER BY). The authoritative Official
+    // World Golf Ranking rides on the most recent season's `worldRanking` in
+    // `player_season_statistics` (imported by the statistics pipeline); we take
+    // the newest season that actually carries a rank so a player is not dropped
+    // to the bottom just because their latest season row predates a rank.
     const from = Prisma.sql`
       FROM players p
       LEFT JOIN LATERAL (
-        SELECT pr.rank FROM player_rankings pr
-        WHERE pr."playerId" = p.id AND pr."rankingSystem" = 'OWGR'
-        ORDER BY pr."effectiveDate" DESC
+        SELECT s."worldRanking" AS rank
+        FROM player_season_statistics s
+        WHERE s."playerId" = p.id AND s."worldRanking" IS NOT NULL
+        ORDER BY s.season DESC
         LIMIT 1
       ) owgr ON true
     `

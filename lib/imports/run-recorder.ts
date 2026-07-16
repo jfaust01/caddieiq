@@ -24,6 +24,7 @@
 
 import type { ImportRunStatus } from "@/lib/generated/prisma/client"
 import { getImportRunRepository, type ImportRunInput } from "@/lib/repositories/import-run-repository"
+import type { ImportResult } from "./import-result"
 
 /** The common counters every import can be projected onto. */
 export interface RunOutcome {
@@ -43,6 +44,24 @@ export interface RunOutcome {
    * that is not a per-row failure (e.g. a trial-tier feed whose values scramble).
    */
   status?: ImportRunStatus
+}
+
+/**
+ * Project the uniform manager {@link ImportResult} onto the common counters.
+ * Shared by the three manager-driven runners (players, courses, tournaments),
+ * whose result field names already match one-to-one.
+ */
+export function normalizeImportResult(result: ImportResult): RunOutcome {
+  return {
+    processed: result.processed,
+    inserted: result.inserted,
+    updated: result.updated,
+    skipped: result.skipped,
+    failed: result.failed,
+    warnings: result.warnings,
+    summary: `${result.inserted} inserted, ${result.updated} updated, ${result.skipped} skipped, ${result.failed} failed (quality ${result.qualityScoreAverage}/100)`,
+    error: result.errors[0]?.message ?? null,
+  }
 }
 
 /** Everything needed to record one run around a unit of import work. */

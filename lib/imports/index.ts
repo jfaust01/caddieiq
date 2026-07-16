@@ -38,7 +38,7 @@ import {
   importCourseCoordinates,
   type GeolocationSummary,
 } from "./course-geolocation"
-import { recordImportRun } from "./run-recorder"
+import { recordImportRun, normalizeImportResult } from "./run-recorder"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -246,7 +246,7 @@ export async function runCourseLinking(
       skipped: s.skipped,
       failed: s.failed,
       summary: `${s.linked} linked, ${s.updated} updated, ${s.skipped} skipped, ${s.failed} failed`,
-      error: s.notes[0] ?? null,
+      error: s.failed > 0 ? (s.notes[0] ?? null) : null,
     }),
   })
 }
@@ -302,7 +302,17 @@ export async function runStatisticsImport(
       updated: s.updated,
       skipped: s.rowsUnmatchedPlayer,
       failed: s.rowsInvalid,
+      // Some seasons can be unreachable (the trial-tier key 401s on prior
+      // seasons). That is not a per-row failure, but a run that could not fetch
+      // every requested season is honestly PARTIAL, not a clean SUCCESS.
+      status:
+        s.rowsInvalid > 0
+          ? undefined
+          : s.seasonsWithData < s.seasonsConsidered
+            ? "PARTIAL"
+            : undefined,
       summary: `${s.seasonsWithData}/${s.seasonsConsidered} seasons; ${s.inserted} inserted, ${s.updated} updated, ${s.rowsUnmatchedPlayer} unmatched, ${s.rowsInvalid} invalid`,
+      error: s.seasonsWithData < s.seasonsConsidered ? (s.notes[0] ?? null) : null,
     }),
   })
 }
@@ -351,24 +361,29 @@ export async function runBettingImport(
     provider: "sportsdataio",
     entity: "betting",
     run: () => importBetting({ dates }),
-    normalize: (s) => ({
-      processed: s.eventsSeen,
-      inserted: s.inserted,
-      updated: s.updated,
-      failed: s.failed,
-      skipped: s.scrambledOutcomes,
+    normalize: (s) => {
       // Trial-tier payout VALUES arrive scrambled; the structure imports but no
       // real odds are available, so a run with zero available outcomes is
-      // honestly PARTIAL rather than a clean SUCCESS.
-      status:
-        s.failed > 0
-          ? undefined
-          : s.availableOutcomes === 0 && s.scrambledOutcomes > 0
-            ? "PARTIAL"
-            : undefined,
-      summary: `${s.inserted} inserted, ${s.updated} updated; ${s.availableOutcomes} available / ${s.scrambledOutcomes} scrambled outcomes`,
-      error: s.notes[0] ?? null,
-    }),
+      // honestly PARTIAL rather than a clean SUCCESS — and only then do we
+      // surface a note as the run error (never SUCCESS-with-error).
+      const scrambledOnly = s.availableOutcomes === 0 && s.scrambledOutcomes > 0
+      // A run that saw no events at all but logged notes means the feed itself
+      // could not be fetched (the endpoint 404s on the trial tier) — that is a
+      // degraded run, not a clean "no events scheduled today".
+      const fetchFailed = s.eventsSeen === 0 && s.notes.length > 0
+      const degraded = scrambledOnly || fetchFailed
+      const status = s.failed > 0 ? undefined : degraded ? "PARTIAL" : undefined
+      return {
+        processed: s.eventsSeen,
+        inserted: s.inserted,
+        updated: s.updated,
+        failed: s.failed,
+        skipped: s.scrambledOutcomes,
+        status,
+        summary: `${s.inserted} inserted, ${s.updated} updated; ${s.availableOutcomes} available / ${s.scrambledOutcomes} scrambled outcomes`,
+        error: s.failed > 0 || degraded ? (s.notes[0] ?? null) : null,
+      }
+    },
   })
 }
 
@@ -393,14 +408,23 @@ export async function runFantasyImport(
       const inserted = s.projectionsInserted + s.salariesInserted
       const updated = s.projectionsUpdated + s.salariesUpdated
       const failed = s.projectionsFailed + s.salariesFailed
+      // DFS salaries are real and import cleanly. Projections are unavailable on
+      // the trial tier (the endpoint 404s / scrambles), so a run that landed
+      // salaries but no projections is honestly PARTIAL, and only then do we
+      // surface the projection note as the run error — never SUCCESS-with-error.
+      const projectionsMissing =
+        s.projectionsAvailable === 0 && (s.projectionsScrambled > 0 || s.notes.length > 0)
+      const status =
+        failed > 0 ? undefined : projectionsMissing ? "PARTIAL" : undefined
       return {
         processed: s.projectionsSeen + s.salariesSeen,
         inserted,
         updated,
         failed,
         skipped: s.projectionsScrambled,
+        status,
         summary: `salaries: ${s.salariesInserted}+${s.salariesUpdated} (real); projections: ${s.projectionsAvailable} available / ${s.projectionsScrambled} scrambled`,
-        error: s.notes[0] ?? null,
+        error: failed > 0 || projectionsMissing ? (s.notes[0] ?? null) : null,
       }
     },
   })
@@ -422,13 +446,16 @@ export async function runCourseGeolocation(limit?: number): Promise<GeolocationS
     provider: "osm-nominatim",
     entity: "geolocation",
     run: () => importCourseCoordinates({ limit }),
+    // A course with no confident public match is legitimately left UNKNOWN and
+    // skipped — that is the honest, non-fabricating behavior, NOT an error. So
+    // the run only carries an error when a lookup actually threw (`failed`).
     normalize: (s) => ({
       processed: s.coursesConsidered,
       updated: s.verified,
       skipped: s.skippedNotFound + s.skippedUnverified,
       failed: s.failed,
       summary: `${s.verified} verified, ${s.skippedNotFound} not found, ${s.skippedUnverified} unverified, ${s.failed} failed`,
-      error: s.notes[0] ?? null,
+      error: s.failed > 0 ? (s.notes[0] ?? null) : null,
     }),
   })
 }
@@ -477,5 +504,17 @@ export async function runWeatherImport(
  * behind both the tournament and player Odds Intelligence cards.
  */
 export async function runOddsImport(): Promise<OddsImportSummary> {
-  return importOdds()
+  return recordImportRun({
+    provider: "the-odds-api",
+    entity: "odds",
+    run: () => importOdds(),
+    normalize: (s) => ({
+      processed: s.eventsSeen,
+      inserted: s.inserted,
+      updated: s.updated,
+      failed: s.failed,
+      summary: `${s.inserted} inserted, ${s.updated} updated; ${s.quotesBuilt} quotes, ${s.linkedToTournament} events linked, ${s.quotesLinkedToPlayer} quotes player-linked, ${s.distinctBookmakers} books`,
+      error: s.notes[0] ?? null,
+    }),
+  })
 }

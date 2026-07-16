@@ -88,18 +88,6 @@ function resolveTour(record: PlayerWithRelations): Tour | null {
   return active ? mapTour(active.tour.type) : null
 }
 
-/**
- * Latest rank for a given system. `rankings` arrive newest-first from the
- * repository, so the first match is the current one.
- */
-function latestRank(
-  record: PlayerWithRelations,
-  system: RankingSystem,
-): number | null {
-  const entry = record.rankings.find((r) => r.rankingSystem === system)
-  return entry ? entry.rank : null
-}
-
 /** Map a database player row (+ relations) into the directory/card `Player`. */
 export function mapPlayer(record: PlayerWithRelations): Player {
   return {
@@ -109,7 +97,7 @@ export function mapPlayer(record: PlayerWithRelations): Player {
     fullName: record.fullName,
     nationality: mapNationality(record.nationality, record.countryCode),
     tour: resolveTour(record),
-    worldRanking: latestRank(record, "OWGR"),
+    worldRanking: owgrFromSeasonStats(record)?.rank ?? null,
     handedness: mapHandedness(record.handedness),
     status: mapStatus(record.status),
     age: computeAge(record.birthDate),
@@ -128,8 +116,9 @@ const RANKING_LABELS: Record<RankingSystem, string> = {
 }
 
 /**
- * OWGR standing from season statistics, used as an honest fallback when the
- * dedicated `player_rankings` table has no OWGR row yet. Both the rank and last
+ * OWGR standing from season statistics — the authoritative source for a
+ * player's Official World Golf Ranking (the vestigial `player_rankings` table
+ * was removed in the 2026-07 data-integrity audit). Both the rank and last
  * week's rank are real provider data; movement is derived, never fabricated.
  * A LOWER ranking number is better, so `previous - current` is the improvement.
  */
@@ -146,35 +135,37 @@ function owgrFromSeasonStats(
 }
 
 /**
- * Build the rankings panel from live ranking rows. Every tracked system is
- * always represented (rank null when not yet ingested); the user's own model
- * rank stays flagged as coming soon until the Model Lab ships. OWGR falls back
- * to season-statistics world ranking so we surface the real standing we have.
+ * Build the rankings panel. OWGR is the one system with a live provider source
+ * (the newest season's `worldRanking`); its rank and movement are real or null,
+ * never fabricated. DataGolf and the CaddieIQ composite have no import feeding
+ * this persisted panel — CaddieIQ is derived on demand by the Ranking Engine
+ * (`lib/rankings`) rather than stored here — so both are represented with a null
+ * rank until ingested, and the user's own model rank stays flagged coming soon.
  */
 function buildRankings(record: PlayerWithRelations): PlayerRanking[] {
-  const liveSystems: RankingSystem[] = ["OWGR", "DATAGOLF", "CADDIEIQ"]
-  const owgrFallback = owgrFromSeasonStats(record)
-  const live = liveSystems.map((system) => {
-    const primaryRank = latestRank(record, system)
-    if (system === "OWGR" && primaryRank === null && owgrFallback) {
-      return {
-        system,
-        label: RANKING_LABELS[system],
-        rank: owgrFallback.rank,
-        movement: owgrFallback.movement,
-        delta: owgrFallback.delta,
-      }
-    }
-    return {
-      system,
-      label: RANKING_LABELS[system],
-      rank: primaryRank,
-      movement: "flat" as const,
-      delta: 0,
-    }
-  })
+  const owgr = owgrFromSeasonStats(record)
   return [
-    ...live,
+    {
+      system: "OWGR",
+      label: RANKING_LABELS.OWGR,
+      rank: owgr?.rank ?? null,
+      movement: owgr?.movement ?? "flat",
+      delta: owgr?.delta ?? 0,
+    },
+    {
+      system: "DATAGOLF",
+      label: RANKING_LABELS.DATAGOLF,
+      rank: null,
+      movement: "flat",
+      delta: 0,
+    },
+    {
+      system: "CADDIEIQ",
+      label: RANKING_LABELS.CADDIEIQ,
+      rank: null,
+      movement: "flat",
+      delta: 0,
+    },
     {
       system: "MODEL",
       label: RANKING_LABELS.MODEL,
