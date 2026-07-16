@@ -106,11 +106,25 @@ describe("computeMarketView", () => {
     expect(view.selections[0].fairProbability).toBeCloseTo(0.4545, 3)
   })
 
-  it("reports a positive overround for a margined field", () => {
-    const view = computeMarketView("TOURNAMENT_WINNER", quotes, NOW, NOW)
-    // 0.25 + 0.2 + 0.1 = 0.55 → overround -0.45 for a 3-horse partial field is
-    // expected here (small synthetic field), so just assert it is computable.
+  it("reports a real (>=1) overround only when a book prices a full margined field", () => {
+    // One book prices a complete 2-runner market at 1.8 each: implied
+    // 0.5556 + 0.5556 = 1.111 → a legitimate ~11% vig.
+    const fullBook: OddsQuoteRow[] = [
+      quote({ selection: "A", selectionSlug: "a", bookmakerKey: "b1", decimalOdds: 1.8 }),
+      quote({ selection: "B", selectionSlug: "b", bookmakerKey: "b1", decimalOdds: 1.8 }),
+    ]
+    const view = computeMarketView("TOURNAMENT_WINNER", fullBook, NOW, NOW)
     expect(view.overround).not.toBeNull()
+    // Margin = sum(1/d) - 1 = 1.111 - 1 = ~0.111 (a real, positive ~11% vig).
+    expect(view.overround!).toBeGreaterThan(0)
+    expect(view.overround!).toBeCloseTo(0.111, 2)
+  })
+
+  it("suppresses a misleading sub-100% overround from a sparsely-priced field", () => {
+    // The synthetic 3-runner field above implies only 0.55 per book — not a
+    // real vig, so overround must be null rather than a bogus negative margin.
+    const view = computeMarketView("TOURNAMENT_WINNER", quotes, NOW, NOW)
+    expect(view.overround).toBeNull()
   })
 
   it("emits a favourite signal naming the top selection", () => {

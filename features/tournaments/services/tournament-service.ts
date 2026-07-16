@@ -44,6 +44,8 @@ import {
 } from '@/lib/tournament-context'
 import { getWeatherIntelligenceService } from '@/lib/weather-intelligence/service'
 import type { WeatherIntelligence } from '@/lib/weather-intelligence'
+import { getOddsIntelligenceService } from '@/lib/odds-intelligence/service'
+import type { TournamentOddsView } from '@/lib/odds-intelligence'
 import type { RankingBoard, RankingBoardSet, RankingCategory } from '@/lib/rankings/types'
 import { getFieldRepository } from '@/lib/repositories/field-repository'
 import { getNewsRepository } from '@/lib/repositories'
@@ -253,6 +255,16 @@ const getWeatherForTournamentCached = cache(
     getWeatherIntelligenceService().getForTournament(tournamentId),
 )
 
+/**
+ * Resolve a tournament's Odds Intelligence once per request. Wrapped in React
+ * `cache` and keyed by tournament id, mirroring weather, so the engine runs at
+ * most once per tournament per request.
+ */
+const getOddsForTournamentCached = cache(
+  (tournamentId: string): Promise<TournamentOddsView> =>
+    getOddsIntelligenceService().getTournamentOddsView(tournamentId),
+)
+
 /** How many articles the tournament-hub field-news rail shows in total. */
 const FIELD_NEWS_LIMIT = 6
 /** How many articles per player feed the rail before the global cap. */
@@ -393,6 +405,17 @@ export const tournamentService = {
    */
   getWeatherIntelligence(id: string): Promise<WeatherIntelligence> {
     return getWeatherForTournamentCached(id)
+  },
+
+  /**
+   * Return this event's Odds Intelligence — a de-vigged, multi-book consensus
+   * for the outright market with its own Verified/Partial/Unavailable
+   * confidence. Keyed by tournament id to agree with the rest of the hub. Reads
+   * through the Odds Intelligence Engine, which returns an `unavailable` view
+   * (never a fabricated price) when no verified quotes have been captured.
+   */
+  getOddsIntelligence(id: string): Promise<TournamentOddsView> {
+    return getOddsForTournamentCached(id)
   },
 
   /**

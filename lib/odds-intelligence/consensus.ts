@@ -196,12 +196,31 @@ export function computeMarketView(
   })
   selections.sort((a, b) => b.fairProbability - a.fairProbability)
 
-  const distinctBooks = new Set(quotes.map((q) => q.bookmakerKey))
-  const bookCount = distinctBooks.size
-  const overroundValue = computeOverround(
-    // Use one representative (median) price per selection for a field overround.
-    selections.map((s) => s.consensusDecimal),
-  )
+  // Overround is a per-book property: each book's own listed prices imply a
+  // total > 100%, the "vig". Summing one representative price per selection
+  // across books that list disjoint subsets of the field understates it. So we
+  // compute each book's own overround from the prices it actually offered, then
+  // report the median across books. Only books that price a meaningful slice of
+  // the field (>= 2 selections) contribute; otherwise overround is left null.
+  const pricesByBook = new Map<string, number[]>()
+  for (const quote of quotes) {
+    const list = pricesByBook.get(quote.bookmakerKey)
+    if (list) list.push(quote.decimalOdds)
+    else pricesByBook.set(quote.bookmakerKey, [quote.decimalOdds])
+  }
+  const perBookOverrounds: number[] = []
+  for (const prices of pricesByBook.values()) {
+    if (prices.length < 2) continue
+    const ov = computeOverround(prices)
+    // `overround` is the margin sum(1/d) - 1. A real book's listed prices always
+    // imply > 100%, i.e. a positive margin. A non-positive margin means the book
+    // priced only a slice of the field (common for out-of-window futures), so its
+    // "overround" is not a meaningful vig — exclude it rather than publish a
+    // misleading sub-100% number.
+    if (ov != null && ov > 0) perBookOverrounds.push(ov)
+  }
+  const bookCount = pricesByBook.size
+  const overroundValue = median(perBookOverrounds)
 
   return {
     market,
