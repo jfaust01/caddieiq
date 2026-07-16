@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
+  Activity,
   BarChart3,
   CircleHelp,
   Database,
@@ -90,22 +91,22 @@ export const primaryNavigation: NavSection[] = [
     adminOnly: true,
     items: [
       {
+        title: 'Admin Dashboard',
+        href: '/admin',
+        icon: ShieldCheck,
+        description: 'Administration entry point for platform operations.',
+      },
+      {
         title: 'Database Health',
         href: '/admin/database-health',
         icon: Database,
         description: 'Live database health, table populations, and import pipelines.',
       },
       {
-        title: 'Data Sources',
-        href: '/operations/data-sources',
-        icon: Database,
-        description: 'Provider health and import monitoring.',
-      },
-      {
-        title: 'Administration',
-        href: '/operations/admin',
-        icon: ShieldCheck,
-        description: 'Users, subscriptions, and data quality.',
+        title: 'System Health',
+        href: '/admin/system-health',
+        icon: Activity,
+        description: 'Weather ingestion and background system diagnostics.',
       },
     ],
   },
