@@ -2,8 +2,7 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 
 import { SystemHealthView } from "@/features/admin/system-health/system-health-view"
-import { prisma } from "@/lib/prisma"
-import { getSession } from "@/lib/session"
+import { getSession, isCurrentUserAdmin } from "@/lib/session"
 import { getWeatherHealthReport } from "@/lib/system-health/weather-health"
 
 export const metadata: Metadata = {
@@ -19,12 +18,10 @@ export default async function SystemHealthPage() {
   if (!session?.user) redirect("/login")
 
   // ADMIN-only. Non-admins get a 404 rather than a 403 so the page's existence
-  // is not disclosed — this route is intentionally absent from navigation.
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: true },
-  })
-  if (user?.role !== "ADMIN") notFound()
+  // is not disclosed — this route is intentionally absent from navigation. The
+  // role is re-read from the database inside the helper, never trusted from the
+  // client.
+  if (!(await isCurrentUserAdmin())) notFound()
 
   const report = await getWeatherHealthReport()
   return <SystemHealthView report={report} />

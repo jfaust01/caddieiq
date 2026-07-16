@@ -42,6 +42,41 @@ export interface ForecastableTournament {
   hasSnapshot: boolean
 }
 
+/**
+ * Aggregate coverage + throughput stats for the current forecast window. Derived
+ * from the forecastable set and the recent per-tournament import logs — every
+ * count is real, never a placeholder.
+ */
+export interface WeatherWindowStats {
+  /** Forecast window bounds (inclusive of a small past grace) as ISO strings. */
+  windowStart: string
+  windowEnd: string
+  horizonDays: number
+  /** Events inside the window (the total the importer should be covering). */
+  eligible: number
+  /** Eligible events that currently have a stored forecast snapshot. */
+  imported: number
+  /** Eligible events skipped last import (unlocated venue, still fresh, etc.). */
+  skipped: number
+  /** Eligible events with no snapshot yet (imported + uncovered = eligible). */
+  uncovered: number
+  /**
+   * Average wall-clock duration of a *stored* per-tournament import over the
+   * recent sample, in milliseconds, or null when nothing has been stored yet.
+   */
+  avgImportDurationMs: number | null
+  /** Number of per-tournament log rows the average was computed over. */
+  durationSampleSize: number
+}
+
+/** The next scheduled importer execution, computed from the cron expression. */
+export interface NextScheduledRun {
+  /** ISO timestamp of the next fire time (UTC), or null when unschedulable. */
+  at: string | null
+  /** Whole hours from now until the next run, or null. */
+  inHours: number | null
+}
+
 /** The full weather subsystem health snapshot. */
 export interface WeatherHealthReport {
   generatedAt: string
@@ -52,6 +87,10 @@ export interface WeatherHealthReport {
   recentRuns: WeatherRunSummary[]
   /** Events within the forecast horizon — the set the importer should cover. */
   forecastable: ForecastableTournament[]
+  /** Aggregate coverage + throughput for the current forecast window. */
+  windowStats: WeatherWindowStats
+  /** The next scheduled importer run, computed from the cron entry. */
+  nextRun: NextScheduledRun
   /** Nearest upcoming event, to explain an empty window when off-season. */
   nearestUpcoming: { name: string; startDate: string; daysOut: number } | null
 }
@@ -100,6 +139,31 @@ async function readSchedulerConfig(): Promise<{ configured: boolean; expression:
 }
 
 /**
+ * Compute the next fire time for a simple daily cron expression of the form
+ * `m h * * *` (the shape used for these imports). Returns null for any other
+ * shape rather than guessing — the view then shows the raw expression instead.
+ * Kept dependency-free and UTC-based so it matches Vercel Cron semantics.
+ */
+function nextRunFromCron(expression: string | null, from: Date): Date | null {
+  if (!expression) return null
+  const parts = expression.trim().split(/\s+/)
+  if (parts.length !== 5) return null
+  const [minStr, hourStr, dom, mon, dow] = parts
+  // Only handle the daily case (fixed minute + hour, wildcard elsewhere).
+  if (dom !== "*" || mon !== "*" || dow !== "*") return null
+  const minute = Number(minStr)
+  const hour = Number(hourStr)
+  if (!Number.isInteger(minute) || !Number.isInteger(hour)) return null
+  if (minute < 0 || minute > 59 || hour < 0 || hour > 23) return null
+
+  const next = new Date(
+    Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate(), hour, minute, 0, 0),
+  )
+  if (next.getTime() <= from.getTime()) next.setUTCDate(next.getUTCDate() + 1)
+  return next
+}
+
+/**
  * Collect a live, honest health snapshot for the weather subsystem: whether the
  * scheduler is wired, whether the provider responds, how much data exists, the
  * outcome of recent runs, and which forecastable events are (not) yet covered.
@@ -117,6 +181,7 @@ export async function getWeatherHealthReport(): Promise<WeatherHealthReport> {
     recentRunRows,
     forecastableRows,
     nearestRow,
+    storedDurationAgg,
   ] = await Promise.all([
     readSchedulerConfig(),
     probeWeatherProvider(),
@@ -153,6 +218,13 @@ export async function getWeatherHealthReport(): Promise<WeatherHealthReport> {
       orderBy: { startDate: "asc" },
       select: { name: true, startDate: true },
     }),
+    // Average duration of *stored* per-tournament imports over a recent sample,
+    // straight from the audit log — a real throughput signal, not an estimate.
+    prisma.weatherImportLog.aggregate({
+      where: { result: "STORED", createdAt: { gte: new Date(now - 7 * DAY_MS) } },
+      _avg: { durationMs: true },
+      _count: true,
+    }),
   ])
 
   const recentRuns = recentRunRows.map(flattenRun)
@@ -186,6 +258,28 @@ export async function getWeatherHealthReport(): Promise<WeatherHealthReport> {
         }
       : null
 
+  // Coverage + throughput for the current window, all from real rows.
+  const imported = forecastable.filter((t) => t.hasSnapshot).length
+  const skipped = forecastable.filter((t) => !t.hasSnapshot && t.coordinateConfidence === null).length
+  const avgDuration = storedDurationAgg._avg.durationMs
+  const windowStats: WeatherWindowStats = {
+    windowStart: new Date(now - DAY_MS).toISOString(),
+    windowEnd: horizon.toISOString(),
+    horizonDays: FORECAST_HORIZON_DAYS,
+    eligible: forecastable.length,
+    imported,
+    skipped,
+    uncovered: forecastable.length - imported,
+    avgImportDurationMs: avgDuration != null ? Math.round(avgDuration) : null,
+    durationSampleSize: storedDurationAgg._count,
+  }
+
+  const nextRunAt = nextRunFromCron(schedulerConfig.expression, new Date(now))
+  const nextRun: NextScheduledRun = {
+    at: nextRunAt?.toISOString() ?? null,
+    inHours: nextRunAt ? Math.round((nextRunAt.getTime() - now) / 3_600_000) : null,
+  }
+
   return {
     generatedAt: new Date().toISOString(),
     scheduler: {
@@ -198,6 +292,8 @@ export async function getWeatherHealthReport(): Promise<WeatherHealthReport> {
     lastRun: recentRuns[0] ?? null,
     recentRuns,
     forecastable,
+    windowStats,
+    nextRun,
     nearestUpcoming,
   }
 }

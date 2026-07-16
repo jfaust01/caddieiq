@@ -86,6 +86,37 @@ function StatusTile({
   )
 }
 
+/** A compact labelled figure in the forecast-window throughput strip. */
+function WindowStat({
+  label,
+  value,
+  tone,
+  hint,
+}: {
+  label: string
+  value: string
+  tone?: "ok" | "warn"
+  hint?: string
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        {label}
+      </span>
+      <span
+        className={cn(
+          "text-xl font-semibold tabular-nums tracking-tight",
+          tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+          tone === "warn" && "text-amber-600 dark:text-amber-400",
+        )}
+      >
+        {value}
+      </span>
+      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+    </div>
+  )
+}
+
 function runStatusTone(status: string): Tone {
   if (status === "SUCCESS") return "ok"
   if (status === "PARTIAL") return "warn"
@@ -138,7 +169,8 @@ function coverageLabel(t: ForecastableTournament): string {
  * forecastable events are still uncovered. Every value is read live and honest.
  */
 export function SystemHealthView({ report }: { report: WeatherHealthReport }) {
-  const { scheduler, provider, rows, recentRuns, forecastable, nearestUpcoming } = report
+  const { scheduler, provider, rows, recentRuns, forecastable, windowStats, nextRun, nearestUpcoming } =
+    report
 
   const schedulerReady = scheduler.scheduleConfigured && scheduler.secretConfigured
   const schedulerTone: Tone = schedulerReady ? "ok" : scheduler.scheduleConfigured ? "warn" : "error"
@@ -161,7 +193,7 @@ export function SystemHealthView({ report }: { report: WeatherHealthReport }) {
         description="Live status of the weather ingestion pipeline: scheduler, provider connectivity, stored data, recent runs, and forecast-window coverage. Every value is read live; empty states are explained, never hidden."
       />
 
-      <section aria-label="Weather subsystem status" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section aria-label="Weather subsystem status" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatusTile
           icon={CalendarClock}
           label="Scheduler"
@@ -204,6 +236,57 @@ export function SystemHealthView({ report }: { report: WeatherHealthReport }) {
               : "The weather importer has never run. Trigger it manually or wait for the schedule."
           }
         />
+        <StatusTile
+          icon={CalendarClock}
+          label="Next run"
+          value={
+            nextRun.inHours != null
+              ? nextRun.inHours <= 1
+                ? "Within the hour"
+                : `in ${nextRun.inHours}h`
+              : scheduler.scheduleConfigured
+                ? "Scheduled"
+                : "Not scheduled"
+          }
+          tone={nextRun.at ? "ok" : scheduler.scheduleConfigured ? "warn" : "muted"}
+          hint={
+            nextRun.at
+              ? `Next scheduled import at ${utc(nextRun.at)}.`
+              : scheduler.cronExpression
+                ? `Cron ${scheduler.cronExpression} runs on a non-daily schedule.`
+                : "No cron configured, so the importer only runs when triggered manually."
+          }
+        />
+      </section>
+
+      <section aria-label="Forecast-window throughput">
+        <Card className="grid grid-cols-2 gap-x-6 gap-y-5 p-5 sm:grid-cols-3 lg:grid-cols-5">
+          <WindowStat label="Forecast window" value={`~${windowStats.horizonDays} days`} />
+          <WindowStat label="Eligible events" value={String(windowStats.eligible)} />
+          <WindowStat
+            label="Imported"
+            value={`${windowStats.imported} / ${windowStats.eligible}`}
+            tone={windowStats.uncovered === 0 && windowStats.eligible > 0 ? "ok" : undefined}
+          />
+          <WindowStat
+            label="Skipped (unlocated)"
+            value={String(windowStats.skipped)}
+            tone={windowStats.skipped > 0 ? "warn" : undefined}
+          />
+          <WindowStat
+            label="Avg import time"
+            value={
+              windowStats.avgImportDurationMs != null
+                ? `${windowStats.avgImportDurationMs} ms`
+                : "—"
+            }
+            hint={
+              windowStats.avgImportDurationMs != null
+                ? `over ${windowStats.durationSampleSize} stored import${windowStats.durationSampleSize === 1 ? "" : "s"} (7d)`
+                : "no stored imports in the last 7 days"
+            }
+          />
+        </Card>
       </section>
 
       <section aria-label="Forecast-window coverage" className="flex flex-col gap-4">
