@@ -109,6 +109,42 @@ export interface WeatherVenueRow {
   numberOfRounds: number
 }
 
+/** Outcome of one tournament's weather import attempt (mirrors the DB enum). */
+export type WeatherImportResultCode = "STORED" | "SKIPPED" | "FAILED"
+
+/** A per-tournament weather import log row to persist. */
+export interface WeatherImportLogInput {
+  importRunId?: string | null
+  tournamentId: string
+  tournamentName: string
+  courseId?: string | null
+  courseName?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  forecastEligible: boolean
+  providerResponse?: string | null
+  rowsInserted?: number
+  rowsUpdated?: number
+  periodsWritten?: number
+  skippedReason?: string | null
+  durationMs?: number
+  result: WeatherImportResultCode
+}
+
+/** A per-tournament weather import log row, flattened for status/health reads. */
+export interface WeatherImportLogRow {
+  id: string
+  tournamentId: string
+  tournamentName: string
+  courseName: string | null
+  forecastEligible: boolean
+  result: WeatherImportResultCode
+  providerResponse: string | null
+  skippedReason: string | null
+  durationMs: number
+  createdAt: Date
+}
+
 const PERIOD_SELECT = {
   forecastTime: true,
   temperatureC: true,
@@ -225,6 +261,65 @@ export class WeatherRepository extends BaseRepository {
       select: { capturedAt: true },
     })
     return row?.capturedAt ?? null
+  }
+
+  /**
+   * Append a per-tournament weather import log row. Best-effort by design: audit
+   * logging must never break an import, so a failure here is swallowed (logged
+   * to the repository sink) rather than propagated to the pipeline.
+   */
+  async createImportLog(input: WeatherImportLogInput): Promise<void> {
+    try {
+      await this.prisma.weatherImportLog.create({
+        data: {
+          importRunId: input.importRunId ?? null,
+          tournamentId: input.tournamentId,
+          tournamentName: input.tournamentName,
+          courseId: input.courseId ?? null,
+          courseName: input.courseName ?? null,
+          latitude: input.latitude ?? null,
+          longitude: input.longitude ?? null,
+          forecastEligible: input.forecastEligible,
+          providerResponse: input.providerResponse ?? null,
+          rowsInserted: input.rowsInserted ?? 0,
+          rowsUpdated: input.rowsUpdated ?? 0,
+          periodsWritten: input.periodsWritten ?? 0,
+          skippedReason: input.skippedReason ?? null,
+          durationMs: input.durationMs ?? 0,
+          result: input.result,
+        },
+      })
+    } catch (error) {
+      this.logger.failure(input.tournamentId, "weather import log write failed", {
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  /**
+   * The most recent import log for a tournament (any result), or `null` when the
+   * event has never been considered by an import. Drives the Weather Status
+   * Engine's "did the last attempt fail?" branch and the tournament page's
+   * last-attempt summary.
+   */
+  async findLatestImportLog(tournamentId: string): Promise<WeatherImportLogRow | null> {
+    const row = await this.prisma.weatherImportLog.findFirst({
+      where: { tournamentId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        tournamentId: true,
+        tournamentName: true,
+        courseName: true,
+        forecastEligible: true,
+        result: true,
+        providerResponse: true,
+        skippedReason: true,
+        durationMs: true,
+        createdAt: true,
+      },
+    })
+    return row as WeatherImportLogRow | null
   }
 
   /**

@@ -80,6 +80,9 @@ export {
   type WeatherSnapshotRow,
   type WeatherPeriodRow,
   type WeatherVenueRow,
+  type WeatherImportLogInput,
+  type WeatherImportLogRow,
+  type WeatherImportResultCode,
 } from "./weather-repository"
 export {
   OddsRepository,

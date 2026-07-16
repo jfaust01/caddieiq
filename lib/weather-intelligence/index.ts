@@ -16,3 +16,13 @@
  */
 export * from "./types"
 export { buildWeatherIntelligence, unavailableIntelligence } from "./intelligence"
+export {
+  computeWeatherStatus,
+  resolvePhase,
+  FORECAST_HORIZON_DAYS,
+  type WeatherStatusCode,
+  type WeatherStatusReport,
+  type WeatherStatusTone,
+  type WeatherTournamentPhase,
+  type WeatherStatusInput,
+} from "./status"
