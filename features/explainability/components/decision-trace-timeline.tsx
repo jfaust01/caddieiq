@@ -13,6 +13,7 @@ import {
   type ExplanationConfidence,
   type TraceImpact,
 } from "@/lib/explainability"
+import { MetricLabel } from "./metric-info"
 
 /** Confidence → chip tone, reusing the app's semantic tokens (no new colors). */
 const CONFIDENCE_CHIP: Record<ExplanationConfidence, string> = {
@@ -100,9 +101,16 @@ function StageCard({ stage, isLast }: { stage: DecisionTraceStage; isLast: boole
             )}
           >
             <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
-                {stage.categoryLabel}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
+                  {stage.categoryLabel}
+                </span>
+                <MetricLabel
+                  metricKey={stage.category}
+                  label=""
+                  iconClassName="w-3 h-3"
+                />
+              </div>
               <span className="text-sm font-medium tracking-tight text-pretty">{stage.title}</span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -132,8 +140,13 @@ function StageCard({ stage, isLast }: { stage: DecisionTraceStage; isLast: boole
                 <dl className="flex flex-wrap gap-x-4 gap-y-1">
                   {stage.evidence.map((e) => (
                     <div key={e.label} className="flex items-baseline gap-1.5">
-                      <dt className="text-[0.625rem] uppercase tracking-wide text-muted-foreground">
+                      <dt className="flex items-center gap-1 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
                         {e.label}
+                        <MetricLabel
+                          metricKey={e.label.toLowerCase().replace(/\s+/g, "-")}
+                          label=""
+                          iconClassName="w-2.5 h-2.5"
+                        />
                       </dt>
                       <dd
                         className={cn(
@@ -148,11 +161,18 @@ function StageCard({ stage, isLast }: { stage: DecisionTraceStage; isLast: boole
                 </dl>
               ) : null}
               {!isFinal ? (
-                <Badge
-                  className={cn("w-fit border text-[0.625rem]", CONFIDENCE_CHIP[stage.confidence])}
-                >
-                  {CONFIDENCE_LABEL[stage.confidence]} confidence
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  <Badge
+                    className={cn("border text-[0.625rem]", CONFIDENCE_CHIP[stage.confidence])}
+                  >
+                    {CONFIDENCE_LABEL[stage.confidence]} confidence
+                  </Badge>
+                  <MetricLabel
+                    metricKey="confidence-level"
+                    label=""
+                    iconClassName="w-2.5 h-2.5"
+                  />
+                </div>
               ) : null}
             </div>
           ) : null}
