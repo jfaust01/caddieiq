@@ -1,5 +1,7 @@
 import { AdminSetupForm } from "@/features/setup/admin-setup-form"
 
+export const dynamic = "force-dynamic"
+
 export const metadata = {
   title: "Admin Setup",
   description: "Create the initial admin user for CaddieIQ",
