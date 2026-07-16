@@ -19,7 +19,9 @@ export function JsonInspector({ value }: JsonInspectorProps) {
     try {
       await navigator.clipboard.writeText(json)
       setCopied(true)
-      window.setTimeout(() => setCopied(false), 1500)
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => setCopied(false), 1500)
+      }
     } catch {
       // Clipboard may be unavailable (e.g. insecure context); fail quietly.
     }
