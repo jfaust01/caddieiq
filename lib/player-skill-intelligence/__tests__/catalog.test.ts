@@ -15,8 +15,37 @@ import {
 } from "../catalog"
 import type { SkillRoundSample } from "../types"
 
+/**
+ * A fully-populated, all-`null` raw round. Every rate field is present so the
+ * aggregator only ever "sees" data via explicit overrides — mirroring how the
+ * repository always emits a complete row. Overrides layer real values on top.
+ */
+const BASE_SAMPLE: SkillRoundSample = {
+  playedAt: "2024-06-01T00:00:00.000Z",
+  season: 2024,
+  sgOffTheTee: null,
+  sgApproach: null,
+  sgAroundGreen: null,
+  sgPutting: null,
+  sgTotal: null,
+  drivingDistance: null,
+  drivingAccuracy: null,
+  fairwaysHit: null,
+  fairwaysPossible: null,
+  greensInRegulation: null,
+  greensPossible: null,
+  putts: null,
+  birdies: null,
+  eagles: null,
+  pars: null,
+  bogeys: null,
+  doubleBogeys: null,
+  scramblingPercentage: null,
+  sandSavePercentage: null,
+}
+
 function round(overrides: Partial<SkillRoundSample>): SkillRoundSample {
-  return { playedAt: "2024-06-01T00:00:00.000Z", season: 2024, ...overrides }
+  return { ...BASE_SAMPLE, ...overrides }
 }
 
 describe("catalog metadata", () => {

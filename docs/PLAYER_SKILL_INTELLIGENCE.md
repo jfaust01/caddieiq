@@ -218,7 +218,7 @@ automatically the moment strokes-gained data flows — no further change.
   freshness — so the player card, the leaderboards, and Course Fit all agree on
   one player, one profile, and one confidence.
 
-See also: [MODELS.md](./MODELS.md), [COURSE_INTELLIGENCE.md](./COURSE_INTELLIGENCE.md),
-[ODDS_INTELLIGENCE.md](./ODDS_INTELLIGENCE.md),
+See also: [MODELS.md](./MODELS.md), [COURSE_FIT_MODEL.md](./COURSE_FIT_MODEL.md),
+[COURSE_INTELLIGENCE.md](./COURSE_INTELLIGENCE.md),
 [WEATHER_INTELLIGENCE.md](./WEATHER_INTELLIGENCE.md),
 [DATA_CATALOG.md](./DATA_CATALOG.md).
