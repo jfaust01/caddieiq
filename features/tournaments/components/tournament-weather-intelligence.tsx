@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   CloudRain,
   CloudSun,
   Compass,
@@ -363,6 +364,7 @@ function primaryGap(gaps: WeatherGap[]): WeatherGap['code'] | null {
     'tournament-not-found',
     'no-host-course',
     'course-missing-coordinates',
+    'beyond-forecast-horizon',
     'no-snapshot',
   ]
   for (const code of order) {
@@ -397,12 +399,18 @@ function unavailableCopy(
         title: 'Conditions unavailable',
         body: detail ?? 'This tournament could not be found, so no weather context is available.',
       }
+    case 'beyond-forecast-horizon':
+      return {
+        icon: CalendarClock,
+        title: 'Too far out for a forecast',
+        body: `${venue} is located and ready. This event is still beyond the ~5-day forecast horizon, so no conditions are available yet — the forecast populates automatically as the event approaches. This is expected, not a missing import.`,
+      }
     case 'no-snapshot':
     default:
       return {
         icon: CloudSun,
         title: 'Forecast pending',
-        body: `The Weather Intelligence Engine is live for ${venue}. No forecast has been imported yet, so conditions read as pending — this fills in automatically as forecast data arrives, and nothing here is estimated.`,
+        body: `The Weather Intelligence Engine is live for ${venue}, which is within the forecast window. The next scheduled import will populate conditions automatically — nothing here is estimated.`,
       }
   }
 }

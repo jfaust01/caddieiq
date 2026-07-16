@@ -60,6 +60,18 @@ export class WeatherIntelligenceService {
     const snapshot = await this.repo.findByTournamentId(tournamentId)
 
     if (!snapshot || snapshot.periods.length === 0) {
+      // Distinguish "expected — the event is still off in the future" from
+      // "the import is missing/late." A located venue with a start date beyond
+      // the provider's useful forecast reach simply has no snapshot yet, and
+      // that is normal, not a failure.
+      const daysOut = daysUntil(venue.startDate)
+      if (daysOut !== null && daysOut > FORECAST_HORIZON_DAYS) {
+        return unavailableIntelligence(
+          [{ code: "beyond-forecast-horizon", detail: String(daysOut) }],
+          `This event starts in ${daysOut} days, beyond the ~${FORECAST_HORIZON_DAYS}-day forecast horizon. The forecast will populate automatically as the event approaches.`,
+          venueMeta,
+        )
+      }
       return unavailableIntelligence(
         [{ code: "no-snapshot" }],
         "No forecast has been imported for this tournament yet.",
@@ -86,6 +98,19 @@ export class WeatherIntelligenceService {
       },
     })
   }
+}
+
+/**
+ * OpenWeather's free 5-day/3-hour forecast reaches ~5 days out. Events beyond
+ * this simply have no forecast yet (expected), rather than a missing import.
+ * Kept in sync with the importer's selection horizon intent.
+ */
+const FORECAST_HORIZON_DAYS = 5
+
+/** Whole days from now until `date` (future positive); null when no date. */
+function daysUntil(date: Date | null): number | null {
+  if (!date) return null
+  return Math.ceil((date.getTime() - Date.now()) / 86_400_000)
 }
 
 /** Build the display venue block from the tournament's linked course. */

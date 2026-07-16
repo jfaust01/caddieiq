@@ -130,6 +130,10 @@ export interface WeatherGap {
     | "tournament-not-found"
     | "no-host-course"
     | "course-missing-coordinates"
+    // The venue is located, but the event is further out than the provider's
+    // useful forecast horizon (~5 days) — so no snapshot exists *yet* and this
+    // is expected, off-season behavior, NOT a missing/failed import.
+    | "beyond-forecast-horizon"
     | "no-snapshot"
     // Data-stage gaps (a snapshot exists but is thin/old)
     | "no-periods"

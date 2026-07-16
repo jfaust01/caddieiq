@@ -68,8 +68,12 @@ export interface ImportWeatherOptions {
   maxNotes?: number
 }
 
-/** OpenWeather free forecast reaches ~5 days out; only near events are useful. */
-const DEFAULT_HORIZON_DAYS = 8
+/**
+ * Auto-selection window. OpenWeather's free forecast reaches ~5 days out; we use
+ * 6 to include one buffer day so an event just entering forecast range is picked
+ * up on the next daily run. Events beyond this have no usable forecast yet.
+ */
+const DEFAULT_HORIZON_DAYS = 6
 
 /**
  * Import forecasts for the given (or automatically selected upcoming)
