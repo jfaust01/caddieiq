@@ -50,6 +50,27 @@ verified course pin.
 A course we could not honestly place at either tier stays `UNKNOWN` with `NULL`
 lat/lng, and the product shows "awaiting course coordinates" rather than a guess.
 
+### 2.1 Coordinate source hierarchy (precedence)
+
+Coordinates are taken from the **most authoritative available source first**;
+each lower tier is consulted only when the tier above has nothing for that
+course. `coordinateSource` records which one supplied the stored value.
+
+| # | Source | Precision | `coordinateSource` | When it is used |
+| - | ------ | --------- | ------------------ | --------------- |
+| 1 | **SportsDataIO** (the course feed) | `VERIFIED` | `sportsdataio` | **If the feed ever supplies lat/lng.** Verified live: the golf tier's course record (`SdioCourse`) exposes only `Venue`/`Location`/`City`/`State`/`Country`/`Par`/`Yards` — **no coordinate fields** — so today it supplies none and the importer writes none. |
+| 2 | **OpenStreetMap / Nominatim** | `VERIFIED` | `osm-nominatim` | Course name resolves to a real `leisure=golf_course` feature (course-precise). |
+| 3 | **OpenWeather Geocoding** | `APPROXIMATE` | `openweather-geocoding` | No course-precise match exists, but the city/state/country resolves to a locality centroid. Invoked **only** when coordinates are genuinely unavailable from the tiers above. |
+| — | _none_ | — (`UNKNOWN`) | `null` | No confident match anywhere. Left for review, never fabricated. |
+
+**Never geocode what a provider already verified.** Because the work queue
+excludes any course already `VERIFIED` (or `APPROXIMATE`), a coordinate written
+from SportsDataIO (tier 1) is automatically skipped by geolocation — the OSM and
+OpenWeather lookups run **only** for courses without a usable coordinate yet.
+This satisfies the rule directly: use the provider's verified coordinates when
+present; fall back to geocoding, and to OpenWeather specifically, only when
+coordinates are otherwise unavailable.
+
 **What "verified" means concretely:** the primary geocoder must return an actual
 golf-course feature — OpenStreetMap `leisure=golf_course` (or `golf`) — for the
 course's name + locality. A clubhouse POI tagged `restaurant`, a town centroid,
