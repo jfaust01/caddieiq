@@ -79,3 +79,14 @@ export {
   type WeatherPeriodRow,
   type WeatherVenueRow,
 } from "./weather-repository"
+export {
+  OddsRepository,
+  getOddsRepository,
+  type OddsMarket,
+  type ResolvedOddsQuote,
+  type ResolvedOddsEvent,
+  type OddsQuoteRow,
+  type OddsEventRow,
+  type PlayerOddsQuoteRow,
+  type OddsCoverageCounts,
+} from "./odds-repository"
