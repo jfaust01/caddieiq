@@ -11,6 +11,7 @@ import { getTournamentRepository } from "@/lib/repositories/tournament-repositor
 import { SOURCEABLE_SKILL_KEYS } from "@/lib/player-skill-intelligence"
 import { deriveFieldIntelligence } from "@/lib/tournament-context"
 
+import { buildPlatformInventory, INVENTORY_TABLES } from "./inventory"
 import { coveragePercent, countPresent, rateCoverage } from "./ratings"
 import type {
   CoverageSection,
@@ -21,6 +22,7 @@ import type {
   HealthCheck,
   ImportRunHealth,
   PlatformHealth,
+  PlatformInventory,
 } from "./types"
 
 /**
@@ -779,6 +781,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
   })
 
   const fieldIntelligence = await buildFieldIntelligence(new Date(now))
+  const inventory = await buildInventory()
 
   return {
     generatedAt: new Date(now).toISOString(),
@@ -786,7 +789,29 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     sections,
     fieldIntelligence,
     health,
+    inventory,
   }
+}
+
+/**
+ * Build the Platform Inventory by reading live row counts for every table in
+ * the registry with a single round-trip, then reconciling each against its
+ * designed intent via the pure {@link buildPlatformInventory}. Counting is done
+ * with one UNION-ALL query so a full-platform inventory costs one query, not 31.
+ */
+async function buildInventory(): Promise<PlatformInventory> {
+  // Registry table names are a fixed, code-defined allowlist (never user input),
+  // so interpolating them into the count query is safe.
+  const unionSql = INVENTORY_TABLES.map(
+    (table) => `SELECT '${table}' AS t, COUNT(*)::bigint AS c FROM "${table}"`,
+  ).join(" UNION ALL ")
+
+  const rows = await prisma.$queryRawUnsafe<Array<{ t: string; c: bigint }>>(unionSql)
+  const counts: Record<string, number> = {}
+  for (const row of rows) {
+    counts[row.t] = Number(row.c)
+  }
+  return buildPlatformInventory(counts)
 }
 
 /**

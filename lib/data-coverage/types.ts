@@ -176,6 +176,87 @@ export interface FieldIntelligenceReport {
   awaitingCount: number
 }
 
+/**
+ * The live health of one database table, once its designed intent is reconciled
+ * with its real row count:
+ * - `healthy`          — holds the data it should.
+ * - `waiting`          — legitimately empty now; fills through normal app usage,
+ *                        an auth flow, or a dependency that is not yet satisfied.
+ * - `future`           — schema reserved for an unbuilt sprint; no pipeline
+ *                        writes it yet, so emptiness is expected and correct.
+ * - `provider-limited` — empty/partial only because the current provider tier
+ *                        blocks the values (e.g. SportsDataIO trial scrambling).
+ * - `obsolete`         — no longer required; slated to remove/merge/replace.
+ * - `broken`           — should have data now but the owning pipeline failed.
+ */
+export type TableHealth =
+  | "healthy"
+  | "waiting"
+  | "future"
+  | "provider-limited"
+  | "obsolete"
+  | "broken"
+
+/** The classified owner of a table — exactly one per table. */
+export type TableOwner =
+  | "SportsDataIO"
+  | "OpenWeather"
+  | "The Odds API"
+  | "Manual Enrichment"
+  | "System"
+  | "Intelligence Engine"
+  | "Decision Model"
+  | "Analytics"
+  | "Application"
+
+/**
+ * One row of the Platform Inventory: the complete, unambiguous record of why a
+ * table exists, who owns it, what feeds it, and whether its current row count is
+ * expected. This is the machine-readable form of docs/PLATFORM_DATA_INVENTORY.md.
+ */
+export interface PlatformInventoryEntry {
+  /** Physical table name (matches the Prisma `@@map`). */
+  table: string
+  /** Human label. */
+  label: string
+  /** Why the table exists. */
+  purpose: string
+  owner: TableOwner
+  /** How rows are created (provider import, model output, app write, seed…). */
+  populationMethod: string
+  /** Upstream tables/pipelines this table depends on, in order. */
+  dependencies: string[]
+  /** One-line statement of the table's expected lifecycle/row-count intent. */
+  expectedState: string
+  /** Live row count read from the database at report time. */
+  rowCount: number
+  /** Reconciled health once intent meets the real row count. */
+  health: TableHealth
+  /** Plain-language reason for the health verdict (never a guess). */
+  reason: string
+}
+
+/** Count of tables in each health bucket, for the dashboard summary. */
+export interface PlatformInventorySummary {
+  healthy: number
+  waiting: number
+  future: number
+  providerLimited: number
+  obsolete: number
+  broken: number
+  total: number
+}
+
+/**
+ * The full Platform Inventory: every table classified and reconciled against
+ * its live row count, plus per-bucket totals. Ordered by owner then table so
+ * the dashboard and the JSON export read identically to the doc.
+ */
+export interface PlatformInventory {
+  entries: PlatformInventoryEntry[]
+  summary: PlatformInventorySummary
+}
+
 /** The complete diagnostics report — also the JSON export payload. */
 export interface DataCoverageReport {
   /** ISO timestamp the report was generated. */
@@ -184,4 +265,6 @@ export interface DataCoverageReport {
   sections: CoverageSection[]
   fieldIntelligence: FieldIntelligenceReport
   health: PlatformHealth
+  /** Full table-by-table platform inventory (the "zero ambiguity" record). */
+  inventory: PlatformInventory
 }

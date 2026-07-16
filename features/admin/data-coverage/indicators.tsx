@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { ratingLabel, type CoverageRating } from "@/lib/data-coverage"
-import type { HealthState, ImportRunOutcome } from "@/lib/data-coverage/types"
+import type { HealthState, ImportRunOutcome, TableHealth } from "@/lib/data-coverage/types"
 
 /** Fill color per rating for the coverage bar. */
 const BAR_COLOR: Record<CoverageRating, string> = {
@@ -108,3 +108,36 @@ export function ImportRunBadge({ outcome }: { outcome: ImportRunOutcome }) {
     </Badge>
   )
 }
+
+const TABLE_HEALTH_COLOR: Record<TableHealth, string> = {
+  healthy: "bg-success/12 text-success",
+  // Legitimately empty for now — informational, not alarming.
+  waiting: "bg-primary/12 text-primary",
+  // Reserved for an unbuilt sprint — neutral.
+  future: "bg-muted text-muted-foreground",
+  // Blocked by the provider tier — warning-toned like other restricted states.
+  "provider-limited": "bg-warning/15 text-warning-foreground",
+  obsolete: "bg-muted-foreground/20 text-muted-foreground line-through",
+  // Should hold data but does not — the one genuinely bad state.
+  broken: "bg-destructive/12 text-destructive",
+}
+
+const TABLE_HEALTH_LABEL: Record<TableHealth, string> = {
+  healthy: "Healthy",
+  waiting: "Waiting",
+  future: "Future",
+  "provider-limited": "Provider Limited",
+  obsolete: "Obsolete",
+  broken: "Broken",
+}
+
+/** A pill communicating a table's reconciled inventory health. */
+export function TableHealthBadge({ health }: { health: TableHealth }) {
+  return (
+    <Badge className={cn("border-transparent", TABLE_HEALTH_COLOR[health])}>
+      {TABLE_HEALTH_LABEL[health]}
+    </Badge>
+  )
+}
+
+export { TABLE_HEALTH_LABEL }

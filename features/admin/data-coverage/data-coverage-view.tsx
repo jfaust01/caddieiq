@@ -7,6 +7,7 @@ import { CopyReportButton } from './copy-report-button'
 import { CoverageSectionCard } from './coverage-section-card'
 import { FieldIntelligencePanel } from './field-intelligence-panel'
 import { HealthPanel } from './health-panel'
+import { InventoryPanel } from './inventory-panel'
 import { SummaryGrid } from './summary-grid'
 
 /** Human-readable "generated at" stamp, rendered deterministically (UTC). */
@@ -53,6 +54,14 @@ export function DataCoverageView({ report }: { report: DataCoverageReport }) {
           description="Official-field lifecycle for upcoming and live events. Overdue rows have passed their commitment deadline with no roster imported — the actionable signal that a field sync is late."
         />
         <FieldIntelligencePanel report={report.fieldIntelligence} />
+      </section>
+
+      <section aria-label="Platform inventory" className="flex flex-col gap-4">
+        <SectionHeader
+          title="Platform inventory"
+          description="Every database table classified by owner and reconciled against its live row count. Each empty table carries an explicit reason, so there is zero ambiguity about why it holds no data."
+        />
+        <InventoryPanel inventory={report.inventory} />
       </section>
 
       <section aria-label="Platform health" className="flex flex-col gap-4">
