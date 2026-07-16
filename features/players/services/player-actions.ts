@@ -18,6 +18,8 @@ import type {
 } from '@/features/players/types'
 import { getOddsIntelligenceService } from '@/lib/odds-intelligence/service'
 import type { PlayerOddsView } from '@/lib/odds-intelligence'
+import { getPlayerSkillIntelligenceService } from '@/lib/player-skill-intelligence/service'
+import type { PlayerSkillProfile } from '@/lib/player-skill-intelligence'
 
 import { playerService } from './player-service'
 
@@ -68,6 +70,27 @@ export async function fetchPlayerOdds(
     return { ok: true, data: await getOddsIntelligenceService().getPlayerOddsView(playerId) }
   } catch (error) {
     logFailure('fetchPlayerOdds', error)
+    return { ok: false, error: 'DATABASE_UNAVAILABLE' }
+  }
+}
+
+/**
+ * Fetch a player's Player Skill Intelligence — the fifth Signal Family. Returns
+ * a confidence-graded profile of normalized golf skills (SG categories, driving,
+ * scrambling, scoring). When no round statistics are held, the profile comes
+ * back with `status: "unavailable"` and every skill Unknown — an honest empty
+ * state, never fabricated ratings — so the card renders the coverage gap.
+ */
+export async function fetchPlayerSkillProfile(
+  playerId: string,
+): Promise<ActionResult<PlayerSkillProfile>> {
+  try {
+    return {
+      ok: true,
+      data: await getPlayerSkillIntelligenceService().getPlayerProfile(playerId),
+    }
+  } catch (error) {
+    logFailure('fetchPlayerSkillProfile', error)
     return { ok: false, error: 'DATABASE_UNAVAILABLE' }
   }
 }

@@ -46,6 +46,9 @@ import { getWeatherIntelligenceService } from '@/lib/weather-intelligence/servic
 import type { WeatherIntelligence } from '@/lib/weather-intelligence'
 import { getOddsIntelligenceService } from '@/lib/odds-intelligence/service'
 import type { TournamentOddsView } from '@/lib/odds-intelligence'
+import { getPlayerSkillIntelligenceService } from '@/lib/player-skill-intelligence/service'
+import type { SkillLeaderboards } from '@/lib/player-skill-intelligence'
+import type { FitSkillKey as CourseFitSkillKey } from '@/lib/analytics/course-fit/types'
 import type { RankingBoard, RankingBoardSet, RankingCategory } from '@/lib/rankings/types'
 import { getFieldRepository } from '@/lib/repositories/field-repository'
 import { getNewsRepository } from '@/lib/repositories'
@@ -197,9 +200,12 @@ const FIT_LIST_LIMIT = 5
  *   entrant's fit degrades to "course-demand-missing" rather than being invented.
  * - Reuses the request-cached field, so it adds no roster query. Analytics for
  *   `momentum` are batched in one call over the field.
- * - Player skill profiles are the honest all-`null` default today (no per-skill
- *   data is ingested), so scored lists stay empty until real data exists — the
- *   board never pads Top Fits/Fades with guesses.
+ * - Player skills come from the Player Skill Intelligence engine (the fifth
+ *   Signal Family) via its Course Fit adapter — Course Fit no longer re-derives
+ *   skill itself. When no per-skill data is ingested those profiles are honestly
+ *   all-`null`, so scored lists stay empty until real data exists; the board
+ *   never pads Top Fits/Fades with guesses, and it lights up automatically the
+ *   moment strokes-gained data flows.
  *
  * Wrapped in React `cache`, keyed by tournament + course id, so it resolves at
  * most once per request.
@@ -213,11 +219,14 @@ const getFieldFitBoardCached = cache(
 
     const playerIds = field.entrants.map((entrant) => entrant.playerId)
     // The host course profile is shared across every entrant; the momentum
-    // analytic is batched once over the whole field (same season-normalized
-    // engine used everywhere), so this stays a two-call resolve.
-    const [courseProfile, analytics] = await Promise.all([
+    // analytic and the field's skill profiles are each batched once over the
+    // whole field (same season-normalized engines used everywhere else).
+    const [courseProfile, analytics, skillLeaderboards] = await Promise.all([
       courseId ? courseService.getCourseIntelligence(courseId) : Promise.resolve(null),
       analyticsService.getAnalyticsForPlayers(playerIds),
+      // Reuse the leaderboards resolver purely to normalize the whole field's
+      // skill profiles against the platform population in one pass.
+      getSkillLeaderboardsForField(field),
     ])
 
     const momentumByPlayer = new Map(
@@ -229,14 +238,18 @@ const getFieldFitBoardCached = cache(
       }),
     )
 
+    // The Player Skill engine's Course Fit adapter turns each entrant's rich
+    // profile into the compact { fitKey → 0–100 | null } shape Course Fit reads.
+    const skillProfileByPlayer = skillLeaderboards.profilesByPlayer
+
     const entries: FieldFitEntry[] = field.entrants.map((entrant) => ({
       playerId: entrant.playerId,
       displayName: entrant.playerName,
-      // No per-skill player data is ingested yet — use the honest empty profile.
       result: computeCourseFit({
         playerId: entrant.playerId,
         courseProfile,
-        skills: emptyPlayerSkillProfile(),
+        skills:
+          skillProfileByPlayer.get(entrant.playerId) ?? emptyPlayerSkillProfile(),
       }),
       momentum: momentumByPlayer.get(entrant.playerId) ?? null,
     }))
@@ -264,6 +277,53 @@ const getOddsForTournamentCached = cache(
   (tournamentId: string): Promise<TournamentOddsView> =>
     getOddsIntelligenceService().getTournamentOddsView(tournamentId),
 )
+
+/**
+ * The field's Player Skill Intelligence in a single pass: the tournament-hub
+ * skill leaderboards PLUS the per-player Course-Fit-shaped skill profile the fit
+ * board consumes. Both derive from the same normalized profiles, so the hub's
+ * "Best Putters" list and the Course Fit board never disagree. Keyed by
+ * tournament id via React `cache` so the field's profiles are built once per
+ * request. Returns empty boards + an empty map when no skill data is held.
+ */
+interface FieldSkillIntelligence {
+  boards: SkillLeaderboards
+  profilesByPlayer: Map<string, Record<CourseFitSkillKey, number | null>>
+}
+
+const getSkillIntelligenceForField = cache(
+  async (
+    tournamentId: string,
+    season: number | null,
+  ): Promise<FieldSkillIntelligence> => {
+    const field = await getTournamentFieldCached(tournamentId)
+    return buildFieldSkillIntelligence(field, season)
+  },
+)
+
+/** Pure-ish helper shared by the fit board and the public leaderboards API. */
+async function buildFieldSkillIntelligence(
+  field: TournamentField,
+  season: number | null,
+): Promise<FieldSkillIntelligence> {
+  const service = getPlayerSkillIntelligenceService()
+  const entrants = field.entrants.map((e) => ({
+    playerId: e.playerId,
+    playerName: e.playerName,
+  }))
+  const [boards, profilesByPlayer] = await Promise.all([
+    service.getFieldLeaderboards(entrants, season),
+    service.getCourseFitSkillProfilesForPlayers(entrants.map((e) => e.playerId)),
+  ])
+  return { boards, profilesByPlayer }
+}
+
+/** Adapter used by the fit board: resolve just the field's skill intelligence. */
+function getSkillLeaderboardsForField(
+  field: TournamentField,
+): Promise<FieldSkillIntelligence> {
+  return buildFieldSkillIntelligence(field, null)
+}
 
 /** How many articles the tournament-hub field-news rail shows in total. */
 const FIELD_NEWS_LIMIT = 6
@@ -416,6 +476,22 @@ export const tournamentService = {
    */
   getOddsIntelligence(id: string): Promise<TournamentOddsView> {
     return getOddsForTournamentCached(id)
+  },
+
+  /**
+   * Return this event's Player Skill Intelligence leaderboards — the field's
+   * best iron players, putters, scramblers, longest/most-accurate drivers, and
+   * the players with the most complete skill profiles. Each entrant is
+   * normalized against the platform population by the Player Skill engine (the
+   * fifth Signal Family), the SAME profiles the Course Fit board consumes, so
+   * the hub agrees with itself. Reads through the engine, which leaves boards
+   * empty (never padded with guesses) when no strokes-gained data is held.
+   */
+  async getSkillLeaderboards(id: string): Promise<SkillLeaderboards> {
+    const summary = await getTournamentByIdCached(id)
+    const season = summary?.season ?? null
+    const { boards } = await getSkillIntelligenceForField(id, season)
+    return boards
   },
 
   /**
