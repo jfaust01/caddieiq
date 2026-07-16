@@ -117,6 +117,49 @@ export class PlayerSkillIntelligenceService {
   }
 
   /**
+   * Full skill profiles for many players in one pass (a tournament field),
+   * keyed by playerId — the rich profile, not the compact Course Fit shape.
+   * The DFS Value Model consumes these so its Player Skill signal is the SAME
+   * normalized profile shown on the player and tournament skill surfaces.
+   * Players with no samples map to an honest `unavailable` profile.
+   */
+  async getProfilesForPlayers(
+    playerIds: readonly string[],
+    season: number | null = null,
+  ): Promise<Map<string, PlayerSkillProfile>> {
+    const out = new Map<string, PlayerSkillProfile>()
+    if (playerIds.length === 0) return out
+
+    const [samplesByPlayer, population] = await Promise.all([
+      this.repository.findSamplesByPlayerIds(playerIds),
+      this.loadPlatformPopulation(),
+    ])
+    const now = this.now()
+
+    for (const playerId of playerIds) {
+      const samples = samplesByPlayer.get(playerId)
+      out.set(
+        playerId,
+        samples && samples.rounds.length > 0
+          ? buildPlayerSkillProfile({
+              playerId,
+              season: samples.season ?? season,
+              samples,
+              population,
+              now,
+            })
+          : unavailableSkillProfile(
+              playerId,
+              [{ code: "no-round-statistics" }],
+              "No round statistics held for this player.",
+              season,
+            ),
+      )
+    }
+    return out
+  }
+
+  /**
    * Skill leaderboards for a tournament field. Normalizes the field's entrants
    * against the platform population, then ranks them. Boards stay empty rather
    * than padded when no entrant has data for a skill.

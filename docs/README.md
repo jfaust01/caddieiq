@@ -181,12 +181,17 @@ When writing prompts or PRs that extend the project:
 | [FEATURES.md](./FEATURES.md) | Planned features by module. |
 | [MODELS.md](./MODELS.md) | Ranking and rating model specification. |
 | [TOURNAMENT_CONTEXT_ENGINE.md](./TOURNAMENT_CONTEXT_ENGINE.md) | The Tournament Context Engine: the shared source of event context. |
+| [TOURNAMENT_FIELD_INTELLIGENCE.md](./TOURNAMENT_FIELD_INTELLIGENCE.md) | Tournament Field Intelligence: the official-field lifecycle, commitment deadline, and awaiting/confirmed messaging. |
 | [COURSE_INTELLIGENCE.md](./COURSE_INTELLIGENCE.md) | The Course Intelligence Engine: the normalized course profile. |
 | [COURSE_FIT_MODEL.md](./COURSE_FIT_MODEL.md) | The Course Fit Model: player-vs-course fit scoring. |
 | [COURSE_GEOLOCATION.md](./COURSE_GEOLOCATION.md) | The Course Geolocation Engine: verified venue coordinates from a swappable geocoder. |
 | [WEATHER_INTELLIGENCE.md](./WEATHER_INTELLIGENCE.md) | The Weather Intelligence Engine: per-event conditions, forecast, and wave edge. |
 | [PLAYER_SKILL_INTELLIGENCE.md](./PLAYER_SKILL_INTELLIGENCE.md) | The Player Skill Intelligence Engine: normalized golf-skill ratings, field leaderboards, and the Course Fit skill source. |
+| [DFS_VALUE_MODEL.md](./DFS_VALUE_MODEL.md) | The DFS Value Model: the flagship composite fusing every signal family with real DraftKings salary into salary-adjusted value. |
 | [DATA_COVERAGE.md](./DATA_COVERAGE.md) | The internal Data Coverage Dashboard: admin-only, honest coverage diagnostics. |
+| [DATA_CATALOG.md](./DATA_CATALOG.md) | What external data is actually available (SportsDataIO tier reality), its fidelity, and where it lands. |
+| [DATA_INTEGRITY.md](./DATA_INTEGRITY.md) | Data integrity audit: per-pipeline findings, the import-run history audit trail, and the rankings architecture. |
+| [PLATFORM_DATA_INVENTORY.md](./PLATFORM_DATA_INVENTORY.md) | Every database table classified by owner, population method, and reconciled health — the zero-ambiguity record of why each table holds the data it does. |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | How to contribute and ship changes. |
 | [CODING_STANDARDS.md](./CODING_STANDARDS.md) | Engineering conventions. |
 | [CHANGELOG.md](./CHANGELOG.md) | Release history. |

@@ -62,6 +62,38 @@ describe("mapSportsDataCourse", () => {
     expect(course.par).toBe(72)
     // No upstream CourseID exists; identity is the deterministic slug.
     expect(course.externalRef.externalId).toBe("augusta-national")
+    // The current feed carries no coordinates, so they map to null.
+    expect(course.latitude).toBeNull()
+    expect(course.longitude).toBeNull()
+  })
+
+  it("maps provider coordinates when the feed supplies a valid pair", () => {
+    const course = mapSportsDataCourse({
+      TournamentID: 55,
+      Venue: "Augusta National",
+      Latitude: 33.5021,
+      Longitude: -82.0215,
+    })
+
+    expect(course.latitude).toBe(33.5021)
+    expect(course.longitude).toBe(-82.0215)
+  })
+
+  it("rejects half-set, out-of-range, or null-island coordinates (all-or-nothing)", () => {
+    // Only latitude present → both dropped.
+    const half = mapSportsDataCourse({ TournamentID: 1, Venue: "A", Latitude: 33.5 })
+    expect(half.latitude).toBeNull()
+    expect(half.longitude).toBeNull()
+
+    // Longitude out of range → both dropped.
+    const oob = mapSportsDataCourse({ TournamentID: 2, Venue: "B", Latitude: 33.5, Longitude: 999 })
+    expect(oob.latitude).toBeNull()
+    expect(oob.longitude).toBeNull()
+
+    // (0, 0) "null island" is treated as absent.
+    const nullIsland = mapSportsDataCourse({ TournamentID: 3, Venue: "C", Latitude: 0, Longitude: 0 })
+    expect(nullIsland.latitude).toBeNull()
+    expect(nullIsland.longitude).toBeNull()
   })
 
   it("parses city/state from free-text Location when structured fields are absent", () => {

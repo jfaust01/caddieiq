@@ -264,6 +264,12 @@ For each: **Purpose · Inputs · Outputs · Confidence · Future enhancements.**
 
 ### 2.2 DFS Value
 
+> **Implemented.** The DFS Value Model ships as the flagship composite —
+> field-relative projected quality fused from every Signal Family, priced against
+> the player's real imported DraftKings salary. See
+> [DFS_VALUE_MODEL.md](./DFS_VALUE_MODEL.md) for the engine, honesty guarantees,
+> and consumers. The specification below records the full product intent.
+
 - **Purpose:** Identify the best daily-fantasy *value* — projected fantasy
   production relative to salary/ownership — for slate construction. Value, not
   raw strength, wins DFS.

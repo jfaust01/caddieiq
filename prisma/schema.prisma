@@ -60,10 +60,14 @@ enum PlayerStatus {
   RETIRED
 }
 
-enum RankingSystem {
-  OWGR
-  DATAGOLF
-  CADDIEIQ
+/// Outcome classification for a recorded import run. `SUCCESS` = every record
+/// that could be persisted was, with no failures; `PARTIAL` = the run completed
+/// but some records failed (or the feed is knowingly degraded, e.g. a scrambled
+/// trial-tier value family); `FAILURE` = the run threw before completing.
+enum ImportRunStatus {
+  SUCCESS
+  PARTIAL
+  FAILURE
 }
 
 enum GrassType {
@@ -306,7 +310,6 @@ model Player {
   // Relations
   nationality        Nationality?            @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
   tourHistory        PlayerTourHistory[]
-  rankings           PlayerRanking[]
   tournamentFields   TournamentField[]
   seasonStatistics   PlayerSeasonStatistic[]
   newsArticles       NewsArticle[]
@@ -362,25 +365,13 @@ model PlayerTourHistory {
   @@map("player_tour_histories")
 }
 
-/// A player's rank within a given ranking system at a point in time.
-model PlayerRanking {
-  id            String        @id @default(cuid())
-  playerId      String
-  rankingSystem RankingSystem
-  rank          Int
-  points        Float?
-  effectiveDate DateTime
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  // Relations
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@index([playerId])
-  @@index([rankingSystem])
-  @@index([effectiveDate])
-  @@map("player_rankings")
-}
+// NOTE (data-integrity audit, 2026-07): the former `PlayerRanking` /
+// `player_rankings` table was removed. No importer ever wrote it, so it only
+// ever held stale seed rows while the authoritative Official World Golf Ranking
+// is imported onto `PlayerSeasonStatistic.worldRanking`, and CaddieIQ/model
+// ranks are derived on demand by the Ranking Engine (`lib/rankings`, which has
+// no repository by design). Keeping a second, unwritten ranking table was pure
+// duplication. See docs/DATA_INTEGRITY.md for the full rankings architecture.
 
 /// A player's season-level statistics as reported by the data provider, keyed
 /// by `(playerId, season)` so re-imports update in place rather than
@@ -492,11 +483,13 @@ model Course {
   latitude        Float?
   longitude       Float?
   // Coordinate provenance (Course Geolocation Engine, Sprint 3.9).
-  // `coordinateConfidence` is the source of truth for whether lat/lng may be
-  // trusted: only VERIFIED coordinates are consumed downstream (Weather, Maps).
-  // UNKNOWN means "not yet located"; ESTIMATED is reserved and never written
-  // automatically. `coordinateSource` records which provider verified them
-  // (e.g. "osm-nominatim"); `coordinatesVerifiedAt` stamps when.
+  // `coordinateConfidence` is the source of truth for how far lat/lng may be
+  // trusted: VERIFIED = course-precise (Maps + Weather); APPROXIMATE =
+  // city-level fallback (Weather only, surfaced as "city-level" in the UI);
+  // UNKNOWN = not yet located; ESTIMATED reserved and never written
+  // automatically. `coordinateSource` records which provider resolved them
+  // (e.g. "osm-nominatim" or "openweather-geocoding"); `coordinatesVerifiedAt`
+  // stamps when.
   coordinateConfidence CoordinateConfidence @default(UNKNOWN)
   coordinateSource     String?
   coordinatesVerifiedAt DateTime?
@@ -521,13 +514,23 @@ model Course {
   @@map("courses")
 }
 
-/// Trust level for a course's stored latitude/longitude. Only VERIFIED
-/// coordinates are consumed by Weather Intelligence, Maps, and other spatial
-/// features. ESTIMATED is reserved for a future heuristic path and is never
-/// written automatically this sprint; UNKNOWN is the un-located default.
+/// Trust level for a course's stored latitude/longitude, in descending
+/// precision. Weather Intelligence consumes VERIFIED and APPROXIMATE (a
+/// city-level forecast is adequate for a regional weather model); Maps and
+/// other course-precise features consume only VERIFIED.
 enum CoordinateConfidence {
+  /// The provider resolved the query to an actual golf-course feature (e.g. an
+  /// OSM `leisure=golf_course` polygon). Course-precise; safe for maps.
   VERIFIED
+  /// A city/locality centroid (from OpenWeather's Geocoding API) used as a
+  /// fallback when no course-precise match exists. Accurate to the town, NOT
+  /// the course — good enough for regional weather, which is why the weather
+  /// engine accepts it, but it MUST be surfaced to users as "city-level".
+  APPROXIMATE
+  /// Reserved, non-authoritative estimate. Not produced by any pipeline today;
+  /// kept for backward compatibility and never persisted automatically.
   ESTIMATED
+  /// No coordinate resolved yet. The geolocation engine's work queue.
   UNKNOWN
 }
 
@@ -1101,4 +1104,58 @@ model WeatherPeriod {
   @@index([snapshotId])
   @@index([forecastTime])
   @@map("weather_periods")
+}
+
+// ---------------------------------------------------------------------------
+// Operations — import run history
+// ---------------------------------------------------------------------------
+
+/// One recorded execution of an import pipeline (players, courses, tournaments,
+/// fields, statistics, news, betting, fantasy, geolocation, weather, odds, …).
+///
+/// This is the durable, honest audit trail behind the admin Data Coverage
+/// dashboard. Before it existed the dashboard could only INFER "last import"
+/// from each table's `max(updatedAt)`, which cannot distinguish a successful
+/// run from one that fetched zero rows or threw. Every top-level `runXImport()`
+/// records exactly one row here — including failures — so the dashboard can show
+/// real status, row-level counts, and the last error per entity.
+///
+/// Rows are immutable once written (no `updatedAt`): each run is a fact.
+model ImportRun {
+  id         String          @id @default(cuid())
+  /// Upstream provider the run pulled from (e.g. "sportsdataio", "openweather",
+  /// "the-odds-api", "nominatim"). Free-form so new feeds need no migration.
+  provider   String
+  /// Logical entity the run targeted (e.g. "player", "statistics", "weather").
+  /// Free-form to cover relation/enrichment pipelines that have no domain enum.
+  entity     String
+  status     ImportRunStatus
+  startedAt  DateTime
+  finishedAt DateTime
+  durationMs Int
+  /// Records the run attempted (as fetched from the provider).
+  processed  Int             @default(0)
+  /// New rows created.
+  inserted   Int             @default(0)
+  /// Existing rows updated (idempotent re-run).
+  updated    Int             @default(0)
+  /// Rows intentionally not persisted (validation rejection, unmatched bridge,
+  /// or a knowingly-unavailable/scrambled trial-tier value).
+  skipped    Int             @default(0)
+  /// Rows that errored during mapping or persistence.
+  failed     Int             @default(0)
+  /// Advisory (warning-severity) data-quality issues across the batch.
+  warnings   Int             @default(0)
+  /// Short human-readable summary of the outcome (counts, notes, or the reason
+  /// a feed is degraded). Never fabricated — mirrors the pipeline report.
+  summary    String?
+  /// First/representative error message when the run failed or partially failed.
+  error      String?
+  createdAt  DateTime        @default(now())
+
+  @@index([entity, startedAt])
+  @@index([provider])
+  @@index([status])
+  @@index([startedAt])
+  @@map("import_runs")
 }

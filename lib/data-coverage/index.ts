@@ -6,4 +6,5 @@
  * client component can safely import the pure ratings helpers and types.
  */
 export * from "./ratings"
+export * from "./inventory"
 export type * from "./types"

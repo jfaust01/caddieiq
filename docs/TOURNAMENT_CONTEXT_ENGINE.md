@@ -154,5 +154,11 @@ resolving it independently, so the board always agrees with the rest of the hub.
 - Confidence is derived by one pure, tested function — every surface applies the
   identical rule, so the whole page agrees on one event and one confidence.
 
+The official-field lifecycle built on top of this engine (the `awaiting` /
+`confirmed` messaging and the commitment deadline) is documented in
+[TOURNAMENT_FIELD_INTELLIGENCE.md](./TOURNAMENT_FIELD_INTELLIGENCE.md).
+
 See also: [COURSE_FIT_MODEL.md](./COURSE_FIT_MODEL.md),
-[COURSE_INTELLIGENCE.md](./COURSE_INTELLIGENCE.md), [MODELS.md](./MODELS.md).
+[COURSE_INTELLIGENCE.md](./COURSE_INTELLIGENCE.md),
+[TOURNAMENT_FIELD_INTELLIGENCE.md](./TOURNAMENT_FIELD_INTELLIGENCE.md),
+[MODELS.md](./MODELS.md).

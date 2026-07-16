@@ -37,6 +37,8 @@ function makeCourse(overrides: Partial<Course> = {}): Course {
     country: "USA",
     par: 72,
     yardage: 7475,
+    latitude: null,
+    longitude: null,
     ...overrides,
   }
 }

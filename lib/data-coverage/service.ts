@@ -1,17 +1,28 @@
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
-import { getOddsRepository, getPlayerSkillRepository } from "@/lib/repositories"
+import {
+  getFantasyRepository,
+  getImportRunRepository,
+  getOddsRepository,
+  getPlayerSkillRepository,
+} from "@/lib/repositories"
+import { getTournamentRepository } from "@/lib/repositories/tournament-repository"
 import { SOURCEABLE_SKILL_KEYS } from "@/lib/player-skill-intelligence"
+import { deriveFieldIntelligence } from "@/lib/tournament-context"
 
+import { buildPlatformInventory, INVENTORY_TABLES } from "./inventory"
 import { coveragePercent, countPresent, rateCoverage } from "./ratings"
 import type {
   CoverageSection,
   DataCoverageReport,
   DomainSummary,
+  FieldIntelligenceReport,
+  FieldIntelligenceReportRow,
   HealthCheck,
-  ImportMarker,
+  ImportRunHealth,
   PlatformHealth,
+  PlatformInventory,
 } from "./types"
 
 /**
@@ -111,7 +122,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     // Courses / geolocation
     totalCourses,
     verifiedCoords,
-    estimatedCoords,
+    approximateCoords,
     coordAgg,
     // Course intelligence
     profileRows,
@@ -134,11 +145,8 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     oddsCoverage,
     // Player Skill (fifth Signal Family — real strokes-gained coverage)
     skillCoverage,
-    // Import markers
-    playerAgg,
-    tournamentAgg,
-    courseAgg,
-    newsUpdatedAgg,
+    // DFS Value Model (flagship composite — real DraftKings salary readiness)
+    dfsSalaryCoverage,
   ] = await Promise.all([
     prisma.player.count({ where: { deletedAt: null } }),
     prisma.player.count({ where: { deletedAt: null, status: "ACTIVE" } }),
@@ -156,7 +164,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     }),
     prisma.course.count({ where: { deletedAt: null } }),
     prisma.course.count({ where: { deletedAt: null, coordinateConfidence: "VERIFIED" } }),
-    prisma.course.count({ where: { deletedAt: null, coordinateConfidence: "ESTIMATED" } }),
+    prisma.course.count({ where: { deletedAt: null, coordinateConfidence: "APPROXIMATE" } }),
     prisma.course.aggregate({ _max: { coordinatesVerifiedAt: true } }),
     prisma.courseCharacteristic.findMany({
       where: { course: { deletedAt: null } },
@@ -188,27 +196,31 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     prisma.playerSeasonStatistic.count({ where: { averagePoints: { not: null } } }),
     getOddsRepository().getCoverageCounts(),
     getPlayerSkillRepository().getCoverageCounts(),
-    prisma.player.aggregate({ _max: { updatedAt: true } }),
-    prisma.tournament.aggregate({ _max: { updatedAt: true } }),
-    prisma.course.aggregate({ _max: { updatedAt: true } }),
-    prisma.weatherSnapshot.aggregate({ _max: { capturedAt: true } }),
+    getFantasyRepository().getSalaryCoverageCounts(),
   ])
 
   const sections: CoverageSection[] = []
 
   // --- Course Geolocation ---------------------------------------------------
-  const unknownCoords = Math.max(totalCourses - verifiedCoords - estimatedCoords, 0)
+  // Two honest tiers: VERIFIED = course-precise (an OSM golf-course feature);
+  // APPROXIMATE = city-level centroid (OpenWeather) — good enough for regional
+  // weather but explicitly NOT course-precise. Headline coverage % tracks
+  // course-precise only; "located" (either tier) is reported separately so the
+  // city-level fallback is never mistaken for a verified match.
+  const unknownCoords = Math.max(totalCourses - verifiedCoords - approximateCoords, 0)
+  const locatedCoords = verifiedCoords + approximateCoords
   const geoPercent = coveragePercent(verifiedCoords, totalCourses)
+  const locatedPercent = coveragePercent(locatedCoords, totalCourses)
   sections.push({
     id: "course-geolocation",
     title: "Course Geolocation",
     description:
-      "Verified latitude/longitude per course. Only coordinates confirmed against a real golf-course feature count — clubhouse POIs and locality centroids are rejected.",
+      "Latitude/longitude per course, in two tiers. VERIFIED = confirmed against a real golf-course feature (course-precise). APPROXIMATE = city-level centroid used as a weather fallback when no course-precise match exists — never presented as course-precise. Coordinate % below tracks course-precise only.",
     percent: geoPercent,
     rating: rateCoverage(geoPercent),
     breakdown: {
       verified: verifiedCoords,
-      pending: estimatedCoords,
+      pending: approximateCoords,
       missing: unknownCoords,
       total: totalCourses,
     },
@@ -217,22 +229,36 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
       { id: "total", label: "Total Courses", value: formatCount(totalCourses), count: totalCourses },
       {
         id: "verified",
-        label: "Verified Coordinates",
+        label: "Verified (course-precise)",
         value: formatCount(verifiedCoords),
         count: verifiedCoords,
         percent: geoPercent,
+      },
+      {
+        id: "approximate",
+        label: "Approximate (city-level)",
+        value: formatCount(approximateCoords),
+        count: approximateCoords,
+        hint: "City-centroid fallback (OpenWeather). Unlocks weather; not course-precise.",
+      },
+      {
+        id: "located",
+        label: "Located (any tier)",
+        value: formatPercent(locatedPercent),
+        percent: locatedPercent,
+        hint: "Share of courses with a usable coordinate (verified or approximate).",
       },
       {
         id: "missing",
         label: "Missing Coordinates",
         value: formatCount(unknownCoords),
         count: unknownCoords,
-        hint: "Courses still UNKNOWN — never approximated.",
+        hint: "Courses still UNKNOWN — never fabricated.",
       },
-      { id: "coverage", label: "Coverage %", value: formatPercent(geoPercent), percent: geoPercent },
+      { id: "coverage", label: "Course-precise %", value: formatPercent(geoPercent), percent: geoPercent },
       {
         id: "last-updated",
-        label: "Last Verified",
+        label: "Last Located",
         value: formatDateTime(coordAgg._max.coordinatesVerifiedAt),
       },
     ],
@@ -302,7 +328,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     id: "weather",
     title: "Weather",
     description:
-      "Per-tournament forecast coverage. Forecasts are only fetched for events with a VERIFIED host-course coordinate; missing includes events with no verified venue or outside the forecast horizon.",
+      "Per-tournament forecast coverage. Forecasts are fetched for events whose host course has a usable coordinate — VERIFIED (course-precise) or APPROXIMATE (city-level); missing includes events with no located venue or outside the forecast horizon.",
     percent: weatherPercent,
     rating: rateCoverage(weatherPercent),
     breakdown: {
@@ -673,6 +699,85 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     ],
   })
 
+  // --- DFS Value Model (flagship composite) --------------------------------
+  // Unlike the raw feeds above, DFS Value is a DERIVED model: it fuses every
+  // Signal Family with each player's real DraftKings salary. Its "coverage" is
+  // therefore READINESS, gated by two independent inputs:
+  //   1. Real DraftKings salaries (the denominator of value), and
+  //   2. At least one gradable QUALITY family (skill SG or linked betting odds)
+  //      so a strength composite can actually be computed.
+  // When either input is missing the model is `restricted` (a limitation, not a
+  // low score) — value is never fabricated from salary alone.
+  const dfsPriced = dfsSalaryCoverage.pricedRows
+  const dfsHasSalaries = dfsPriced > 0
+  const qualityFamilyLive = !skillRestricted || !bettingEmpty
+  const dfsRestricted = !dfsHasSalaries || !qualityFamilyLive
+  const dfsPercent = dfsHasSalaries
+    ? coveragePercent(dfsSalaryCoverage.pricedRows, dfsSalaryCoverage.totalRows || dfsPriced)
+    : null
+  const dfsRestrictedReason = !dfsHasSalaries
+    ? "No DraftKings salaries captured yet — DFS value ranks automatically once a slate is imported and at least one quality family (player skill or betting market) is gradable. Nothing is estimated."
+    : !qualityFamilyLive
+      ? "DraftKings salaries are held, but no quality family (strokes-gained player skill or linked betting market) is gradable yet, so quality-per-dollar cannot be computed. Value is never fabricated from salary alone."
+      : undefined
+  sections.push({
+    id: "dfs-value",
+    title: "DFS Value Model",
+    description:
+      "The flagship composite: salary-adjusted value fusing every signal family (player skill, course fit, form, betting market, weather) with each player's real DraftKings salary. Readiness tracks priced players and whether a quality family is gradable — value is never fabricated from salary alone.",
+    percent: dfsPercent,
+    rating: dfsRestricted ? "restricted" : rateCoverage(dfsPercent),
+    breakdown: {
+      verified: dfsPriced,
+      pending: 0,
+      missing: Math.max(dfsSalaryCoverage.totalRows - dfsPriced, 0),
+      total: dfsSalaryCoverage.totalRows,
+    },
+    lastUpdated: toIso(dfsSalaryCoverage.latestCapturedAt),
+    restrictedReason: dfsRestrictedReason,
+    metrics: [
+      {
+        id: "priced-players",
+        label: "Priced Players",
+        value: dfsHasSalaries ? formatCount(dfsSalaryCoverage.pricedPlayers) : "None slated",
+        count: dfsSalaryCoverage.pricedPlayers,
+        hint: "Distinct players carrying a real DraftKings salary (value's denominator).",
+      },
+      {
+        id: "priced-tournaments",
+        label: "Slated Tournaments",
+        value: formatCount(dfsSalaryCoverage.tournamentsWithSalaries),
+        count: dfsSalaryCoverage.tournamentsWithSalaries,
+        hint: "Tournaments with at least one priced entrant.",
+      },
+      {
+        id: "quality-family",
+        label: "Quality Family Live",
+        value: qualityFamilyLive ? "Yes" : "Not yet",
+        hint: "Whether player skill (SG) or a linked betting market can be scored — required to grade quality-per-dollar.",
+      },
+      {
+        id: "operators",
+        label: "DFS Operators",
+        value: dfsSalaryCoverage.operators > 0 ? formatCount(dfsSalaryCoverage.operators) : "None",
+        count: dfsSalaryCoverage.operators,
+        hint: "Distinct salary providers held (DraftKings preferred by the model).",
+      },
+      {
+        id: "freshness",
+        label: "Newest Salary",
+        value: formatRelativeAge(dfsSalaryCoverage.latestCapturedAt, now),
+        hint: "Age of the most recent captured salary slate.",
+      },
+      {
+        id: "readiness",
+        label: "Pricing Readiness %",
+        value: dfsHasSalaries ? formatPercent(dfsPercent) : "No data",
+        percent: dfsPercent,
+      },
+    ],
+  })
+
   // --- Platform summary tiles ----------------------------------------------
   const tournamentsWithVenue = tournamentVenueRows.length
   const tournamentsPercent = coveragePercent(tournamentsWithVenue, totalTournaments)
@@ -688,34 +793,189 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     { id: "fantasy", label: "Fantasy", percent: fantasyPercent, rating: fantasyHasRealData ? rateCoverage(fantasyPercent) : "restricted", verified: dfsReal, total: dfsTotal, restricted: !fantasyHasRealData },
     { id: "betting", label: "Betting", percent: bettingPercent, rating: bettingEmpty ? "restricted" : rateCoverage(bettingPercent), verified: oddsEventsLinked, total: oddsEvents, restricted: bettingEmpty },
     { id: "player-skill", label: "Player Skill", percent: skillPercent, rating: skillRestricted ? "restricted" : rateCoverage(skillPercent), verified: skillCoverage.roundsWithStrokesGained, total: skillCoverage.roundStatistics, restricted: skillRestricted },
+    { id: "dfs-value", label: "DFS Value", percent: dfsPercent, rating: dfsRestricted ? "restricted" : rateCoverage(dfsPercent), verified: dfsPriced, total: dfsSalaryCoverage.totalRows, restricted: dfsRestricted },
   ]
 
   const health = await buildPlatformHealth({
     now,
-    lastPlayerImport: playerAgg._max.updatedAt,
-    lastTournamentImport: tournamentAgg._max.updatedAt,
-    lastCourseImport: courseAgg._max.updatedAt,
-    lastWeatherImport: newsUpdatedAgg._max.capturedAt,
-    lastNewsImport: newsAgg._max.updatedAt,
     bettingRestricted: bettingEmpty,
   })
+
+  const fieldIntelligence = await buildFieldIntelligence(new Date(now))
+  const inventory = await buildInventory()
 
   return {
     generatedAt: new Date(now).toISOString(),
     summary,
     sections,
+    fieldIntelligence,
     health,
+    inventory,
+  }
+}
+
+/**
+ * Build the Platform Inventory by reading live row counts for every table in
+ * the registry with a single round-trip, then reconciling each against its
+ * designed intent via the pure {@link buildPlatformInventory}. Counting is done
+ * with one UNION-ALL query so a full-platform inventory costs one query, not 31.
+ */
+async function buildInventory(): Promise<PlatformInventory> {
+  // Registry table names are a fixed, code-defined allowlist (never user input),
+  // so interpolating them into the count query is safe.
+  const unionSql = INVENTORY_TABLES.map(
+    (table) => `SELECT '${table}' AS t, COUNT(*)::bigint AS c FROM "${table}"`,
+  ).join(" UNION ALL ")
+
+  const rows = await prisma.$queryRawUnsafe<Array<{ t: string; c: bigint }>>(unionSql)
+  const counts: Record<string, number> = {}
+  for (const row of rows) {
+    counts[row.t] = Number(row.c)
+  }
+  return buildPlatformInventory(counts)
+}
+
+/**
+ * Build the Tournament Field Intelligence panel: every upcoming/live event with
+ * its official-field lifecycle state (from the SAME pure engine the Tournament
+ * Page uses, so the admin view and the public banner never disagree) and the
+ * operational facts an admin needs — imported vs. expected size, last sync, and
+ * an "overdue" flag when the field should be out (release deadline passed) but
+ * no roster has landed. Honest by construction: it never invents a field, and
+ * `expectedPlayers` is `null` (not a guess) when there is no prior edition.
+ */
+async function buildFieldIntelligence(now: Date): Promise<FieldIntelligenceReport> {
+  const rows = await getTournamentRepository().listFieldIntelligence(30)
+
+  const reportRows: FieldIntelligenceReportRow[] = rows.map((row) => {
+    // Derive lifecycle from the shared engine. Status text mirrors the DB enum;
+    // COMPLETED events are already excluded by the query.
+    const status =
+      row.status === "ACTIVE"
+        ? "ACTIVE"
+        : row.status === "CANCELED"
+          ? "CANCELED"
+          : "SCHEDULED"
+    const intel = deriveFieldIntelligence({
+      status,
+      startDate: row.startDate,
+      endDate: row.endDate,
+      fieldConfirmed: row.playersImported > 0,
+      fieldPlayerCount: row.playersImported > 0 ? row.playersImported : null,
+    })
+
+    // "Overdue" = the official field should have been published by now (the
+    // commitment deadline has passed) yet nothing has been imported. This is the
+    // one actionable signal — a field that is genuinely late, not merely pending.
+    const overdue =
+      intel.fieldStatus === "awaiting" &&
+      intel.fieldReleaseTime !== null &&
+      new Date(intel.fieldReleaseTime).getTime() < now.getTime()
+
+    return {
+      tournamentId: row.id,
+      name: row.name,
+      fieldStatus: intel.fieldStatus,
+      fieldConfidence: intel.fieldConfidence,
+      startDate: row.startDate ? row.startDate.toISOString() : null,
+      releaseTime: intel.fieldReleaseTime,
+      playersImported: row.playersImported,
+      expectedPlayers: row.expectedPlayers,
+      lastSync: row.lastSync ? row.lastSync.toISOString() : null,
+      overdue,
+    }
+  })
+
+  return {
+    rows: reportRows,
+    overdueCount: reportRows.filter((r) => r.overdue).length,
+    confirmedCount: reportRows.filter((r) => r.fieldStatus === "confirmed").length,
+    awaitingCount: reportRows.filter((r) => r.fieldStatus === "awaiting").length,
   }
 }
 
 interface HealthInputs {
   now: number
-  lastPlayerImport: Date | null
-  lastTournamentImport: Date | null
-  lastCourseImport: Date | null
-  lastWeatherImport: Date | null
-  lastNewsImport: Date | null
   bettingRestricted: boolean
+}
+
+/**
+ * Human labels and stable ordering for the pipelines the dashboard reports on.
+ * Keyed by the `entity` string each `runXImport()` records. Any entity that has
+ * run but is not listed here still surfaces (appended, title-cased) so a new
+ * pipeline is never silently hidden.
+ */
+const IMPORT_RUN_LABELS: ReadonlyArray<{ id: string; label: string }> = [
+  { id: "player", label: "Players" },
+  { id: "tournament", label: "Tournaments" },
+  { id: "course", label: "Courses" },
+  { id: "field", label: "Tournament Fields" },
+  { id: "statistics", label: "Player Statistics" },
+  { id: "geolocation", label: "Course Geolocation" },
+  { id: "weather", label: "Weather" },
+  { id: "news", label: "News" },
+  { id: "betting", label: "Betting" },
+  { id: "odds", label: "Odds" },
+  { id: "fantasy", label: "Fantasy / DFS" },
+  { id: "course-link", label: "Course Linking" },
+]
+
+function titleCaseEntity(entity: string): string {
+  return entity
+    .split(/[-_\s]+/)
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ")
+}
+
+/**
+ * Real per-pipeline import health, read from the append-only `import_runs`
+ * audit trail. Pipelines that have a recorded run report their genuine last
+ * outcome and row counts; pipelines that have never run report `"never"` with
+ * null counts — no `updatedAt` guessing, no implied zero-row success.
+ */
+async function buildImportRunHealth(): Promise<ImportRunHealth[]> {
+  const latest = await getImportRunRepository().latestPerEntity()
+  const byEntity = new Map(latest.map((r) => [r.entity, r]))
+
+  const knownIds = new Set(IMPORT_RUN_LABELS.map((l) => l.id))
+  const extraEntities = latest
+    .filter((r) => !knownIds.has(r.entity))
+    .map((r) => ({ id: r.entity, label: titleCaseEntity(r.entity) }))
+  const ordered = [...IMPORT_RUN_LABELS, ...extraEntities]
+
+  return ordered.map(({ id, label }) => {
+    const run = byEntity.get(id)
+    if (!run) {
+      return {
+        id,
+        label,
+        provider: null,
+        outcome: "never" as const,
+        at: null,
+        durationMs: null,
+        inserted: null,
+        updated: null,
+        skipped: null,
+        failed: null,
+        summary: null,
+        error: null,
+      }
+    }
+    return {
+      id,
+      label,
+      provider: run.provider,
+      outcome: run.status,
+      at: run.startedAt.toISOString(),
+      durationMs: run.durationMs,
+      inserted: run.inserted,
+      updated: run.updated,
+      skipped: run.skipped,
+      failed: run.failed,
+      summary: run.summary,
+      error: run.error,
+    }
+  })
 }
 
 async function buildPlatformHealth(inputs: HealthInputs): Promise<PlatformHealth> {
@@ -772,13 +1032,7 @@ async function buildPlatformHealth(inputs: HealthInputs): Promise<PlatformHealth
     },
   ]
 
-  const imports: ImportMarker[] = [
-    { id: "players", label: "Players", at: toIso(inputs.lastPlayerImport) },
-    { id: "tournaments", label: "Tournaments", at: toIso(inputs.lastTournamentImport) },
-    { id: "courses", label: "Courses", at: toIso(inputs.lastCourseImport) },
-    { id: "weather", label: "Weather", at: toIso(inputs.lastWeatherImport) },
-    { id: "news", label: "News", at: toIso(inputs.lastNewsImport) },
-  ]
+  const runs = await buildImportRunHealth()
 
-  return { checks, imports }
+  return { checks, runs }
 }

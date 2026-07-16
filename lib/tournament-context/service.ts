@@ -79,6 +79,8 @@ const getTournamentContextCached = cache(
         : null,
       course: row && row.courseId && row.courseName ? { id: row.courseId, name: row.courseName } : null,
       fieldConfirmed: Boolean(row && row.fieldCount > 0),
+      // The tournament source knows the exact imported (non-withdrawn) count.
+      fieldPlayerCount: row && row.fieldCount > 0 ? row.fieldCount : null,
     }
     return normalizeTournamentContext(raw)
   },

@@ -22,6 +22,7 @@ import type {
   FilterOption,
   PaginatedResult,
   TournamentField,
+  TournamentFieldReport,
   TournamentNewsItem,
   TournamentQuery,
   TournamentSummary,
@@ -48,6 +49,8 @@ import { getOddsIntelligenceService } from '@/lib/odds-intelligence/service'
 import type { TournamentOddsView } from '@/lib/odds-intelligence'
 import { getPlayerSkillIntelligenceService } from '@/lib/player-skill-intelligence/service'
 import type { SkillLeaderboards } from '@/lib/player-skill-intelligence'
+import { getDfsValueService } from '@/lib/dfs-value/service'
+import type { DfsValueField } from '@/lib/dfs-value'
 import type { FitSkillKey as CourseFitSkillKey } from '@/lib/analytics/course-fit/types'
 import type { RankingBoard, RankingBoardSet, RankingCategory } from '@/lib/rankings/types'
 import { getFieldRepository } from '@/lib/repositories/field-repository'
@@ -279,6 +282,26 @@ const getOddsForTournamentCached = cache(
 )
 
 /**
+ * Resolve a tournament's DFS Value board once per request. Wrapped in React
+ * `cache` and keyed by tournament id, mirroring the other intelligence engines,
+ * so the flagship composite (which itself fans out across every Signal Family)
+ * runs at most once per tournament per request.
+ */
+const getDfsValueForTournamentCached = cache(
+  (tournamentId: string): Promise<DfsValueField> =>
+    getDfsValueService().getFieldValueForTournament(tournamentId),
+)
+
+/**
+ * Resolve an event's field-sync timestamps once per request, keyed by id.
+ * Wrapped in React `cache` so the field banner and any other consumer share a
+ * single read of the roster-import timestamps.
+ */
+const getFieldSyncStatsCached = cache((tournamentId: string) =>
+  getTournamentRepository().getFieldSyncStats(tournamentId),
+)
+
+/**
  * The field's Player Skill Intelligence in a single pass: the tournament-hub
  * skill leaderboards PLUS the per-player Course-Fit-shaped skill profile the fit
  * board consumes. Both derive from the same normalized profiles, so the hub's
@@ -442,6 +465,46 @@ export const tournamentService = {
   },
 
   /**
+   * The event's official-field lifecycle report for the Tournament Page banner:
+   * the field status/confidence and commitment-deadline the Tournament Context
+   * Engine derives, plus the roster-import timestamps (when the field was first
+   * confirmed and last synced) from the repository. Every value is honest —
+   * counts and times stay `null` until real field rows exist, and an
+   * `unavailable` context yields an `unknown`/`unknown` report rather than a
+   * fabricated one. Reads through the Context Engine and repository only.
+   */
+  async getFieldReport(id: string): Promise<TournamentFieldReport> {
+    const [context, sync] = await Promise.all([
+      tournamentContextService.getTournamentContext(id),
+      getFieldSyncStatsCached(id),
+    ])
+
+    if (context.status !== 'available') {
+      return {
+        status: 'unknown',
+        confidence: 'unknown',
+        timing: null,
+        releaseTime: null,
+        playerCount: null,
+        confirmedAt: null,
+        lastUpdated: null,
+      }
+    }
+
+    return {
+      status: context.fieldStatus,
+      confidence: context.fieldConfidence,
+      timing: context.timing,
+      releaseTime: context.fieldReleaseTime,
+      // Prefer the context's count (already honest about null); the sync read is
+      // the authority for the import timestamps.
+      playerCount: context.fieldPlayerCount,
+      confirmedAt: sync.firstImportedAt ? sync.firstImportedAt.toISOString() : null,
+      lastUpdated: sync.lastUpdatedAt ? sync.lastUpdatedAt.toISOString() : null,
+    }
+  },
+
+  /**
    * Return the tournament's Course Fit board (top fits, fades, trending-up,
    * most-uncertain). The host course is taken from the shared Tournament Context
    * Engine — never resolved independently — so the board always agrees with the
@@ -492,6 +555,19 @@ export const tournamentService = {
     const season = summary?.season ?? null
     const { boards } = await getSkillIntelligenceForField(id, season)
     return boards
+  },
+
+  /**
+   * Return this event's DFS Value board — the flagship composite for the whole
+   * field. Every entrant's salary-adjusted value is ranked into DFS leaderboards
+   * (top values, high-end plays, mid-range, value plays, highest confidence,
+   * risky GPP targets), fusing every Signal Family with the player's real
+   * DraftKings salary. Keyed by tournament id so it agrees with the rest of the
+   * hub. Reads through the DFS Value service, which returns an all-`unavailable`
+   * board (never fabricated) when the field or its salaries are not yet held.
+   */
+  getDfsValueField(id: string): Promise<DfsValueField> {
+    return getDfsValueForTournamentCached(id)
   },
 
   /**

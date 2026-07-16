@@ -25,4 +25,14 @@ export interface Course extends HasExternalReference {
   country: string | null
   par: number | null
   yardage: number | null
+  /**
+   * Provider-supplied coordinates, in decimal degrees, or `null` when the
+   * source does not supply them (the norm today — SportsDataIO's golf feed
+   * carries none). When BOTH are present and valid, they are the
+   * highest-priority coordinate source and are persisted as `VERIFIED`
+   * (`coordinateSource="sportsdataio"`), pre-empting geocoding. Otherwise
+   * coordinates are owned by the Course Geolocation Engine and these stay null.
+   */
+  latitude: number | null
+  longitude: number | null
 }

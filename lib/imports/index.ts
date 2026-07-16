@@ -38,6 +38,7 @@ import {
   importCourseCoordinates,
   type GeolocationSummary,
 } from "./course-geolocation"
+import { recordImportRun, normalizeImportResult } from "./run-recorder"
 
 // Types & building blocks
 export type { ImportDefinition, ImportManagerDeps } from "./import-manager"
@@ -126,6 +127,7 @@ export {
   type OddsImportSummary,
   type ImportOddsOptions,
 } from "./odds-import"
+export { recordImportRun, type RunOutcome } from "./run-recorder"
 
 /** Options accepted by the top-level service functions. */
 export interface RunImportOptions {
@@ -151,19 +153,31 @@ function resolveManager(options: RunImportOptions): ImportManager {
  */
 export function runPlayerImport(options: RunImportOptions = {}): Promise<ImportResult> {
   const manager = resolveManager(options)
-  return manager.runPlayerImport(
-    { provider: SportsDataProvider.fromEnv(), repository: getPlayerRepository() },
-    options.query,
-  )
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "player",
+    run: () =>
+      manager.runPlayerImport(
+        { provider: SportsDataProvider.fromEnv(), repository: getPlayerRepository() },
+        options.query,
+      ),
+    normalize: normalizeImportResult,
+  })
 }
 
 /** Run the full course pipeline against SportsDataIO and the Course repository. */
 export function runCourseImport(options: RunImportOptions = {}): Promise<ImportResult> {
   const manager = resolveManager(options)
-  return manager.runCourseImport(
-    { provider: SportsDataProvider.fromEnv(), repository: getCourseRepository() },
-    options.query,
-  )
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "course",
+    run: () =>
+      manager.runCourseImport(
+        { provider: SportsDataProvider.fromEnv(), repository: getCourseRepository() },
+        options.query,
+      ),
+    normalize: normalizeImportResult,
+  })
 }
 
 /**
@@ -189,14 +203,20 @@ export async function runTournamentImport(
   const resolveRelations =
     options.resolveRelations ??
     (await createTournamentRelationResolver({ tourCode: options.tourCode }))
-  return manager.runTournamentImport(
-    {
-      provider: SportsDataProvider.fromEnv(),
-      repository: getTournamentRepository(),
-      resolveRelations,
-    },
-    options.query,
-  )
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "tournament",
+    run: () =>
+      manager.runTournamentImport(
+        {
+          provider: SportsDataProvider.fromEnv(),
+          repository: getTournamentRepository(),
+          resolveRelations,
+        },
+        options.query,
+      ),
+    normalize: normalizeImportResult,
+  })
 }
 
 /**
@@ -211,9 +231,24 @@ export async function runTournamentImport(
 export async function runCourseLinking(
   options: RunImportOptions = {},
 ): Promise<CourseLinkSummary> {
-  const provider = SportsDataProvider.fromEnv()
-  const response = await provider.listCourses(options.query)
-  return linkTournamentCourses(response.data)
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "course-link",
+    run: async () => {
+      const provider = SportsDataProvider.fromEnv()
+      const response = await provider.listCourses(options.query)
+      return linkTournamentCourses(response.data)
+    },
+    normalize: (s) => ({
+      processed: s.processed,
+      inserted: s.linked,
+      updated: s.updated,
+      skipped: s.skipped,
+      failed: s.failed,
+      summary: `${s.linked} linked, ${s.updated} updated, ${s.skipped} skipped, ${s.failed} failed`,
+      error: s.failed > 0 ? (s.notes[0] ?? null) : null,
+    }),
+  })
 }
 
 /**
@@ -227,7 +262,19 @@ export async function runCourseLinking(
  * Returns a {@link FieldImportSummary} describing the run.
  */
 export async function runFieldImport(): Promise<FieldImportSummary> {
-  return importTournamentFields()
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "field",
+    run: () => importTournamentFields(),
+    normalize: (s) => ({
+      processed: s.entriesSeen,
+      inserted: s.inserted,
+      updated: s.updated,
+      skipped: s.entriesUnmatchedPlayer,
+      failed: s.entriesInvalid,
+      summary: `${s.tournamentsWithField}/${s.tournamentsConsidered} fields; ${s.inserted} inserted, ${s.updated} updated, ${s.entriesUnmatchedPlayer} unmatched, ${s.entriesInvalid} invalid`,
+    }),
+  })
 }
 
 /**
@@ -245,7 +292,29 @@ export async function runFieldImport(): Promise<FieldImportSummary> {
 export async function runStatisticsImport(
   seasons?: readonly number[],
 ): Promise<StatisticsImportSummary> {
-  return importPlayerStatistics({ seasons })
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "statistics",
+    run: () => importPlayerStatistics({ seasons }),
+    normalize: (s) => ({
+      processed: s.rowsSeen,
+      inserted: s.inserted,
+      updated: s.updated,
+      skipped: s.rowsUnmatchedPlayer,
+      failed: s.rowsInvalid,
+      // Some seasons can be unreachable (the trial-tier key 401s on prior
+      // seasons). That is not a per-row failure, but a run that could not fetch
+      // every requested season is honestly PARTIAL, not a clean SUCCESS.
+      status:
+        s.rowsInvalid > 0
+          ? undefined
+          : s.seasonsWithData < s.seasonsConsidered
+            ? "PARTIAL"
+            : undefined,
+      summary: `${s.seasonsWithData}/${s.seasonsConsidered} seasons; ${s.inserted} inserted, ${s.updated} updated, ${s.rowsUnmatchedPlayer} unmatched, ${s.rowsInvalid} invalid`,
+      error: s.seasonsWithData < s.seasonsConsidered ? (s.notes[0] ?? null) : null,
+    }),
+  })
 }
 
 /**
@@ -258,7 +327,19 @@ export async function runStatisticsImport(
  * provider `externalId` (NewsID). Returns a {@link NewsImportSummary}.
  */
 export async function runNewsImport(): Promise<NewsImportSummary> {
-  return importNews()
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "news",
+    run: () => importNews(),
+    normalize: (s) => ({
+      processed: s.articlesSeen,
+      inserted: s.inserted,
+      updated: s.updated,
+      failed: s.failed,
+      summary: `${s.inserted} inserted, ${s.updated} updated, ${s.linkedToPlayer} player-linked, ${s.general} general, ${s.failed} failed`,
+      error: s.failed > 0 ? (s.notes[0] ?? null) : null,
+    }),
+  })
 }
 
 /**
@@ -276,7 +357,34 @@ export async function runNewsImport(): Promise<NewsImportSummary> {
 export async function runBettingImport(
   dates?: readonly string[],
 ): Promise<BettingImportSummary> {
-  return importBetting({ dates })
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "betting",
+    run: () => importBetting({ dates }),
+    normalize: (s) => {
+      // Trial-tier payout VALUES arrive scrambled; the structure imports but no
+      // real odds are available, so a run with zero available outcomes is
+      // honestly PARTIAL rather than a clean SUCCESS — and only then do we
+      // surface a note as the run error (never SUCCESS-with-error).
+      const scrambledOnly = s.availableOutcomes === 0 && s.scrambledOutcomes > 0
+      // A run that saw no events at all but logged notes means the feed itself
+      // could not be fetched (the endpoint 404s on the trial tier) — that is a
+      // degraded run, not a clean "no events scheduled today".
+      const fetchFailed = s.eventsSeen === 0 && s.notes.length > 0
+      const degraded = scrambledOnly || fetchFailed
+      const status = s.failed > 0 ? undefined : degraded ? "PARTIAL" : undefined
+      return {
+        processed: s.eventsSeen,
+        inserted: s.inserted,
+        updated: s.updated,
+        failed: s.failed,
+        skipped: s.scrambledOutcomes,
+        status,
+        summary: `${s.inserted} inserted, ${s.updated} updated; ${s.availableOutcomes} available / ${s.scrambledOutcomes} scrambled outcomes`,
+        error: s.failed > 0 || degraded ? (s.notes[0] ?? null) : null,
+      }
+    },
+  })
 }
 
 /**
@@ -292,7 +400,34 @@ export async function runBettingImport(
 export async function runFantasyImport(
   tournamentExternalIds?: readonly string[],
 ): Promise<FantasyImportSummary> {
-  return importFantasy({ tournamentExternalIds })
+  return recordImportRun({
+    provider: "sportsdataio",
+    entity: "fantasy",
+    run: () => importFantasy({ tournamentExternalIds }),
+    normalize: (s) => {
+      const inserted = s.projectionsInserted + s.salariesInserted
+      const updated = s.projectionsUpdated + s.salariesUpdated
+      const failed = s.projectionsFailed + s.salariesFailed
+      // DFS salaries are real and import cleanly. Projections are unavailable on
+      // the trial tier (the endpoint 404s / scrambles), so a run that landed
+      // salaries but no projections is honestly PARTIAL, and only then do we
+      // surface the projection note as the run error — never SUCCESS-with-error.
+      const projectionsMissing =
+        s.projectionsAvailable === 0 && (s.projectionsScrambled > 0 || s.notes.length > 0)
+      const status =
+        failed > 0 ? undefined : projectionsMissing ? "PARTIAL" : undefined
+      return {
+        processed: s.projectionsSeen + s.salariesSeen,
+        inserted,
+        updated,
+        failed,
+        skipped: s.projectionsScrambled,
+        status,
+        summary: `salaries: ${s.salariesInserted}+${s.salariesUpdated} (real); projections: ${s.projectionsAvailable} available / ${s.projectionsScrambled} scrambled`,
+        error: failed > 0 || projectionsMissing ? (s.notes[0] ?? null) : null,
+      }
+    },
+  })
 }
 
 /**
@@ -300,14 +435,37 @@ export async function runFantasyImport(
  * Geolocation Engine — the prerequisite for weather, maps, and travel.
  *
  * Run this AFTER {@link runCourseImport} has populated the course catalog, and
- * BEFORE {@link runWeatherImport} (weather only fetches for verified courses).
- * Idempotent and incremental: only courses not already VERIFIED are looked up,
- * so re-running processes just the remaining backlog and never overwrites a
- * previously verified coordinate. Coordinates are never fabricated — a course
- * with no verified golf-course match is left UNKNOWN. `limit` bounds one run.
+ * BEFORE {@link runWeatherImport} (weather fetches for any course with a
+ * usable coordinate — VERIFIED or APPROXIMATE). Idempotent and incremental:
+ * only courses without a usable coordinate are looked up, so re-running
+ * processes just the remaining backlog and never downgrades a better
+ * coordinate. Coordinates are never fabricated — the two-tier provider persists
+ * a course-precise (OSM, VERIFIED) match when it finds one, else a city-level
+ * (OpenWeather, APPROXIMATE) fallback, else leaves the course UNKNOWN. `limit`
+ * bounds one run; pass `includeApproximate` to retry upgrading city-level rows.
  */
-export async function runCourseGeolocation(limit?: number): Promise<GeolocationSummary> {
-  return importCourseCoordinates({ limit })
+export async function runCourseGeolocation(
+  limit?: number,
+  options: { includeApproximate?: boolean } = {},
+): Promise<GeolocationSummary> {
+  return recordImportRun({
+    provider: "osm-nominatim + openweather",
+    entity: "geolocation",
+    run: () => importCourseCoordinates({ limit, includeApproximate: options.includeApproximate }),
+    // A course with no confident public match (course-precise OR city-level) is
+    // legitimately left UNKNOWN and skipped — that is the honest, non-
+    // fabricating behavior, NOT an error. Both VERIFIED and APPROXIMATE
+    // successes count as `updated`. The run only carries an error when a lookup
+    // actually threw (`failed`).
+    normalize: (s) => ({
+      processed: s.coursesConsidered,
+      updated: s.verified + s.approximate,
+      skipped: s.skippedNotFound,
+      failed: s.failed,
+      summary: `${s.verified} verified (course-precise), ${s.approximate} approximate (city-level), ${s.skippedNotFound} not found, ${s.failed} failed`,
+      error: s.failed > 0 ? (s.notes[0] ?? null) : null,
+    }),
+  })
 }
 
 /**
@@ -326,7 +484,19 @@ export async function runCourseGeolocation(limit?: number): Promise<GeolocationS
 export async function runWeatherImport(
   tournamentIds?: readonly string[],
 ): Promise<WeatherImportSummary> {
-  return importWeather({ tournamentIds })
+  return recordImportRun({
+    provider: "openweather",
+    entity: "weather",
+    run: () => importWeather({ tournamentIds }),
+    normalize: (s) => ({
+      processed: s.tournamentsConsidered,
+      updated: s.stored,
+      skipped: s.skippedNoCourse + s.skippedNoCoordinates,
+      failed: s.failed,
+      summary: `${s.stored} snapshots (${s.periodsStored} periods, ${s.storedCityLevel} city-level); ${s.skippedNoCourse} no-course, ${s.skippedNoCoordinates} no-coords, ${s.failed} failed`,
+      error: s.failed > 0 ? (s.notes[0] ?? null) : null,
+    }),
+  })
 }
 
 /**
@@ -342,5 +512,17 @@ export async function runWeatherImport(
  * behind both the tournament and player Odds Intelligence cards.
  */
 export async function runOddsImport(): Promise<OddsImportSummary> {
-  return importOdds()
+  return recordImportRun({
+    provider: "the-odds-api",
+    entity: "odds",
+    run: () => importOdds(),
+    normalize: (s) => ({
+      processed: s.eventsSeen,
+      inserted: s.inserted,
+      updated: s.updated,
+      failed: s.failed,
+      summary: `${s.inserted} inserted, ${s.updated} updated; ${s.quotesBuilt} quotes, ${s.linkedToTournament} events linked, ${s.quotesLinkedToPlayer} quotes player-linked, ${s.distinctBookmakers} books`,
+      error: s.failed > 0 ? (s.notes[0] ?? null) : null,
+    }),
+  })
 }

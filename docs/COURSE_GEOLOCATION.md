@@ -1,12 +1,15 @@
 # Course Geolocation Engine
 
-> Give every golf course a **verified** latitude/longitude — the spatial
-> foundation that Weather Intelligence, maps, and travel/rest analysis build on.
-> Honesty over coverage: a coordinate is stored only when a real golf-course
-> feature is positively identified, never approximated.
+> Give every golf course the best latitude/longitude we can honestly stand
+> behind — the spatial foundation that Weather Intelligence, maps, and
+> travel/rest analysis build on. **Two tiers, never fabricated:** a
+> course-precise `VERIFIED` match when a real golf-course feature is positively
+> identified, else a clearly-labeled `APPROXIMATE` city-level fallback that
+> unlocks regional weather, else nothing.
 
-Status: **shipped** (Sprint 3.9). Default provider: OpenStreetMap Nominatim
-(zero-config, no API key).
+Status: **shipped** (Sprint 3.9; two-tier fallback added Sprint 3.9.1). Default
+provider: a **composite** — OpenStreetMap Nominatim for course-precise matches,
+with the OpenWeather Geocoding API as a city-level fallback.
 
 ---
 
@@ -28,23 +31,59 @@ located course from an un-located one.
 ## 2. The honesty contract
 
 The engine follows the platform's core rule — **never fabricate** — expressed as
-three coordinate confidence levels on the `courses` table:
+coordinate confidence levels on the `courses` table, in descending precision:
 
-| `coordinateConfidence` | Meaning | Consumed downstream? |
-| --- | --- | --- |
-| `VERIFIED` | A real, mapped golf-course feature was positively identified. | **Yes.** |
-| `ESTIMATED` | Reserved for a future heuristic path. **Never written automatically this sprint.** | No. |
-| `UNKNOWN` | Not yet located (the default). | No. |
+| `coordinateConfidence` | Meaning | Consumed by Weather? | Consumed by Maps? |
+| --- | --- | --- | --- |
+| `VERIFIED` | A real, mapped golf-course feature was positively identified (course-precise). | **Yes** | **Yes** |
+| `APPROXIMATE` | A city/locality centroid used as a fallback. Accurate to the town, **not** the course. | **Yes** | No |
+| `ESTIMATED` | Reserved for a future heuristic path. **Never written automatically.** | No | No |
+| `UNKNOWN` | Not yet located (the default). | No | No |
 
-Only `VERIFIED` coordinates are ever read by Weather or any other spatial
-feature. A course we could not confidently locate stays `UNKNOWN` and its
-lat/lng remain `NULL` — the product then honestly shows "awaiting course
-coordinates" instead of a guessed position.
+**Why two consuming tiers.** A weather forecast is inherently regional — a
+city-centroid is materially as good as the course pin for a wind/rain outlook —
+so Weather accepts `APPROXIMATE`. Course-precise features (maps, on-course
+spatial analysis) accept **only** `VERIFIED`. Crucially, an `APPROXIMATE`
+coordinate is always surfaced to the user as "city-level", never dressed up as a
+verified course pin.
 
-**What "verified" means concretely (this sprint):** the geocoder must return an
-actual golf-course feature — OpenStreetMap `leisure=golf_course` (or `golf`) —
-for the course's name + locality. A clubhouse POI tagged `restaurant`, a town
-centroid, or an unrelated result is **rejected**, not stored.
+A course we could not honestly place at either tier stays `UNKNOWN` with `NULL`
+lat/lng, and the product shows "awaiting course coordinates" rather than a guess.
+
+### 2.1 Coordinate source hierarchy (precedence)
+
+Coordinates are taken from the **most authoritative available source first**;
+each lower tier is consulted only when the tier above has nothing for that
+course. `coordinateSource` records which one supplied the stored value.
+
+| # | Source | Precision | `coordinateSource` | When it is used |
+| - | ------ | --------- | ------------------ | --------------- |
+| 1 | **SportsDataIO** (the course feed) | `VERIFIED` | `sportsdataio` | Whenever the feed supplies a valid lat/lng pair. The ingestion path is **implemented and tested** (`SdioCourse.Latitude/Longitude` → mapper → `toUpsertPlan` writes `VERIFIED`), but currently **dormant**: verified live against `/json/Courses` (622 rows), the golf tier exposes only `Venue`/`Location`/`City`/`State`/`Country`/`Par`/`Yards` — **no coordinate fields** — so no coordinates are written today. If a future tier adds them, they flow through automatically with no code change. |
+| 2 | **OpenStreetMap / Nominatim** | `VERIFIED` | `osm-nominatim` | Course name resolves to a real `leisure=golf_course` feature (course-precise). |
+| 3 | **OpenWeather Geocoding** | `APPROXIMATE` | `openweather-geocoding` | No course-precise match exists, but the city/state/country resolves to a locality centroid. Invoked **only** when coordinates are genuinely unavailable from the tiers above. |
+| — | _none_ | — (`UNKNOWN`) | `null` | No confident match anywhere. Left for review, never fabricated. |
+
+**Never geocode what a provider already verified.** Because the work queue
+excludes any course already `VERIFIED` (or `APPROXIMATE`), a coordinate written
+from SportsDataIO (tier 1) is automatically skipped by geolocation — the OSM and
+OpenWeather lookups run **only** for courses without a usable coordinate yet.
+This satisfies the rule directly: use the provider's verified coordinates when
+present; fall back to geocoding, and to OpenWeather specifically, only when
+coordinates are otherwise unavailable.
+
+**What "verified" means concretely:** the primary geocoder must return an actual
+golf-course feature — OpenStreetMap `leisure=golf_course` (or `golf`) — for the
+course's name + locality. A clubhouse POI tagged `restaurant`, a town centroid,
+or an unrelated result is **rejected** by the primary (it may still qualify as an
+`APPROXIMATE` city match via the fallback, but never as `VERIFIED`).
+
+**What "approximate" means concretely:** only when the primary finds no
+course-precise match, the OpenWeather fallback resolves the course's **city** to
+a locality centroid — and only when there is a disambiguating anchor (a
+resolvable country **or** a US state code). A bare, unanchored city is refused,
+because OpenWeather will otherwise silently resolve e.g. "Ayrshire" (Scotland) to
+a same-named US place. We would rather leave a course `UNKNOWN` than store a
+confident-looking coordinate on the wrong continent.
 
 ---
 
@@ -57,17 +96,24 @@ courses (name, city, state, country)
 CourseGeolocationService.locateCourse()        lib/imports/course-geolocation.ts
         │  builds a structured query
         ▼
-GeocodingProvider.geocodeCourse(query)         lib/providers/geocoding/provider.ts  (interface)
-        │  (default: OSM Nominatim)             lib/providers/geocoding/nominatim.ts
-        │  → GeocodeMatch | null
+CompositeGeocodingProvider.geocodeCourse()     lib/providers/geocoding/composite.ts
+        │   1. primary  → Nominatim   (verified golf-course feature)
+        │   2. fallback → OpenWeather (estimated city centroid)
+        │   → GeocodeMatch{confidence} | null
+        ├────────────── confidence = "verified" ──────────────┐
+        │                                                      ▼
+        │                          CourseRepository.setVerifiedCoordinates()
+        │                          atomic; never overwrites VERIFIED
+        └────────────── confidence = "estimated" ─────────────┐
+                                                               ▼
+                                   CourseRepository.setApproximateCoordinates()
+                                   atomic; NOT IN (VERIFIED, APPROXIMATE) guard
         ▼
-CourseRepository.setVerifiedCoordinates()      lib/repositories/course-repository.ts
-        │  atomic, never overwrites VERIFIED
-        ▼
-courses.latitude / longitude / coordinateConfidence=VERIFIED
+courses.latitude / longitude / coordinateConfidence ∈ {VERIFIED, APPROXIMATE}
         │
         ▼
-WeatherRepository.findWeatherVenueById()  ← surfaces coords ONLY when VERIFIED
+WeatherRepository.findWeatherVenueById()  ← surfaces coords when VERIFIED or
+                                             APPROXIMATE (VERIFIED preferred)
 ```
 
 The layering mirrors the other engines: a **swappable provider** behind an
@@ -87,11 +133,29 @@ interface GeocodingProvider {
 ```
 
 - `GeocodeQuery` — structured `{ courseName, city, stateProvince, country }`.
-- `GeocodeMatch` — `{ latitude, longitude, confidence: "verified", source, displayName, matchType }`, or `null` when nothing verifiable was found.
+- `GeocodeMatch` — `{ latitude, longitude, confidence: "verified" | "estimated", source, displayName, matchType }`, or `null` when nothing was found.
 
-Selection is env-driven (`GEOCODING_PROVIDER`) and defaults to Nominatim. Adding
-Google Places or Mapbox is a one-line `case` in the factory plus a class that
-implements the interface — **no caller changes**.
+Selection is env-driven (`GEOCODING_PROVIDER`) and defaults to the **composite**.
+Adding Google Places or Mapbox is a one-line `case` in the factory plus a class
+that implements the interface — **no caller changes**.
+
+### 3.1a The composite provider (`composite.ts`)
+
+`CompositeGeocodingProvider` is the default. It composes a course-precise
+**primary** (Nominatim) with a city-level **fallback** (OpenWeather):
+
+1. Ask the primary. A `verified` course match always wins and short-circuits.
+2. Only if the primary returns nothing, ask the fallback for a city centroid
+   (`estimated`).
+3. If neither locates the course, return `null` (a clean "not found").
+
+**Resilience without dishonesty.** A primary *infrastructure* failure (network,
+rate limit) does not abort the attempt — the fallback is still tried so weather
+stays unblocked. But a primary failure is never silently downgraded to "not
+found": if the fallback also yields nothing, the original primary error is
+surfaced, so the course is reported `failed` and retried later rather than being
+mislabeled as genuinely unmatched. The fallback is optional; when
+`OPENWEATHER_API_KEY` is unset the composite degrades to primary-only.
 
 ### 3.2 The Nominatim provider (`nominatim.ts`)
 
@@ -110,28 +174,59 @@ implements the interface — **no caller changes**.
   `"Country Club"`). The raw name is tried first, then the normalized fallback;
   only the *search string* changes, never the verified-match rule.
 
+### 3.2a The OpenWeather fallback (`openweather.ts`)
+
+- Calls OpenWeather's Geocoding API (`/geo/1.0/direct`), a **city** geocoder —
+  it has no golf-course POIs, so it is used strictly as the city-level fallback,
+  never as the course-precise tier.
+- **The query builder is a pure, tested guard** (`buildOpenWeatherQuery`): it
+  emits `city[,US-state][,ISO2]` and returns `null` unless there is a city **and**
+  a disambiguating anchor (a country resolvable to ISO-2, or a valid US state
+  code — which implies the US even when the country field is blank). This is what
+  prevents wrong-country matches on ambiguous city names.
+- **Country-code translation** (`country-codes.ts`): the SportsDataIO feed stores
+  IOC/sports-style codes (`USA`, `ENG`, `SCO`, `GER`, `RSA`, `MAS`…), which
+  OpenWeather does not understand. `toIso2CountryCode()` maps them to ISO-2
+  (`US`, `GB`, `DE`, `ZA`, `MY`…) and returns `null` for anything it cannot map
+  with confidence — never a guess. The UK home nations all fold to `GB`.
+- **The selection rule is pure** (`selectCityMatch`): first in-range result
+  becomes an `estimated` city match; out-of-range/non-finite coordinates and an
+  empty result set yield `null`. Timeout-guarded, retrying, and rate-limit aware
+  via the shared provider error taxonomy.
+
 ### 3.3 The service + importer (`lib/imports/course-geolocation.ts`)
 
-- `CourseGeolocationService.locateCourse(course)` — geocode one course and, on a
-  verified match, persist it.
-- `importCourseCoordinates({ limit })` / `runCourseGeolocation(limit)` — the
-  batch runner. **Incremental and idempotent:** it processes only courses whose
-  confidence is not already `VERIFIED`, so re-running works through the remaining
-  backlog and never re-fetches or overwrites a verified course. `limit` bounds a
-  single run (useful under the provider's rate policy). Returns a
-  `GeolocationSummary` (`verified`, `skippedNotFound`, `failed`, `notes[]`).
+- `CourseGeolocationService.locateCourse(course)` — geocode one course and route
+  the match by confidence: `verified` → `setVerifiedCoordinates`, `estimated` →
+  `setApproximateCoordinates`. It honours whatever tier the provider reports and
+  never promotes an estimated match to verified.
+- `importCourseCoordinates({ limit, includeApproximate })` /
+  `runCourseGeolocation(limit, { includeApproximate })` — the batch runner.
+  **Incremental and idempotent:** by default it processes only courses with no
+  usable coordinate yet (`UNKNOWN`/`ESTIMATED`), so re-running works the backlog
+  and never re-fetches a resolved course. Pass `includeApproximate: true` to also
+  re-attempt `APPROXIMATE` courses and try to **upgrade** them to a course-precise
+  `VERIFIED` match. Returns a `GeolocationSummary` (`verified`, `approximate`,
+  `skippedNotFound`, `failed`, `notes[]`).
 
 ### 3.4 The repository boundary (`course-repository.ts`)
 
-- `findCoursesNeedingCoordinates(limit?)` — the work queue: live courses whose
-  confidence is not `VERIFIED`.
-- `setVerifiedCoordinates(courseId, coords)` — the guarded writer. It is a
-  conditional `updateMany` filtered on `coordinateConfidence != VERIFIED`, so a
-  previously verified coordinate is **never overwritten, even under a race**;
-  returns `updated` when it wrote and `skipped` when it was a benign no-op.
+- `findCoursesNeedingCoordinates(limit?, { includeApproximate })` — the work
+  queue. Default excludes both `VERIFIED` and `APPROXIMATE` (only truly
+  un-located courses); upgrade mode excludes only `VERIFIED` so city-level rows
+  can be retried for a course-precise match.
+- `setVerifiedCoordinates(courseId, coords)` — the course-precise writer. A
+  conditional `updateMany` filtered on `coordinateConfidence != VERIFIED`, so it
+  can **upgrade** an `APPROXIMATE` row to `VERIFIED` but never overwrites an
+  existing `VERIFIED` one, even under a race.
+- `setApproximateCoordinates(courseId, coords)` — the city-level writer. Filtered
+  on `coordinateConfidence NOT IN (VERIFIED, APPROXIMATE)`, encoding two
+  guarantees at once: **never downgrade** a verified coordinate to a centroid, and
+  **idempotent** (an already-approximate row is left untouched). Returns `updated`
+  when it wrote, `skipped` on a benign no-op.
 - `toUpsertPlan()` (used by the course importer) deliberately writes **no**
   coordinate columns, so re-importing the SportsDataIO catalog can never clobber
-  verified coordinates.
+  located coordinates.
 
 ---
 
@@ -142,14 +237,15 @@ Run order (each step is idempotent):
 1. `runCourseImport` — populate the course catalog.
 2. **`runCourseGeolocation`** — verify coordinates for courses still `UNKNOWN`.
 3. `runCourseLinking` — link tournaments to their host course.
-4. `runWeatherImport` — fetch forecasts, **only** for tournaments whose host
-   course is `VERIFIED`.
+4. `runWeatherImport` — fetch forecasts for tournaments whose host course has a
+   usable coordinate (`VERIFIED` **or** `APPROXIMATE`).
 
-Because weather reads coordinates exclusively through
-`WeatherRepository.findWeatherVenueById()` — which surfaces lat/lng only when
-`coordinateConfidence = 'VERIFIED'` — an unverified course automatically yields
-the Weather Intelligence `course-missing-coordinates` gap, and the Tournament
-Page shows the friendly **"Awaiting course coordinates"** state.
+Weather reads coordinates through `WeatherRepository.findWeatherVenueById()`,
+which surfaces lat/lng when `coordinateConfidence IN ('VERIFIED','APPROXIMATE')`
+and reports which tier it used (VERIFIED preferred in its ordering). A course at
+neither tier automatically yields the Weather Intelligence
+`course-missing-coordinates` gap, and the Tournament Page shows the friendly
+**"Awaiting course coordinates"** state.
 
 ---
 
@@ -157,45 +253,61 @@ Page shows the friendly **"Awaiting course coordinates"** state.
 
 | Env var | Default | Purpose |
 | --- | --- | --- |
-| `GEOCODING_PROVIDER` | `osm-nominatim` | Selects the provider. Unknown values fall back to the default (a typo never takes geolocation offline). |
+| `GEOCODING_PROVIDER` | `composite` | Selects the provider: `composite` (default), `nominatim` (course-precise only), or `openweather` (city-level only). Unknown values fall back to the default (a typo never takes geolocation offline). |
 | `NOMINATIM_BASE_URL` | public endpoint | Override to a self-hosted Nominatim. |
 | `NOMINATIM_USER_AGENT` | CaddieIQ identifier | Required by Nominatim's policy. |
 | `NOMINATIM_MIN_INTERVAL_MS` | `1000` | Request spacing to respect the usage policy. |
+| `OPENWEATHER_API_KEY` | — | Enables the city-level fallback. **Optional:** when unset, the composite degrades to Nominatim-only (courses still get `VERIFIED` matches, just no `APPROXIMATE` fallback). Shared with the Weather engine. |
 
-No API key is required for the default provider, so the engine works out of the
-box in every environment.
+No key is required for the course-precise tier, so the engine works out of the
+box; providing `OPENWEATHER_API_KEY` additionally unlocks the city-level
+fallback.
 
 ---
 
 ## 6. Testing
 
-`lib/imports/__tests__/course-geolocation.test.ts` covers, with **no network**:
+All with **no network**:
 
-- The pure honesty gate: `leisure=golf_course` verifies (via `category`,
-  `class`, or `addresstype`); a `restaurant` clubhouse, a locality centroid, an
-  out-of-range coordinate, and an empty result set all yield `null`.
-- Query building and normalization (abbreviation expansion, parenthetical
-  stripping, variant ordering + de-duplication).
-- The service against a fake provider + fake repository: verified match →
-  persisted; no match → left `UNKNOWN`; already-verified → skipped (never
-  overwritten); provider error → counted as failed, not fatal.
+- `lib/imports/__tests__/course-geolocation.test.ts` — the Nominatim honesty
+  gate (`leisure=golf_course` verifies; a `restaurant` clubhouse, a locality
+  centroid, an out-of-range coordinate, and an empty set yield `null`), query
+  normalization, and the service against fakes.
+- `lib/providers/geocoding/__tests__/country-codes.test.ts` — IOC/sports →
+  ISO-2 mapping, UK home nations → `GB`, and `null` for unmappable input.
+- `lib/providers/geocoding/__tests__/openweather.test.ts` — the anchor guard
+  (bare/unanchored city → `null`; US-state-implies-US), and the city selection
+  rule (skips out-of-range; `confidence` is always `estimated`, never
+  `verified`).
+- `lib/providers/geocoding/__tests__/composite.test.ts` — routing: verified wins
+  and skips the fallback; fallback used only on a primary miss; both empty →
+  `null`; primary throws but fallback succeeds → returned; primary throws and
+  fallback empty → the primary error is surfaced (not a false "not found").
 
 ---
 
 ## 7. Design decisions
 
-- **Honesty over coverage.** A strict `leisure=golf_course` gate means fewer
-  courses fill in, but every stored coordinate is genuinely the course. Coverage
-  is improved only by better *queries* (normalization), never by relaxing the
-  gate.
+- **Two honest tiers beat one dishonest number.** Rather than relax the
+  `leisure=golf_course` gate to raise coverage (which would let town centroids
+  masquerade as course pins), we keep the strict gate for `VERIFIED` and add a
+  **separately-labeled** `APPROXIMATE` tier. Weather — which only needs regional
+  accuracy — consumes both; maps consume only `VERIFIED`. The user always sees
+  which they got.
+- **Refuse rather than guess.** The OpenWeather fallback demands a
+  disambiguating anchor (country or US state). An unanchored city is left
+  `UNKNOWN`, because a confident coordinate on the wrong continent is worse than
+  an honest blank.
+- **No downgrades, ever.** `setVerifiedCoordinates` may upgrade an `APPROXIMATE`
+  row; `setApproximateCoordinates` will never overwrite a `VERIFIED` one. Both
+  guards live in the SQL predicate, so they hold even under concurrent runs.
 - **Provenance is first-class.** `coordinateConfidence` — not the mere presence
-  of lat/lng — is the source of truth for trust. `coordinateSource` and
-  `coordinatesVerifiedAt` record who verified and when.
-- **Provider-swappable.** The vendor lives behind an interface + factory; the
-  engine, service, and repository never name a concrete provider.
-- **`ESTIMATED` is reserved, not used.** The enum leaves room for a future
-  heuristic path, but nothing writes it automatically today — so "estimated"
-  can never silently leak into a verified-only consumer.
+  of lat/lng — is the source of truth for trust. `coordinateSource`
+  (`osm-nominatim` vs `openweather-geocoding`) and `coordinatesVerifiedAt` record
+  who located it and when.
+- **Provider-swappable.** Every vendor lives behind the `GeocodingProvider`
+  interface + factory; the composite itself is just another implementation, so
+  the engine, service, and repository never name a concrete provider.
 
 ---
 

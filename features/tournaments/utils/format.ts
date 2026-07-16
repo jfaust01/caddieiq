@@ -9,6 +9,7 @@ import type {
   TournamentStatus,
   TourType,
 } from '@/features/tournaments/types'
+import type { FieldConfidence, FieldStatus } from '@/lib/tournament-context/types'
 
 /** Shown wherever an optional value has not been ingested yet. */
 export const EMPTY_VALUE = '—'
@@ -182,6 +183,70 @@ const FIELD_SIZE_FMT = new Intl.NumberFormat('en-US')
 export function formatFieldSize(size: number): string | null {
   if (!Number.isFinite(size) || size <= 0) return null
   return `${FIELD_SIZE_FMT.format(size)} ${size === 1 ? 'player' : 'players'}`
+}
+
+/* --- Official field lifecycle ------------------------------------------- */
+
+const FIELD_LIFECYCLE_LABELS: Record<FieldStatus, string> = {
+  awaiting: 'Field pending',
+  confirmed: 'Field confirmed',
+  live: 'Field set',
+  complete: 'Field final',
+  cancelled: 'Event canceled',
+  unknown: 'Field status unknown',
+}
+
+/** Human label for an official-field lifecycle status, e.g. "Field confirmed". */
+export function fieldLifecycleLabel(status: FieldStatus): string {
+  return FIELD_LIFECYCLE_LABELS[status]
+}
+
+/** Badge tone for an official-field lifecycle status. */
+export function fieldLifecycleTone(status: FieldStatus): Tone {
+  switch (status) {
+    case 'confirmed':
+    case 'live':
+      return 'success'
+    case 'awaiting':
+      return 'warning'
+    case 'complete':
+      return 'muted'
+    case 'cancelled':
+    case 'unknown':
+      return 'muted'
+  }
+}
+
+const FIELD_CONFIDENCE_LABELS: Record<FieldConfidence, string> = {
+  official: 'Official field',
+  awaiting: 'Provisional',
+  unknown: 'Unconfirmed',
+}
+
+/** Short label for how certain the presented field is, e.g. "Official field". */
+export function fieldConfidenceLabel(confidence: FieldConfidence): string {
+  return FIELD_CONFIDENCE_LABELS[confidence]
+}
+
+const DEADLINE_FMT = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'America/New_York',
+  timeZoneName: 'short',
+})
+
+/**
+ * Format the PGA Tour commitment deadline in US Eastern time (the tour's
+ * reference zone), e.g. "Fri, Apr 4, 5:00 PM EDT". Returns an em-dash when the
+ * deadline is unknown — never a fabricated time.
+ */
+export function formatCommitmentDeadline(value: string | null): string {
+  if (!value) return EMPTY_VALUE
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? EMPTY_VALUE : DEADLINE_FMT.format(date)
 }
 
 const TIMESTAMP_FMT = new Intl.DateTimeFormat('en-US', {

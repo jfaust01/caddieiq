@@ -187,14 +187,23 @@ function fakeProvider(
   return { name: "fake", geocodeCourse: impl }
 }
 
-/** A repository test double capturing setVerifiedCoordinates calls. */
+/**
+ * A repository test double. `setImpl` backs BOTH tiers (verified + approximate)
+ * so a single stub can assert either write path; pass a distinct
+ * `setApproximateImpl` when a test needs to differentiate the two.
+ */
 function fakeRepository(
   setImpl: (id: string, c: VerifiedCoordinatesInput) => Promise<RepositoryResult<CourseRecord>>,
   targets: CourseGeocodeTargetRow[] = [TARGET],
+  setApproximateImpl?: (
+    id: string,
+    c: VerifiedCoordinatesInput,
+  ) => Promise<RepositoryResult<CourseRecord>>,
 ): CourseRepository {
   return {
     findCoursesNeedingCoordinates: vi.fn(async () => targets),
     setVerifiedCoordinates: vi.fn(setImpl),
+    setApproximateCoordinates: vi.fn(setApproximateImpl ?? setImpl),
   } as unknown as CourseRepository
 }
 
@@ -220,6 +229,7 @@ describe("CourseGeolocationService.locateCourse", () => {
       latitude: 36.5687,
       longitude: -121.9503,
       source: "osm-nominatim",
+      tier: "verified",
     })
     expect(set).toHaveBeenCalledWith("course_1", {
       latitude: 36.5687,
@@ -240,17 +250,25 @@ describe("CourseGeolocationService.locateCourse", () => {
     expect(set).not.toHaveBeenCalled()
   })
 
-  it("skips an estimated (non-verified) match without persisting", async () => {
-    const set = vi.fn(async () => ({ outcome: "updated" }) as RepositoryResult<CourseRecord>)
-    const repo = fakeRepository(set)
-    const estimated: GeocodeMatch = { ...verifiedMatch, confidence: "estimated" }
+  it("persists an estimated (city-level) match as APPROXIMATE, not VERIFIED", async () => {
+    const setVerified = vi.fn(async () => ({ outcome: "updated" }) as RepositoryResult<CourseRecord>)
+    const setApprox = vi.fn(async () => ({ outcome: "updated" }) as RepositoryResult<CourseRecord>)
+    const repo = fakeRepository(setVerified, [TARGET], setApprox)
+    const estimated: GeocodeMatch = {
+      ...verifiedMatch,
+      confidence: "estimated",
+      source: "openweather-geocoding",
+    }
     const service = new CourseGeolocationService(repo, fakeProvider(async () => estimated))
 
     const outcome = await service.locateCourse(TARGET)
 
-    expect(outcome.status).toBe("skipped")
-    expect(outcome.reason).toBe("unverified-match")
-    expect(set).not.toHaveBeenCalled()
+    expect(outcome.status).toBe("approximate")
+    expect(outcome.coordinates?.tier).toBe("approximate")
+    expect(outcome.coordinates?.source).toBe("openweather-geocoding")
+    // Routed to the approximate writer only — never the verified one.
+    expect(setApprox).toHaveBeenCalledOnce()
+    expect(setVerified).not.toHaveBeenCalled()
   })
 
   it("captures a provider failure without throwing", async () => {
@@ -268,14 +286,14 @@ describe("CourseGeolocationService.locateCourse", () => {
     expect(outcome.error).toContain("nominatim down")
   })
 
-  it("treats a repository skip (already verified) as a skip, not a verify", async () => {
+  it("treats a repository skip (already resolved) as a skip, not a verify", async () => {
     const repo = fakeRepository(async () => ({ outcome: "skipped" }))
     const service = new CourseGeolocationService(repo, fakeProvider(async () => verifiedMatch))
 
     const outcome = await service.locateCourse(TARGET)
 
     expect(outcome.status).toBe("skipped")
-    expect(outcome.reason).toBe("already-verified")
+    expect(outcome.reason).toBe("already-resolved")
   })
 })
 
@@ -285,10 +303,14 @@ describe("CourseGeolocationService.locatePendingCourses", () => {
       { ...TARGET, id: "a", name: "Verified GC" },
       { ...TARGET, id: "b", name: "Missing GC" },
       { ...TARGET, id: "c", name: "Boom GC" },
+      { ...TARGET, id: "d", name: "City Only GC" },
     ]
     const provider = fakeProvider(async (q) => {
       if (q.courseName === "Verified GC") return verifiedMatch
       if (q.courseName === "Missing GC") return null
+      if (q.courseName === "City Only GC") {
+        return { ...verifiedMatch, confidence: "estimated", source: "openweather-geocoding" }
+      }
       throw new ProviderError("boom", { provider: "fake" })
     })
     const repo = fakeRepository(async () => ({ outcome: "updated" }), targets)
@@ -296,8 +318,9 @@ describe("CourseGeolocationService.locatePendingCourses", () => {
 
     const summary = await service.locatePendingCourses()
 
-    expect(summary.coursesConsidered).toBe(3)
+    expect(summary.coursesConsidered).toBe(4)
     expect(summary.verified).toBe(1)
+    expect(summary.approximate).toBe(1)
     expect(summary.skippedNotFound).toBe(1)
     expect(summary.failed).toBe(1)
   })

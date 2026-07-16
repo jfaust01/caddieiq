@@ -73,6 +73,20 @@ export interface SdioCourse extends SdioRecord {
   Country?: string
   Par?: number
   Yards?: number
+  /**
+   * Course latitude/longitude, in decimal degrees.
+   *
+   * Defensive, forward-looking support: the current SportsDataIO golf tier does
+   * NOT return these (verified live against `/json/Courses` — 622 rows, zero
+   * coordinate fields). They are modeled as optional so that, if SportsDataIO
+   * ever adds them, the course importer ingests provider coordinates as the
+   * highest-priority source (stored `VERIFIED`, `coordinateSource="sportsdataio"`)
+   * and the Course Geolocation Engine skips that course automatically — no
+   * further code change required. Until then these are always `undefined` and
+   * the mapping is a no-op.
+   */
+  Latitude?: number
+  Longitude?: number
 }
 
 /**

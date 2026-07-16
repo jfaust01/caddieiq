@@ -9,6 +9,11 @@
 export { tournamentContextService } from './service'
 export { normalizeTournamentContext, type RawTournamentContext } from './context'
 export {
+  computeFieldReleaseTime,
+  deriveFieldIntelligence,
+  type FieldIntelligenceInput,
+} from './field-status'
+export {
   hasCourseContext,
   isContextAvailable,
   type ContextConfidence,
@@ -19,6 +24,9 @@ export {
   type ContextTiming,
   type ContextTournament,
   type ContextUnavailableReason,
+  type FieldConfidence,
+  type FieldIntelligence,
+  type FieldStatus,
   type TournamentContext,
   type TournamentContextAvailable,
   type TournamentContextUnavailable,
