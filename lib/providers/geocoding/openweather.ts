@@ -93,22 +93,34 @@ export function loadOpenWeatherGeocodingConfig(
 /**
  * Build the `q` parameter for a locality lookup: `city[,state][,ISO2]`.
  *
- * Returns `null` when there is no city to anchor on — we never geocode a course
- * to a country centroid. The `state` component is only appended for US
- * locations (the only place OpenWeather honors it) and only when it is a valid
- * US postal code. An unknown country is omitted rather than guessed.
+ * Returns `null` unless the query has BOTH a city AND a disambiguating
+ * geographic anchor — a resolvable country (→ ISO-2) or a valid US state code.
+ * This guard is essential: a bare city name is globally ambiguous, and
+ * OpenWeather will happily resolve "Ayrshire" (Scotland) to a same-named US
+ * place, silently producing wrong-country coordinates. We would rather leave a
+ * course UNKNOWN than fabricate a confident-looking centroid on the wrong
+ * continent. The `state` component is only appended for US locations (the only
+ * place OpenWeather honors it) and only when it is a valid US postal code.
  */
 export function buildOpenWeatherQuery(query: GeocodeQuery): string | null {
   const city = query.city?.trim()
   if (!city) return null
 
   const iso2 = toIso2CountryCode(query.country)
-  const parts: string[] = [city]
+  const hasUsState = isUsStateCode(query.stateProvince)
 
-  if (iso2 === "US" && isUsStateCode(query.stateProvince)) {
+  // No country and no US state → nothing to disambiguate the city against.
+  // Refuse rather than risk matching the wrong country.
+  if (!iso2 && !hasUsState) return null
+
+  const parts: string[] = [city]
+  // A valid US state implies the US even when the country field is blank.
+  if (hasUsState && (iso2 === "US" || !iso2)) {
     parts.push(query.stateProvince!.trim().toUpperCase())
+    parts.push("US")
+  } else if (iso2) {
+    parts.push(iso2)
   }
-  if (iso2) parts.push(iso2)
 
   return parts.join(",")
 }

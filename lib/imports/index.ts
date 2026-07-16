@@ -435,26 +435,34 @@ export async function runFantasyImport(
  * Geolocation Engine — the prerequisite for weather, maps, and travel.
  *
  * Run this AFTER {@link runCourseImport} has populated the course catalog, and
- * BEFORE {@link runWeatherImport} (weather only fetches for verified courses).
- * Idempotent and incremental: only courses not already VERIFIED are looked up,
- * so re-running processes just the remaining backlog and never overwrites a
- * previously verified coordinate. Coordinates are never fabricated — a course
- * with no verified golf-course match is left UNKNOWN. `limit` bounds one run.
+ * BEFORE {@link runWeatherImport} (weather fetches for any course with a
+ * usable coordinate — VERIFIED or APPROXIMATE). Idempotent and incremental:
+ * only courses without a usable coordinate are looked up, so re-running
+ * processes just the remaining backlog and never downgrades a better
+ * coordinate. Coordinates are never fabricated — the two-tier provider persists
+ * a course-precise (OSM, VERIFIED) match when it finds one, else a city-level
+ * (OpenWeather, APPROXIMATE) fallback, else leaves the course UNKNOWN. `limit`
+ * bounds one run; pass `includeApproximate` to retry upgrading city-level rows.
  */
-export async function runCourseGeolocation(limit?: number): Promise<GeolocationSummary> {
+export async function runCourseGeolocation(
+  limit?: number,
+  options: { includeApproximate?: boolean } = {},
+): Promise<GeolocationSummary> {
   return recordImportRun({
-    provider: "osm-nominatim",
+    provider: "osm-nominatim + openweather",
     entity: "geolocation",
-    run: () => importCourseCoordinates({ limit }),
-    // A course with no confident public match is legitimately left UNKNOWN and
-    // skipped — that is the honest, non-fabricating behavior, NOT an error. So
-    // the run only carries an error when a lookup actually threw (`failed`).
+    run: () => importCourseCoordinates({ limit, includeApproximate: options.includeApproximate }),
+    // A course with no confident public match (course-precise OR city-level) is
+    // legitimately left UNKNOWN and skipped — that is the honest, non-
+    // fabricating behavior, NOT an error. Both VERIFIED and APPROXIMATE
+    // successes count as `updated`. The run only carries an error when a lookup
+    // actually threw (`failed`).
     normalize: (s) => ({
       processed: s.coursesConsidered,
-      updated: s.verified,
-      skipped: s.skippedNotFound + s.skippedUnverified,
+      updated: s.verified + s.approximate,
+      skipped: s.skippedNotFound,
       failed: s.failed,
-      summary: `${s.verified} verified, ${s.skippedNotFound} not found, ${s.skippedUnverified} unverified, ${s.failed} failed`,
+      summary: `${s.verified} verified (course-precise), ${s.approximate} approximate (city-level), ${s.skippedNotFound} not found, ${s.failed} failed`,
       error: s.failed > 0 ? (s.notes[0] ?? null) : null,
     }),
   })

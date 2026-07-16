@@ -122,7 +122,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     // Courses / geolocation
     totalCourses,
     verifiedCoords,
-    estimatedCoords,
+    approximateCoords,
     coordAgg,
     // Course intelligence
     profileRows,
@@ -164,7 +164,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     }),
     prisma.course.count({ where: { deletedAt: null } }),
     prisma.course.count({ where: { deletedAt: null, coordinateConfidence: "VERIFIED" } }),
-    prisma.course.count({ where: { deletedAt: null, coordinateConfidence: "ESTIMATED" } }),
+    prisma.course.count({ where: { deletedAt: null, coordinateConfidence: "APPROXIMATE" } }),
     prisma.course.aggregate({ _max: { coordinatesVerifiedAt: true } }),
     prisma.courseCharacteristic.findMany({
       where: { course: { deletedAt: null } },
@@ -202,18 +202,25 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
   const sections: CoverageSection[] = []
 
   // --- Course Geolocation ---------------------------------------------------
-  const unknownCoords = Math.max(totalCourses - verifiedCoords - estimatedCoords, 0)
+  // Two honest tiers: VERIFIED = course-precise (an OSM golf-course feature);
+  // APPROXIMATE = city-level centroid (OpenWeather) — good enough for regional
+  // weather but explicitly NOT course-precise. Headline coverage % tracks
+  // course-precise only; "located" (either tier) is reported separately so the
+  // city-level fallback is never mistaken for a verified match.
+  const unknownCoords = Math.max(totalCourses - verifiedCoords - approximateCoords, 0)
+  const locatedCoords = verifiedCoords + approximateCoords
   const geoPercent = coveragePercent(verifiedCoords, totalCourses)
+  const locatedPercent = coveragePercent(locatedCoords, totalCourses)
   sections.push({
     id: "course-geolocation",
     title: "Course Geolocation",
     description:
-      "Verified latitude/longitude per course. Only coordinates confirmed against a real golf-course feature count — clubhouse POIs and locality centroids are rejected.",
+      "Latitude/longitude per course, in two tiers. VERIFIED = confirmed against a real golf-course feature (course-precise). APPROXIMATE = city-level centroid used as a weather fallback when no course-precise match exists — never presented as course-precise. Coordinate % below tracks course-precise only.",
     percent: geoPercent,
     rating: rateCoverage(geoPercent),
     breakdown: {
       verified: verifiedCoords,
-      pending: estimatedCoords,
+      pending: approximateCoords,
       missing: unknownCoords,
       total: totalCourses,
     },
@@ -222,22 +229,36 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
       { id: "total", label: "Total Courses", value: formatCount(totalCourses), count: totalCourses },
       {
         id: "verified",
-        label: "Verified Coordinates",
+        label: "Verified (course-precise)",
         value: formatCount(verifiedCoords),
         count: verifiedCoords,
         percent: geoPercent,
+      },
+      {
+        id: "approximate",
+        label: "Approximate (city-level)",
+        value: formatCount(approximateCoords),
+        count: approximateCoords,
+        hint: "City-centroid fallback (OpenWeather). Unlocks weather; not course-precise.",
+      },
+      {
+        id: "located",
+        label: "Located (any tier)",
+        value: formatPercent(locatedPercent),
+        percent: locatedPercent,
+        hint: "Share of courses with a usable coordinate (verified or approximate).",
       },
       {
         id: "missing",
         label: "Missing Coordinates",
         value: formatCount(unknownCoords),
         count: unknownCoords,
-        hint: "Courses still UNKNOWN — never approximated.",
+        hint: "Courses still UNKNOWN — never fabricated.",
       },
-      { id: "coverage", label: "Coverage %", value: formatPercent(geoPercent), percent: geoPercent },
+      { id: "coverage", label: "Course-precise %", value: formatPercent(geoPercent), percent: geoPercent },
       {
         id: "last-updated",
-        label: "Last Verified",
+        label: "Last Located",
         value: formatDateTime(coordAgg._max.coordinatesVerifiedAt),
       },
     ],
@@ -307,7 +328,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     id: "weather",
     title: "Weather",
     description:
-      "Per-tournament forecast coverage. Forecasts are only fetched for events with a VERIFIED host-course coordinate; missing includes events with no verified venue or outside the forecast horizon.",
+      "Per-tournament forecast coverage. Forecasts are fetched for events whose host course has a usable coordinate — VERIFIED (course-precise) or APPROXIMATE (city-level); missing includes events with no located venue or outside the forecast horizon.",
     percent: weatherPercent,
     rating: rateCoverage(weatherPercent),
     breakdown: {

@@ -97,6 +97,13 @@ export interface WeatherVenueRow {
   courseName: string | null
   latitude: number | null
   longitude: number | null
+  /**
+   * Precision of the exposed coordinate: `VERIFIED` (course-precise) or
+   * `APPROXIMATE` (city-level). `null` when no usable coordinate exists. Lets
+   * consumers surface a city-level forecast honestly rather than implying
+   * course precision.
+   */
+  coordinateConfidence: "VERIFIED" | "APPROXIMATE" | null
   startDate: Date | null
   endDate: Date | null
   numberOfRounds: number
@@ -156,13 +163,16 @@ export class WeatherRepository extends BaseRepository {
    * A tournament's venue coordinates and schedule, resolved from its linked host
    * course. Returns `null` for a missing/soft-deleted tournament.
    *
-   * Coordinates are surfaced ONLY when the host course's
-   * `coordinateConfidence = 'VERIFIED'`; for any other confidence (UNKNOWN, or
-   * the reserved ESTIMATED) `latitude`/`longitude` come back `null`. This is the
-   * enforcement point for the platform rule that weather is never fetched from
-   * an unverified or fabricated location — the importer sees no coordinate to
-   * fetch, and the engine reports the event as awaiting coordinates. The id is
-   * bound, never interpolated. Read-only.
+   * Coordinates are surfaced when the host course has a usable coordinate —
+   * `coordinateConfidence IN ('VERIFIED','APPROXIMATE')`. A regional weather
+   * forecast is adequate at city precision, so both tiers are accepted; the
+   * exposed `coordinateConfidence` tells the caller which it got so a city-level
+   * forecast can be labelled honestly. For any other confidence (UNKNOWN, or
+   * the reserved ESTIMATED) `latitude`/`longitude`/`coordinateConfidence` come
+   * back `null`. This remains the enforcement point for the rule that weather is
+   * never fetched from an un-located or fabricated venue — with no coordinate
+   * the importer has nothing to fetch and the engine reports the event as
+   * awaiting coordinates. The id is bound, never interpolated. Read-only.
    */
   async findWeatherVenueById(tournamentId: string): Promise<WeatherVenueRow | null> {
     const rows = await this.prisma.$queryRaw<WeatherVenueRow[]>(Prisma.sql`
@@ -172,23 +182,30 @@ export class WeatherRepository extends BaseRepository {
         t."startDate"       AS "startDate",
         t."endDate"         AS "endDate",
         t."numberOfRounds"  AS "numberOfRounds",
-        course.id           AS "courseId",
-        course.name         AS "courseName",
-        course.latitude     AS "latitude",
-        course.longitude    AS "longitude"
+        course.id                    AS "courseId",
+        course.name                  AS "courseName",
+        course.latitude              AS "latitude",
+        course.longitude             AS "longitude",
+        course."coordinateConfidence" AS "coordinateConfidence"
       FROM tournaments t
       LEFT JOIN LATERAL (
         SELECT
           c.id,
           c.name,
-          -- Only trust VERIFIED coordinates; otherwise expose NULL so weather
-          -- degrades to "awaiting coordinates" instead of using unverified data.
-          CASE WHEN c."coordinateConfidence" = 'VERIFIED' THEN c.latitude END  AS latitude,
-          CASE WHEN c."coordinateConfidence" = 'VERIFIED' THEN c.longitude END AS longitude
+          -- Accept course-precise (VERIFIED) and city-level (APPROXIMATE)
+          -- coordinates; expose NULL for anything else so weather degrades to
+          -- "awaiting coordinates" instead of using un-located data.
+          CASE WHEN c."coordinateConfidence" IN ('VERIFIED','APPROXIMATE') THEN c.latitude END  AS latitude,
+          CASE WHEN c."coordinateConfidence" IN ('VERIFIED','APPROXIMATE') THEN c.longitude END AS longitude,
+          CASE WHEN c."coordinateConfidence" IN ('VERIFIED','APPROXIMATE') THEN c."coordinateConfidence" END AS "coordinateConfidence"
         FROM tournament_courses tc
         JOIN courses c ON c.id = tc."courseId" AND c."deletedAt" IS NULL
         WHERE tc."tournamentId" = t.id
-        ORDER BY tc."hostCourse" DESC, c.name ASC
+        -- Prefer the host course, then a course-precise coordinate over a
+        -- city-level one, so the best available venue wins.
+        ORDER BY tc."hostCourse" DESC,
+                 CASE c."coordinateConfidence" WHEN 'VERIFIED' THEN 0 WHEN 'APPROXIMATE' THEN 1 ELSE 2 END,
+                 c.name ASC
         LIMIT 1
       ) course ON true
       WHERE t.id = ${tournamentId} AND t."deletedAt" IS NULL

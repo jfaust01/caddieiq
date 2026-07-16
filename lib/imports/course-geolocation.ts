@@ -98,11 +98,17 @@ export class CourseGeolocationService {
   }
 
   /**
-   * Locate a single course by its facts and persist the result if — and only
-   * if — the provider returns a `verified` golf-course match. Pure of control
-   * flow surprises: returns a structured {@link GeolocationOutcome} and only
-   * ever throws if the repository write itself throws unexpectedly (it is
-   * designed not to).
+   * Locate a single course by its facts and persist the best coordinate the
+   * two-tier provider returns:
+   *   - a `verified` golf-course match  → persisted at VERIFIED (course-precise)
+   *   - an `estimated` city-level match → persisted at APPROXIMATE (city-level)
+   *
+   * The provider (a composite) is responsible for trying course-precise first
+   * and only falling back to city-level; this method simply honours whatever
+   * confidence it returns and routes it to the matching repository writer, each
+   * of which refuses to downgrade an already-better coordinate. Returns a
+   * structured {@link GeolocationOutcome}; only throws if a repository write
+   * throws unexpectedly (it is designed not to).
    */
   async locateCourse(course: CourseGeocodeTargetRow): Promise<GeolocationOutcome> {
     let match
@@ -121,21 +127,17 @@ export class CourseGeolocationService {
     if (!match) {
       return { courseId: course.id, courseName: course.name, status: "skipped", reason: "not-found" }
     }
-    // Honesty gate: never persist anything short of a verified match.
-    if (match.confidence !== "verified") {
-      return {
-        courseId: course.id,
-        courseName: course.name,
-        status: "skipped",
-        reason: "unverified-match",
-      }
-    }
 
-    const result = await this.repository.setVerifiedCoordinates(course.id, {
-      latitude: match.latitude,
-      longitude: match.longitude,
-      source: match.source,
-    })
+    // Route by the confidence the provider reported. "verified" is course-
+    // precise; anything else the composite returns is a city-level fallback and
+    // is recorded as APPROXIMATE — never silently promoted to verified.
+    const tier: ResolvedTier = match.confidence === "verified" ? "verified" : "approximate"
+    const coords = { latitude: match.latitude, longitude: match.longitude, source: match.source }
+
+    const result =
+      tier === "verified"
+        ? await this.repository.setVerifiedCoordinates(course.id, coords)
+        : await this.repository.setApproximateCoordinates(course.id, coords)
 
     if (result.outcome === "failed") {
       return {
@@ -146,31 +148,41 @@ export class CourseGeolocationService {
       }
     }
     if (result.outcome === "skipped") {
-      // The course became verified between selection and write (idempotent).
-      return { courseId: course.id, courseName: course.name, status: "skipped", reason: "already-verified" }
+      // The course was already resolved at an equal-or-better tier between
+      // selection and write (idempotent / no-downgrade).
+      return { courseId: course.id, courseName: course.name, status: "skipped", reason: "already-resolved" }
     }
 
     return {
       courseId: course.id,
       courseName: course.name,
-      status: "verified",
-      coordinates: { latitude: match.latitude, longitude: match.longitude, source: match.source },
+      status: tier,
+      coordinates: { ...coords, tier },
     }
   }
 
   /**
-   * Locate every course that still needs coordinates, one at a time (the
-   * provider enforces its own request spacing). Returns an aggregate summary.
-   * Verified courses are excluded by the repository query, so this is safe and
-   * cheap to re-run: it only ever works on the remaining backlog.
+   * Locate every course that still needs work, one at a time (the provider
+   * enforces its own request spacing). Returns an aggregate summary. Resolved
+   * courses are excluded by the repository query, so this is safe and cheap to
+   * re-run: it only ever works on the remaining backlog.
+   *
+   * @param options.includeApproximate - Also re-attempt APPROXIMATE courses to
+   *   try upgrading them to a VERIFIED (course-precise) match.
    */
-  async locatePendingCourses(limit?: number, maxNotes = 25): Promise<GeolocationSummary> {
-    const targets = await this.repository.findCoursesNeedingCoordinates(limit)
+  async locatePendingCourses(
+    limit?: number,
+    maxNotes = 25,
+    options: { includeApproximate?: boolean } = {},
+  ): Promise<GeolocationSummary> {
+    const targets = await this.repository.findCoursesNeedingCoordinates(limit, {
+      includeApproximate: options.includeApproximate,
+    })
     const summary: GeolocationSummary = {
       coursesConsidered: targets.length,
       verified: 0,
+      approximate: 0,
       skippedNotFound: 0,
-      skippedUnverified: 0,
       failed: 0,
       notes: [],
     }
@@ -184,18 +196,20 @@ export class CourseGeolocationService {
         case "verified":
           summary.verified += 1
           break
+        case "approximate":
+          summary.approximate += 1
+          note(`${course.name}: no course-precise match; stored city-level (APPROXIMATE).`)
+          break
         case "failed":
           summary.failed += 1
           note(`${course.name}: ${outcome.error ?? "failed"}.`)
           break
         case "skipped":
-          if (outcome.reason === "unverified-match") {
-            summary.skippedUnverified += 1
-            note(`${course.name}: matched but not verified; left UNKNOWN.`)
-          } else if (outcome.reason === "not-found") {
+          if (outcome.reason === "not-found") {
             summary.skippedNotFound += 1
-            note(`${course.name}: no verified golf-course match found.`)
+            note(`${course.name}: no course-precise or city-level match found.`)
           }
+          // "already-resolved" is a benign idempotent no-op; not noted.
           break
       }
     }
@@ -215,5 +229,7 @@ export async function importCourseCoordinates(
     options.repository ?? getCourseRepository(),
     options.provider ?? createGeocodingProvider(),
   )
-  return service.locatePendingCourses(options.limit, options.maxNotes)
+  return service.locatePendingCourses(options.limit, options.maxNotes, {
+    includeApproximate: options.includeApproximate,
+  })
 }

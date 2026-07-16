@@ -210,13 +210,13 @@ const REGISTRY: readonly RegistryEntry[] = [
     label: "Courses",
     purpose: "Course profiles (name, location, par, coordinates) used by tournaments and weather.",
     owner: "SportsDataIO",
-    populationMethod: "Course import (SportsDataIO), enriched with verified coordinates by the geolocation pipeline.",
+    populationMethod: "Course import (SportsDataIO), enriched with coordinates by the two-tier geolocation pipeline (OSM course-precise, OpenWeather city-level fallback).",
     dependencies: [],
-    expectedState: "Hundreds of rows; a subset with VERIFIED coordinates.",
+    expectedState: "Hundreds of rows; coordinates in two tiers (VERIFIED course-precise, APPROXIMATE city-level).",
     emptyBucket: "broken",
     emptyReason: "Core reference; emptiness would mean the course import never ran.",
     populatedNote:
-      "Only a small subset carries VERIFIED coordinates so far — the geolocation pipeline improves this incrementally and gates weather.",
+      "Coordinates come in two tiers: VERIFIED (course-precise, from OSM) and APPROXIMATE (city-level, from OpenWeather). Both unlock weather; only VERIFIED is course-precise. The geolocation pipeline improves the mix incrementally.",
   },
   {
     table: "course_characteristics",
