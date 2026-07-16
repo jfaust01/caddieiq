@@ -186,6 +186,7 @@ When writing prompts or PRs that extend the project:
 | [COURSE_GEOLOCATION.md](./COURSE_GEOLOCATION.md) | The Course Geolocation Engine: verified venue coordinates from a swappable geocoder. |
 | [WEATHER_INTELLIGENCE.md](./WEATHER_INTELLIGENCE.md) | The Weather Intelligence Engine: per-event conditions, forecast, and wave edge. |
 | [PLAYER_SKILL_INTELLIGENCE.md](./PLAYER_SKILL_INTELLIGENCE.md) | The Player Skill Intelligence Engine: normalized golf-skill ratings, field leaderboards, and the Course Fit skill source. |
+| [DFS_VALUE_MODEL.md](./DFS_VALUE_MODEL.md) | The DFS Value Model: the flagship composite fusing every signal family with real DraftKings salary into salary-adjusted value. |
 | [DATA_COVERAGE.md](./DATA_COVERAGE.md) | The internal Data Coverage Dashboard: admin-only, honest coverage diagnostics. |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | How to contribute and ship changes. |
 | [CODING_STANDARDS.md](./CODING_STANDARDS.md) | Engineering conventions. |
