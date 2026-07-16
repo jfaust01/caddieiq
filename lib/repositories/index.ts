@@ -69,6 +69,8 @@ export {
   type ResolvedFantasyProjection,
   type ResolvedDfsSalary,
   type FantasyProjectionView,
+  type DfsSalaryRow,
+  type DfsSalaryCoverageCounts,
 } from "./fantasy-repository"
 export {
   WeatherRepository,

@@ -246,7 +246,7 @@ function buildDrivers(
   contributions
     .filter((c) => c.status === "scored" && (c.score ?? 0) >= 60)
     .sort((a, b) => (b.contribution ?? 0) - (a.contribution ?? 0))
-    .forEach((c) => drivers.push({ key: c.key, label: c.label, detail: c.rating }))
+    .forEach((c) => drivers.push({ key: c.key, label: c.label, detail: c.rating ?? `${c.label} strength` }))
   return drivers.slice(0, 3)
 }
 
@@ -263,7 +263,7 @@ function buildRisks(
   contributions
     .filter((c) => c.status === "scored" && (c.score ?? 100) <= 40)
     .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
-    .forEach((c) => risks.push({ key: c.key, label: c.label, detail: c.rating }))
+    .forEach((c) => risks.push({ key: c.key, label: c.label, detail: c.rating ?? `Weak ${c.label.toLowerCase()}` }))
   if (confidence === "low" || confidence === "none") {
     risks.push({ key: "confidence", label: "Confidence", detail: "Limited verified signals" })
   }

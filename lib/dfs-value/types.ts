@@ -78,8 +78,8 @@ export interface DfsSignalContribution {
   readonly confidence: DfsConfidence
   /** Why an unavailable family was skipped; `null` when scored. */
   readonly reason: DfsUnavailableReason | null
-  /** AI-ready short label for this family (e.g. "Elite", "Neutral"). No prose. */
-  readonly rating: string
+  /** AI-ready short label for this family (e.g. "Elite", "Strong"), or `null`. */
+  readonly rating: string | null
 }
 
 /** A family that materially helped the value score. */
@@ -166,8 +166,8 @@ export interface DfsSignalInput {
   readonly score: number | null
   /** The family's own confidence (its ceiling contribution). */
   readonly confidence: DfsConfidence
-  /** AI-ready short label for this family (e.g. "Elite", "Neutral", "Unknown"). */
-  readonly rating: string
+  /** AI-ready short label for this family (e.g. "Elite", "Strong"), or `null`. */
+  readonly rating: string | null
 }
 
 /** The complete per-player input: salary + one reading per Signal Family. */
