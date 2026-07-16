@@ -251,6 +251,25 @@ export class OddsRepository extends BaseRepository {
   }
 
   /**
+   * A single odds event with its full multi-book quote set, by internal id.
+   * Read-only. Unlike {@link findEventsByTournamentId} this does not require the
+   * event to be linked to a CaddieIQ tournament, so the player view can always
+   * reconstruct the full field an isolated player quote sits in. Returns null
+   * when no such event exists.
+   */
+  async findEventById(eventId: string): Promise<OddsEventRow | null> {
+    const event = await this.prisma.oddsEvent.findUnique({
+      where: { id: eventId },
+      include: {
+        quotes: {
+          orderBy: [{ market: "asc" }, { impliedProbability: "desc" }],
+        },
+      },
+    })
+    return event ? toEventRow(event) : null
+  }
+
+  /**
    * Verified quotes for a specific player across linked events, newest capture
    * first. Read-only — the player page consumes this to derive the player's
    * market signal.

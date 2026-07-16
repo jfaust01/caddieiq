@@ -129,37 +129,31 @@ export class OddsIntelligenceService {
     const latest = quotes.reduce((a, b) =>
       (b.capturedAt?.getTime() ?? 0) > (a.capturedAt?.getTime() ?? 0) ? b : a,
     )
-    const eventQuotes = quotes.filter((q) => q.eventId === latest.eventId)
+    // Reconstruct the full event field by id — independent of tournament
+    // linkage — so the player's de-vigged probability and rank are computed
+    // against the real field, never against their own price in isolation (which
+    // would normalize a lone selection to a meaningless 100%).
+    const event = await this.repository.findEventById(latest.eventId)
+    const field: MarketView | null = event
+      ? computeMarketView(
+          "TOURNAMENT_WINNER",
+          event.quotes.filter((q) => q.market === "TOURNAMENT_WINNER"),
+          event.capturedAt,
+          now,
+        )
+      : null
 
-    // Reconstruct the full field for rank when the event is tournament-linked.
-    let field: MarketView | null = null
-    if (latest.tournamentId) {
-      const events = await this.repository.findEventsByTournamentId(latest.tournamentId)
-      const event = events.find((e) => e.id === latest.eventId) as OddsEventRow | undefined
-      if (event) {
-        const winnerQuotes = event.quotes.filter((q) => q.market === "TOURNAMENT_WINNER")
-        field = computeMarketView("TOURNAMENT_WINNER", winnerQuotes, event.capturedAt, now)
-      }
-    }
-
-    const winnerForPlayer = eventQuotes.filter((q) => q.market === "TOURNAMENT_WINNER")
-    const playerMarket = computeMarketView(
-      "TOURNAMENT_WINNER",
-      winnerForPlayer,
-      latest.capturedAt,
-      now,
-    )
-    const consensus = playerMarket.selections[0] ?? null
-
+    // The player's consensus is their own row within the field view. If the
+    // field can't be reconstructed we have no basis for a fair probability, so
+    // there is no consensus to report rather than a fabricated one.
+    let consensus: PlayerOddsView["consensus"] = null
     let fieldRank: number | null = null
     let fieldSize: number | null = null
     if (field) {
       fieldSize = field.selections.length
       const idx = field.selections.findIndex((s) => s.selectionSlug === latest.selectionSlug)
       fieldRank = idx >= 0 ? idx + 1 : null
-      // Prefer the field's confidence + de-vigged probability for the player.
-      const fieldConsensus = idx >= 0 ? field.selections[idx] : null
-      if (fieldConsensus && consensus) consensus.fairProbability = fieldConsensus.fairProbability
+      consensus = idx >= 0 ? field.selections[idx] : null
     }
 
     return {
@@ -167,7 +161,7 @@ export class OddsIntelligenceService {
       tournamentName: latest.tournamentName,
       sportTitle: latest.sportTitle,
       market: "TOURNAMENT_WINNER",
-      confidence: field?.confidence ?? playerMarket.confidence,
+      confidence: field?.confidence ?? "unavailable",
       consensus,
       fieldRank,
       fieldSize,

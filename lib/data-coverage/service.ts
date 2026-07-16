@@ -1,6 +1,7 @@
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
+import { getOddsRepository } from "@/lib/repositories"
 
 import { coveragePercent, countPresent, rateCoverage } from "./ratings"
 import type {
@@ -128,12 +129,8 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     fantasyProjTotal,
     fantasyProjAvailable,
     seasonStatRows,
-    // Betting
-    bettingEvents,
-    bettingMarketsTotal,
-    bettingMarketsAvailable,
-    bettingOutcomesTotal,
-    bettingOutcomesAvailable,
+    // Betting (real Odds Intelligence coverage)
+    oddsCoverage,
     // Import markers
     playerAgg,
     tournamentAgg,
@@ -186,11 +183,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     prisma.fantasyProjection.count(),
     prisma.fantasyProjection.count({ where: { available: true } }),
     prisma.playerSeasonStatistic.count({ where: { averagePoints: { not: null } } }),
-    prisma.bettingEvent.count(),
-    prisma.bettingMarket.count(),
-    prisma.bettingMarket.count({ where: { available: true } }),
-    prisma.bettingOutcome.count(),
-    prisma.bettingOutcome.count({ where: { available: true } }),
+    getOddsRepository().getCoverageCounts(),
     prisma.player.aggregate({ _max: { updatedAt: true } }),
     prisma.tournament.aggregate({ _max: { updatedAt: true } }),
     prisma.course.aggregate({ _max: { updatedAt: true } }),
@@ -514,49 +507,81 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
   })
 
   // --- Betting --------------------------------------------------------------
-  const bettingRestricted = bettingEvents === 0 || bettingOutcomesAvailable === 0
-  const bettingPercent = bettingRestricted ? null : coveragePercent(bettingOutcomesAvailable, bettingOutcomesTotal)
+  // Real bookmaker prices from the Odds Intelligence pipeline (The Odds API).
+  // The meaningful coverage ratio is how many captured odds events are linked to
+  // a CaddieIQ tournament — only linked events surface on a tournament hub. When
+  // no odds have been captured yet the section is empty (never fabricated).
+  const {
+    events: oddsEvents,
+    eventsLinkedToTournament: oddsEventsLinked,
+    quotes: oddsQuotes,
+    quotesResolvedToPlayer: oddsQuotesResolved,
+    distinctBookmakers: oddsBookmakers,
+    latestCapturedAt: oddsLatest,
+  } = oddsCoverage
+  const bettingEmpty = oddsEvents === 0
+  const bettingUnlinked = Math.max(oddsEvents - oddsEventsLinked, 0)
+  const bettingPercent = bettingEmpty ? null : coveragePercent(oddsEventsLinked, oddsEvents)
+  const playerResolvePercent = oddsQuotes === 0 ? null : coveragePercent(oddsQuotesResolved, oddsQuotes)
   sections.push({
     id: "betting",
     title: "Betting",
     description:
-      "Odds markets and outcomes. The trial tier scrambles market descriptors and payouts (and returns 404 for the odds feed), so betting awaits a production provider.",
+      "De-vigged, multi-sportsbook consensus for the outright winner market. Prices are real bookmaker quotes from The Odds API; coverage tracks how many captured events are linked to a CaddieIQ tournament and how many quotes resolve to a known player.",
     percent: bettingPercent,
-    rating: bettingRestricted ? "restricted" : rateCoverage(bettingPercent),
+    rating: bettingEmpty ? "restricted" : rateCoverage(bettingPercent),
     breakdown: {
-      verified: bettingOutcomesAvailable,
-      pending: 0,
-      missing: Math.max(bettingOutcomesTotal - bettingOutcomesAvailable, 0),
-      total: bettingOutcomesTotal,
+      verified: oddsEventsLinked,
+      pending: bettingUnlinked,
+      missing: 0,
+      total: oddsEvents,
     },
-    restrictedReason: bettingRestricted
-      ? "Awaiting Production Provider — odds are scrambled/unentitled on the trial tier; no real payouts are surfaced."
+    lastUpdated: toIso(oddsLatest),
+    restrictedReason: bettingEmpty
+      ? "No odds captured yet — run the odds import to populate real bookmaker prices. Nothing here is estimated."
       : undefined,
     metrics: [
       {
-        id: "odds",
-        label: "Odds Imported",
-        value: bettingOutcomesAvailable > 0 ? formatCount(bettingOutcomesAvailable) : "None real",
-        count: bettingOutcomesAvailable,
-        hint: "Outcomes with a real (non-scrambled) payout.",
+        id: "events",
+        label: "Events Captured",
+        value: formatCount(oddsEvents),
+        count: oddsEvents,
+        hint: "Distinct odds events with at least one real bookmaker quote.",
+      },
+      {
+        id: "linked",
+        label: "Linked to Tournament",
+        value: formatCount(oddsEventsLinked),
+        count: oddsEventsLinked,
+        percent: bettingPercent,
+        hint: "Events resolved to a CaddieIQ tournament — only these surface on a tournament hub.",
+      },
+      {
+        id: "quotes",
+        label: "Bookmaker Quotes",
+        value: formatCount(oddsQuotes),
+        count: oddsQuotes,
+        hint: "Individual real price quotes across all books and selections.",
+      },
+      {
+        id: "resolved",
+        label: "Resolved to Player",
+        value: playerResolvePercent === null ? "—" : `${formatCount(oddsQuotesResolved)}`,
+        count: oddsQuotesResolved,
+        percent: playerResolvePercent,
+        hint: "Quotes matched to a known CaddieIQ player (drives the player market card).",
       },
       {
         id: "sportsbooks",
         label: "Sportsbooks",
-        value: "Not tracked",
-        hint: "Per-book attribution is not modeled by the current feed.",
-      },
-      {
-        id: "markets",
-        label: "Markets",
-        value: `${formatCount(bettingMarketsAvailable)} / ${formatCount(bettingMarketsTotal)}`,
-        count: bettingMarketsAvailable,
-        hint: "Available (non-scrambled) markets out of all imported.",
+        value: oddsBookmakers > 0 ? formatCount(oddsBookmakers) : "None",
+        count: oddsBookmakers,
+        hint: "Distinct bookmakers contributing to consensus.",
       },
       {
         id: "coverage",
-        label: "Coverage",
-        value: bettingRestricted ? "Restricted" : formatPercent(bettingPercent),
+        label: "Linked Coverage",
+        value: bettingEmpty ? "No data" : formatPercent(bettingPercent),
         percent: bettingPercent,
       },
     ],
@@ -575,7 +600,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     { id: "news", label: "News", percent: newsPercent, rating: rateCoverage(newsPercent), verified: playerLinkedArticles, total: totalArticles },
     { id: "images", label: "Images", percent: photoPercent, rating: rateCoverage(photoPercent), verified: playersWithPhoto, total: totalPlayers },
     { id: "fantasy", label: "Fantasy", percent: fantasyPercent, rating: fantasyHasRealData ? rateCoverage(fantasyPercent) : "restricted", verified: dfsReal, total: dfsTotal, restricted: !fantasyHasRealData },
-    { id: "betting", label: "Betting", percent: bettingPercent, rating: bettingRestricted ? "restricted" : rateCoverage(bettingPercent), verified: bettingOutcomesAvailable, total: bettingOutcomesTotal, restricted: bettingRestricted },
+    { id: "betting", label: "Betting", percent: bettingPercent, rating: bettingEmpty ? "restricted" : rateCoverage(bettingPercent), verified: oddsEventsLinked, total: oddsEvents, restricted: bettingEmpty },
   ]
 
   const health = await buildPlatformHealth({
@@ -585,7 +610,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     lastCourseImport: courseAgg._max.updatedAt,
     lastWeatherImport: newsUpdatedAgg._max.capturedAt,
     lastNewsImport: newsAgg._max.updatedAt,
-    bettingRestricted,
+    bettingRestricted: bettingEmpty,
   })
 
   return {
@@ -641,8 +666,8 @@ async function buildPlatformHealth(inputs: HealthInputs): Promise<PlatformHealth
       label: "Odds Provider",
       state: inputs.bettingRestricted ? "restricted" : "connected",
       detail: inputs.bettingRestricted
-        ? "Odds are unentitled/scrambled on the current SportsDataIO tier."
-        : "Real odds are flowing from the configured provider.",
+        ? "No odds captured yet — run the odds import to pull real bookmaker prices from The Odds API."
+        : "Real bookmaker prices are flowing from The Odds API.",
     },
     {
       id: "openai",
