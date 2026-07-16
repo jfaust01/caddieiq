@@ -90,6 +90,12 @@ export const primaryNavigation: NavSection[] = [
     adminOnly: true,
     items: [
       {
+        title: 'Database Health',
+        href: '/admin/database-health',
+        icon: Database,
+        description: 'Live database health, table populations, and import pipelines.',
+      },
+      {
         title: 'Data Sources',
         href: '/operations/data-sources',
         icon: Database,

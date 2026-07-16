@@ -16,6 +16,16 @@ function isProtected(pathname: string): boolean {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Protect /setup routes - only allow in development
+  if (pathname.startsWith("/setup")) {
+    if (process.env.NODE_ENV !== "development") {
+      // In production, return 404 to hide the existence of these routes
+      return new NextResponse("Not Found", { status: 404 })
+    }
+    // In development, allow /setup routes without authentication
+    return NextResponse.next()
+  }
+
   if (!isProtected(pathname)) {
     return NextResponse.next()
   }
@@ -33,5 +43,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/setup/:path*"],
 }
