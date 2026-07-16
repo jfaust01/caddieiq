@@ -22,6 +22,8 @@ import { OpenWeatherClient } from "@/lib/providers/weather/client"
 import type { OwmForecastEntry, OwmForecastResponse } from "@/lib/providers/weather/types"
 import {
   getWeatherRepository,
+  type WeatherImportLogInput,
+  type WeatherImportResultCode,
   type WeatherPeriodInput,
   type WeatherRepository,
   type WeatherSnapshotInput,
@@ -42,6 +44,18 @@ export interface WeatherImportSummary {
   skippedNoCoordinates: number
   failed: number
   periodsStored: number
+  /**
+   * How the run chose its tournaments: `explicit` when the caller passed ids,
+   * `auto` when it selected upcoming/in-progress events within the horizon.
+   */
+  selectionMode: "explicit" | "auto"
+  /** The auto-selection forecast horizon in days (0 when explicit ids given). */
+  horizonDays: number
+  /**
+   * Why zero tournaments were considered, when that happens on an auto run —
+   * so an empty result is explained, never silent. `null` when ≥1 considered.
+   */
+  emptyReason: string | null
   notes: string[]
 }
 
@@ -54,10 +68,20 @@ export interface ImportWeatherOptions {
   /** Skip a refresh if the stored snapshot is younger than this (ms). */
   minRefreshIntervalMs?: number
   maxNotes?: number
+  /**
+   * The aggregate `ImportRun` id to stamp on each per-tournament log row, when
+   * this import is executed as part of a tracked run. Optional — a standalone
+   * or manual import still writes logs, just without a run linkage.
+   */
+  importRunId?: string | null
 }
 
-/** OpenWeather free forecast reaches ~5 days out; only near events are useful. */
-const DEFAULT_HORIZON_DAYS = 8
+/**
+ * Auto-selection window. OpenWeather's free forecast reaches ~5 days out; we use
+ * 6 to include one buffer day so an event just entering forecast range is picked
+ * up on the next daily run. Events beyond this have no usable forecast yet.
+ */
+const DEFAULT_HORIZON_DAYS = 6
 
 /**
  * Import forecasts for the given (or automatically selected upcoming)
@@ -72,6 +96,7 @@ export async function importWeather(
   const repository = options.repository ?? getWeatherRepository()
   const maxNotes = options.maxNotes ?? 25
 
+  const explicit = options.tournamentIds && options.tournamentIds.length > 0
   const summary: WeatherImportSummary = {
     tournamentsConsidered: 0,
     fetched: 0,
@@ -81,6 +106,9 @@ export async function importWeather(
     skippedNoCoordinates: 0,
     failed: 0,
     periodsStored: 0,
+    selectionMode: explicit ? "explicit" : "auto",
+    horizonDays: explicit ? 0 : DEFAULT_HORIZON_DAYS,
+    emptyReason: null,
     notes: [],
   }
   const note = (message: string) => {
@@ -90,29 +118,82 @@ export async function importWeather(
   const tournamentIds = await resolveTournamentIds(prisma, options.tournamentIds)
   summary.tournamentsConsidered = tournamentIds.length
 
+  // A zero-consideration auto run must never be silent: explain exactly why the
+  // window is empty (and name the nearest event) so operators can distinguish
+  // "expected — nothing forecastable yet" from a real misconfiguration.
+  if (tournamentIds.length === 0) {
+    summary.emptyReason = explicit
+      ? "No tournament ids were supplied to import."
+      : await describeEmptyWindow(prisma)
+    note(summary.emptyReason)
+    return summary
+  }
+
   for (const tournamentId of tournamentIds) {
+    const startedAt = Date.now()
     const venue = await repository.findWeatherVenueById(tournamentId)
+
+    // Base log fields shared by every branch. `forecastEligible` is only true
+    // once we know the venue is located (set below).
+    const baseLog = {
+      importRunId: options.importRunId ?? null,
+      tournamentId,
+      tournamentName: venue?.tournamentName ?? tournamentId,
+      courseId: venue?.courseId ?? null,
+      courseName: venue?.courseName ?? null,
+      latitude: venue?.latitude ?? null,
+      longitude: venue?.longitude ?? null,
+      forecastEligible: false,
+    } satisfies Partial<WeatherImportLogInput>
+
+    /** Persist one per-tournament log row (best-effort; never throws). */
+    const recordLog = (
+      result: WeatherImportResultCode,
+      extra: Partial<WeatherImportLogInput> = {},
+    ) =>
+      repository.createImportLog({
+        ...baseLog,
+        result,
+        durationMs: Date.now() - startedAt,
+        ...extra,
+      })
+
     if (!venue) {
       summary.failed += 1
       note(`Tournament ${tournamentId} not found.`)
+      await recordLog("FAILED", { providerResponse: "Tournament not found." })
       continue
     }
     if (!venue.courseId) {
       summary.skippedNoCourse += 1
       note(`${venue.tournamentName}: no host course linked; skipped.`)
+      await recordLog("SKIPPED", { skippedReason: "No host course linked to tournament." })
       continue
     }
     if (venue.latitude === null || venue.longitude === null) {
       summary.skippedNoCoordinates += 1
       note(`${venue.tournamentName}: host course has no coordinates; skipped.`)
+      await recordLog("SKIPPED", { skippedReason: "Host course has no coordinates." })
       continue
     }
 
+    // The venue is located, so the event is eligible to be fetched.
+    const eligible = true
+
+    // Read the prior snapshot timestamp once: it powers both the freshness
+    // guard and an honest inserted-vs-updated distinction in the log (the
+    // upsert itself cannot tell us which occurred).
+    const priorCapturedAt = await repository.getCapturedAt(tournamentId)
+    const hadSnapshot = priorCapturedAt !== null
+
     // Respect a caller-provided refresh interval to avoid burning quota.
-    if (options.minRefreshIntervalMs != null) {
-      const capturedAt = await repository.getCapturedAt(tournamentId)
-      if (capturedAt && Date.now() - capturedAt.getTime() < options.minRefreshIntervalMs) {
+    if (options.minRefreshIntervalMs != null && priorCapturedAt) {
+      if (Date.now() - priorCapturedAt.getTime() < options.minRefreshIntervalMs) {
         note(`${venue.tournamentName}: snapshot still fresh; skipped.`)
+        await recordLog("SKIPPED", {
+          forecastEligible: eligible,
+          skippedReason: "Existing snapshot still within the minimum refresh interval.",
+        })
         continue
       }
     }
@@ -127,12 +208,21 @@ export async function importWeather(
     } catch (error) {
       summary.failed += 1
       note(`${venue.tournamentName}: forecast fetch failed: ${(error as Error).message}`)
+      await recordLog("FAILED", {
+        forecastEligible: eligible,
+        providerResponse: `Forecast fetch failed: ${(error as Error).message}`,
+      })
       continue
     }
 
     const snapshot = toSnapshotInput(tournamentId, venue.courseId, venue.latitude, venue.longitude, forecast)
     if (snapshot.periods.length === 0) {
       note(`${venue.tournamentName}: provider returned no usable periods; snapshot not written.`)
+      await recordLog("SKIPPED", {
+        forecastEligible: eligible,
+        providerResponse: `${forecast.list?.length ?? 0} entries · 0 usable periods`,
+        skippedReason: "Provider returned no usable forecast periods.",
+      })
       continue
     }
 
@@ -140,6 +230,10 @@ export async function importWeather(
     if (result.outcome === "failed") {
       summary.failed += 1
       note(`${venue.tournamentName}: persist failed: ${result.error?.message ?? "unknown error"}`)
+      await recordLog("FAILED", {
+        forecastEligible: eligible,
+        providerResponse: `Persist failed: ${result.error?.message ?? "unknown error"}`,
+      })
     } else {
       summary.stored += 1
       summary.periodsStored += snapshot.periods.length
@@ -150,6 +244,13 @@ export async function importWeather(
         summary.storedCityLevel += 1
         note(`${venue.tournamentName}: forecast fetched for city-level (APPROXIMATE) coordinate.`)
       }
+      await recordLog("STORED", {
+        forecastEligible: eligible,
+        providerResponse: `200 · ${snapshot.periods.length} periods`,
+        rowsInserted: hadSnapshot ? 0 : 1,
+        rowsUpdated: hadSnapshot ? 1 : 0,
+        periodsWritten: snapshot.periods.length,
+      })
     }
   }
 
@@ -176,6 +277,83 @@ async function resolveTournamentIds(
     orderBy: { startDate: "asc" },
   })
   return rows.map((r) => r.id)
+}
+
+/**
+ * Build a human-readable explanation for why an auto run selected zero
+ * tournaments. Names the nearest upcoming event and how far out it is, framing
+ * the common, expected case (nothing within OpenWeather's ~5-day forecast reach)
+ * as normal rather than a failure.
+ */
+async function describeEmptyWindow(prisma: PrismaClient): Promise<string> {
+  const nearest = await prisma.tournament.findFirst({
+    where: { deletedAt: null, status: { not: "CANCELED" }, startDate: { gt: new Date() } },
+    select: { name: true, startDate: true },
+    orderBy: { startDate: "asc" },
+  })
+  if (!nearest?.startDate) {
+    return `No upcoming tournaments are scheduled, so there is nothing to fetch within the ${DEFAULT_HORIZON_DAYS}-day forecast window.`
+  }
+  const days = Math.max(0, Math.ceil((nearest.startDate.getTime() - Date.now()) / 86_400_000))
+  return (
+    `No tournament falls within the ${DEFAULT_HORIZON_DAYS}-day forecast window. ` +
+    `The nearest event, "${nearest.name}", starts in ${days} day${days === 1 ? "" : "s"} ` +
+    `(${nearest.startDate.toISOString().slice(0, 10)}) — beyond OpenWeather's ~5-day forecast reach. ` +
+    `Nothing to import yet; this is expected, not a failure.`
+  )
+}
+
+/** Result of a lightweight provider health probe. */
+export interface WeatherProviderHealth {
+  ok: boolean
+  /** HTTP status when the probe reached the API; null on a connection error. */
+  status: number | null
+  /** Round-trip latency of the probe request, in milliseconds. */
+  latencyMs: number
+  /** Number of forecast periods the probe received (0 on failure). */
+  periods: number
+  /** Machine-usable failure reason, or null when healthy. */
+  error: string | null
+}
+
+/** A stable, well-known coordinate for the probe (Trump National Doral). */
+const PROBE_COORDINATE = { latitude: 25.8181219, longitude: -80.3467972 } as const
+
+/**
+ * Probe OpenWeather with a single real forecast request for a fixed coordinate.
+ * Used by the admin System Health page to show provider status without waiting
+ * for a scheduled import. Never throws — a failure is returned as `ok: false`
+ * with a redacted reason so the page can render it safely.
+ */
+export async function probeWeatherProvider(
+  client?: OpenWeatherClient,
+): Promise<WeatherProviderHealth> {
+  const startedAt = Date.now()
+  try {
+    // Construct inside the try: `fromEnv()` throws synchronously when the API
+    // key is unset, and that must surface as a health failure, not an exception.
+    const owm = client ?? OpenWeatherClient.fromEnv()
+    const forecast = await owm.fetchForecast(PROBE_COORDINATE)
+    return {
+      ok: true,
+      status: 200,
+      latencyMs: Date.now() - startedAt,
+      periods: forecast.list?.length ?? 0,
+      error: null,
+    }
+  } catch (error) {
+    const status =
+      error && typeof error === "object" && "details" in error
+        ? ((error.details as { status?: number } | undefined)?.status ?? null)
+        : null
+    return {
+      ok: false,
+      status,
+      latencyMs: Date.now() - startedAt,
+      periods: 0,
+      error: error instanceof Error ? error.message : "Provider probe failed.",
+    }
+  }
 }
 
 /** Map a raw OpenWeather envelope into a snapshot ready for the repository. */

@@ -5,7 +5,9 @@ import { CircleDollarSign, Info, Layers, ShieldAlert, Sparkles, TrendingUp } fro
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { WhyButton } from '@/features/explainability/components/why-button'
 import { usePlayerDfsValue } from '@/features/players/hooks/use-player-dfs-value'
+import { toDfsValueExplanation } from '@/lib/explainability'
 import {
   TIER_LABEL,
   type DfsConfidence,
@@ -46,6 +48,8 @@ function fmtScore(score: number | null): string {
 
 interface PlayerDfsValueCardProps {
   playerId: string
+  /** Player display name, used to label the "Why?" explanation. */
+  playerName?: string
 }
 
 /**
@@ -59,7 +63,7 @@ interface PlayerDfsValueCardProps {
  * 50), confidence is capped by how much real data exists, and when the player is
  * in no active field the card explains that rather than inventing a score.
  */
-export function PlayerDfsValueCard({ playerId }: PlayerDfsValueCardProps) {
+export function PlayerDfsValueCard({ playerId, playerName }: PlayerDfsValueCardProps) {
   const { value, isLoading, isError } = usePlayerDfsValue(playerId)
 
   return (
@@ -72,9 +76,21 @@ export function PlayerDfsValueCard({ playerId }: PlayerDfsValueCardProps) {
           DFS value
         </CardTitle>
         {value && value.result.status === 'available' ? (
-          <Badge variant={CONFIDENCE[value.result.confidence].variant}>
-            {CONFIDENCE[value.result.confidence].label}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={CONFIDENCE[value.result.confidence].variant}>
+              {CONFIDENCE[value.result.confidence].label}
+            </Badge>
+            <WhyButton
+              explanation={toDfsValueExplanation(value.result, {
+                kind: 'player-tournament',
+                id: `${playerId}:${value.tournamentId}`,
+                label: playerName
+                  ? `${playerName} ${EM_DASH} ${value.tournamentName}`
+                  : value.tournamentName,
+              })}
+              srContext={`DFS value for ${playerName ?? 'this player'}`}
+            />
+          </div>
         ) : null}
       </CardHeader>
 

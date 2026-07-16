@@ -15,6 +15,8 @@
  *    and is the ceiling for any model built on this family.
  */
 
+import type { WeatherStatusReport } from "./status"
+
 /** Forecast confidence grade. `unavailable` means no usable forecast exists. */
 export type WeatherConfidence = "high" | "medium" | "low" | "unavailable"
 
@@ -130,6 +132,10 @@ export interface WeatherGap {
     | "tournament-not-found"
     | "no-host-course"
     | "course-missing-coordinates"
+    // The venue is located, but the event is further out than the provider's
+    // useful forecast horizon (~5 days) — so no snapshot exists *yet* and this
+    // is expected, off-season behavior, NOT a missing/failed import.
+    | "beyond-forecast-horizon"
     | "no-snapshot"
     // Data-stage gaps (a snapshot exists but is thin/old)
     | "no-periods"
@@ -190,6 +196,14 @@ export interface WeatherProvenance {
  */
 export interface WeatherIntelligence {
   status: "available" | "unavailable"
+  /**
+   * The computed Weather Status for the event (timing- and provider-aware). This
+   * is the truthful lifecycle state — "Forecast not yet available", "Live
+   * forecast", "Historical weather unavailable", etc. — that every surface reads
+   * so a completed event is never shown as "awaiting import". See
+   * {@link ./status.ts}. Present on every profile, available or unavailable.
+   */
+  statusReport: WeatherStatusReport
   confidence: WeatherConfidence
   /**
    * The host venue the forecast is for. Present (with a course name where

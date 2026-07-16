@@ -43,7 +43,10 @@ import {
   tournamentContextService,
   type TournamentContext,
 } from '@/lib/tournament-context'
-import { getWeatherIntelligenceService } from '@/lib/weather-intelligence/service'
+import {
+  getWeatherIntelligenceService,
+  type WeatherImportStatus,
+} from '@/lib/weather-intelligence/service'
 import type { WeatherIntelligence } from '@/lib/weather-intelligence'
 import { getOddsIntelligenceService } from '@/lib/odds-intelligence/service'
 import type { TournamentOddsView } from '@/lib/odds-intelligence'
@@ -528,6 +531,16 @@ export const tournamentService = {
    */
   getWeatherIntelligence(id: string): Promise<WeatherIntelligence> {
     return getWeatherForTournamentCached(id)
+  },
+
+  /**
+   * Return this event's weather import history summary (last attempt/result,
+   * last success, provider response). For admin surfaces only — the tournament
+   * page uses it to render the Refresh Weather control and last-import metadata.
+   * Every field is drawn from real rows; never a fabricated placeholder.
+   */
+  getWeatherImportStatus(id: string): Promise<WeatherImportStatus> {
+    return getWeatherIntelligenceService().getWeatherImportStatus(id)
   },
 
   /**

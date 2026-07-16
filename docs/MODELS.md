@@ -379,7 +379,16 @@ honor:
 - **Mock is always labelled.** Scaffolded modules mark their output as
   non-real so placeholder values can never be mistaken for analysis.
 - **Every number is explainable.** If a signal cannot be decomposed and
-  described to a user, it does not ship in a rating.
+  described to a user, it does not ship in a rating. The
+  [Model Explainability Engine](./EXPLAINABILITY.md) operationalizes this
+  principle: it maps every model's output into one canonical `Explanation`
+  behind the "Why?" surfaces and the admin debug view, and enforces the honesty
+  guarantees (no fabricated scores, explicit limitations, pass-through
+  confidence) structurally. The
+  [Decision Trace Engine](./DECISION_TRACE_ENGINE.md) then presents that
+  `Explanation` as a step-by-step pipeline (Player Skill → Form → Course Fit →
+  Field → Weather → Market → Salary → Final), so users see *how* a number was
+  reached, not just its parts.
 
 ---
 

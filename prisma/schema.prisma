@@ -608,6 +608,7 @@ model Tournament {
   fantasyProjections FantasyProjection[]
   dfsSalaries        DfsSalary[]
   weatherSnapshot    WeatherSnapshot?
+  weatherImportLogs  WeatherImportLog[]
   oddsEvents         OddsEvent[]
 
   @@index([slug])
@@ -1104,6 +1105,62 @@ model WeatherPeriod {
   @@index([snapshotId])
   @@index([forecastTime])
   @@map("weather_periods")
+}
+
+/// Per-tournament weather import history. One row is written for every
+/// tournament the importer *considers* on each execution — whether the forecast
+/// was stored, skipped (with the machine-readable reason), or failed. This is the
+/// granular, per-event audit trail behind the aggregate `ImportRun`, and the
+/// source of truth for a tournament's "last successful import" and whether its
+/// most recent attempt failed. Nothing here is fabricated; a skip records why.
+model WeatherImportLog {
+  id               String              @id @default(cuid())
+  /// The aggregate run this per-tournament record belongs to, when part of one.
+  importRunId      String?
+  tournamentId     String
+  /// Denormalized names/coordinates captured at import time, so the history
+  /// stays readable even if the tournament or course is later renamed/removed.
+  tournamentName   String
+  courseId         String?
+  courseName       String?
+  latitude         Float?
+  longitude        Float?
+  /// Whether the event was inside the provider's forecast window with usable
+  /// coordinates at import time — i.e. eligible to be fetched at all.
+  forecastEligible Boolean             @default(false)
+  /// Compact provider response descriptor (e.g. "200 · 40 periods") or the
+  /// error message when the fetch/persist failed. Never a fabricated value.
+  providerResponse String?
+  /// New snapshot rows created (1 when the tournament had no prior snapshot).
+  rowsInserted     Int                 @default(0)
+  /// Existing snapshot rows replaced (1 when re-importing over a prior snapshot).
+  rowsUpdated      Int                 @default(0)
+  /// Forecast periods written in this execution.
+  periodsWritten   Int                 @default(0)
+  /// Machine/human-readable reason the tournament was skipped, when SKIPPED.
+  skippedReason    String?
+  /// Wall-clock duration of this tournament's fetch + persist, in milliseconds.
+  durationMs       Int                 @default(0)
+  result           WeatherImportResult
+  createdAt        DateTime            @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@index([tournamentId])
+  @@index([createdAt])
+  @@index([result])
+  @@map("weather_import_logs")
+}
+
+/// Outcome of a single tournament's weather import attempt.
+enum WeatherImportResult {
+  /// A forecast was fetched and its snapshot atomically stored.
+  STORED
+  /// Intentionally not fetched/stored — missing venue/coordinates, outside the
+  /// forecast window, or provider unavailable. `skippedReason` explains which.
+  SKIPPED
+  /// The fetch or persistence errored. `providerResponse` carries the message.
+  FAILED
 }
 
 // ---------------------------------------------------------------------------

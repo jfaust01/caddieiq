@@ -9,6 +9,7 @@
 
 import { characteristicsFor } from "./characteristics"
 import { normalizePeriod, toVenueLocal } from "./signals"
+import { computeWeatherStatus, type WeatherStatusReport } from "./status"
 import { analyzeWaves } from "./waves"
 import type {
   RoundLabel,
@@ -123,14 +124,32 @@ function buildFamily(
   }
 }
 
-/** The canonical `unavailable` profile, with machine-readable gaps + UI copy. */
+/**
+ * The canonical `unavailable` profile, with machine-readable gaps + UI copy.
+ *
+ * `statusReport` is the timing/provider-aware lifecycle state. The service (the
+ * only production caller) always supplies it — it knows the schedule and the
+ * last import outcome. When omitted (e.g. a direct/test call), a conservative
+ * default is derived from the venue alone so the field is always present.
+ */
 export function unavailableIntelligence(
   gaps: WeatherGap[],
   detail: string,
   venue: WeatherIntelligence["venue"] = null,
+  statusReport?: WeatherStatusReport,
 ): WeatherIntelligence {
+  const resolvedStatus =
+    statusReport ??
+    computeWeatherStatus({
+      startDate: null,
+      endDate: null,
+      hasCoordinates: venue?.latitude != null && venue?.longitude != null,
+      hasSnapshot: false,
+      providerSupportsHistorical: false,
+    })
   const base: Omit<WeatherIntelligence, "family"> = {
     status: "unavailable",
+    statusReport: resolvedStatus,
     confidence: "unavailable",
     venue,
     provenance: null,
@@ -215,8 +234,22 @@ export function buildWeatherIntelligence(
     days.find((d) => d.waves.advantage !== "unknown")
   const waveAdvantage = upcomingRound?.waves.advantage ?? "unknown"
 
+  // A snapshot exists (we have periods), so the status is derived from timing:
+  // future → forecast available, current → live, past → historical (the
+  // connected provider is forecast-only, so a completed event is honest about
+  // that rather than presenting the stale forecast as recorded conditions).
+  const statusReport = computeWeatherStatus({
+    now,
+    startDate: input.schedule.startDate,
+    endDate: input.schedule.endDate,
+    hasCoordinates: true,
+    hasSnapshot: true,
+    providerSupportsHistorical: false,
+  })
+
   const base: Omit<WeatherIntelligence, "family"> = {
     status: "available",
+    statusReport,
     confidence,
     venue: input.displayVenue,
     provenance: {

@@ -73,6 +73,12 @@ interface TournamentHeroProps {
    * Intelligence Engine, or `null` when no forecast is imported yet.
    */
   weatherSummary?: string | null
+  /**
+   * Honest placeholder shown when there is no forecast summary — the Weather
+   * Status Engine's short label (e.g. "Forecast not yet available", "Historical
+   * weather unavailable"). Defaults to "Awaiting import" when not supplied.
+   */
+  weatherPlaceholder?: string | null
 }
 
 /**
@@ -81,7 +87,12 @@ interface TournamentHeroProps {
  * statistics. Course is sourced live; field size, weather, and difficulty show
  * intentional placeholders until those feeds are imported.
  */
-export function TournamentHero({ tournament, fieldSize, weatherSummary }: TournamentHeroProps) {
+export function TournamentHero({
+  tournament,
+  fieldSize,
+  weatherSummary,
+  weatherPlaceholder,
+}: TournamentHeroProps) {
   const tourName = tournament.tour?.name ?? null
 
   // Compose "Par 72 · 7,475 yds" from whichever course specs are available.
@@ -151,7 +162,7 @@ export function TournamentHero({ tournament, fieldSize, weatherSummary }: Tourna
           <HeroStat
             icon={CloudSun}
             label="Weather"
-            value={weatherSummary ?? 'Awaiting import'}
+            value={weatherSummary ?? weatherPlaceholder ?? 'Awaiting import'}
             pending={!weatherSummary}
           />
         </div>

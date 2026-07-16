@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   CloudRain,
   CloudSun,
   Compass,
@@ -16,6 +17,8 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SectionHeader } from '@/components/shared/section-header'
 import { cn } from '@/lib/utils'
+import { WeatherRefreshControl } from '@/features/tournaments/components/weather-refresh-control'
+import type { WeatherImportStatus } from '@/lib/weather-intelligence/service'
 import type {
   GolfWeatherCharacteristics,
   Playability,
@@ -24,9 +27,10 @@ import type {
   WaveAdvantage,
   WeatherConfidence,
   WeatherDay,
-  WeatherGap,
   WeatherIntelligence,
   WeatherPeriodSignals,
+  WeatherStatusCode,
+  WeatherStatusTone,
   WindSeverity,
 } from '@/lib/weather-intelligence'
 
@@ -279,25 +283,73 @@ function DayRow({ day }: { day: WeatherDay }) {
 
 interface TournamentWeatherIntelligenceProps {
   weather: WeatherIntelligence
+  /**
+   * Admin-only weather import controls. Present only when the viewer is an
+   * admin; when omitted, no refresh control or import metadata is rendered.
+   */
+  admin?: {
+    tournamentId: string
+    importStatus: WeatherImportStatus
+  }
 }
+
+/** Status tone → the icon circle's treatment for the status placeholder. */
+const STATUS_TONE_STYLES: Record<WeatherStatusTone, string> = {
+  positive: 'bg-primary/10 text-primary',
+  neutral: 'bg-muted text-muted-foreground',
+  info: 'bg-muted text-muted-foreground',
+  warning: 'bg-destructive/10 text-destructive',
+}
+
+/** Status code → placeholder icon. */
+const STATUS_ICON: Record<WeatherStatusCode, typeof Info> = {
+  'forecast-available': CloudSun,
+  'live-forecast': CloudSun,
+  'forecast-not-yet-available': CalendarClock,
+  'awaiting-forecast-import': CloudSun,
+  'weather-import-failed': Info,
+  'historical-unavailable': CalendarClock,
+  'historical-available': CloudSun,
+  'coordinates-unavailable': MapPin,
+  'provider-unavailable': Info,
+}
+
+/** Codes whose forecast body should render (a real forecast is loaded). */
+const FORECAST_CODES: ReadonlySet<WeatherStatusCode> = new Set<WeatherStatusCode>([
+  'forecast-available',
+  'live-forecast',
+  'historical-available',
+])
 
 /**
  * Weather Intelligence on the Tournament hub. Surfaces the shared Weather Signal
  * Family — current conditions, a per-round forecast, wind/rain timelines, and
  * the morning/afternoon wave edge — with its own confidence grade.
  *
- * Honest by construction: when no forecast has been imported (no API key, no
- * linked venue, or nothing fetched yet) it renders a neutral placeholder naming
- * the venue and the reason, never a fabricated forecast. Missing individual
- * signals read as em-dashes rather than zeros.
+ * Honest by construction and *lifecycle-aware*: the forecast body renders only
+ * when the Weather Status Engine says a forecast should be shown (upcoming
+ * within the horizon, or live). A completed event never shows a stale forecast —
+ * it reads "historical weather unavailable" instead. Every other state (too far
+ * out, awaiting import, unlocated venue, failed import) shows the status-driven
+ * copy explaining exactly why, never a fabricated forecast.
  */
-export function TournamentWeatherIntelligence({ weather }: TournamentWeatherIntelligenceProps) {
+export function TournamentWeatherIntelligence({
+  weather,
+  admin,
+}: TournamentWeatherIntelligenceProps) {
   const confidence = CONFIDENCE[weather.confidence]
   const venueName = weather.venue?.courseName ?? null
+  const status = weather.statusReport
 
   const description = venueName
     ? `Forecast conditions for ${venueName} — the shared weather signals that feed course fit, DFS and betting models.`
     : 'Forecast conditions for the host venue — the shared weather signals that feed course fit, DFS and betting models.'
+
+  // Show the forecast body only when the status engine classifies a real
+  // forecast as loaded AND we actually have an available profile. Otherwise the
+  // honest status placeholder renders — so a completed event shows "historical
+  // unavailable", not last week's stale forecast.
+  const showForecast = FORECAST_CODES.has(status.code) && weather.status === 'available'
 
   return (
     <section className="flex flex-col gap-4">
@@ -317,11 +369,18 @@ export function TournamentWeatherIntelligence({ weather }: TournamentWeatherInte
         </CardHeader>
 
         <CardContent className="flex flex-col gap-6">
-          {weather.status === 'unavailable' ? (
-            <UnavailableWeather weather={weather} venueName={venueName} />
-          ) : (
+          {showForecast ? (
             <WeatherBody weather={weather} />
+          ) : (
+            <StatusPlaceholder weather={weather} />
           )}
+
+          {admin ? (
+            <WeatherRefreshControl
+              tournamentId={admin.tournamentId}
+              importStatus={admin.importStatus}
+            />
+          ) : null}
         </CardContent>
       </Card>
     </section>
@@ -329,82 +388,32 @@ export function TournamentWeatherIntelligence({ weather }: TournamentWeatherInte
 }
 
 /**
- * Friendly, gap-aware placeholder for the unavailable state. Keys off the
- * primary resolution gap so the copy tells the user WHY there is no forecast —
- * awaiting venue coordinates (geolocation) vs. awaiting the forecast import —
- * and is explicit that nothing shown is estimated.
+ * The honest, status-driven placeholder shown whenever a live forecast is not
+ * being displayed. It reads directly from the Weather Status Engine's report —
+ * the single source of lifecycle truth — so the headline and body always match
+ * the event's real state (too far out, awaiting import, historical, failed, or
+ * unlocated) and never imply a missing import for a completed event.
  */
-function UnavailableWeather({
-  weather,
-  venueName,
-}: {
-  weather: WeatherIntelligence
-  venueName: string | null
-}) {
-  const copy = unavailableCopy(primaryGap(weather.gaps), venueName, weather.detail)
-  const Icon = copy.icon
+function StatusPlaceholder({ weather }: { weather: WeatherIntelligence }) {
+  const status = weather.statusReport
+  const Icon = STATUS_ICON[status.code] ?? Info
 
   return (
     <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-surface/50 p-4">
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+      <span
+        className={cn(
+          'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full',
+          STATUS_TONE_STYLES[status.tone],
+        )}
+      >
         <Icon className="size-4" aria-hidden />
       </span>
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-foreground text-balance">{copy.title}</p>
-        <p className="text-xs leading-relaxed text-muted-foreground text-pretty">{copy.body}</p>
+        <p className="text-sm font-medium text-foreground text-balance">{status.label}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground text-pretty">{status.description}</p>
       </div>
     </div>
   )
-}
-
-/** The most actionable resolution gap, in priority order. */
-function primaryGap(gaps: WeatherGap[]): WeatherGap['code'] | null {
-  const order: WeatherGap['code'][] = [
-    'tournament-not-found',
-    'no-host-course',
-    'course-missing-coordinates',
-    'no-snapshot',
-  ]
-  for (const code of order) {
-    if (gaps.some((g) => g.code === code)) return code
-  }
-  return gaps[0]?.code ?? null
-}
-
-/** Map a resolution gap to a title, body, and icon for the placeholder. */
-function unavailableCopy(
-  code: WeatherGap['code'] | null,
-  venueName: string | null,
-  detail: string | null,
-): { title: string; body: string; icon: typeof Info } {
-  const venue = venueName ?? 'the host venue'
-  switch (code) {
-    case 'no-host-course':
-      return {
-        icon: MapPin,
-        title: 'Awaiting host venue',
-        body: 'No host course is linked to this event yet, so there is nowhere to locate a forecast. Weather fills in automatically once a venue is linked and located — nothing here is estimated.',
-      }
-    case 'course-missing-coordinates':
-      return {
-        icon: MapPin,
-        title: 'Awaiting course coordinates',
-        body: `${venue} has not been located to a verified position yet, so a forecast cannot be requested. The Course Geolocation Engine fills this in automatically once the course is verified on the map — no approximate location is ever used.`,
-      }
-    case 'tournament-not-found':
-      return {
-        icon: Info,
-        title: 'Conditions unavailable',
-        body: detail ?? 'This tournament could not be found, so no weather context is available.',
-      }
-    case 'no-snapshot':
-    default:
-      return {
-        icon: CloudSun,
-        title: 'Forecast pending',
-        body: `The Weather Intelligence Engine is live for ${venue}. No forecast has been imported yet, so conditions read as pending — this fills in automatically as forecast data arrives, and nothing here is estimated.`,
-      }
-  }
 }
 
 /** The available-forecast body: current, timelines, per-round, wave edge. */
