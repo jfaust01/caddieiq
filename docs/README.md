@@ -181,6 +181,7 @@ When writing prompts or PRs that extend the project:
 | [FEATURES.md](./FEATURES.md) | Planned features by module. |
 | [MODELS.md](./MODELS.md) | Ranking and rating model specification. |
 | [TOURNAMENT_CONTEXT_ENGINE.md](./TOURNAMENT_CONTEXT_ENGINE.md) | The Tournament Context Engine: the shared source of event context. |
+| [TOURNAMENT_FIELD_INTELLIGENCE.md](./TOURNAMENT_FIELD_INTELLIGENCE.md) | Tournament Field Intelligence: the official-field lifecycle, commitment deadline, and awaiting/confirmed messaging. |
 | [COURSE_INTELLIGENCE.md](./COURSE_INTELLIGENCE.md) | The Course Intelligence Engine: the normalized course profile. |
 | [COURSE_FIT_MODEL.md](./COURSE_FIT_MODEL.md) | The Course Fit Model: player-vs-course fit scoring. |
 | [COURSE_GEOLOCATION.md](./COURSE_GEOLOCATION.md) | The Course Geolocation Engine: verified venue coordinates from a swappable geocoder. |
