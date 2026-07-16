@@ -3,6 +3,7 @@ import { Info } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { WhyButton } from '@/features/explainability/components/why-button'
+import { WhyThisPickCard } from '@/features/explainability/components/why-this-pick-card'
 import { toOverallRatingExplanation } from '@/lib/explainability'
 import { cn } from '@/lib/utils'
 import type {
@@ -155,6 +156,16 @@ export function PlayerAnalyticsPanel({ analytics, playerName }: PlayerAnalyticsP
         <CardTitle>Performance Analytics</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
+        {/* Why This Pick recommendation */}
+        <WhyThisPickCard
+          explanation={toOverallRatingExplanation(analytics, {
+            kind: 'player',
+            id: analytics.playerId,
+            label: playerName ?? 'this player',
+          })}
+          playerName={playerName}
+        />
+
         {/* Composite headline */}
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-muted/40 p-4">
           <div className="flex flex-col gap-1">

@@ -150,12 +150,10 @@ function StageCard({ stage, isLast }: { stage: DecisionTraceStage; isLast: boole
               ) : null}
               {!isFinal ? (
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge
-                      className={cn("border text-[0.625rem] cursor-help", CONFIDENCE_CHIP[stage.confidence])}
-                    >
-                      {CONFIDENCE_LABEL[stage.confidence]} confidence
-                    </Badge>
+                  <TooltipTrigger
+                    className={cn("border text-[0.625rem] cursor-help", CONFIDENCE_CHIP[stage.confidence], "rounded-full px-2 py-0.5 inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50")}
+                  >
+                    {CONFIDENCE_LABEL[stage.confidence]} confidence
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-xs">
                     <p className="text-xs">

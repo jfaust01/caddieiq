@@ -44,3 +44,6 @@ export {
   TRACE_CATEGORY_META,
   TRACE_PIPELINE_ORDER,
 } from "./decision-trace"
+
+// Why This Pick — compact insight extraction.
+export { extractWhyThisPickInsight, type WhyThisPickInsight } from "./why-picker"
