@@ -1,9 +1,10 @@
 'use client'
 
-import { CircleHelp, LogOut, Settings, User } from 'lucide-react'
+import { CircleHelp, LogOut, Settings, User, ShieldCheck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -22,6 +23,10 @@ const MENU_ITEMS = [
   { label: 'Help', icon: CircleHelp, href: '/help' },
 ] as const
 
+const ADMIN_MENU_ITEMS = [
+  { label: 'Admin', icon: ShieldCheck, href: '/admin/database-health' },
+] as const
+
 function initialsFromName(name?: string | null): string {
   if (!name) return 'CQ'
   const parts = name.trim().split(/\s+/).slice(0, 2)
@@ -33,6 +38,8 @@ export function UserMenu() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
   const user = session?.user
+  const isAdmin =
+    (user as { role?: string } | undefined)?.role === 'ADMIN'
 
   async function handleSignOut() {
     await signOut()
@@ -62,9 +69,16 @@ export function UserMenu() {
         <DropdownMenuGroup>
           <DropdownMenuLabel>
             <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium">
-                {user?.name ?? 'Workspace'}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  {user?.name ?? 'Workspace'}
+                </span>
+                {isAdmin && (
+                  <Badge variant="secondary" className="text-xs">
+                    Admin
+                  </Badge>
+                )}
+              </div>
               <span className="text-xs font-normal text-muted-foreground">
                 {user?.email ?? 'Sign in to sync your models'}
               </span>
@@ -72,6 +86,19 @@ export function UserMenu() {
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+        {isAdmin && (
+          <DropdownMenuGroup>
+            {ADMIN_MENU_ITEMS.map((item) => (
+              <DropdownMenuItem
+                key={item.label}
+                onClick={() => router.push(item.href)}
+              >
+                <item.icon data-icon="inline-start" />
+                {item.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
+        )}
         <DropdownMenuGroup>
           {MENU_ITEMS.map((item) => (
             <DropdownMenuItem
@@ -83,7 +110,7 @@ export function UserMenu() {
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+        {isAdmin && <DropdownMenuSeparator />}
         <DropdownMenuGroup>
           {user ? (
             <DropdownMenuItem onClick={handleSignOut}>
