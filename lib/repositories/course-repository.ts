@@ -393,6 +393,7 @@ export class CourseRepository extends BaseRepository {
 
   /**
    * Upsert multiple course characteristics. Never throws per item; errors are collected.
+   * Returns detailed error information for debugging write failures.
    */
   async bulkUpsertCharacteristics(
     characteristics: readonly Omit<CourseCharacteristicRecord, "id" | "createdAt" | "updatedAt">[],
@@ -409,18 +410,27 @@ export class CourseRepository extends BaseRepository {
       if (result.outcome === "inserted") {
         records.push(result.record!)
         inserted++
+        this.logger.create(char.courseId)
       } else if (result.outcome === "updated") {
         records.push(result.record!)
         updated++
-      } else {
+        this.logger.update(char.courseId)
+      } else if (result.outcome === "error") {
         failed++
-        if (result.error) {
-          errors.push({
-            index: i,
-            reference: char.courseId,
-            error: result.error,
-          })
-        }
+        errors.push({
+          index: i,
+          reference: char.courseId,
+          error: result.error || new Error("Unknown error in upsertCharacteristic"),
+        })
+        this.logger.failure(char.courseId, result.error?.message || "Unknown error")
+      } else {
+        // Explicitly handle "skipped" outcome if it occurs
+        failed++
+        errors.push({
+          index: i,
+          reference: char.courseId,
+          error: new Error(`Unexpected outcome: ${result.outcome}`),
+        })
       }
     }
 
