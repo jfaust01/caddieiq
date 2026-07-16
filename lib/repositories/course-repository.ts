@@ -104,6 +104,44 @@ export class CourseRepository extends BaseRepository {
   }
 
   /**
+   * Query courses with optional search, sorting, and pagination.
+   * Excludes soft-deleted rows. Returns matching courses and total count.
+   */
+  async list(options: {
+    search?: string
+    skip?: number
+    take?: number
+  } = {}): Promise<{ courses: CourseRecord[]; total: number }> {
+    const { search, skip = 0, take = 25 } = options
+
+    // Build the where clause
+    const whereClause: Record<string, unknown> = {
+      deletedAt: null,
+    }
+
+    if (search && search.trim()) {
+      whereClause.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { city: { contains: search, mode: 'insensitive' } },
+        { stateProvince: { contains: search, mode: 'insensitive' } },
+        { country: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+
+    const [courses, total] = await Promise.all([
+      this.prisma.course.findMany({
+        where: whereClause,
+        skip,
+        take,
+        orderBy: { name: 'asc' },
+      } as any),
+      this.prisma.course.count({ where: whereClause } as any),
+    ])
+
+    return { courses, total }
+  }
+
+  /**
    * Load the verified inputs the Course Intelligence Engine needs for a course:
    * the core record plus its optional `CourseCharacteristic` analytics row.
    * Returns `null` when the course does not exist or is soft-deleted. Read-only.
@@ -323,6 +361,78 @@ export class CourseRepository extends BaseRepository {
       (c) => c.slug,
       (c) => this.upsert(c),
     )
+  }
+
+  /**
+   * Upsert a course characteristic record (create if missing, update if exists).
+   * Keyed by courseId to ensure one characteristic per course.
+   */
+  async upsertCharacteristic(
+    characteristic: Omit<CourseCharacteristicRecord, "id" | "createdAt" | "updatedAt">,
+  ): Promise<RepositoryResult<CourseCharacteristicRecord>> {
+    try {
+      // Check if the record already exists
+      const existing = await this.prisma.courseCharacteristic.findUnique({
+        where: { courseId: characteristic.courseId },
+      })
+
+      const result = await this.prisma.courseCharacteristic.upsert({
+        where: { courseId: characteristic.courseId },
+        update: characteristic,
+        create: {
+          ...characteristic,
+        },
+      })
+
+      const outcome = existing ? ("updated" as const) : ("inserted" as const)
+      return ok(result, outcome)
+    } catch (error) {
+      return fail(toRepositoryError(error))
+    }
+  }
+
+  /**
+   * Upsert multiple course characteristics. Never throws per item; errors are collected.
+   */
+  async bulkUpsertCharacteristics(
+    characteristics: readonly Omit<CourseCharacteristicRecord, "id" | "createdAt" | "updatedAt">[],
+  ): Promise<BulkRepositoryResult<CourseCharacteristicRecord>> {
+    const records: CourseCharacteristicRecord[] = []
+    const errors: BulkRepositoryResult<CourseCharacteristicRecord>["errors"] = []
+    let inserted = 0
+    let updated = 0
+    let failed = 0
+
+    for (let i = 0; i < characteristics.length; i++) {
+      const char = characteristics[i]
+      const result = await this.upsertCharacteristic(char)
+      if (result.outcome === "inserted") {
+        records.push(result.record!)
+        inserted++
+      } else if (result.outcome === "updated") {
+        records.push(result.record!)
+        updated++
+      } else {
+        failed++
+        if (result.error) {
+          errors.push({
+            index: i,
+            reference: char.courseId,
+            error: result.error,
+          })
+        }
+      }
+    }
+
+    return {
+      processed: characteristics.length,
+      inserted,
+      updated,
+      skipped: 0,
+      failed,
+      records,
+      errors,
+    }
   }
 }
 

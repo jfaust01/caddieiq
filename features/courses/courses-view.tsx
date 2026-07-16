@@ -1,24 +1,16 @@
-import { MapPinned, Plus } from 'lucide-react'
-
-import { ResourceView } from '@/components/shared/resource-view'
-import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/shared/page-header'
+import { PageShell } from '@/components/shared/page-shell'
+import { CourseDirectory } from '@/features/courses/components/course-directory'
 
 export function CoursesView() {
   return (
-    <ResourceView
-      eyebrow="Data"
-      title="Courses"
-      description="Course profiles, layouts, and playing conditions that shape model outputs."
-      searchPlaceholder="Search courses..."
-      emptyIcon={MapPinned}
-      emptyTitle="No courses yet"
-      emptyDescription="Add a course profile to capture the conditions and characteristics your models weigh."
-      actions={
-        <Button>
-          <Plus data-icon="inline-start" />
-          Add course
-        </Button>
-      }
-    />
+    <PageShell>
+      <PageHeader
+        eyebrow="Data"
+        title="Courses"
+        description="Browse the course database that powers your models. Search by name, city, or location to find playing conditions and characteristics."
+      />
+      <CourseDirectory />
+    </PageShell>
   )
 }
