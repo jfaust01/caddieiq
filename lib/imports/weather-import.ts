@@ -32,6 +32,12 @@ export interface WeatherImportSummary {
   tournamentsConsidered: number
   fetched: number
   stored: number
+  /**
+   * Of the `stored` snapshots, how many were fetched against a city-level
+   * (APPROXIMATE) course coordinate rather than a course-precise (VERIFIED) one.
+   * Surfaced so the forecast's precision is never silently overstated.
+   */
+  storedCityLevel: number
   skippedNoCourse: number
   skippedNoCoordinates: number
   failed: number
@@ -70,6 +76,7 @@ export async function importWeather(
     tournamentsConsidered: 0,
     fetched: 0,
     stored: 0,
+    storedCityLevel: 0,
     skippedNoCourse: 0,
     skippedNoCoordinates: 0,
     failed: 0,
@@ -136,6 +143,13 @@ export async function importWeather(
     } else {
       summary.stored += 1
       summary.periodsStored += snapshot.periods.length
+      // Record when a forecast was fetched against a city-level (APPROXIMATE)
+      // coordinate rather than the course itself, so precision is never
+      // overstated downstream.
+      if (venue.coordinateConfidence === "APPROXIMATE") {
+        summary.storedCityLevel += 1
+        note(`${venue.tournamentName}: forecast fetched for city-level (APPROXIMATE) coordinate.`)
+      }
     }
   }
 
