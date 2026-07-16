@@ -1,7 +1,8 @@
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
-import { getOddsRepository } from "@/lib/repositories"
+import { getOddsRepository, getPlayerSkillRepository } from "@/lib/repositories"
+import { SOURCEABLE_SKILL_KEYS } from "@/lib/player-skill-intelligence"
 
 import { coveragePercent, countPresent, rateCoverage } from "./ratings"
 import type {
@@ -131,6 +132,8 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     seasonStatRows,
     // Betting (real Odds Intelligence coverage)
     oddsCoverage,
+    // Player Skill (fifth Signal Family — real strokes-gained coverage)
+    skillCoverage,
     // Import markers
     playerAgg,
     tournamentAgg,
@@ -184,6 +187,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     prisma.fantasyProjection.count({ where: { available: true } }),
     prisma.playerSeasonStatistic.count({ where: { averagePoints: { not: null } } }),
     getOddsRepository().getCoverageCounts(),
+    getPlayerSkillRepository().getCoverageCounts(),
     prisma.player.aggregate({ _max: { updatedAt: true } }),
     prisma.tournament.aggregate({ _max: { updatedAt: true } }),
     prisma.course.aggregate({ _max: { updatedAt: true } }),
@@ -587,6 +591,88 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     ],
   })
 
+  // --- Player Skill (fifth Signal Family) ----------------------------------
+  // Coverage tracks how much VERIFIED strokes-gained/round-statistic data backs
+  // the skill engine. "Verified" here means a round carrying at least one
+  // strokes-gained value (the signal skill ratings normalize against); rows with
+  // only counting stats are "pending". When the source table is empty (e.g. SG
+  // is not entitled on the current provider tier) the section reads as restricted
+  // rather than as a failure — a limitation is not a low score, and no rating is
+  // ever fabricated.
+  const skillEmpty = skillCoverage.roundStatistics === 0
+  const skillNoSg = !skillEmpty && skillCoverage.roundsWithStrokesGained === 0
+  const skillPendingRounds = Math.max(
+    skillCoverage.roundStatistics - skillCoverage.roundsWithStrokesGained,
+    0,
+  )
+  const skillPercent = skillEmpty
+    ? null
+    : coveragePercent(skillCoverage.roundsWithStrokesGained, skillCoverage.roundStatistics)
+  const skillRestricted = skillEmpty || skillNoSg
+  sections.push({
+    id: "player-skill",
+    title: "Player Skill",
+    description: `Normalized golf-skill signals (${SOURCEABLE_SKILL_KEYS.length} sourceable skills) built from verified round statistics. Coverage tracks rounds carrying at least one strokes-gained value — the signal ratings are ranked against — never estimated.`,
+    percent: skillPercent,
+    rating: skillRestricted ? "restricted" : rateCoverage(skillPercent),
+    breakdown: {
+      verified: skillCoverage.roundsWithStrokesGained,
+      pending: skillPendingRounds,
+      missing: 0,
+      total: skillCoverage.roundStatistics,
+    },
+    lastUpdated: toIso(skillCoverage.latestRoundAt),
+    restrictedReason: skillEmpty
+      ? "No round statistics captured yet — skill ratings populate automatically once strokes-gained data is ingested. Nothing here is estimated."
+      : skillNoSg
+        ? "Round statistics are held, but none carry strokes-gained values (not entitled on the current provider tier), so skills cannot be rated yet."
+        : undefined,
+    metrics: [
+      {
+        id: "players",
+        label: "Players With Samples",
+        value: formatCount(skillCoverage.playersWithSamples),
+        count: skillCoverage.playersWithSamples,
+        percent: coveragePercent(skillCoverage.playersWithSamples, totalPlayers),
+        hint: "Distinct players holding at least one round statistic.",
+      },
+      {
+        id: "rounds",
+        label: "Round Statistics",
+        value: formatCount(skillCoverage.roundStatistics),
+        count: skillCoverage.roundStatistics,
+        hint: "Total per-round statistic rows held.",
+      },
+      {
+        id: "strokes-gained",
+        label: "Rounds With SG",
+        value: skillNoSg ? "None (not entitled)" : formatCount(skillCoverage.roundsWithStrokesGained),
+        count: skillCoverage.roundsWithStrokesGained,
+        percent: skillPercent,
+        hint: "Rounds carrying at least one strokes-gained value — the ratings' backbone.",
+      },
+      {
+        id: "seasons",
+        label: "Seasons",
+        value: formatCount(skillCoverage.seasons),
+        count: skillCoverage.seasons,
+        hint: "Distinct seasons represented across held samples.",
+      },
+      {
+        id: "freshness",
+        label: "Newest Round",
+        value: formatRelativeAge(skillCoverage.latestRoundAt, now),
+        hint: "Age of the most recent sampled round.",
+      },
+      {
+        id: "coverage",
+        label: "SG Coverage %",
+        value: skillEmpty ? "No data" : formatPercent(skillPercent),
+        percent: skillPercent,
+      },
+    ],
+  })
+
   // --- Platform summary tiles ----------------------------------------------
   const tournamentsWithVenue = tournamentVenueRows.length
   const tournamentsPercent = coveragePercent(tournamentsWithVenue, totalTournaments)
@@ -601,6 +687,7 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     { id: "images", label: "Images", percent: photoPercent, rating: rateCoverage(photoPercent), verified: playersWithPhoto, total: totalPlayers },
     { id: "fantasy", label: "Fantasy", percent: fantasyPercent, rating: fantasyHasRealData ? rateCoverage(fantasyPercent) : "restricted", verified: dfsReal, total: dfsTotal, restricted: !fantasyHasRealData },
     { id: "betting", label: "Betting", percent: bettingPercent, rating: bettingEmpty ? "restricted" : rateCoverage(bettingPercent), verified: oddsEventsLinked, total: oddsEvents, restricted: bettingEmpty },
+    { id: "player-skill", label: "Player Skill", percent: skillPercent, rating: skillRestricted ? "restricted" : rateCoverage(skillPercent), verified: skillCoverage.roundsWithStrokesGained, total: skillCoverage.roundStatistics, restricted: skillRestricted },
   ]
 
   const health = await buildPlatformHealth({
