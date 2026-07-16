@@ -87,7 +87,7 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
 
       <PlayerHeader player={player} />
 
-      <AiSummaryCard />
+      <AiSummaryCard analytics={player.analytics} playerName={player.fullName} />
 
       <Tabs defaultValue="overview">
         <TabsList>
@@ -114,10 +114,10 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
 
         <TabsContent value="analytics" className="flex flex-col gap-6">
           <PlayerRankingCards profile={player.rankingProfile} />
-          <PlayerDfsValueCard playerId={player.id} />
-          <PlayerSkillCard playerId={player.id} />
+          <PlayerDfsValueCard playerId={player.id} playerName={player.fullName} />
+          <PlayerSkillCard playerId={player.id} playerName={player.fullName} />
           <PlayerOddsCard playerId={player.id} />
-          <PlayerAnalyticsPanel analytics={player.analytics} />
+          <PlayerAnalyticsPanel analytics={player.analytics} playerName={player.fullName} />
           <UpcomingTournamentCard context={player.upcoming} />
         </TabsContent>
 

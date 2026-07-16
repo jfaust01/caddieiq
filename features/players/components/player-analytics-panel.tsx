@@ -2,6 +2,8 @@ import { Info } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { WhyButton } from '@/features/explainability/components/why-button'
+import { toOverallRatingExplanation } from '@/lib/explainability'
 import { cn } from '@/lib/utils'
 import type {
   AnalyticsBand,
@@ -12,6 +14,8 @@ import type {
 
 interface PlayerAnalyticsPanelProps {
   analytics: PlayerAnalytics
+  /** Player display name, used to label the "Why?" explanation. */
+  playerName?: string
 }
 
 /** Visual tone per band. Kept to the app's semantic tokens (no new colors). */
@@ -122,7 +126,7 @@ function MetricCard({ score }: { score: AnalyticsScore }) {
  * profile and this panel shows an honest "not enough data" state rather than
  * inventing scores.
  */
-export function PlayerAnalyticsPanel({ analytics }: PlayerAnalyticsPanelProps) {
+export function PlayerAnalyticsPanel({ analytics, playerName }: PlayerAnalyticsPanelProps) {
   if (analytics.isEmpty) {
     return (
       <Card>
@@ -154,9 +158,19 @@ export function PlayerAnalyticsPanel({ analytics }: PlayerAnalyticsPanelProps) {
         {/* Composite headline */}
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-muted/40 p-4">
           <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">
-              Overall Rating
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                Overall Rating
+              </span>
+              <WhyButton
+                explanation={toOverallRatingExplanation(analytics, {
+                  kind: 'player',
+                  id: analytics.playerId,
+                  label: playerName ?? 'this player',
+                })}
+                srContext={`Overall Rating for ${playerName ?? 'this player'}`}
+              />
+            </div>
             <div className="flex items-baseline gap-2">
               <span className="text-4xl font-semibold tabular-nums">
                 {scoreDisplay(analytics.overallRating)}

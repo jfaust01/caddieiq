@@ -3,7 +3,8 @@ import { Info, Target, TrendingDown, TrendingUp, HelpCircle } from 'lucide-react
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import { WhyButton } from '@/features/explainability/components/why-button'
+import { toCourseFitExplanation } from '@/lib/explainability'
 import type {
   FieldFitBoard as FieldFitBoardData,
   FieldFitEntry,
@@ -42,7 +43,17 @@ function FitRow({ entry, metric }: { entry: FieldFitEntry; metric: Metric }) {
         {entry.displayName}
       </Link>
       {metric === 'fit' ? (
-        <span className="text-sm font-semibold tabular-nums">{display(result.score)}</span>
+        <span className="flex items-center gap-2">
+          <span className="text-sm font-semibold tabular-nums">{display(result.score)}</span>
+          <WhyButton
+            explanation={toCourseFitExplanation(result, {
+              kind: 'player',
+              id: entry.playerId,
+              label: entry.displayName,
+            })}
+            srContext={`course fit for ${entry.displayName}`}
+          />
+        </span>
       ) : metric === 'momentum' ? (
         <span className="text-sm font-semibold tabular-nums">{display(entry.momentum)}</span>
       ) : (

@@ -5,7 +5,9 @@ import { Activity, Info, Minus, Radar, TrendingDown, TrendingUp } from 'lucide-r
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { WhyButton } from '@/features/explainability/components/why-button'
 import { usePlayerSkillProfile } from '@/features/players/hooks/use-player-skill-profile'
+import { toPlayerSkillExplanation } from '@/lib/explainability'
 import {
   bandLabel,
   familyLabel,
@@ -60,6 +62,8 @@ function fmtRaw(signal: SkillSignal): string {
 
 interface PlayerSkillCardProps {
   playerId: string
+  /** Player display name, used to label the "Why?" explanation. */
+  playerName?: string
 }
 
 /**
@@ -73,7 +77,7 @@ interface PlayerSkillCardProps {
  * fabricated number), missing values render as an em-dash, and an empty profile
  * explains the coverage gap rather than inventing ratings.
  */
-export function PlayerSkillCard({ playerId }: PlayerSkillCardProps) {
+export function PlayerSkillCard({ playerId, playerName }: PlayerSkillCardProps) {
   const { profile, isLoading, isError } = usePlayerSkillProfile(playerId)
 
   return (
@@ -86,7 +90,17 @@ export function PlayerSkillCard({ playerId }: PlayerSkillCardProps) {
           Skill profile
         </CardTitle>
         {profile && profile.status === 'available' ? (
-          <Badge variant={CONFIDENCE[profile.confidence].variant}>{CONFIDENCE[profile.confidence].label}</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={CONFIDENCE[profile.confidence].variant}>{CONFIDENCE[profile.confidence].label}</Badge>
+            <WhyButton
+              explanation={toPlayerSkillExplanation(profile, {
+                kind: 'player',
+                id: playerId,
+                label: playerName ?? 'this player',
+              })}
+              srContext={`skill profile for ${playerName ?? 'this player'}`}
+            />
+          </div>
         ) : null}
       </CardHeader>
 
