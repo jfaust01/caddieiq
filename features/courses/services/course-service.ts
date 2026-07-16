@@ -13,7 +13,7 @@ import 'server-only'
 
 import { cache } from 'react'
 
-import type { CourseDetail } from '@/features/courses/types'
+import type { CourseDetail, CourseSummary } from '@/features/courses/types'
 import type { CourseProfile } from '@/lib/domain/course'
 import { getCourseRepository } from '@/lib/repositories'
 
@@ -32,6 +32,35 @@ const getCourseByIdCached = cache(
     return row ? mapCourseDetail(row) : null
   },
 )
+
+/**
+ * Query courses with search and pagination. Returns matching courses and total
+ * count. Not cached to allow real-time filtering.
+ */
+async function queryCourses(options: {
+  search?: string
+  skip?: number
+  take?: number
+}): Promise<{ courses: CourseSummary[]; total: number }> {
+  const { courses, total } = await getCourseRepository().list({
+    search: options.search,
+    skip: options.skip,
+    take: options.take,
+    orderBy: { field: 'name', direction: 'asc' },
+  })
+
+  return {
+    courses: courses.map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      city: c.city,
+      stateProvince: c.stateProvince,
+      country: c.country,
+    })),
+    total,
+  }
+}
 
 /**
  * Derive the Course Intelligence profile for a course id, or `null` when no such
@@ -65,5 +94,17 @@ export const courseService = {
    */
   getCourseIntelligence(id: string): Promise<CourseProfile | null> {
     return getCourseIntelligenceCached(id)
+  },
+
+  /**
+   * Query courses with optional search and pagination. Returns paginated results
+   * and total count. Used by the courses directory for listing and filtering.
+   */
+  queryCourses(options: {
+    search?: string
+    skip?: number
+    take?: number
+  }): Promise<{ courses: CourseSummary[]; total: number }> {
+    return queryCourses(options)
   },
 }

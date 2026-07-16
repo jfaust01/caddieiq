@@ -10,6 +10,16 @@
 
 import type { CourseProfile } from '@/lib/domain/course'
 
+/** Minimal course summary for list/directory views. */
+export interface CourseSummary {
+  id: string
+  name: string
+  slug: string
+  city: string | null
+  stateProvince: string | null
+  country: string | null
+}
+
 /** Lifecycle status of a tournament (mirrors the database enum). */
 export type TournamentStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
 

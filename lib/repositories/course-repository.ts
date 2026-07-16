@@ -104,6 +104,50 @@ export class CourseRepository extends BaseRepository {
   }
 
   /**
+   * Query courses with optional search, sorting, and pagination.
+   * Excludes soft-deleted rows. Returns matching courses and total count.
+   */
+  async list(options: {
+    search?: string
+    skip?: number
+    take?: number
+    orderBy?: { field: string; direction: 'asc' | 'desc' }
+  } = {}): Promise<{ courses: CourseRecord[]; total: number }> {
+    const { search, skip = 0, take = 25, orderBy } = options
+
+    // Build the where clause, handling optional search filter
+    const whereClause: Prisma.CourseWhereInput = {
+      deletedAt: null,
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { city: { contains: search, mode: 'insensitive' } },
+        { stateProvince: { contains: search, mode: 'insensitive' } },
+        { country: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+
+    // Build the order by clause
+    const orderByClause = orderBy
+      ? { [orderBy.field]: orderBy.direction }
+      : { name: 'asc' as const }
+
+    const [courses, total] = await Promise.all([
+      this.prisma.course.findMany({
+        where: whereClause,
+        skip,
+        take,
+        orderBy: orderByClause as Prisma.CourseOrderByWithRelationInput,
+      }),
+      this.prisma.course.count({ where: whereClause }),
+    ])
+
+    return { courses, total }
+  }
+
+  /**
    * Load the verified inputs the Course Intelligence Engine needs for a course:
    * the core record plus its optional `CourseCharacteristic` analytics row.
    * Returns `null` when the course does not exist or is soft-deleted. Read-only.
