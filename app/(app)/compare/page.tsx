@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ComparisonTable } from "@/features/comparison/components/comparison-table"
 import { PlayerSelector } from "@/features/comparison/components/player-selector"
+import { ComparisonVerdictCard } from "@/features/comparison/components/comparison-verdict-card"
 import { 
   buildComparison, 
   generateCaddieInsight,
   parseComparisonLink,
+  generateVerdict,
   type ComparisonResult,
 } from "@/lib/comparison"
 import type { PlayerAnalytics } from "@/lib/analytics/types"
@@ -19,6 +21,8 @@ export default function ComparePage() {
   const playerIds = parseComparisonLink(searchParams.toString())
   
   const [result, setResult] = useState<ComparisonResult | null>(null)
+  const [allAnalytics, setAllAnalytics] = useState<PlayerAnalytics[]>([])
+  const [playerNames, setPlayerNames] = useState<string[]>([])
   const [selectorOpen, setSelectorOpen] = useState(!playerIds.length)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -53,6 +57,8 @@ export default function ComparePage() {
       
       // Build comparison
       const comparison = buildComparison(allAnalytics, ids, names)
+      setAllAnalytics(allAnalytics)
+      setPlayerNames(names)
       setResult(comparison)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load comparison")
@@ -117,20 +123,17 @@ export default function ComparePage() {
         {/* Comparison view */}
         {result && !loading && (
           <div className="space-y-8">
-            {/* Caddie Insight */}
-            <Card className="border-primary/20 bg-primary/5">
-              <CardHeader>
-                <CardTitle className="text-lg">Caddie Insight</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-foreground">
-                  {generateCaddieInsight(result, [])}
-                </p>
-              </CardContent>
-            </Card>
+            {/* Comparison Verdict */}
+            <ComparisonVerdictCard
+              verdict={generateVerdict(result, allAnalytics, playerNames)}
+              onViewFullComparison={() => {
+                // Scroll to comparison table
+                document.querySelector("#comparison-table")?.scrollIntoView({ behavior: "smooth" })
+              }}
+            />
 
             {/* Comparison Table */}
-            <div>
+            <div id="comparison-table">
               <h2 className="text-xl font-semibold mb-4">Metrics Breakdown</h2>
               <ComparisonTable result={result} />
             </div>
