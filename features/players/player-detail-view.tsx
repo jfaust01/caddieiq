@@ -24,6 +24,8 @@ import { RecentActivity } from '@/features/players/components/recent-activity'
 import { RecentForm } from '@/features/players/components/recent-form'
 import { PlayerNews } from '@/features/players/components/player-news'
 import { PlayerDetailSkeleton } from '@/features/players/components/player-detail-skeleton'
+import { DecisionWorkspace } from '@/features/players/components/decision-workspace'
+import { toOverallRatingExplanation } from '@/lib/explainability'
 
 interface PlayerDetailViewProps {
   playerId: string
@@ -91,6 +93,7 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
 
       <Tabs defaultValue="overview">
         <TabsList>
+          <TabsTrigger value="workspace">Workspace</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
@@ -98,6 +101,19 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
           <TabsTrigger value="news">News</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="workspace" className="flex flex-col gap-6">
+          <DecisionWorkspace
+            playerId={player.id}
+            playerName={player.fullName}
+            analytics={player.analytics}
+            explanation={toOverallRatingExplanation(player.analytics, {
+              kind: 'player',
+              id: player.id,
+              label: player.fullName,
+            })}
+          />
+        </TabsContent>
 
         <TabsContent value="overview">
           <div className="grid gap-6 lg:grid-cols-3">
