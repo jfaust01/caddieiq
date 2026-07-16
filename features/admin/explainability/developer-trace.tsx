@@ -1,5 +1,4 @@
 import { toDecisionTrace, type Explanation } from "@/lib/explainability"
-import { MetricLabel } from "@/features/explainability/components/metric-info"
 
 /**
  * Developer Trace — a dense, engineering-oriented audit of a model's Decision
@@ -38,25 +37,13 @@ export function DeveloperTrace({ explanation }: { explanation: Explanation }) {
         <table className="w-full border-collapse text-left">
           <thead className="bg-muted/50 text-muted-foreground">
             <tr>
-              {[
-                { label: "#", key: null },
-                { label: "stage", key: null },
-                { label: "category", key: null },
-                { label: "impact", key: null },
-                { label: "raw", key: "raw-value" },
-                { label: "normalized", key: "normalized-value" },
-                { label: "weight%", key: "weight-percentage" },
-                { label: "contribution", key: "contribution" },
-                { label: "conf", key: "confidence-level" },
-                { label: "influences", key: null },
-              ].map(({ label, key }) => (
-                <th key={label} className="whitespace-nowrap px-3 py-2 font-medium">
-                  <div className="flex items-center gap-1">
-                    {label}
-                    {key && <MetricLabel metricKey={key} label="" iconClassName="w-2.5 h-2.5" />}
-                  </div>
-                </th>
-              ))}
+              {["#", "stage", "category", "impact", "raw", "normalized", "weight%", "contribution", "conf", "influences"].map(
+                (h) => (
+                  <th key={h} className="whitespace-nowrap px-3 py-2 font-medium">
+                    {h}
+                  </th>
+                ),
+              )}
             </tr>
           </thead>
           <tbody>
