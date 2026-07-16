@@ -5,6 +5,7 @@ import type { DataCoverageReport } from '@/lib/data-coverage/types'
 
 import { CopyReportButton } from './copy-report-button'
 import { CoverageSectionCard } from './coverage-section-card'
+import { FieldIntelligencePanel } from './field-intelligence-panel'
 import { HealthPanel } from './health-panel'
 import { SummaryGrid } from './summary-grid'
 
@@ -44,6 +45,14 @@ export function DataCoverageView({ report }: { report: DataCoverageReport }) {
             <CoverageSectionCard key={section.id} section={section} />
           ))}
         </div>
+      </section>
+
+      <section aria-label="Tournament field intelligence" className="flex flex-col gap-4">
+        <SectionHeader
+          title="Tournament field intelligence"
+          description="Official-field lifecycle for upcoming and live events. Overdue rows have passed their commitment deadline with no roster imported — the actionable signal that a field sync is late."
+        />
+        <FieldIntelligencePanel report={report.fieldIntelligence} />
       </section>
 
       <section aria-label="Platform health" className="flex flex-col gap-4">

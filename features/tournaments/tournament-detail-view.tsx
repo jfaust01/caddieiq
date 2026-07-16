@@ -13,6 +13,7 @@ import { TournamentSkillLeaderboards } from '@/features/tournaments/components/t
 import { TournamentDfsLeaderboards } from '@/features/tournaments/components/tournament-dfs-leaderboards'
 import { FieldFitBoard } from '@/features/tournaments/components/field-fit-board'
 import { TournamentHero } from '@/features/tournaments/components/tournament-hero'
+import { TournamentFieldBanner } from '@/features/tournaments/components/tournament-field-banner'
 import { TournamentIntelligence } from '@/features/tournaments/components/tournament-intelligence'
 import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
 import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
@@ -52,9 +53,10 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
   // query — only the news lookup itself. The host-course intelligence is loaded
   // in parallel, and only when the event is actually linked to a venue.
   const courseRef = tournament.courseRef
-  const [field, fieldNews, courseProfile, fitBoard, weather, odds, skillLeaderboards, dfsField] =
+  const [field, fieldReport, fieldNews, courseProfile, fitBoard, weather, odds, skillLeaderboards, dfsField] =
     await Promise.all([
       tournamentService.getTournamentField(tournament.id),
+      tournamentService.getFieldReport(tournament.id),
       tournamentService.getFieldNews(tournament.id),
       courseRef ? courseService.getCourseIntelligence(courseRef.id) : Promise.resolve(null),
       tournamentService.getFieldFitBoard(tournament.id),
@@ -84,6 +86,8 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
         fieldSize={field.size}
         weatherSummary={weatherSummary(weather)}
       />
+
+      <TournamentFieldBanner report={fieldReport} />
 
       <TournamentIntelligence />
 

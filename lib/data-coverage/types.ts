@@ -97,11 +97,58 @@ export interface PlatformHealth {
   imports: ImportMarker[]
 }
 
+/**
+ * One row of the Tournament Field Intelligence panel: an upcoming or live event
+ * with its official-field lifecycle state and the operational facts admins need
+ * to spot a field that has not synced. Every count/time is honest — `null`
+ * where the underlying data does not exist yet, never a fabricated placeholder.
+ */
+export interface FieldIntelligenceReportRow {
+  tournamentId: string
+  name: string
+  /** Lifecycle state from the Tournament Context Engine (e.g. "awaiting"). */
+  fieldStatus: string
+  /** Certainty the presented field is the final, official one. */
+  fieldConfidence: string
+  /** ISO start date, or null when unknown. */
+  startDate: string | null
+  /** PGA Tour commitment deadline (ISO), or null when the start date is unknown. */
+  releaseTime: string | null
+  /** Imported (non-withdrawn) entrant count. */
+  playersImported: number
+  /** Prior-edition field size baseline, or null when there is no prior edition. */
+  expectedPlayers: number | null
+  /** Most recent field sync (ISO), or null when never imported. */
+  lastSync: string | null
+  /**
+   * True when the field is expected by now (release deadline passed) but no
+   * roster has been imported — the actionable "should have synced" signal.
+   */
+  overdue: boolean
+}
+
+/**
+ * The Tournament Field Intelligence panel: upcoming/live events and their field
+ * lifecycle, so admins can confirm official fields are landing on time. Honest
+ * by construction — surfaces real lifecycle state and flags overdue syncs
+ * without ever inventing a field that has not been published.
+ */
+export interface FieldIntelligenceReport {
+  rows: FieldIntelligenceReportRow[]
+  /** Count of rows flagged `overdue` — the headline "needs attention" number. */
+  overdueCount: number
+  /** Count of rows whose official field is confirmed. */
+  confirmedCount: number
+  /** Count of rows still awaiting their official field. */
+  awaitingCount: number
+}
+
 /** The complete diagnostics report — also the JSON export payload. */
 export interface DataCoverageReport {
   /** ISO timestamp the report was generated. */
   generatedAt: string
   summary: DomainSummary[]
   sections: CoverageSection[]
+  fieldIntelligence: FieldIntelligenceReport
   health: PlatformHealth
 }

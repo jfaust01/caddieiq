@@ -293,6 +293,15 @@ const getDfsValueForTournamentCached = cache(
 )
 
 /**
+ * Resolve an event's field-sync timestamps once per request, keyed by id.
+ * Wrapped in React `cache` so the field banner and any other consumer share a
+ * single read of the roster-import timestamps.
+ */
+const getFieldSyncStatsCached = cache((tournamentId: string) =>
+  getTournamentRepository().getFieldSyncStats(tournamentId),
+)
+
+/**
  * The field's Player Skill Intelligence in a single pass: the tournament-hub
  * skill leaderboards PLUS the per-player Course-Fit-shaped skill profile the fit
  * board consumes. Both derive from the same normalized profiles, so the hub's
@@ -453,6 +462,46 @@ export const tournamentService = {
    */
   getTournamentContext(id: string): Promise<TournamentContext> {
     return tournamentContextService.getTournamentContext(id)
+  },
+
+  /**
+   * The event's official-field lifecycle report for the Tournament Page banner:
+   * the field status/confidence and commitment-deadline the Tournament Context
+   * Engine derives, plus the roster-import timestamps (when the field was first
+   * confirmed and last synced) from the repository. Every value is honest —
+   * counts and times stay `null` until real field rows exist, and an
+   * `unavailable` context yields an `unknown`/`unknown` report rather than a
+   * fabricated one. Reads through the Context Engine and repository only.
+   */
+  async getFieldReport(id: string): Promise<TournamentFieldReport> {
+    const [context, sync] = await Promise.all([
+      tournamentContextService.getTournamentContext(id),
+      getFieldSyncStatsCached(id),
+    ])
+
+    if (context.status !== 'available') {
+      return {
+        status: 'unknown',
+        confidence: 'unknown',
+        timing: null,
+        releaseTime: null,
+        playerCount: null,
+        confirmedAt: null,
+        lastUpdated: null,
+      }
+    }
+
+    return {
+      status: context.fieldStatus,
+      confidence: context.fieldConfidence,
+      timing: context.timing,
+      releaseTime: context.fieldReleaseTime,
+      // Prefer the context's count (already honest about null); the sync read is
+      // the authority for the import timestamps.
+      playerCount: context.fieldPlayerCount,
+      confirmedAt: sync.firstImportedAt ? sync.firstImportedAt.toISOString() : null,
+      lastUpdated: sync.lastUpdatedAt ? sync.lastUpdatedAt.toISOString() : null,
+    }
   },
 
   /**

@@ -470,6 +470,11 @@ export class TournamentRepository extends BaseRepository {
       ) prior ON true
       WHERE t."deletedAt" IS NULL
         AND t.status::text <> 'COMPLETED'
+        AND t.status::text <> 'CANCELED'
+        -- Only genuinely upcoming/live events: the event has not ended yet.
+        -- Falls back to the start date when no end date is set; rows with no
+        -- dates at all are excluded (they cannot be "upcoming").
+        AND COALESCE(t."endDate", t."startDate") >= (now() - interval '1 day')
       ORDER BY t."startDate" ASC NULLS LAST, t.name ASC
       LIMIT ${limit}
     `)

@@ -2,13 +2,17 @@ import "server-only"
 
 import { prisma } from "@/lib/prisma"
 import { getFantasyRepository, getOddsRepository, getPlayerSkillRepository } from "@/lib/repositories"
+import { getTournamentRepository } from "@/lib/repositories/tournament-repository"
 import { SOURCEABLE_SKILL_KEYS } from "@/lib/player-skill-intelligence"
+import { deriveFieldIntelligence } from "@/lib/tournament-context"
 
 import { coveragePercent, countPresent, rateCoverage } from "./ratings"
 import type {
   CoverageSection,
   DataCoverageReport,
   DomainSummary,
+  FieldIntelligenceReport,
+  FieldIntelligenceReportRow,
   HealthCheck,
   ImportMarker,
   PlatformHealth,
@@ -783,11 +787,73 @@ export async function getDataCoverageReport(): Promise<DataCoverageReport> {
     bettingRestricted: bettingEmpty,
   })
 
+  const fieldIntelligence = await buildFieldIntelligence(new Date(now))
+
   return {
     generatedAt: new Date(now).toISOString(),
     summary,
     sections,
+    fieldIntelligence,
     health,
+  }
+}
+
+/**
+ * Build the Tournament Field Intelligence panel: every upcoming/live event with
+ * its official-field lifecycle state (from the SAME pure engine the Tournament
+ * Page uses, so the admin view and the public banner never disagree) and the
+ * operational facts an admin needs — imported vs. expected size, last sync, and
+ * an "overdue" flag when the field should be out (release deadline passed) but
+ * no roster has landed. Honest by construction: it never invents a field, and
+ * `expectedPlayers` is `null` (not a guess) when there is no prior edition.
+ */
+async function buildFieldIntelligence(now: Date): Promise<FieldIntelligenceReport> {
+  const rows = await getTournamentRepository().listFieldIntelligence(30)
+
+  const reportRows: FieldIntelligenceReportRow[] = rows.map((row) => {
+    // Derive lifecycle from the shared engine. Status text mirrors the DB enum;
+    // COMPLETED events are already excluded by the query.
+    const status =
+      row.status === "ACTIVE"
+        ? "ACTIVE"
+        : row.status === "CANCELED"
+          ? "CANCELED"
+          : "SCHEDULED"
+    const intel = deriveFieldIntelligence({
+      status,
+      startDate: row.startDate,
+      endDate: row.endDate,
+      fieldConfirmed: row.playersImported > 0,
+      fieldPlayerCount: row.playersImported > 0 ? row.playersImported : null,
+    })
+
+    // "Overdue" = the official field should have been published by now (the
+    // commitment deadline has passed) yet nothing has been imported. This is the
+    // one actionable signal — a field that is genuinely late, not merely pending.
+    const overdue =
+      intel.fieldStatus === "awaiting" &&
+      intel.fieldReleaseTime !== null &&
+      new Date(intel.fieldReleaseTime).getTime() < now.getTime()
+
+    return {
+      tournamentId: row.id,
+      name: row.name,
+      fieldStatus: intel.fieldStatus,
+      fieldConfidence: intel.fieldConfidence,
+      startDate: row.startDate ? row.startDate.toISOString() : null,
+      releaseTime: intel.fieldReleaseTime,
+      playersImported: row.playersImported,
+      expectedPlayers: row.expectedPlayers,
+      lastSync: row.lastSync ? row.lastSync.toISOString() : null,
+      overdue,
+    }
+  })
+
+  return {
+    rows: reportRows,
+    overdueCount: reportRows.filter((r) => r.overdue).length,
+    confirmedCount: reportRows.filter((r) => r.fieldStatus === "confirmed").length,
+    awaitingCount: reportRows.filter((r) => r.fieldStatus === "awaiting").length,
   }
 }
 
