@@ -116,36 +116,6 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
     tournamentService.getRoundsByTournament(tournament.id),
   ])
 
-  // DEBUG: Log rounds data immediately after fetch
-  console.log('[v0] ═══════════════════════════════════════════════════════════════')
-  console.log('[v0] ROUNDS DATA DIAGNOSTIC - After getRoundsByTournament')
-  console.log('[v0] ═══════════════════════════════════════════════════════════════')
-  console.log('[v0] tournament.id:', tournament.id)
-  console.log('[v0] rounds:', rounds)
-  console.log('[v0] rounds.length:', rounds?.length ?? 'undefined')
-  
-  if (rounds && Array.isArray(rounds) && rounds.length > 0) {
-    console.log('[v0] Round Details:')
-    for (let i = 0; i < Math.min(3, rounds.length); i++) {
-      const round = rounds[i]
-      console.log(`[v0]   Round ${i + 1}:`)
-      console.log(`[v0]     ID: ${round.id}`)
-      console.log(`[v0]     Tournament ID: ${round.tournamentId}`)
-      console.log(`[v0]     Round Number: ${round.roundNumber}`)
-      console.log(`[v0]     Status: ${round.status}`)
-      console.log(`[v0]     Player Scores: ${round.playerScores?.length ?? 0}`)
-      if (round.playerScores && round.playerScores.length > 0) {
-        console.log(`[v0]       First player score:`, {
-          id: round.playerScores[0].id,
-          fieldEntryId: round.playerScores[0].fieldEntryId,
-          score: round.playerScores[0].score,
-          position: round.playerScores[0].position,
-        })
-      }
-    }
-  }
-  console.log('[v0] ═══════════════════════════════════════════════════════════════')
-
   const weatherAdmin = isAdmin
     ? {
         tournamentId: tournament.id,
@@ -312,21 +282,6 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
           <TournamentDfsLeaderboards field={dfsField} />
         </CommandCenterWidget>
       ) : null}
-
-      {/* DEBUG: Detailed logging before rendering */}
-      {(() => {
-        console.log('[v0] ════════════════════════════════════════════════════')
-        console.log('[v0] BEFORE TournamentRoundsTable render')
-        console.log('[v0] rounds.length:', rounds?.length ?? 'undefined')
-        
-        if (rounds && rounds.length > 0) {
-          rounds.forEach((round, idx) => {
-            console.log(`[v0] Round ${idx}: id=${round.roundId}, number=${round.roundNumber}, playerScores=${round.playerScores?.length ?? 0}`)
-          })
-        }
-        console.log('[v0] ════════════════════════════════════════════════════')
-        return null
-      })()}
 
       <CommandCenterWidget
         id="round-scoring"
