@@ -78,6 +78,7 @@ export async function orchestrateTournamentCourseMapping(
   try {
     // Step 1: Query all tournament courses (not just tournaments with host courses)
     console.log("[v0] Step 1: Fetching all tournament courses...")
+    console.log("[v0] START: prisma.tournamentCourse.findMany")
 
     const allTournamentCourses = await prisma.tournamentCourse.findMany({
       where: {
@@ -91,6 +92,7 @@ export async function orchestrateTournamentCourseMapping(
       orderBy: { tournament: { name: "asc" } },
     })
 
+    console.log("[v0] END: prisma.tournamentCourse.findMany")
     tournamentCoursesProcessed = allTournamentCourses.length
     console.log(`[v0] Found ${tournamentCoursesProcessed} active tournament courses`)
 
@@ -105,9 +107,12 @@ export async function orchestrateTournamentCourseMapping(
     // Step 2: Process each tournament course
     console.log("[v0] Step 2: Creating/updating mappings for all tournament courses...")
 
-    for (const tournamentCourse of allTournamentCourses) {
+    for (let i = 0; i < allTournamentCourses.length; i++) {
+      const tournamentCourse = allTournamentCourses[i]
       const tournament = tournamentCourse.tournament
       const course = tournamentCourse.course
+
+      console.log(`[v0] LOOP ITERATION ${i + 1}/${allTournamentCourses.length}: ${tournament.name}`)
 
       if (!course) {
         console.log(`[v0] Skipping tournament ${tournament.name}: no course found`)
@@ -121,7 +126,9 @@ export async function orchestrateTournamentCourseMapping(
         )
 
         // Check if mapping already exists
+        console.log(`[v0] START: mappingRepo.findByTournamentId(${tournament.id})`)
         const existingMappingResult = await mappingRepo.findByTournamentId(tournament.id)
+        console.log(`[v0] END: mappingRepo.findByTournamentId(${tournament.id})`)
         const existingMapping = existingMappingResult.outcome === "ok" ? existingMappingResult.record : null
 
         if (existingMapping) {
@@ -160,7 +167,9 @@ export async function orchestrateTournamentCourseMapping(
         let matchedBy = "manual"
 
         try {
+          console.log(`[v0] START: GolfCourseAPI.searchCourses("${course.name}")`)
           const searchResults = await client.searchCourses(course.name)
+          console.log(`[v0] END: GolfCourseAPI.searchCourses("${course.name}") - ${searchResults?.length || 0} results`)
 
           if (searchResults && searchResults.length > 0) {
             const bestMatch = findBestMatch(sportsDataCourseData, searchResults)
@@ -195,6 +204,7 @@ export async function orchestrateTournamentCourseMapping(
         // Create or update mapping (regardless of whether GolfCourseAPI match was found)
         if (existingMapping) {
           // Update existing unverified mapping
+          console.log(`[v0] START: mappingRepo.update(${tournament.id})`)
           const updateResult = await mappingRepo.update(tournament.id, {
             golfCourseApiCourseId: golfCourseApiCourseId || undefined,
             tournamentCourseName: course.name,
@@ -203,6 +213,7 @@ export async function orchestrateTournamentCourseMapping(
             matchedBy,
             verified: false,
           })
+          console.log(`[v0] END: mappingRepo.update(${tournament.id}) - outcome: ${updateResult.outcome}`)
 
           if (updateResult.outcome === "ok") {
             mappingsUpdated++
@@ -215,6 +226,7 @@ export async function orchestrateTournamentCourseMapping(
           }
         } else {
           // Create new mapping
+          console.log(`[v0] START: mappingRepo.create(${tournament.id})`)
           const createResult = await mappingRepo.create({
             tournamentId: tournament.id,
             sportsDataIoCourseId: undefined,
@@ -225,6 +237,7 @@ export async function orchestrateTournamentCourseMapping(
             matchedBy,
             verified: false,
           })
+          console.log(`[v0] END: mappingRepo.create(${tournament.id}) - outcome: ${createResult.outcome}`)
 
           if (createResult.outcome === "ok") {
             mappingRowsCreated++
@@ -272,6 +285,7 @@ export async function orchestrateTournamentCourseMapping(
     }
 
     // Step 3: Generate summary
+    console.log("[v0] LOOP COMPLETED - All tournament courses processed")
     const durationMs = Date.now() - startTime
     const ok = totalErrors === 0
 
