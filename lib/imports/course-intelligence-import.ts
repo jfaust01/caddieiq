@@ -97,9 +97,35 @@ export async function importCourseIntelligence(
   console.log(`[v0] Starting course intelligence import: ${jobId}`)
 
   try {
+    // [INSTRUMENTATION] Get all mappings (unfiltered) for diagnostics
+    console.log(`[v0] ===== IMPORT DIAGNOSTICS =====`)
+    const allMappingsResult = await prisma.tournamentCourseMapping.findMany()
+    console.log(`[v0] Total tournament_course_mappings in database: ${allMappingsResult.length}`)
+    if (allMappingsResult.length > 0) {
+      console.log(`[v0] First 5 mappings (all):`)
+      allMappingsResult.slice(0, 5).forEach((m, i) => {
+        console.log(`  [${i}] tournamentId=${m.tournamentId}, golfCourseId=${m.golfCourseApiCourseId}, verified=${m.verified}`)
+      })
+    }
+
+    // [INSTRUMENTATION] Show verified vs unverified breakdown
+    const verifiedCount = allMappingsResult.filter(m => m.verified === true).length
+    const unverifiedCount = allMappingsResult.filter(m => m.verified === false).length
+    console.log(`[v0] Breakdown: verified=${verifiedCount}, unverified=${unverifiedCount}`)
+
     // Get all verified mappings
     const mappingsResult = await mappingRepo.findVerified()
+    console.log(`[v0] After findVerified() filter: ${mappingsResult.records?.length ?? 0} records`)
+    if (mappingsResult.records && mappingsResult.records.length > 0) {
+      console.log(`[v0] First 5 verified mappings:`)
+      mappingsResult.records.slice(0, 5).forEach((m, i) => {
+        console.log(`  [${i}] tournamentId=${m.tournamentId}, golfCourseId=${m.golfCourseApiCourseId}, verified=${m.verified}`)
+      })
+    }
+    console.log(`[v0] ===== END DIAGNOSTICS =====`)
+
     if (mappingsResult.outcome !== "ok" || !mappingsResult.records || mappingsResult.records.length === 0) {
+      console.log(`[v0] EARLY RETURN: No verified mappings found`)
       const finishedAt = new Date()
       const durationMs = finishedAt.getTime() - startedAt.getTime()
       return {
