@@ -28,6 +28,7 @@ import { TournamentDfsLeaderboards } from '@/features/tournaments/components/tou
 import { FieldFitBoard } from '@/features/tournaments/components/field-fit-board'
 import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
 import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
+import { TournamentHealthWrapper } from '@/features/tournaments/components/tournament-health-wrapper'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
 import { courseService } from '@/features/courses/services/course-service'
 import {
@@ -165,6 +166,21 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
           </div>
         }
       />
+
+      {/* Tournament System Health */}
+      <CommandCenterWidget
+        id="tournament-health"
+        title="Tournament Health"
+        subtitle="Status of all data layers"
+        icon={<ListChecks className="size-4 text-primary" aria-hidden />}
+      >
+        <TournamentHealthWrapper
+          tournament={tournament}
+          weatherStatus={weather.status === 'available' ? 'available' : weather.statusReport.code === 'fetch-pending' ? 'pending' : 'unavailable'}
+          oddsStatus={odds.leaderboards && odds.leaderboards.length > 0 ? 'available' : 'pending'}
+          hasHistoricalResults={false}
+        />
+      </CommandCenterWidget>
 
       {/* Decision-first summary row */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
