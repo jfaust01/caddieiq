@@ -171,31 +171,7 @@ export class TournamentRepository extends BaseRepository {
 
   /** Find a tournament by internal id. Excludes soft-deleted rows. */
   async findById(id: string): Promise<TournamentRecord | null> {
-    const record = await this.prisma.tournament.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        tourId: true,
-        seasonId: true,
-        name: true,
-        officialName: true,
-        slug: true,
-        status: true,
-        format: true,
-        startDate: true,
-        endDate: true,
-        purse: true,
-        fedExPoints: true,
-        worldRankingPoints: true,
-        cutAfterRounds: true,
-        cutLine: true,
-        numberOfRounds: true,
-        active: true,
-        createdAt: true,
-        updatedAt: true,
-        deletedAt: true,
-      },
-    })
+    const record = await this.prisma.tournament.findUnique({ where: { id } })
     return record && record.deletedAt === null ? record : null
   }
 
@@ -547,31 +523,7 @@ export class TournamentRepository extends BaseRepository {
     const slug = tournament.slug
 
     try {
-      const existing = await this.prisma.tournament.findUnique({
-        where: { slug },
-        select: {
-          id: true,
-          tourId: true,
-          seasonId: true,
-          name: true,
-          officialName: true,
-          slug: true,
-          status: true,
-          format: true,
-          startDate: true,
-          endDate: true,
-          purse: true,
-          fedExPoints: true,
-          worldRankingPoints: true,
-          cutAfterRounds: true,
-          cutLine: true,
-          numberOfRounds: true,
-          active: true,
-          createdAt: true,
-          updatedAt: true,
-          deletedAt: true,
-        },
-      })
+      const existing = await this.prisma.tournament.findUnique({ where: { slug } })
 
       if (existing) {
         const record = await this.prisma.tournament.update({
@@ -690,8 +642,15 @@ function scalarFields(tournament: Tournament) {
     endDate: tournament.endDate,
     // `purse` is `Decimal?` in the schema; Prisma accepts number | string | null.
     purse: tournament.purse,
+    fedExPoints: tournament.fedExPoints,
+    worldRankingPoints: tournament.worldRankingPoints,
+    cutAfterRounds: tournament.cutAfterRounds,
+    cutLine: tournament.cutLine,
+    numberOfRounds: tournament.numberOfRounds,
+    active: tournament.active,
     // Store the SportsDataIO tournament ID for leaderboard/results fetching
     externalId: tournament.externalRef?.externalId,
+    deletedAt: tournament.deletedAt,
   }
 }
 
