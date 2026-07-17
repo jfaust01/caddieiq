@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
+import { getWorld } from "workflow/runtime"
 
+/**
+ * Get the status of the tournament mapping workflow using Workflow SDK.
+ * Queries the World API to get the state of the most recent mapping workflow run.
+ */
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
@@ -13,61 +17,68 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get total tournament courses that need mapping
-    const totalTournamentCourses = await prisma.tournamentCourse.count({
-      where: {
-        tournament: { active: true },
-        hostCourse: true,
-      },
+    // Get the World API to query workflow state
+    const world = await getWorld()
+
+    // Get the most recent tournament mapping workflow run
+    const { data: runs } = await world.runs.list({
+      pagination: { cursor: undefined },
+      resolveData: "none", // We only need status, not full data
     })
 
-    // Get mapping statistics
-    const completedMappings = await prisma.tournamentCourseMapping.count()
+    // Find the most recent mapping workflow run
+    const mappingRun = runs?.find(run => 
+      run.name?.includes("tournamentMappingWorkflow")
+    )
 
-    // Determine status
-    let status: "pending" | "in_progress" | "completed" = "pending"
-    if (completedMappings > 0 && completedMappings < totalTournamentCourses) {
-      status = "in_progress"
-    } else if (completedMappings >= totalTournamentCourses && totalTournamentCourses > 0) {
-      status = "completed"
+    if (!mappingRun) {
+      // No mapping workflow has run yet
+      return NextResponse.json({
+        data: {
+          status: "pending",
+          total: 0,
+          completed: 0,
+          percentage: 0,
+          message: "No mapping workflow has been started yet",
+        },
+      })
     }
 
-    // Get detailed stats by match confidence
-    const stats = await prisma.tournamentCourseMapping.aggregate({
-      _count: true,
-      _avg: {
-        matchConfidence: true,
-      },
-    })
+    // Get the workflow run output to get progress data
+    const fullRun = await world.runs.get(mappingRun.id, { resolveData: "all" })
 
-    const verified = await prisma.tournamentCourseMapping.count({
-      where: { verified: true },
-    })
+    // Extract the MappingProgress result from the workflow
+    const progress = fullRun.output || {
+      total: 0,
+      completed: 0,
+      created: 0,
+      updated: 0,
+      reused: 0,
+      errors: 0,
+      status: "in_progress",
+      message: "Workflow in progress",
+    }
 
-    const highConfidence = await prisma.tournamentCourseMapping.count({
-      where: {
-        verified: false,
-        matchConfidence: { gte: 0.8 },
-      },
-    })
-
-    const unmatched = await prisma.tournamentCourseMapping.count({
-      where: {
-        matchConfidence: { lt: 0.5 },
-      },
-    })
+    // Map workflow status to frontend status
+    const status = fullRun.status === "completed" 
+      ? "completed"
+      : fullRun.status === "failed"
+      ? "completed" // Show as completed even if there were errors
+      : "in_progress"
 
     return NextResponse.json({
-      status,
-      total: totalTournamentCourses,
-      completed: completedMappings,
-      percentage: totalTournamentCourses > 0 ? Math.round((completedMappings / totalTournamentCourses) * 100) : 0,
-      breakdown: {
-        verified,
-        highConfidence,
-        unmatched,
+      data: {
+        status,
+        total: progress.total,
+        completed: progress.completed,
+        percentage: progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0,
+        created: progress.created,
+        updated: progress.updated,
+        reused: progress.reused,
+        errors: progress.errors,
+        message: progress.message,
+        runId: mappingRun.id,
       },
-      avgConfidence: stats._avg.matchConfidence ? Math.round(stats._avg.matchConfidence * 100) / 100 : 0,
     })
   } catch (error) {
     console.error("[v0] Tournament mapping status error:", error)

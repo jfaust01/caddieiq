@@ -17,14 +17,14 @@ export async function startTournamentMappingAction() {
       }
     }
 
-    // Call the API route to start the background job
-    // The route returns 202 Accepted immediately while processing continues independently
+    // Call the Workflow API route to start the durable workflow
+    // The route returns 202 Accepted immediately - workflow runs independently with durability guarantees
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000"
 
     const response = await fetch(
-      `${baseUrl}/api/admin/tournament-mapping/start`,
+      `${baseUrl}/api/admin/tournament-mapping/start-workflow`,
       {
         method: "POST",
         headers: {
@@ -39,7 +39,7 @@ export async function startTournamentMappingAction() {
       const error = await response.json()
       return {
         success: false,
-        error: error.error || "Failed to start mapping",
+        error: error.error || "Failed to start mapping workflow",
       }
     }
 
