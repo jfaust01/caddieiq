@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 
 import { auth } from "@/lib/auth"
 import { runTournamentImport } from "@/lib/imports"
+import { orchestrateTournamentCourseMapping } from "@/lib/imports/tournament-course-mapping-orchestration"
 
 /**
  * Tournament import trigger.
@@ -31,11 +32,22 @@ export async function POST(): Promise<NextResponse> {
   try {
     const result = await runTournamentImport()
 
+    // After tournament import succeeds, orchestrate tournament → course mapping
+    let mappingOrchestration = null
+    if (result.failed === 0) {
+      console.log("[v0] Tournament import succeeded. Starting course mapping orchestration...")
+      mappingOrchestration = await orchestrateTournamentCourseMapping()
+    } else {
+      console.log(
+        `[v0] Tournament import had ${result.failed} failures. Skipping course mapping orchestration.`,
+      )
+    }
+
     // A run "succeeds" as an operation even when some rows fail; surface both
     // the headline counts and any per-item errors so the caller can act.
     return NextResponse.json(
       {
-        ok: result.failed === 0,
+        ok: result.failed === 0 && (mappingOrchestration?.ok ?? true),
         summary: {
           provider: result.provider,
           entity: result.entity,
@@ -50,6 +62,20 @@ export async function POST(): Promise<NextResponse> {
           warnings: result.warnings,
           qualityScoreAverage: result.qualityScoreAverage,
         },
+        mapping: mappingOrchestration
+          ? {
+              tournamentsScanned: mappingOrchestration.tournamentsScanned,
+              tournamentsWithCourses: mappingOrchestration.tournamentsWithCourses,
+              mappingsCreated: mappingOrchestration.mappingsCreated,
+              mappingsUpdated: mappingOrchestration.mappingsUpdated,
+              mappingsReused: mappingOrchestration.mappingsReused,
+              unmatchedCourses: mappingOrchestration.unmatchedCourses,
+              skippedTournaments: mappingOrchestration.skippedTournaments,
+              totalErrors: mappingOrchestration.totalErrors,
+              durationMs: mappingOrchestration.durationMs,
+              summary: mappingOrchestration.summary,
+            }
+          : null,
         errors: result.errors.slice(0, 50),
       },
       { status: 200 },
