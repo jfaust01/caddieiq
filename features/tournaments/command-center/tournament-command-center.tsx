@@ -18,6 +18,7 @@ import { TournamentField } from '@/features/tournaments/components/tournament-fi
 import { FieldRankingLeaders } from '@/features/tournaments/components/field-ranking-leaders'
 import { TournamentCourseIntelligence } from '@/features/tournaments/components/tournament-course-intelligence'
 import { TournamentCourseAnalytics } from '@/features/tournaments/components/tournament-course-analytics'
+import { TournamentCourseOverviewWrapper } from '@/features/tournaments/components/tournament-course-overview-wrapper'
 import { TournamentWeatherIntelligence } from '@/features/tournaments/components/tournament-weather-intelligence'
 import { TournamentOddsIntelligence } from '@/features/tournaments/components/tournament-odds-intelligence'
 import { TournamentSkillLeaderboards } from '@/features/tournaments/components/tournament-skill-leaderboards'
@@ -230,6 +231,16 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
           icon={<LineChart className="size-4 text-primary" aria-hidden />}
         >
           <TournamentDfsLeaderboards field={dfsField} />
+        </CommandCenterWidget>
+      ) : null}
+
+      {courseRef ? (
+        <CommandCenterWidget
+          id="course-overview"
+          title="Course Overview"
+          icon={<Compass className="size-4 text-primary" aria-hidden />}
+        >
+          <TournamentCourseOverviewWrapper tournamentId={tournament.id} />
         </CommandCenterWidget>
       ) : null}
 
