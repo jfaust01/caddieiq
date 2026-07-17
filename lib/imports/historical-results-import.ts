@@ -126,10 +126,17 @@ export async function importHistoricalResults(
       })
 
       if (!roundRes.ok) {
-        const errMsg = `Failed to create round for ${tournament.name}: ${roundRes.error}`
-        summary.notes.push(errMsg)
-        console.log(`[v0] ERROR: ${errMsg}`)
-        continue
+        const errorContext = {
+          tournamentId: tournament.id,
+          tournamentName: tournament.name,
+          repository: "RoundRepository",
+          operation: "upsert",
+          outcome: roundRes.outcome,
+          error: roundRes.error || "Unknown error",
+        }
+        const errMsg = `PERSISTENCE VERIFICATION FAILED: Round upsert for ${tournament.name} (${tournament.id}) failed verification. Error: ${roundRes.error}`
+        console.error(`[v0] ${errMsg}`)
+        throw new Error(errMsg)
       }
 
       summary.roundsCreated++
@@ -205,29 +212,49 @@ export async function importHistoricalResults(
       if (playerRoundInputs.length > 0) {
         const bulkRes = await playerRoundRepo.bulkUpsert(playerRoundInputs)
         
-        // All counts are based on verified database persistence, not intended writes
-        summary.playerRoundsCreated += bulkRes.created
-        summary.playerRoundsUpdated += bulkRes.updated
-        summary.playerRoundsFailed += bulkRes.failed
-
         console.log(
           `[v0] Bulk upsert complete: created=${bulkRes.created}, updated=${bulkRes.updated}, failed=${bulkRes.failed}`,
         )
 
-        if (bulkRes.errors.length > 0) {
-          const errMsg = `${bulkRes.errors.length} errors importing player rounds for ${tournament.name}`
-          summary.notes.push(errMsg)
-          console.log(`[v0] Errors: ${errMsg}`)
-          bulkRes.errors.forEach((err, i) => {
-            console.log(`[v0]   Error ${i + 1}: ${err}`)
-          })
+        // FAIL FAST: If any player rounds failed persistence verification, terminate the import
+        if (bulkRes.failed > 0) {
+          const errorContext = {
+            tournamentId: tournament.id,
+            tournamentName: tournament.name,
+            repository: "PlayerRoundRepository",
+            operation: "bulkUpsert",
+            failedCount: bulkRes.failed,
+            errors: bulkRes.errors,
+          }
+          const errMsg = `PERSISTENCE VERIFICATION FAILED: ${bulkRes.failed} player rounds failed verification for ${tournament.name} (${tournament.id}). Errors: ${bulkRes.errors.join("; ")}`
+          console.error(`[v0] ${errMsg}`)
+          throw new Error(errMsg)
         }
+
+        // All counts are based on verified database persistence, not intended writes
+        summary.playerRoundsCreated += bulkRes.created
+        summary.playerRoundsUpdated += bulkRes.updated
+
+        console.log(
+          `[v0] All player rounds persisted successfully`,
+        )
       } else {
         console.log(`[v0] No player rounds to upsert (all players failed to match)`)
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       const stack = error instanceof Error ? error.stack : ""
+      
+      // If this is a persistence verification failure, re-throw immediately to fail fast
+      if (message.includes("PERSISTENCE VERIFICATION FAILED")) {
+        console.error(`[v0] TERMINATING IMPORT: ${message}`)
+        if (stack) {
+          console.error(`[v0] Stack trace: ${stack}`)
+        }
+        throw error
+      }
+      
+      // For other errors, log and continue
       const logMsg = `Exception importing ${tournament.name}: ${message}`
       summary.notes.push(logMsg)
       console.error(`[v0] ${logMsg}`)
@@ -237,6 +264,9 @@ export async function importHistoricalResults(
     }
   }
 
+  // IMPORT COMPLETED SUCCESSFULLY - All repositories verified persistence
+  console.log(`\n[v0] Import loop completed successfully - all tournaments processed`)
+  
   // PHASE 6: Final verification - Query database to confirm actual persistence
   console.log(`\n[v0] ═════════════════════════════════════════════════════════════`)
   console.log(`[v0] PHASE 6: Final Persistence Verification`)
@@ -275,7 +305,7 @@ export async function importHistoricalResults(
     console.error(`[v0]    Difference: ${Math.abs(actualPlayerRoundCount - (summary.playerRoundsCreated + summary.playerRoundsUpdated))}`)
   }
 
-  console.log(`\n[v0] Historical Results Import Summary:`)
+  console.log(`\n[v0] ✅ Historical Results Import Summary (VERIFIED PERSISTENCE):`)
   console.log(
     `[v0]   Tournaments considered: ${summary.tournamentsConsidered}`,
   )
@@ -285,7 +315,6 @@ export async function importHistoricalResults(
   console.log(`[v0]   Rounds created: ${summary.roundsCreated}`)
   console.log(`[v0]   Player rounds created: ${summary.playerRoundsCreated}`)
   console.log(`[v0]   Player rounds updated: ${summary.playerRoundsUpdated}`)
-  console.log(`[v0]   Player rounds failed: ${summary.playerRoundsFailed}`)
   if (summary.notes.length > 0) {
     console.log(`[v0]   Notes (${summary.notes.length}):`)
     summary.notes.forEach((note, i) => {
