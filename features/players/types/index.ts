@@ -12,6 +12,7 @@
 import type { CourseFitResult } from '@/lib/analytics/course-fit'
 import type { PlayerAnalytics } from '@/lib/analytics/types'
 import type { PlayerRankingProfile } from '@/lib/rankings/types'
+import type { CourseAnalytics } from '@/lib/generated/prisma/client'
 
 /** Professional tours a player can compete on. */
 export type Tour = 'PGA' | 'DP_WORLD' | 'LIV' | 'KORN_FERRY' | 'CHAMPIONS'
@@ -234,6 +235,13 @@ export interface PlayerDetail extends Player {
    * articles linked to this player.
    */
   news: PlayerNewsItem[]
+  /**
+   * Historically-derived analytics for the upcoming tournament's host course.
+   * Null when the player has no upcoming verified event or when analytics have
+   * not yet been calculated for that course. Fetched in parallel with Course Fit
+   * from the same resolved course id — never fabricated.
+   */
+  courseAnalytics: CourseAnalytics | null
 }
 
 /**

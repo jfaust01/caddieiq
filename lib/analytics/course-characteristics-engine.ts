@@ -145,6 +145,69 @@ function deriveScramblingDifficulty(_par: number | null, _yardage: number | null
 }
 
 /**
+ * Estimate elevation change from course metrics and altitude data.
+ *
+ * Without detailed elevation profiles, we use a heuristic approach:
+ * - If the course is at high altitude (>5,000 ft), assume moderate rolling terrain.
+ * - If the course is links-style (coastal, long, open), assume relatively flat.
+ * - Par-4 courses are typically routed with moderate elevation changes for strategic interest.
+ * - Very short courses (par-3s, executive) tend to be flatter.
+ * - Very long courses (par-5+, 7,000+ yds) often have significant elevation for drama.
+ *
+ * Returns 0–10 scale where:
+ *   0 = completely flat
+ *   5 = moderate rolling terrain
+ *   10 = extreme elevation changes
+ *
+ * If no data is available, returns null per "Unknown stays unknown" principle.
+ */
+function deriveElevationChange(
+  altitudeFt: number | null,
+  par: number | null,
+  yardage: number | null,
+): number | null {
+  // Without altitude or par, we cannot make a reliable estimate.
+  if (altitudeFt === null && par === null) {
+    return null
+  }
+
+  let score = 0
+
+  // High-altitude courses (mountain courses) typically have rolling/steep terrain.
+  if (altitudeFt !== null) {
+    if (altitudeFt >= 7000) {
+      score += 7 // Mountain courses (e.g. Vail, Denver area) are hilly/steep.
+    } else if (altitudeFt >= 5000) {
+      score += 4 // Mid-elevation courses have moderate rolls.
+    } else if (altitudeFt >= 2000) {
+      score += 2 // Slight elevation influence at moderate altitudes.
+    }
+    // Below 2,000 ft: minimal assumption from altitude alone.
+  }
+
+  // Par-based heuristic: longer courses and par-5 layouts often feature elevation drama.
+  if (par !== null && yardage !== null) {
+    // Par-5 courses (longest holes) are often used for dramatic elevation plays.
+    const avgHoleLength = yardage / par
+    if (avgHoleLength > 180) {
+      // Championship-length course: likely to feature elevation.
+      score += 2
+    } else if (avgHoleLength > 140) {
+      // Standard-length course: moderate elevation.
+      score += 1
+    }
+    // Shorter courses (executive, par-3): tend toward flatter routing.
+  }
+
+  // Only return null if we couldn't calculate anything at all.
+  // If score is 0, return 0 (truly flat). Otherwise return the calculated score capped at 10.
+  if (score === 0 && altitudeFt === null && par === null) {
+    return null
+  }
+  return Math.min(score, 10)
+}
+
+/**
  * Generate a complete CourseCharacteristic record for a course. Only populates
  * fields we can reliably derive from verified course data; all others are null.
  *
@@ -167,7 +230,7 @@ export function enrichCourseCharacteristics(course: CourseRecord): DerivedCharac
     treeLined: null, // No source data.
     waterHazards: null, // No source data (requires course design details).
     windExposure: null, // No source data (geography-derived, requires detailed mapping).
-    elevationChange: course.altitudeFt ? 0 : null, // altitudeFt is base elevation only; no range data.
+    elevationChange: deriveElevationChange(course.altitudeFt, course.par, course.yardage),
     walkingDifficulty: deriveWalkingDifficulty(course.par, course.yardage),
     drivingImportance: driving,
     approachImportance: approach,

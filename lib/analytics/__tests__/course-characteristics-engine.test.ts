@@ -102,16 +102,41 @@ describe("enrichCourseCharacteristics", () => {
   })
 
   describe("elevation handling", () => {
-    it("returns 0 when altitudeFt is present", () => {
+    it("estimates elevation from altitude (Denver-area course)", () => {
       const course = baseCourse({ altitudeFt: 5280 })
       const result = enrichCourseCharacteristics(course)
+      // 5,280 ft is mid-elevation; returns 4 for moderate rolling terrain
+      expect(result.elevationChange).toBe(4)
+    })
+
+    it("estimates elevation from high altitude (mountain course)", () => {
+      const course = baseCourse({ altitudeFt: 7500, par: 72, yardage: 13000 })
+      const result = enrichCourseCharacteristics(course)
+      // >7,000 ft = 7 (hilly/steep) + 2 (ultra-championship 180+ yd/hole) = 9
+      // 13000 / 72 = 180.5 yd/hole (> 180)
+      expect(result.elevationChange).toBe(9)
+    })
+
+    it("returns null when no data available", () => {
+      const course = baseCourse({ altitudeFt: null, par: null, yardage: null })
+      const result = enrichCourseCharacteristics(course)
+      expect(result.elevationChange).toBeNull()
+    })
+
+    it("estimates elevation from par/yardage alone", () => {
+      // Par 72, championship length (100+ yds/hole) at low altitude
+      const course = baseCourse({ altitudeFt: null, par: 72, yardage: 7200 })
+      const result = enrichCourseCharacteristics(course)
+      // 100 yd/hole is NOT > 140, so score stays 0 (flat course assumption)
       expect(result.elevationChange).toBe(0)
     })
 
-    it("returns null when altitudeFt is missing", () => {
-      const course = baseCourse({ altitudeFt: null })
+    it("estimates elevation from par/yardage for long course", () => {
+      // Par 72, ultra-championship length (150+ yds/hole) at low altitude
+      const course = baseCourse({ altitudeFt: null, par: 72, yardage: 10800 })
       const result = enrichCourseCharacteristics(course)
-      expect(result.elevationChange).toBeNull()
+      // 150 yd/hole is > 140, so score = 0 + 1 = 1
+      expect(result.elevationChange).toBe(1)
     })
   })
 

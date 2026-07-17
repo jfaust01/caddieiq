@@ -7,6 +7,7 @@ import { HealthOverview } from "./health-overview"
 import { ImportPipelines } from "./import-pipelines"
 import { KpiCards } from "./kpi-cards"
 import { RebuildCourseIntelligence } from "./rebuild-course-intelligence"
+import { RebuildCourseAnalytics } from "./rebuild-course-analytics"
 import { SystemWarningsPanel } from "./system-warnings-panel"
 import { TableHealthPanel } from "./table-health-panel"
 
@@ -66,13 +67,16 @@ export function DatabaseHealthView({ report }: { report: DatabaseHealthReport })
         <ImportPipelines pipelines={report.pipelines} />
       </section>
 
-      {/* Rebuild Course Intelligence */}
+      {/* Administrative Actions */}
       <section aria-label="Administrative actions" className="flex flex-col gap-4">
         <SectionHeader
           title="Administrative Actions"
           description="Tools for rebuilding and maintaining platform intelligence"
         />
-        <RebuildCourseIntelligence />
+        <div className="grid gap-4 md:grid-cols-2">
+          <RebuildCourseIntelligence />
+          <RebuildCourseAnalytics />
+        </div>
       </section>
 
       <p className="text-xs text-muted-foreground">

@@ -15,6 +15,7 @@ import { BettingPanel } from './betting-panel'
 import { DfsPanel } from './dfs-panel'
 import { InsightPanel } from './insight-panel'
 import { EmptyAnalyticsState } from './empty-analytics-state'
+import { PlayerCourseAnalyticsPanel } from './player-course-analytics-panel'
 import { cn } from '@/lib/utils'
 
 interface PlayerProfileV2ViewProps {
@@ -250,6 +251,18 @@ export function PlayerProfileV2View({ player }: PlayerProfileV2ViewProps) {
             headers={['Course', 'Best Finish', 'Rounds', 'Avg Score']}
             rows={courseHistoryRows}
             subtitle="Historical results at courses the player has played"
+          />
+        </div>
+      )}
+
+      {/* COURSE INTELLIGENCE */}
+      {player.upcoming?.course && (
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold">Course Intelligence</h2>
+          <PlayerCourseAnalyticsPanel
+            analytics={player.courseAnalytics}
+            course={player.upcoming.course}
+            playerAnalytics={player.analytics}
           />
         </div>
       )}

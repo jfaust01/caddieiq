@@ -505,6 +505,7 @@ model Course {
 
   // Relations
   characteristic    CourseCharacteristic?
+  analytics         CourseAnalytics?
   tournamentCourses TournamentCourse[]
 
   @@index([slug])
@@ -532,6 +533,67 @@ enum CoordinateConfidence {
   ESTIMATED
   /// No coordinate resolved yet. The geolocation engine's work queue.
   UNKNOWN
+}
+
+/// Historically-derived analytics for a course, calculated automatically from
+/// imported SportsDataIO tournament, round, and hole-level data. Updated every
+/// time the Rebuild Course Analytics action runs. Confidence increases as more
+/// seasons of data are imported — the engine never fabricates values.
+model CourseAnalytics {
+  id                  String   @id @default(cuid())
+  courseId            String   @unique
+
+  /// 1–10 normalized difficulty (higher = harder). Derived from avg score to par,
+  /// winning score, cut line, and missed-cut rate across all historical events.
+  difficultyRating    Float?
+  /// 1–10 normalized birdie opportunity (higher = more birdies). From historical birdie %.
+  birdieRating        Float?
+  /// 1–10 normalized bogey risk (higher = more bogeys). From historical bogey %.
+  bogeyRating         Float?
+  /// 1–10 normalized scoring variance across the field (higher = more volatile).
+  volatilityRating    Float?
+  /// Estimated DraftKings scoring potential (1–10). Composite of birdies, eagles,
+  /// bogeys, and volatility, calibrated to DK point values.
+  dfsScoringRating    Float?
+
+  /// Average winning score (total strokes) across all historical tournaments.
+  averageWinningScore Float?
+  /// Average cut line score across all historical tournaments.
+  averageCutScore     Float?
+  /// Average score to par of the full field at completion.
+  averageScoreToPar   Float?
+
+  /// Par-3 difficulty rating (1–10). Null until hole-level data is available.
+  par3Difficulty      Float?
+  /// Par-4 difficulty rating (1–10). Null until hole-level data is available.
+  par4Difficulty      Float?
+  /// Par-5 difficulty rating (1–10). Null until hole-level data is available.
+  par5Difficulty      Float?
+
+  /// Birdie rate as a decimal fraction (0–1) across all historical rounds.
+  historicalBirdieRate Float?
+  /// Bogey rate as a decimal fraction (0–1) across all historical rounds.
+  historicalBogeyRate  Float?
+  /// Eagle rate as a decimal fraction (0–1) across all historical rounds.
+  historicalEagleRate  Float?
+
+  /// Machine-derived classification (e.g. "Birdie Fest", "Major Championship Test").
+  courseArchetype     String?
+
+  /// 0–1 confidence score. Increases with sample size. Never fabricated.
+  confidenceScore     Float?
+  /// Number of tournament rounds used in this calculation.
+  sampleSize          Int      @default(0)
+
+  lastCalculated      DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@map("course_analytics")
 }
 
 /// Analytics describing how a course plays. One record per course.
