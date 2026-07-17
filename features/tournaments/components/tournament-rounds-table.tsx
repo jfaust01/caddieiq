@@ -27,12 +27,18 @@ export function TournamentRoundsTable({
   onImportClick,
   isLoading = false,
 }: TournamentRoundsTableProps) {
+  // DEBUG: Component render log
+  console.log('[v0] TournamentRoundsTable rendering')
+  console.log('[v0]   rounds.length:', rounds.length)
+  console.log('[v0]   rounds:', rounds)
+
   const [activeRound, setActiveRound] = useState<number | 'overall'>(0)
   const [sortBy, setSortBy] = useState<'position' | 'score' | 'player'>('position')
   const [sortAsc, setSortAsc] = useState(true)
 
   // Handle empty state
   if (rounds.length === 0) {
+    console.log('[v0] TournamentRoundsTable showing empty state')
     return (
       <Card className="border-dashed">
           <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
