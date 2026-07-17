@@ -68,6 +68,7 @@ export async function orchestrateTournamentCourseMapping(
     "[v0] ║  TOURNAMENT → COURSE MAPPING ORCHESTRATION STARTING      ║",
   )
   console.log("[v0] ╚════════════════════════════════════════════════════════╝")
+  console.log("[v0] Tournament Course Orchestration Started")
 
   try {
     // Step 1: Query all tournaments with host courses
