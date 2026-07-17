@@ -244,6 +244,15 @@ export async function orchestrateTournamentCourseMapping(
           // Create new mapping
           if (isMissingTournament) {
             console.log(`[v0] *** [${tournament.name}] TAKING CREATE PATH`)
+            // Diagnostic: compare direct Prisma query with repository method
+            const directPrismaResult = await prisma.tournamentCourseMapping.findUnique({
+              where: {
+                tournamentId: tournament.id,
+              },
+            })
+            console.log(`[v0] *** [${tournament.name}] DIAGNOSTIC: direct Prisma findUnique result:`, directPrismaResult)
+            console.log(`[v0] *** [${tournament.name}] DIAGNOSTIC: repository findByTournamentId result:`, existingMapping)
+            console.log(`[v0] *** [${tournament.name}] DIAGNOSTIC: Results match? ${JSON.stringify(directPrismaResult) === JSON.stringify(existingMapping)}`)
           }
           console.log(`[v0] START: mappingRepo.create(${tournament.id})`)
           const createResult = await mappingRepo.create({
