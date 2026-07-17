@@ -69,24 +69,14 @@ export class PlayerRoundRepository extends BaseRepository {
 
       if (!verified) {
         const err = toRepositoryError(`Persistence verification failed: record not found in database after upsert`)
-        this.log({
-          level: "error",
-          stage: "persist",
-          message: `Failed to upsert player round for field ${input.tournamentFieldId}`,
-          error: err,
-        })
+        this.logger.failure(`field-${input.tournamentFieldId}`, err.message, { code: err.code })
         return fail(err)
       }
 
       return ok(verified, "inserted")
     } catch (error) {
       const repoError = toRepositoryError(error)
-      this.log({
-        level: "error",
-        stage: "persist",
-        message: `Failed to upsert player round for field ${input.tournamentFieldId}`,
-        error: repoError,
-      })
+      this.logger.failure(`field-${input.tournamentFieldId}`, repoError.message, { code: repoError.code })
       return fail(repoError)
     }
   }

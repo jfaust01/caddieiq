@@ -56,8 +56,8 @@ export async function importHistoricalResults(
 ): Promise<HistoricalResultsImportSummary> {
   const prov = provider || SportsDataProvider.fromEnv()
   const logger = createImportLogger()
-  const roundRepo = getRoundRepository(prisma, logger)
-  const playerRoundRepo = getPlayerRoundRepository(prisma, logger)
+  const roundRepo = getRoundRepository(prisma)
+  const playerRoundRepo = getPlayerRoundRepository(prisma)
 
   let firstApiError: { tournament: string; localId: string; externalId: string; message: string; error: unknown } | null = null
 
@@ -327,7 +327,7 @@ export async function importHistoricalResults(
   console.log(`[v0] Querying actual database state using same Prisma client...`)
   const actualRoundCount = await prisma.round.count()
   const actualPlayerRoundCount = await prisma.playerRound.count()
-  const actualRoundStatsCount = await (prisma.roundStatistics?.count?.() ?? Promise.resolve(0))
+  const actualRoundStatsCount = await (prisma.roundStatistic?.count?.() ?? Promise.resolve(0))
   
   console.log(`\n[v0] ACTUAL DATABASE STATE (verified by Prisma.count()):`)
   console.log(`[v0]   rounds: ${actualRoundCount}`)
