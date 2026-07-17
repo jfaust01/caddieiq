@@ -22,6 +22,10 @@ export interface CourseImportSummary extends ImportSummary {
   teeBoxesUpdated: number
   teeBoxesSkipped: number
 
+  // Course Intelligence metrics
+  intelligenceAnalyzed?: number
+  intelligenceGenerated?: number
+
   // Performance metric (courses per second, rounded to 1 decimal)
   throughputPerSecond: number
 }

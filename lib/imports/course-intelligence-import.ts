@@ -9,6 +9,7 @@ import { getTournamentCourseMappingRepository } from "@/lib/repositories/tournam
 import { getImportRunRepository } from "@/lib/repositories/import-run-repository"
 import type { CourseImportSummary } from "@/lib/types/course-import"
 import { generateImportJobId } from "@/lib/types/import-summary"
+import { persistCourseIntelligence } from "@/lib/course-intelligence/service"
 
 /**
  * Validate course data has required fields and structure.
@@ -84,6 +85,8 @@ export async function importCourseIntelligence(
   let teeBoxesImported = 0
   let teeBoxesUpdated = 0
   let teeBoxesSkipped = 0
+  let intelligenceAnalyzed = 0
+  let intelligenceGenerated = 0
   const warnings: string[] = []
   const failures: string[] = []
 
@@ -111,6 +114,8 @@ export async function importCourseIntelligence(
         teeBoxesImported: 0,
         teeBoxesUpdated: 0,
         teeBoxesSkipped: 0,
+        intelligenceAnalyzed: 0,
+        intelligenceGenerated: 0,
         throughputPerSecond: 0,
         warnings,
         failures,
@@ -232,6 +237,21 @@ export async function importCourseIntelligence(
             }
           }
 
+          // Generate and persist course intelligence
+          try {
+            intelligenceAnalyzed++
+            const intelligence = await persistCourseIntelligence(courseId)
+            if (intelligence) {
+              intelligenceGenerated++
+              console.log(`[v0] Course intelligence generated for ${courseDetail.name}`)
+            } else {
+              warnings.push(`Could not generate intelligence for ${courseDetail.name}`)
+            }
+          } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error)
+            warnings.push(`Failed to generate intelligence for ${courseDetail.name}: ${errorMsg}`)
+          }
+
           // Update mapping last synced time
           const updateResult = await mappingRepo.update(mapping.tournamentId, {
             lastSyncedAt: new Date(),
@@ -297,6 +317,8 @@ export async function importCourseIntelligence(
       teeBoxesImported,
       teeBoxesUpdated,
       teeBoxesSkipped,
+      intelligenceAnalyzed,
+      intelligenceGenerated,
       throughputPerSecond,
       warnings,
       failures,
@@ -327,6 +349,8 @@ export async function importCourseIntelligence(
       teeBoxesImported,
       teeBoxesUpdated,
       teeBoxesSkipped,
+      intelligenceAnalyzed,
+      intelligenceGenerated,
       throughputPerSecond,
       warnings,
       failures,
