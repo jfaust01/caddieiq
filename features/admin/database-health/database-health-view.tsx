@@ -9,6 +9,7 @@ import { KpiCards } from "./kpi-cards"
 import { RebuildCourseIntelligence } from "./rebuild-course-intelligence"
 import { RebuildCourseAnalytics } from "./rebuild-course-analytics"
 import { ImportHistoricalResults } from "./import-historical-results"
+import { ImportGolfCourse } from "./import-golf-course"
 import { SystemWarningsPanel } from "./system-warnings-panel"
 import { TableHealthPanel } from "./table-health-panel"
 
@@ -76,6 +77,7 @@ export function DatabaseHealthView({ report }: { report: DatabaseHealthReport })
         />
         <div className="grid gap-4">
           <ImportHistoricalResults />
+          <ImportGolfCourse />
           <div className="grid gap-4 md:grid-cols-2">
             <RebuildCourseIntelligence />
             <RebuildCourseAnalytics />
