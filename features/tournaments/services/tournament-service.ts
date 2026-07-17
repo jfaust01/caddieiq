@@ -128,6 +128,12 @@ const getRoundsByTournamentCached = cache(
     // Fetch all rounds for the tournament
     const rounds = await roundRepo.getByTournament(tournamentId)
 
+    console.log('[v0] ════════════════════════════════════════════════════')
+    console.log('[v0] getRoundsByTournament service')
+    console.log('[v0] tournamentId:', tournamentId)
+    console.log('[v0] roundRepo.getByTournament returned:', rounds.length, 'rounds')
+    console.log('[v0] ════════════════════════════════════════════════════')
+
     if (rounds.length === 0) {
       return []
     }
@@ -137,6 +143,7 @@ const getRoundsByTournamentCached = cache(
 
     for (const round of rounds) {
       const playerRounds = await playerRoundRepo.getByRound(round.id)
+      console.log(`[v0] Round ${round.roundNumber}: playerRoundRepo.getByRound returned ${playerRounds.length} player rounds`)
 
       // Build player score entries with name resolution
       const playerScores: PlayerScoreEntry[] = playerRounds
@@ -165,8 +172,13 @@ const getRoundsByTournamentCached = cache(
         status: round.status,
         playerScores,
       })
+      console.log(`[v0] Round ${round.roundNumber}: built ${playerScores.length} player score entries (filtered from ${playerRounds.length})`)
     }
 
+    console.log('[v0] getRoundsByTournament returning:', result.length, 'rounds with scores')
+    result.forEach((r) => {
+      console.log(`[v0]   Round ${r.roundNumber}: ${r.playerScores.length} player scores`)
+    })
     return result
   },
 )

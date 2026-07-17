@@ -313,12 +313,18 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         </CommandCenterWidget>
       ) : null}
 
-      {/* DEBUG: Log before rendering */}
+      {/* DEBUG: Detailed logging before rendering */}
       {(() => {
-        console.log('[v0] ABOUT TO RENDER TournamentRoundsTable')
-        console.log('[v0]   rounds:', rounds)
-        console.log('[v0]   rounds.length:', rounds?.length ?? 'undefined')
-        console.log('[v0]   isAdmin:', isAdmin)
+        console.log('[v0] ════════════════════════════════════════════════════')
+        console.log('[v0] BEFORE TournamentRoundsTable render')
+        console.log('[v0] rounds.length:', rounds?.length ?? 'undefined')
+        
+        if (rounds && rounds.length > 0) {
+          rounds.forEach((round, idx) => {
+            console.log(`[v0] Round ${idx}: id=${round.roundId}, number=${round.roundNumber}, playerScores=${round.playerScores?.length ?? 0}`)
+          })
+        }
+        console.log('[v0] ════════════════════════════════════════════════════')
         return null
       })()}
 
