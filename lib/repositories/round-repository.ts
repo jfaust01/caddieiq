@@ -56,6 +56,10 @@ export class RoundRepository extends BaseRepository {
 
   /**
    * Bulk upsert rounds by (tournamentId, roundNumber).
+   * 
+   * After each upsert, queries the database to verify the record persisted
+   * and determine if it was created or updated. Counts are based on verified
+   * database state, not intended writes.
    */
   async bulkUpsert(inputs: RoundPersistInput[]): Promise<BulkRepositoryResult<RoundRecord>> {
     const result: BulkRepositoryResult<RoundRecord> = {
@@ -67,17 +71,42 @@ export class RoundRepository extends BaseRepository {
     }
 
     for (const input of inputs) {
-      const res = await this.upsert(input)
-      if (res.ok) {
-        // Check if it was created or updated by a second query
-        const existing = await this.prisma.round.findUnique({
+      try {
+        // Get the existing record BEFORE upsert to track created vs updated
+        const beforeUpsert = await this.prisma.round.findUnique({
           where: { tournamentId_roundNumber: { tournamentId: input.tournamentId, roundNumber: input.roundNumber } },
         })
-        result.records.push(existing!)
-        result.updated++
-      } else {
+
+        // Perform the upsert
+        const res = await this.upsert(input)
+        if (!res.ok) {
+          result.failed++
+          result.errors.push(res.error)
+          continue
+        }
+
+        // Verify the record persisted by querying it again
+        const afterUpsert = await this.prisma.round.findUnique({
+          where: { tournamentId_roundNumber: { tournamentId: input.tournamentId, roundNumber: input.roundNumber } },
+        })
+
+        if (!afterUpsert) {
+          result.failed++
+          result.errors.push("Record not found after upsert - persistence verification failed")
+          continue
+        }
+
+        result.records.push(afterUpsert)
+        
+        // Determine if created or updated based on pre/post state
+        if (beforeUpsert) {
+          result.updated++
+        } else {
+          result.created++
+        }
+      } catch (error) {
         result.failed++
-        result.errors.push(res.error)
+        result.errors.push(toRepositoryError(error))
       }
     }
 

@@ -204,12 +204,17 @@ export async function importHistoricalResults(
       )
       if (playerRoundInputs.length > 0) {
         const bulkRes = await playerRoundRepo.bulkUpsert(playerRoundInputs)
+        
+        // All counts are based on verified database persistence, not intended writes
         summary.playerRoundsCreated += bulkRes.created
         summary.playerRoundsUpdated += bulkRes.updated
         summary.playerRoundsFailed += bulkRes.failed
 
         console.log(
-          `[v0] Bulk upsert complete: created=${bulkRes.created}, updated=${bulkRes.updated}, failed=${bulkRes.failed}`,
+          `[v0] Bulk upsert complete (verified persistence): created=${bulkRes.created}, updated=${bulkRes.updated}, failed=${bulkRes.failed}`,
+        )
+        console.log(
+          `[v0] Records persisted in database: ${bulkRes.records.length} verified entries`,
         )
 
         if (bulkRes.errors.length > 0) {

@@ -71,6 +71,10 @@ export class PlayerRoundRepository extends BaseRepository {
 
   /**
    * Bulk upsert player rounds by (roundId, tournamentFieldId).
+   *
+   * After each upsert, queries the database to verify the record persisted
+   * and determine if it was created or updated. Counts are based on verified
+   * database state, not intended writes.
    */
   async bulkUpsert(inputs: ResolvedPlayerRound[]): Promise<BulkRepositoryResult<PlayerRoundRecord>> {
     const result: BulkRepositoryResult<PlayerRoundRecord> = {
@@ -82,13 +86,42 @@ export class PlayerRoundRepository extends BaseRepository {
     }
 
     for (const input of inputs) {
-      const res = await this.upsert(input)
-      if (res.ok) {
-        result.records.push(res.data)
-        result.updated++
-      } else {
+      try {
+        // Get the existing record BEFORE upsert to track created vs updated
+        const beforeUpsert = await this.prisma.playerRound.findUnique({
+          where: { roundId_tournamentFieldId: { roundId: input.roundId, tournamentFieldId: input.tournamentFieldId } },
+        })
+
+        // Perform the upsert
+        const res = await this.upsert(input)
+        if (!res.ok) {
+          result.failed++
+          result.errors.push(res.error)
+          continue
+        }
+
+        // Verify the record persisted by querying it again
+        const afterUpsert = await this.prisma.playerRound.findUnique({
+          where: { roundId_tournamentFieldId: { roundId: input.roundId, tournamentFieldId: input.tournamentFieldId } },
+        })
+
+        if (!afterUpsert) {
+          result.failed++
+          result.errors.push("Record not found after upsert - persistence verification failed")
+          continue
+        }
+
+        result.records.push(afterUpsert)
+
+        // Determine if created or updated based on pre/post state
+        if (beforeUpsert) {
+          result.updated++
+        } else {
+          result.created++
+        }
+      } catch (error) {
         result.failed++
-        result.errors.push(res.error)
+        result.errors.push(toRepositoryError(error))
       }
     }
 
