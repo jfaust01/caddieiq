@@ -54,12 +54,12 @@ export async function importTournamentsAction() {
         },
         mapping: mappingOrchestration
           ? {
-              tournamentsScanned: mappingOrchestration.tournamentsScanned,
-              tournamentsWithCourses: mappingOrchestration.tournamentsWithCourses,
-              mappingsCreated: mappingOrchestration.mappingsCreated,
+              tournamentCoursesProcessed: mappingOrchestration.tournamentCoursesProcessed,
+              mappingRowsCreated: mappingOrchestration.mappingRowsCreated,
+              golfCourseApiMatchesFound: mappingOrchestration.golfCourseApiMatchesFound,
+              golfCourseApiUnmatched: mappingOrchestration.golfCourseApiUnmatched,
               mappingsUpdated: mappingOrchestration.mappingsUpdated,
               mappingsReused: mappingOrchestration.mappingsReused,
-              unmatchedCourses: mappingOrchestration.unmatchedCourses,
               skippedTournaments: mappingOrchestration.skippedTournaments,
               totalErrors: mappingOrchestration.totalErrors,
               durationMs: mappingOrchestration.durationMs,
