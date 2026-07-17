@@ -146,7 +146,7 @@ export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[]
               variant="outline"
               size="sm"
               className="mt-auto gap-2"
-              disabled={pipeline.status === "Error" || loadingPipeline !== null}
+              disabled={loadingPipeline !== null}
               onClick={() => handleRefresh(pipeline.name)}
               title="Trigger manual import for this pipeline"
             >
