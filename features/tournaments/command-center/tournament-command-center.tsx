@@ -1,4 +1,4 @@
-import { ChevronLeft, Cloud, Compass, LineChart, ListChecks, Newspaper, Sparkles, Star, Target, TrendingUp, Trophy } from 'lucide-react'
+import { BarChart3, ChevronLeft, Cloud, Compass, LineChart, ListChecks, Newspaper, Sparkles, Star, Target, TrendingUp, Trophy } from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,7 @@ import { TournamentDetailTabs } from '@/features/tournaments/components/tourname
 import { TournamentField } from '@/features/tournaments/components/tournament-field'
 import { FieldRankingLeaders } from '@/features/tournaments/components/field-ranking-leaders'
 import { TournamentCourseIntelligence } from '@/features/tournaments/components/tournament-course-intelligence'
+import { TournamentCourseAnalytics } from '@/features/tournaments/components/tournament-course-analytics'
 import { TournamentWeatherIntelligence } from '@/features/tournaments/components/tournament-weather-intelligence'
 import { TournamentOddsIntelligence } from '@/features/tournaments/components/tournament-odds-intelligence'
 import { TournamentSkillLeaderboards } from '@/features/tournaments/components/tournament-skill-leaderboards'
@@ -77,6 +78,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
     fieldReport,
     fieldNews,
     courseProfile,
+    courseAnalytics,
     fitBoard,
     weather,
     odds,
@@ -88,6 +90,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
     tournamentService.getFieldReport(tournament.id),
     tournamentService.getFieldNews(tournament.id),
     courseRef ? courseService.getCourseIntelligence(courseRef.id) : Promise.resolve(null),
+    courseRef ? courseService.getCourseAnalyticsById(courseRef.id) : Promise.resolve(null),
     tournamentService.getFieldFitBoard(tournament.id),
     tournamentService.getWeatherIntelligence(tournament.id),
     tournamentService.getOddsIntelligence(tournament.id),
@@ -238,6 +241,19 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         >
           <TournamentCourseIntelligence
             profile={courseProfile}
+            course={{ id: courseRef.id, name: courseRef.name }}
+          />
+        </CommandCenterWidget>
+      ) : null}
+
+      {courseRef && courseAnalytics ? (
+        <CommandCenterWidget
+          id="course-analytics"
+          title="Course Analytics"
+          icon={<BarChart3 className="size-4 text-primary" aria-hidden />}
+        >
+          <TournamentCourseAnalytics
+            analytics={courseAnalytics}
             course={{ id: courseRef.id, name: courseRef.name }}
           />
         </CommandCenterWidget>

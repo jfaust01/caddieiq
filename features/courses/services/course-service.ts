@@ -16,6 +16,8 @@ import { cache } from 'react'
 import type { CourseDetail, CourseSummary } from '@/features/courses/types'
 import type { CourseProfile } from '@/lib/domain/course'
 import { getCourseRepository } from '@/lib/repositories'
+import { getCourseAnalytics, type CourseAnalyticsResult } from '@/lib/services/course-analytics-service'
+import type { CourseAnalytics } from '@/lib/generated/prisma/client'
 
 import { mapCourseDetail } from './course-mapper'
 import { buildProfileFromRow } from './course-intelligence'
@@ -75,6 +77,16 @@ const getCourseIntelligenceCached = cache(
   },
 )
 
+/**
+ * Fetch the stored CourseAnalytics record for a course id, or `null` when
+ * analytics have not yet been calculated. React-cached per request.
+ */
+const getCourseAnalyticsCached = cache(
+  async (id: string): Promise<CourseAnalytics | null> => {
+    return getCourseAnalytics(id)
+  },
+)
+
 export const courseService = {
   /**
    * Return a single course by id for the detail page, or `null` when no such
@@ -93,6 +105,15 @@ export const courseService = {
    */
   getCourseIntelligence(id: string): Promise<CourseProfile | null> {
     return getCourseIntelligenceCached(id)
+  },
+
+  /**
+   * Return the stored CourseAnalytics record for a course id, or `null` when
+   * analytics have not yet been calculated for this course. Used by the
+   * Tournament hub and player profile to show historical analytics.
+   */
+  getCourseAnalyticsById(id: string): Promise<CourseAnalytics | null> {
+    return getCourseAnalyticsCached(id)
   },
 
   /**

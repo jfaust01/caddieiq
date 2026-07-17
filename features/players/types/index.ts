@@ -12,6 +12,7 @@
 import type { CourseFitResult } from '@/lib/analytics/course-fit'
 import type { PlayerAnalytics } from '@/lib/analytics/types'
 import type { PlayerRankingProfile } from '@/lib/rankings/types'
+import type { CourseAnalytics } from '@/lib/generated/prisma/client'
 
 /** Professional tours a player can compete on. */
 export type Tour = 'PGA' | 'DP_WORLD' | 'LIV' | 'KORN_FERRY' | 'CHAMPIONS'
