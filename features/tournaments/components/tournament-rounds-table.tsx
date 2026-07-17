@@ -5,7 +5,6 @@ import { ChevronDown, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
 import type { RoundWithScores, PlayerScoreEntry } from '@/features/tournaments/services/tournament-service'
 
@@ -28,20 +27,19 @@ export function TournamentRoundsTable({
   onImportClick,
   isLoading = false,
 }: TournamentRoundsTableProps) {
+  // DEBUG: Component render log
+  console.log('[v0] TournamentRoundsTable rendering')
+  console.log('[v0]   rounds.length:', rounds.length)
+
   const [activeRound, setActiveRound] = useState<number | 'overall'>(0)
   const [sortBy, setSortBy] = useState<'position' | 'score' | 'player'>('position')
   const [sortAsc, setSortAsc] = useState(true)
 
   // Handle empty state
   if (rounds.length === 0) {
+    console.log('[v0] TournamentRoundsTable showing empty state')
     return (
-      <section className="flex flex-col gap-4">
-        <SectionHeader
-          as="h3"
-          title="Round Scoring"
-          description="Scoring results from completed tournament rounds"
-        />
-        <Card className="border-dashed">
+      <Card className="border-dashed">
           <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
             <AlertCircle className="size-8 text-muted-foreground" aria-hidden />
             <div className="flex flex-col gap-1">
@@ -63,7 +61,6 @@ export function TournamentRoundsTable({
             )}
           </div>
         </Card>
-      </section>
     )
   }
 
@@ -85,6 +82,13 @@ export function TournamentRoundsTable({
         }
       : rounds.find((r) => r.roundNumber === activeRound)
 
+  // DEBUG: Log activeRound data
+  console.log('[v0] ════════════════════════════════════════════════════')
+  console.log('[v0] INSIDE TournamentRoundsTable')
+  console.log('[v0] activeRound:', activeRound)
+  console.log('[v0] currentRound.playerScores.length:', currentRound?.playerScores?.length ?? 'currentRound is null')
+  console.log('[v0] ════════════════════════════════════════════════════')
+
   if (!currentRound) {
     return null
   }
@@ -93,13 +97,7 @@ export function TournamentRoundsTable({
   const sortedScores = sortScores(currentRound.playerScores, sortBy, sortAsc)
 
   return (
-    <section className="flex flex-col gap-4">
-      <SectionHeader
-        as="h3"
-        title="Round Scoring"
-        description="Scoring results from completed tournament rounds"
-      />
-
+    <div className="flex flex-col gap-4">
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto border-b border-border pb-0">
         {tabs.map((tab) => (
@@ -173,7 +171,7 @@ export function TournamentRoundsTable({
           </tbody>
         </table>
       </div>
-    </section>
+    </div>
   )
 }
 
