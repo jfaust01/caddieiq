@@ -710,4 +710,125 @@ export const tournamentService = {
 
     return takeaways.slice(0, 6)
   },
+
+  /**
+   * Generate skill importance explanations with confidence levels.
+   * Returns object with driving, irons, short game, putting, course management skills
+   * each with a band (low/medium/high) and explanation.
+   */
+  getSkillImportanceExplanations(profile: typeof import('@/lib/domain/course').CourseProfile | null): Record<string, { band: string; explanation: string }> {
+    if (!profile) {
+      return {
+        driving: { band: 'medium', explanation: 'Data unavailable' },
+        irons: { band: 'medium', explanation: 'Data unavailable' },
+        shortGame: { band: 'medium', explanation: 'Data unavailable' },
+        putting: { band: 'medium', explanation: 'Data unavailable' },
+        courseManagement: { band: 'medium', explanation: 'Data unavailable' },
+      }
+    }
+
+    return {
+      driving: {
+        band: profile.avgYardage > 7200 ? 'high' : profile.avgYardage < 6500 ? 'low' : 'medium',
+        explanation: profile.avgYardage > 7200 
+          ? 'Distance off the tee is critical on this ultra-long layout. Bombers gain a significant advantage.'
+          : profile.avgYardage < 6500
+          ? 'Distance is less important than accuracy and precision. Consistent ball strikers thrive here.'
+          : 'Balanced importance of both distance and accuracy throughout the round.',
+      },
+      irons: {
+        band: profile.fairwayWidth === 'narrow' || profile.fairwayWidth === 'very_narrow' ? 'high' : 'medium',
+        explanation: profile.fairwayWidth === 'narrow' || profile.fairwayWidth === 'very_narrow'
+          ? 'Tight fairways demand precise iron play. Poor approach shots result in difficult recoveries.'
+          : 'Solid iron play helps but is not as critical as other skills on this course.',
+      },
+      shortGame: {
+        band: profile.avgGreenSize === 'small' || profile.avgGreenSize === 'tiny' ? 'high' : 'medium',
+        explanation: profile.avgGreenSize === 'small' || profile.avgGreenSize === 'tiny'
+          ? 'Small greens punish approach misses severely. Elite chippers and wedge players gain significant strokes.'
+          : 'Short game proficiency is important but not the primary differentiator.',
+      },
+      putting: {
+        band: profile.greenSpeed === 'high' || profile.greenSpeed === 'very_high' ? 'high' : 'medium',
+        explanation: profile.greenSpeed === 'high' || profile.greenSpeed === 'very_high'
+          ? 'Fast greens require expert touch and reading. Elite putters can dominate scoring.'
+          : 'Putting skill is important but greens are relatively forgiving for speed control.',
+      },
+      courseManagement: {
+        band: profile.windExposure === 'high' || profile.elevationChange > 200 ? 'high' : 'medium',
+        explanation: profile.windExposure === 'high' || profile.elevationChange > 200
+          ? 'Weather conditions and elevation changes are highly variable. Smart club selection and course strategy matter greatly.'
+          : 'Course management is a supporting skill; other factors are more impactful.',
+      },
+    }
+  },
+
+  /**
+   * Generate a strategic one-paragraph summary of why this course matters for DFS.
+   * Explains how the course characteristics translate to player selection strategy.
+   */
+  generateStrategySummary(profile: typeof import('@/lib/domain/course').CourseProfile | null, courseName: string): string {
+    if (!profile) {
+      return `Limited course data available for ${courseName}. Review player recent form and course history.`
+    }
+
+    const key = profile.avgYardage > 7200 ? 'length' : profile.fairwayWidth === 'narrow' ? 'accuracy' : profile.avgGreenSize === 'small' ? 'precision' : 'balance'
+
+    const strategies: Record<string, string> = {
+      length: `${courseName} is an ultra-long test that favors distance-based players and bombers off the tee. Target golfers with strong recent form in long-course conditions and proven accuracy in driving. Avoid short hitters unless they have elite short game skills to compensate. The length also means scoring will be lower, so stack multiple proven scorers.`,
+      accuracy: `${courseName} demands directional precision with tight fairways and punishing rough. Build your lineup around accurate drivers and consistent ball strikers who minimize mistakes. Distance becomes secondary to accuracy here—value precision over power. Consider stacking proven performers who excel in accuracy-focused courses.`,
+      precision: `${courseName} features small greens that severely punish approach misses. Prioritize players with elite approach play and short game proficiency. Look for golfers on hot streaks with strong GIR statistics and scoring averages. The small greens level the playing field—even mid-tier golfers can capitalize on good approach shots.`,
+      balance: `${courseName} presents a balanced test where multiple skills are important in equal measure. Build a diverse lineup featuring distance, accuracy, and short game. Look for well-rounded players with consistent all-around statistics rather than specialists. This course rewards consistency and punishes volatility—fade high-variance plays.`,
+    }
+
+    return strategies[key] || strategies.balance
+  },
+
+  /**
+   * Generate player archetypes for best fits and potential fades.
+   * Returns { bestFits: string[], potentialFades: string[] } with explanations.
+   */
+  generatePlayerArchetypes(profile: typeof import('@/lib/domain/course').CourseProfile | null): { bestFits: Array<{ name: string; why: string }>; potentialFades: Array<{ name: string; why: string }> } {
+    if (!profile) {
+      return {
+        bestFits: [{ name: 'Balanced Players', why: 'Data unavailable for detailed analysis' }],
+        potentialFades: [],
+      }
+    }
+
+    const bestFits: Array<{ name: string; why: string }> = []
+    const potentialFades: Array<{ name: string; why: string }> = []
+
+    // Length-based archetypes
+    if (profile.avgYardage > 7200) {
+      bestFits.push({ name: 'Long Hitters with Accuracy', why: 'Ultra-long course rewards distance without sacrificing control' })
+      potentialFades.push({ name: 'Short Hitters', why: 'Length becomes a significant disadvantage on 7,400+ yard courses' })
+    } else if (profile.avgYardage < 6500) {
+      bestFits.push({ name: 'Precision Ball Strikers', why: 'Shorter courses emphasize accuracy over pure distance' })
+      potentialFades.push({ name: 'Pure Bombers', why: 'Distance is a wasted advantage when the course is relatively short' })
+    }
+
+    // Accuracy-based archetypes
+    if (profile.fairwayWidth === 'narrow' || profile.fairwayWidth === 'very_narrow') {
+      bestFits.push({ name: 'Directionally Accurate Drivers', why: 'Tight fairways heavily punish wild tee shots' })
+      potentialFades.push({ name: 'Aggressive Risk-Takers', why: 'Missing fairways on narrow layouts leads to severe penalties' })
+    }
+
+    // Greens-based archetypes
+    if (profile.avgGreenSize === 'small' || profile.avgGreenSize === 'tiny') {
+      bestFits.push({ name: 'Elite Approach Players', why: 'Small greens reward precise approach play and punish misses' })
+      bestFits.push({ name: 'Short Game Specialists', why: 'Chipping and wedge play become critical with limited target areas' })
+      potentialFades.push({ name: 'Inconsistent Approach Players', why: 'Poor ball striking is amplified when greens are tiny' })
+    } else {
+      bestFits.push({ name: 'Elite Putters', why: 'Larger greens provide more room for putting skill to shine' })
+    }
+
+    // Wind/elevation archetypes
+    if (profile.windExposure === 'high' || profile.elevationChange > 200) {
+      bestFits.push({ name: 'Course Management Masters', why: 'Variable conditions reward smart club selection and strategy' })
+      potentialFades.push({ name: 'Wind-Sensitive Players', why: 'High-wind or elevation variance penalizes inconsistent ball striking' })
+    }
+
+    return { bestFits, potentialFades }
+  },
 }
