@@ -21,6 +21,7 @@ import { TournamentCourseAnalytics } from '@/features/tournaments/components/tou
 import { TournamentCourseOverviewWrapper } from '@/features/tournaments/components/tournament-course-overview-wrapper'
 import { TournamentCourseIntelligenceWrapper } from '@/features/tournaments/components/tournament-course-intelligence-wrapper'
 import { TournamentCourseInsightsWrapper } from '@/features/tournaments/components/tournament-course-insights-wrapper'
+import { CourseIntelligenceHub } from '@/features/tournaments/components/course-intelligence-hub'
 import { TournamentWeatherIntelligence } from '@/features/tournaments/components/tournament-weather-intelligence'
 import { TournamentOddsIntelligence } from '@/features/tournaments/components/tournament-odds-intelligence'
 import { TournamentSkillLeaderboards } from '@/features/tournaments/components/tournament-skill-leaderboards'
@@ -279,6 +280,21 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
           icon={<Sparkles className="size-4 text-primary" aria-hidden />}
         >
           <TournamentCourseIntelligenceWrapper tournamentId={tournament.id} />
+        </CommandCenterWidget>
+      ) : null}
+
+      {courseRef && courseProfile ? (
+        <CommandCenterWidget
+          id="course-intelligence-premium"
+          title="Premium Course Intelligence"
+          subtitle="Deep-dive analytics: difficulty, skill importance, player archetypes"
+          icon={<Sparkles className="size-4 text-primary" aria-hidden />}
+        >
+          <CourseIntelligenceHub
+            courseId={courseRef.id}
+            courseName={courseRef.name}
+            profile={courseProfile}
+          />
         </CommandCenterWidget>
       ) : null}
 

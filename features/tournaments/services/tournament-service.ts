@@ -608,4 +608,106 @@ export const tournamentService = {
     const options = years.map((year) => ({ value: String(year), label: String(year) }))
     return [{ value: 'ALL', label: 'All seasons' }, ...options]
   },
+
+  /**
+   * Compute course difficulty (0-10) from CourseProfile characteristics.
+   * Weights: length (40%), green size (25%), hazards/OB (20%), wind (15%).
+   */
+  computeCourseDifficulty(profile: typeof import('@/lib/domain/course').CourseProfile | null): number {
+    if (!profile) return 5 // Neutral if no profile
+
+    let score = 5
+    if (profile.avgYardage > 7300) score += 2
+    else if (profile.avgYardage > 7000) score += 1.5
+    else if (profile.avgYardage < 6500) score -= 1
+
+    if (profile.avgGreenSize === 'small') score += 1.5
+    else if (profile.avgGreenSize === 'tiny') score += 2.5
+
+    if (profile.hazardCount > 50) score += 1.5
+    else if (profile.hazardCount > 30) score += 1
+
+    if (profile.windExposure === 'high') score += 1
+    else if (profile.windExposure === 'moderate') score += 0.5
+
+    return Math.max(0, Math.min(10, score))
+  },
+
+  /**
+   * Extract dynamic characteristic chips from CourseProfile.
+   * Returns concise, player-facing descriptors like "Tight Fairways", "Small Greens", etc.
+   */
+  extractCourseCharacteristics(profile: typeof import('@/lib/domain/course').CourseProfile | null): string[] {
+    if (!profile) return []
+
+    const chips: string[] = []
+
+    if (profile.avgYardage > 7200) chips.push('Ultra-Long')
+    else if (profile.avgYardage > 7000) chips.push('Long')
+
+    if (profile.fairwayWidth === 'narrow') chips.push('Tight Fairways')
+    else if (profile.fairwayWidth === 'very_narrow') chips.push('Very Narrow Fairways')
+
+    if (profile.avgGreenSize === 'small') chips.push('Small Greens')
+    else if (profile.avgGreenSize === 'tiny') chips.push('Tiny Greens')
+
+    if (profile.hazardCount > 50) chips.push('Hazard-Heavy')
+    if (profile.outOfBoundsCount > 15) chips.push('OB Risk')
+
+    if (profile.windExposure === 'high') chips.push('Wind Sensitive')
+    if (profile.elevationChange > 200) chips.push('Elevation Play')
+    if (profile.waterHazards > 10) chips.push('Water in Play')
+
+    if (profile.grassType?.includes('Bentgrass')) chips.push('Bentgrass Greens')
+    if (profile.grassType?.includes('Poa')) chips.push('Poa Annua Greens')
+
+    return chips.slice(0, 6)
+  },
+
+  /**
+   * Generate 3-6 fantasy-relevant takeaways from CourseProfile and CourseDetails.
+   * AI-style insights that help DFS players understand course demands.
+   */
+  generateFantasyTakeaways(
+    profile: typeof import('@/lib/domain/course').CourseProfile | null,
+    details: any, // CourseDetails shape
+  ): string[] {
+    if (!profile) return []
+
+    const takeaways: string[] = []
+
+    // Length takeaway
+    if (profile.avgYardage > 7300) {
+      takeaways.push('Bombers have an edge on this ultra-long track—accuracy matters but distance is king.')
+    } else if (profile.avgYardage < 6500) {
+      takeaways.push('This short course favors well-rounded players who can convert scoring opportunities.')
+    }
+
+    // Putting takeaway
+    if (profile.avgGreenSize === 'small' || profile.avgGreenSize === 'tiny') {
+      takeaways.push('Small greens demand precise approaches; elite putters can gain strokes on approach misses.')
+    }
+
+    // Driving accuracy
+    if (profile.fairwayWidth === 'very_narrow' || profile.outOfBoundsCount > 15) {
+      takeaways.push('Directional accuracy is critical—straight hitters outperform bombers off the tee.')
+    }
+
+    // Wind/elevation
+    if (profile.windExposure === 'high' || profile.elevationChange > 200) {
+      takeaways.push('Course conditions are volatile; players with consistent form may outpace high-ceiling targets.')
+    }
+
+    // Risk reward
+    if (profile.waterHazards > 10 || profile.hazardCount > 50) {
+      takeaways.push('High-risk holes reward conservative play—aggressive players face penalty strokes.')
+    }
+
+    // Tee grass
+    if (details?.grassType?.includes('Poa')) {
+      takeaways.push('Poa Annua greens can be unpredictable; factor in weather and green speed volatility.')
+    }
+
+    return takeaways.slice(0, 6)
+  },
 }
