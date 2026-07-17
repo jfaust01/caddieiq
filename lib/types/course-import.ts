@@ -1,23 +1,27 @@
-/**
- * Strongly typed summary object returned by all course import operations.
- * Suitable for displaying in the Admin UI and audit logging.
- */
-export interface CourseImportSummary {
-  startedAt: Date
-  completedAt: Date
-  durationMs: number
+import type { ImportSummary } from "./import-summary"
 
+/**
+ * Course-specific import summary.
+ * Extends base ImportSummary with course data metrics.
+ */
+export interface CourseImportSummary extends ImportSummary {
+  // Course metrics
   coursesConsidered: number
   coursesMatched: number
   coursesImported: number
   coursesUpdated: number
+  coursesSkipped: number
 
+  // Hole metrics
   holesImported: number
   holesUpdated: number
+  holesSkipped: number
 
+  // Tee box metrics
   teeBoxesImported: number
   teeBoxesUpdated: number
+  teeBoxesSkipped: number
 
-  warnings: string[]
-  failures: string[]
+  // Performance metric (courses per second, rounded to 1 decimal)
+  throughputPerSecond: number
 }

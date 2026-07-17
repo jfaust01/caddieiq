@@ -19,10 +19,10 @@ export function ImportGolfCourse() {
 
     try {
       const res = await importCourseIntelligenceAction()
-      if (res.success && res.result) {
-        setResult({ summary: res.result })
+      if (res.summary) {
+        setResult({ summary: res.summary, error: res.success ? undefined : res.error })
       } else {
-        setResult({ error: res.error })
+        setResult({ error: res.error || 'Unknown error' })
       }
     } catch (error) {
       setResult({
@@ -102,37 +102,72 @@ export function ImportGolfCourse() {
                 <span className="font-semibold">Import Complete</span>
               </div>
 
-              {/* Summary Stats */}
-              <dl className="grid gap-2 text-xs">
+              {/* Job ID and Timing */}
+              <dl className="grid gap-1 text-xs">
                 <div className="flex justify-between">
-                  <span>Courses Considered:</span>
-                  <span className="font-mono font-semibold">{result.summary.coursesConsidered}</span>
+                  <span>Import Job:</span>
+                  <span className="font-mono font-semibold">{result.summary.jobId}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Courses Matched:</span>
-                  <span className="font-mono font-semibold">{result.summary.coursesMatched}</span>
+                  <span>Started:</span>
+                  <span className="font-mono text-xs">{result.summary.startedAt.toLocaleTimeString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Courses Imported:</span>
-                  <span className="font-mono font-semibold">{result.summary.coursesImported}</span>
+                  <span>Completed:</span>
+                  <span className="font-mono text-xs">{result.summary.completedAt.toLocaleTimeString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Courses Updated:</span>
-                  <span className="font-mono font-semibold">{result.summary.coursesUpdated}</span>
+                  <span>Duration:</span>
+                  <span className="font-mono font-semibold">{formatDuration(result.summary.durationMs)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Throughput:</span>
+                  <span className="font-mono font-semibold">{result.summary.throughputPerSecond} courses/sec</span>
                 </div>
               </dl>
+
+              {/* Courses Summary */}
+              <div className="border-t border-border pt-2">
+                <p className="mb-2 text-xs font-semibold">Courses</p>
+                <dl className="grid gap-1 text-xs">
+                  <div className="flex justify-between">
+                    <span>Considered:</span>
+                    <span className="font-mono font-semibold">{result.summary.coursesConsidered}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Matched:</span>
+                    <span className="font-mono font-semibold">{result.summary.coursesMatched}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Imported:</span>
+                    <span className="font-mono font-semibold">{result.summary.coursesImported}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Updated:</span>
+                    <span className="font-mono font-semibold">{result.summary.coursesUpdated}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Skipped:</span>
+                    <span className="font-mono font-semibold">{result.summary.coursesSkipped}</span>
+                  </div>
+                </dl>
+              </div>
 
               {/* Hole Records */}
               <div className="border-t border-border pt-2">
                 <p className="mb-2 text-xs font-semibold">Hole Records</p>
                 <dl className="grid gap-1 text-xs">
                   <div className="flex justify-between">
-                    <span>Holes Imported:</span>
+                    <span>Imported:</span>
                     <span className="font-mono font-semibold">{result.summary.holesImported}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Holes Updated:</span>
+                    <span>Updated:</span>
                     <span className="font-mono font-semibold">{result.summary.holesUpdated}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Skipped:</span>
+                    <span className="font-mono font-semibold">{result.summary.holesSkipped}</span>
                   </div>
                 </dl>
               </div>
@@ -142,22 +177,18 @@ export function ImportGolfCourse() {
                 <p className="mb-2 text-xs font-semibold">Tee Boxes</p>
                 <dl className="grid gap-1 text-xs">
                   <div className="flex justify-between">
-                    <span>Tee Boxes Imported:</span>
+                    <span>Imported:</span>
                     <span className="font-mono font-semibold">{result.summary.teeBoxesImported}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Tee Boxes Updated:</span>
+                    <span>Updated:</span>
                     <span className="font-mono font-semibold">{result.summary.teeBoxesUpdated}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span>Skipped:</span>
+                    <span className="font-mono font-semibold">{result.summary.teeBoxesSkipped}</span>
+                  </div>
                 </dl>
-              </div>
-
-              {/* Duration */}
-              <div className="border-t border-border pt-2">
-                <div className="flex justify-between text-xs">
-                  <span>Duration:</span>
-                  <span className="font-mono font-semibold">{formatDuration(result.summary.durationMs)}</span>
-                </div>
               </div>
 
               {/* Warnings */}

@@ -23,7 +23,11 @@ import type { CourseImportSummary } from "@/lib/types/course-import"
 export async function importCourseIntelligenceAction() {
   const isAdmin = await isCurrentUserAdmin()
   if (!isAdmin) {
-    return { success: false, error: "Unauthorized: Admin role required" }
+    return {
+      success: false,
+      error: "Unauthorized: Admin role required",
+      summary: undefined,
+    }
   }
 
   try {
@@ -31,11 +35,11 @@ export async function importCourseIntelligenceAction() {
     const client = new GolfCourseAPIClient()
 
     // Import course intelligence for all verified mappings
-    const result = await importCourseIntelligence(client)
+    const summary = await importCourseIntelligence(client)
 
     return {
       success: true,
-      result,
+      summary,
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error)
@@ -44,6 +48,7 @@ export async function importCourseIntelligenceAction() {
     return {
       success: false,
       error: errorMsg,
+      summary: undefined,
     }
   }
 }

@@ -8,6 +8,7 @@ import { getCourseTeeRepository, type CourseTeeInput } from "@/lib/repositories/
 import { getTournamentCourseMappingRepository } from "@/lib/repositories/tournament-course-mapping-repository"
 import { getImportRunRepository } from "@/lib/repositories/import-run-repository"
 import type { CourseImportSummary } from "@/lib/types/course-import"
+import { generateImportJobId } from "@/lib/types/import-summary"
 
 /**
  * Validate course data has required fields and structure.
@@ -63,6 +64,7 @@ export async function importCourseIntelligence(
   client?: GolfCourseAPIClient,
   prisma: PrismaClient = prismaClient,
 ): Promise<CourseImportSummary> {
+  const jobId = generateImportJobId("COURSE")
   const startedAt = new Date()
   const apiClient = client || new GolfCourseAPIClient()
   const mappingRepo = getTournamentCourseMappingRepository(prisma)
@@ -75,30 +77,41 @@ export async function importCourseIntelligence(
   let coursesMatched = 0
   let coursesImported = 0
   let coursesUpdated = 0
+  let coursesSkipped = 0
   let holesImported = 0
   let holesUpdated = 0
+  let holesSkipped = 0
   let teeBoxesImported = 0
   let teeBoxesUpdated = 0
+  let teeBoxesSkipped = 0
   const warnings: string[] = []
   const failures: string[] = []
+
+  console.log(`[v0] Starting course intelligence import: ${jobId}`)
 
   try {
     // Get all verified mappings
     const mappingsResult = await mappingRepo.findVerified()
     if (mappingsResult.outcome !== "ok" || !mappingsResult.records || mappingsResult.records.length === 0) {
       const finishedAt = new Date()
+      const durationMs = finishedAt.getTime() - startedAt.getTime()
       return {
+        jobId,
         startedAt,
         completedAt: finishedAt,
-        durationMs: finishedAt.getTime() - startedAt.getTime(),
+        durationMs,
         coursesConsidered: 0,
         coursesMatched: 0,
         coursesImported: 0,
         coursesUpdated: 0,
+        coursesSkipped: 0,
         holesImported: 0,
         holesUpdated: 0,
+        holesSkipped: 0,
         teeBoxesImported: 0,
         teeBoxesUpdated: 0,
+        teeBoxesSkipped: 0,
+        throughputPerSecond: 0,
         warnings,
         failures,
       }
@@ -238,6 +251,9 @@ export async function importCourseIntelligence(
 
     // Record import run
     const finishedAt = new Date()
+    const durationMs = finishedAt.getTime() - startedAt.getTime()
+    const throughputPerSecond = coursesMatched > 0 ? Number((coursesMatched / (durationMs / 1000)).toFixed(1)) : 0
+
     const importRunResult = await importRunRepo.create({
       entity: "course-intelligence",
       provider: "golfcourseapi",
@@ -246,30 +262,42 @@ export async function importCourseIntelligence(
       recordsSucceeded: coursesMatched - failures.length,
       recordsFailed: failures.length,
       notes: [
+        `Job ID: ${jobId}`,
         `Courses considered: ${coursesConsidered}`,
         `Courses matched: ${coursesMatched}`,
         `Courses imported: ${coursesImported}`,
         `Courses updated: ${coursesUpdated}`,
+        `Courses skipped: ${coursesSkipped}`,
         `Holes imported: ${holesImported}`,
         `Holes updated: ${holesUpdated}`,
+        `Holes skipped: ${holesSkipped}`,
         `Tee boxes imported: ${teeBoxesImported}`,
         `Tee boxes updated: ${teeBoxesUpdated}`,
+        `Tee boxes skipped: ${teeBoxesSkipped}`,
+        `Throughput: ${throughputPerSecond} courses/sec`,
         ...warnings,
       ].join("\n"),
     })
 
+    console.log(`[v0] Import ${jobId} completed: ${failures.length === 0 ? "success" : "partial failure"} (${throughputPerSecond} courses/sec)`)
+
     return {
+      jobId,
       startedAt,
       completedAt: finishedAt,
-      durationMs: finishedAt.getTime() - startedAt.getTime(),
+      durationMs,
       coursesConsidered,
       coursesMatched,
       coursesImported,
       coursesUpdated,
+      coursesSkipped,
       holesImported,
       holesUpdated,
+      holesSkipped,
       teeBoxesImported,
       teeBoxesUpdated,
+      teeBoxesSkipped,
+      throughputPerSecond,
       warnings,
       failures,
     }
@@ -278,18 +306,28 @@ export async function importCourseIntelligence(
     failures.push(`Import failed: ${errorMsg}`)
 
     const finishedAt = new Date()
+    const durationMs = finishedAt.getTime() - startedAt.getTime()
+    const throughputPerSecond = coursesMatched > 0 ? Number((coursesMatched / (durationMs / 1000)).toFixed(1)) : 0
+
+    console.error(`[v0] Import ${jobId} failed: ${errorMsg}`)
+
     return {
+      jobId,
       startedAt,
       completedAt: finishedAt,
-      durationMs: finishedAt.getTime() - startedAt.getTime(),
+      durationMs,
       coursesConsidered,
       coursesMatched,
       coursesImported,
       coursesUpdated,
+      coursesSkipped,
       holesImported,
       holesUpdated,
+      holesSkipped,
       teeBoxesImported,
       teeBoxesUpdated,
+      teeBoxesSkipped,
+      throughputPerSecond,
       warnings,
       failures,
     }
