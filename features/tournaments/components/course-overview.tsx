@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe, Phone, Cloud, Zap } from 'lucide-react'
+import { Globe, Phone } from 'lucide-react'
 import Link from 'next/link'
 
 import {
@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { SectionHeader } from '@/components/shared/section-header'
+import { HoleByHoleBreakdown } from './hole-by-hole-breakdown'
 import type { CourseDetails } from '@/lib/generated/prisma/client'
 import type { CourseHole as CourseHoleRecord } from '@/lib/generated/prisma/client'
 import type { CourseTee as CourseTeeRecord } from '@/lib/generated/prisma/client'
@@ -230,72 +231,48 @@ export function CourseOverview({ course, holes, tees }: CourseOverviewProps) {
       )}
 
       {/* Tee Boxes Table */}
-      {sortedTees.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <SectionHeader as="h3" title="Tee Boxes" />
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs font-semibold">Tee</TableHead>
-                  <TableHead className="text-xs font-semibold">Color</TableHead>
-                  <TableHead className="text-xs font-semibold">Gender</TableHead>
-                  <TableHead className="text-right text-xs font-semibold">Yardage</TableHead>
-                  <TableHead className="text-right text-xs font-semibold">Rating</TableHead>
-                  <TableHead className="text-right text-xs font-semibold">Slope</TableHead>
+      <div className="border-t border-border pt-4">
+        <SectionHeader title="Tee Boxes" description="Available tee sets" />
+        <div className="overflow-x-auto">
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tee</TableHead>
+                <TableHead>Color</TableHead>
+                <TableHead>Gender</TableHead>
+                <TableHead>Yardage</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Slope</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedTees.map((tee) => (
+                <TableRow key={tee.id}>
+                  <TableCell className="font-medium">{tee.teeName}</TableCell>
+                  <TableCell>{tee.teeColor || <Placeholder />}</TableCell>
+                  <TableCell>{tee.gender || <Placeholder />}</TableCell>
+                  <TableCell>{tee.yardage ? formatNumber(tee.yardage) : <Placeholder />}</TableCell>
+                  <TableCell>{tee.rating?.toFixed(1) ?? <Placeholder />}</TableCell>
+                  <TableCell>{tee.slope ?? <Placeholder />}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedTees.map((tee) => (
-                  <TableRow key={tee.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{tee.teeName}</TableCell>
-                    <TableCell className="text-sm">{tee.teeColor ?? '—'}</TableCell>
-                    <TableCell className="text-sm">{tee.gender ?? '—'}</TableCell>
-                    <TableCell className="text-right text-sm">
-                      {tee.yardage ? formatNumber(tee.yardage) : '—'}
-                    </TableCell>
-                    <TableCell className="text-right text-sm">
-                      {tee.rating?.toFixed(1) ?? '—'}
-                    </TableCell>
-                    <TableCell className="text-right text-sm">{tee.slope ?? '—'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </section>
-      )}
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
 
-      {/* Hole Summary Table */}
-      {holes.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <SectionHeader as="h3" title="Hole Summary" />
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs font-semibold">Hole</TableHead>
-                  <TableHead className="text-center text-xs font-semibold">Par</TableHead>
-                  <TableHead className="text-right text-xs font-semibold">Yardage</TableHead>
-                  <TableHead className="text-center text-xs font-semibold">HCP</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {holes.map((hole) => (
-                  <TableRow key={hole.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{hole.holeNumber}</TableCell>
-                    <TableCell className="text-center text-sm">{hole.par ?? '—'}</TableCell>
-                    <TableCell className="text-right text-sm">
-                      {hole.yardage ? formatNumber(hole.yardage) : '—'}
-                    </TableCell>
-                    <TableCell className="text-center text-sm">{hole.handicap ?? '—'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+      {/* Hole-by-Hole Breakdown */}
+      <div className="border-t border-border pt-4">
+        {holes && holes.length > 0 ? (
+          <HoleByHoleBreakdown holes={holes} />
+        ) : (
+          <div className="rounded-lg border border-border bg-card/50 p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              No hole information has been imported for this course.
+            </p>
           </div>
-        </section>
-      )}
+        )}
+      </div>
     </div>
   )
 }
