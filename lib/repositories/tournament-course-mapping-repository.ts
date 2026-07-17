@@ -9,8 +9,8 @@
 import type { PrismaClient, TournamentCourseMapping } from "@/lib/generated/prisma/client"
 
 import { BaseRepository, type RepositoryLogSink } from "./base-repository"
-import { fail, ok, type Result } from "@/lib/domain/result"
-import { toRepositoryError } from "@/lib/errors"
+import { fail, ok, type RepositoryResult } from "./repository-result"
+import { toRepositoryError } from "./errors"
 
 interface MappingInput {
   tournamentId: string
@@ -34,9 +34,9 @@ export class TournamentCourseMappingRepository extends BaseRepository {
   }
 
   /**
-   * Find a mapping by tournament ID.
+   * Find mapping by tournament ID.
    */
-  async findByTournamentId(tournamentId: string): Promise<Result<TournamentCourseMapping | null>> {
+  async findByTournamentId(tournamentId: string): Promise<RepositoryResult<TournamentCourseMapping | null>> {
     try {
       const mapping = await this.prisma.tournamentCourseMapping.findUnique({
         where: { tournamentId },
@@ -53,7 +53,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
    * Find mappings by GolfCourse API course ID.
    * Useful for finding all tournaments that map to a specific course.
    */
-  async findByGolfCourseApiId(golfCourseApiCourseId: number): Promise<Result<TournamentCourseMapping[]>> {
+  async findByGolfCourseApiId(golfCourseApiCourseId: number): Promise<RepositoryResult<TournamentCourseMapping[]>> {
     try {
       const mappings = await this.prisma.tournamentCourseMapping.findMany({
         where: { golfCourseApiCourseId },
@@ -71,7 +71,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
    * Find mappings by SportsDataIO course ID.
    * Useful for finding the mapped GolfCourse API course for a SportsDataIO course.
    */
-  async findBySportsDataIoCourseId(sportsDataIoCourseId: string): Promise<Result<TournamentCourseMapping[]>> {
+  async findBySportsDataIoCourseId(sportsDataIoCourseId: string): Promise<RepositoryResult<TournamentCourseMapping[]>> {
     try {
       const mappings = await this.prisma.tournamentCourseMapping.findMany({
         where: { sportsDataIoCourseId },
@@ -88,7 +88,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
   /**
    * Create a new mapping.
    */
-  async create(input: MappingInput): Promise<Result<TournamentCourseMapping>> {
+  async create(input: MappingInput): Promise<RepositoryResult<TournamentCourseMapping>> {
     try {
       const mapping = await this.prisma.tournamentCourseMapping.create({
         data: {
@@ -114,7 +114,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
   /**
    * Update an existing mapping.
    */
-  async update(tournamentId: string, input: Partial<MappingInput>): Promise<Result<TournamentCourseMapping>> {
+  async update(tournamentId: string, input: Partial<MappingInput>): Promise<RepositoryResult<TournamentCourseMapping>> {
     try {
       const mapping = await this.prisma.tournamentCourseMapping.update({
         where: { tournamentId },
@@ -142,7 +142,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
    * Upsert (create or update) a mapping.
    * Defaults to unverified if creating.
    */
-  async upsert(input: MappingInput): Promise<Result<TournamentCourseMapping>> {
+  async upsert(input: MappingInput): Promise<RepositoryResult<TournamentCourseMapping>> {
     try {
       const mapping = await this.prisma.tournamentCourseMapping.upsert({
         where: { tournamentId: input.tournamentId },
@@ -179,7 +179,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
   /**
    * Mark a mapping as verified by an admin.
    */
-  async verify(tournamentId: string): Promise<Result<TournamentCourseMapping>> {
+  async verify(tournamentId: string): Promise<RepositoryResult<TournamentCourseMapping>> {
     try {
       const mapping = await this.prisma.tournamentCourseMapping.update({
         where: { tournamentId },
@@ -196,7 +196,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
   /**
    * Delete a mapping.
    */
-  async delete(tournamentId: string): Promise<Result<void>> {
+  async delete(tournamentId: string): Promise<RepositoryResult<void>> {
     try {
       await this.prisma.tournamentCourseMapping.delete({
         where: { tournamentId },
@@ -212,7 +212,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
   /**
    * Find all unverified mappings (pending admin review).
    */
-  async findUnverified(limit = 100): Promise<Result<TournamentCourseMapping[]>> {
+  async findUnverified(limit = 100): Promise<RepositoryResult<TournamentCourseMapping[]>> {
     try {
       const mappings = await this.prisma.tournamentCourseMapping.findMany({
         where: { verified: false },
@@ -230,7 +230,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
   /**
    * Find all verified mappings (ready for import).
    */
-  async findVerified(): Promise<Result<TournamentCourseMapping[]>> {
+  async findVerified(): Promise<RepositoryResult<TournamentCourseMapping[]>> {
     try {
       const mappings = await this.prisma.tournamentCourseMapping.findMany({
         where: { verified: true },
