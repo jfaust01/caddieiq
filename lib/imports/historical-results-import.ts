@@ -112,8 +112,13 @@ export async function importHistoricalResults(
       try {
         leaderboardResp = await prov.getLeaderboard(String(tournament.externalId))
       } catch (apiError) {
-        // Capture first API error for debugging
+        // Capture first API error for debugging with full diagnostics
         if (!firstApiError) {
+          const errorDetails = (apiError as any)?.details ?? {}
+          const status = errorDetails.status ?? "unknown"
+          const endpoint = errorDetails.path ?? "/json/Leaderboard/[tournamentId]"
+          const responseBody = errorDetails.body ?? ""
+
           firstApiError = {
             tournament: tournament.name,
             localId: tournament.id,
@@ -121,12 +126,25 @@ export async function importHistoricalResults(
             message: apiError instanceof Error ? apiError.message : String(apiError),
             error: apiError,
           }
-          console.error(`[v0] FIRST API ERROR - Tournament: ${tournament.name}`)
-          console.error(`[v0]   Local ID: ${tournament.id}`)
-          console.error(`[v0]   External ID: ${tournament.externalId}`)
-          console.error(`[v0]   Error: ${firstApiError.message}`)
+
+          console.error(`[v0] ═════════════════════════════════════════════════════════════`)
+          console.error(`[v0] FIRST SPORTSDATAIO API ERROR - DETAILED DIAGNOSTICS`)
+          console.error(`[v0] ═════════════════════════════════════════════════════════════`)
+          console.error(`[v0] Tournament: ${tournament.name}`)
+          console.error(`[v0] Local Tournament ID: ${tournament.id}`)
+          console.error(`[v0] SportsDataIO Tournament ID: ${tournament.externalId}`)
+          console.error(`[v0] HTTP Status: ${status}`)
+          console.error(`[v0] Endpoint: GET ${endpoint}`)
+          if (responseBody) {
+            console.error(`[v0] Response Body (truncated): ${responseBody}`)
+          }
+          console.error(`[v0] Error Message: ${firstApiError.message}`)
+          console.error(`[v0] ═════════════════════════════════════════════════════════════`)
         }
-        const logMsg = `Leaderboard fetch failed for ${tournament.name}: ${apiError instanceof Error ? apiError.message : String(apiError)}`
+
+        const errorDetails = (apiError as any)?.details ?? {}
+        const status = errorDetails.status ?? "unknown"
+        const logMsg = `Leaderboard fetch failed for ${tournament.name} (SportsDataIO ID: ${tournament.externalId}, HTTP ${status}): ${apiError instanceof Error ? apiError.message : String(apiError)}`
         summary.notes.push(logMsg)
         console.error(`[v0] ${logMsg}`)
         continue
