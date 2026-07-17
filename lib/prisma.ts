@@ -27,10 +27,28 @@ function createPrismaClient() {
   }
 
   const adapter = new PrismaNeon({ connectionString })
-  return new PrismaClient({
+  const client = new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    log:
+      process.env.NODE_ENV === "development"
+        ? [
+            { emit: "event", level: "query" },
+            { emit: "stdout", level: "error" },
+            { emit: "stdout", level: "warn" },
+          ]
+        : ["error"],
   })
+
+  // Enable query logging in development to capture exact SQL statements
+  if (process.env.NODE_ENV === "development") {
+    client.$on("query", (e) => {
+      console.log("[v0] PRISMA SQL:", e.query)
+      console.log("[v0] PRISMA PARAMS:", e.params)
+      console.log("[v0] PRISMA DURATION:", e.duration, "ms")
+    })
+  }
+
+  return client
 }
 
 export const prisma = new Proxy({} as PrismaClient, {
