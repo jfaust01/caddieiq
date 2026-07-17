@@ -106,3 +106,9 @@ export {
   type ImportRunInput,
   type LatestEntityRun,
 } from "./import-run-repository"
+export { RoundRepository, getRoundRepository, type RoundPersistInput } from "./round-repository"
+export {
+  PlayerRoundRepository,
+  getPlayerRoundRepository,
+  type ResolvedPlayerRound,
+} from "./player-round-repository"
