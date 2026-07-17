@@ -7,19 +7,7 @@ import { getCourseHoleRepository, type CourseHoleInput } from "@/lib/repositorie
 import { getCourseTeeRepository, type CourseTeeInput } from "@/lib/repositories/course-tee-repository"
 import { getTournamentCourseMappingRepository } from "@/lib/repositories/tournament-course-mapping-repository"
 import { getImportRunRepository } from "@/lib/repositories/import-run-repository"
-
-export interface CourseIntelligenceImportResult {
-  status: "success" | "partial" | "failure"
-  coursesImported: number
-  coursesUpdated: number
-  holesImported: number
-  teesImported: number
-  warnings: string[]
-  failures: Array<{ golfCourseApiId: number; error: string }>
-  startedAt: Date
-  finishedAt: Date
-  durationMs: number
-}
+import type { CourseImportSummary } from "@/lib/types/course-import"
 
 /**
  * Validate course data has required fields and structure.
@@ -74,7 +62,7 @@ function validateCourseData(
 export async function importCourseIntelligence(
   client?: GolfCourseAPIClient,
   prisma: PrismaClient = prismaClient,
-): Promise<CourseIntelligenceImportResult> {
+): Promise<CourseImportSummary> {
   const startedAt = new Date()
   const apiClient = client || new GolfCourseAPIClient()
   const mappingRepo = getTournamentCourseMappingRepository(prisma)
@@ -83,35 +71,42 @@ export async function importCourseIntelligence(
   const courseTeeRepo = getCourseTeeRepository(prisma)
   const importRunRepo = getImportRunRepository(prisma)
 
+  let coursesConsidered = 0
+  let coursesMatched = 0
   let coursesImported = 0
   let coursesUpdated = 0
   let holesImported = 0
-  let teesImported = 0
+  let holesUpdated = 0
+  let teeBoxesImported = 0
+  let teeBoxesUpdated = 0
   const warnings: string[] = []
-  const failures: Array<{ golfCourseApiId: number; error: string }> = []
+  const failures: string[] = []
 
   try {
     // Get all verified mappings
     const mappingsResult = await mappingRepo.findVerified()
     if (mappingsResult.outcome !== "ok" || !mappingsResult.records || mappingsResult.records.length === 0) {
-      console.log("[v0] No verified tournament course mappings found")
       const finishedAt = new Date()
       return {
-        status: "success",
-        coursesImported,
-        coursesUpdated,
-        holesImported,
-        teesImported,
+        startedAt,
+        completedAt: finishedAt,
+        durationMs: finishedAt.getTime() - startedAt.getTime(),
+        coursesConsidered: 0,
+        coursesMatched: 0,
+        coursesImported: 0,
+        coursesUpdated: 0,
+        holesImported: 0,
+        holesUpdated: 0,
+        teeBoxesImported: 0,
+        teeBoxesUpdated: 0,
         warnings,
         failures,
-        startedAt,
-        finishedAt,
-        durationMs: finishedAt.getTime() - startedAt.getTime(),
       }
     }
 
     const mappings = mappingsResult.records
-    console.log(`[v0] Found ${mappings.length} verified tournament course mappings to process`)
+    coursesConsidered = mappings.length
+    coursesMatched = mappings.length
 
     // Process each mapping
     for (const mapping of mappings) {
@@ -124,8 +119,7 @@ export async function importCourseIntelligence(
 
         if (!courseDetail) {
           const err = `Course not found for GolfCourse API ID ${golfCourseApiId}`
-          failures.push({ golfCourseApiId, error: err })
-          console.error(`[v0] ${err}`)
+          failures.push(err)
           continue
         }
 
@@ -197,10 +191,8 @@ export async function importCourseIntelligence(
 
             const holesResult = await courseHoleRepo.bulkUpsert(holes)
             if (holesResult.outcome === "ok") {
-              holesImported += holesResult.inserted + holesResult.updated
-              console.log(
-                `[v0] Holes imported: ${holesResult.inserted} inserted, ${holesResult.updated} updated`,
-              )
+              holesImported += holesResult.inserted
+              holesUpdated += holesResult.updated
             } else {
               warnings.push(`Failed to import holes for ${courseDetail.name}`)
             }
@@ -220,10 +212,8 @@ export async function importCourseIntelligence(
 
             const teesResult = await courseTeeRepo.bulkUpsert(tees)
             if (teesResult.outcome === "ok") {
-              teesImported += teesResult.inserted + teesResult.updated
-              console.log(
-                `[v0] Tees imported: ${teesResult.inserted} inserted, ${teesResult.updated} updated`,
-              )
+              teeBoxesImported += teesResult.inserted
+              teeBoxesUpdated += teesResult.updated
             } else {
               warnings.push(`Failed to import tees for ${courseDetail.name}`)
             }
@@ -238,13 +228,11 @@ export async function importCourseIntelligence(
           }
         } else {
           const err = courseResult.error?.message || "Unknown error"
-          failures.push({ golfCourseApiId, error: err })
-          console.error(`[v0] Failed to upsert course: ${err}`)
+          failures.push(`Failed to upsert GolfCourse API ID ${golfCourseApiId}: ${err}`)
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error)
-        failures.push({ golfCourseApiId, error: errorMsg })
-        console.error(`[v0] Course import failed: ${errorMsg}`)
+        failures.push(`GolfCourse API ID ${golfCourseApiId}: ${errorMsg}`)
       }
     }
 
@@ -253,51 +241,57 @@ export async function importCourseIntelligence(
     const importRunResult = await importRunRepo.create({
       entity: "course-intelligence",
       provider: "golfcourseapi",
-      status: failures.length === 0 ? "success" : failures.length < mappings.length ? "partial" : "failure",
-      recordsProcessed: mappings.length,
-      recordsSucceeded: mappings.length - failures.length,
+      status: failures.length === 0 ? "success" : failures.length < coursesMatched ? "partial" : "failure",
+      recordsProcessed: coursesMatched,
+      recordsSucceeded: coursesMatched - failures.length,
       recordsFailed: failures.length,
       notes: [
+        `Courses considered: ${coursesConsidered}`,
+        `Courses matched: ${coursesMatched}`,
         `Courses imported: ${coursesImported}`,
         `Courses updated: ${coursesUpdated}`,
         `Holes imported: ${holesImported}`,
-        `Tees imported: ${teesImported}`,
+        `Holes updated: ${holesUpdated}`,
+        `Tee boxes imported: ${teeBoxesImported}`,
+        `Tee boxes updated: ${teeBoxesUpdated}`,
         ...warnings,
       ].join("\n"),
     })
 
-    if (importRunResult.outcome === "ok") {
-      console.log(`[v0] Import run recorded: ${importRunResult.record?.id}`)
-    }
-
     return {
-      status: failures.length === 0 ? "success" : failures.length < mappings.length ? "partial" : "failure",
+      startedAt,
+      completedAt: finishedAt,
+      durationMs: finishedAt.getTime() - startedAt.getTime(),
+      coursesConsidered,
+      coursesMatched,
       coursesImported,
       coursesUpdated,
       holesImported,
-      teesImported,
+      holesUpdated,
+      teeBoxesImported,
+      teeBoxesUpdated,
       warnings,
       failures,
-      startedAt,
-      finishedAt,
-      durationMs: finishedAt.getTime() - startedAt.getTime(),
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error)
-    console.error(`[v0] Course intelligence import failed: ${errorMsg}`)
+    failures.push(`Import failed: ${errorMsg}`)
 
     const finishedAt = new Date()
     return {
-      status: "failure",
+      startedAt,
+      completedAt: finishedAt,
+      durationMs: finishedAt.getTime() - startedAt.getTime(),
+      coursesConsidered,
+      coursesMatched,
       coursesImported,
       coursesUpdated,
       holesImported,
-      teesImported,
+      holesUpdated,
+      teeBoxesImported,
+      teeBoxesUpdated,
       warnings,
-      failures: [{ golfCourseApiId: 0, error: errorMsg }],
-      startedAt,
-      finishedAt,
-      durationMs: finishedAt.getTime() - startedAt.getTime(),
+      failures,
     }
   }
 }

@@ -11,6 +11,7 @@ import { auth } from "@/lib/auth-server"
 import { GolfCourseAPIClient } from "@/lib/providers/golfcourseapi/client"
 import { importGolfCourses } from "@/lib/imports/golfcourse-import"
 import { importCourseIntelligence } from "@/lib/imports/course-intelligence-import"
+import type { CourseImportSummary } from "@/lib/types/course-import"
 
 /**
  * Import GolfCourse data for one or more courses by their GolfCourse API IDs.

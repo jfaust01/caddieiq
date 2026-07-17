@@ -15,18 +15,7 @@ import { getCourseTeeRepository } from "@/lib/repositories/course-tee-repository
 import { getImportRunRepository } from "@/lib/repositories/import-run-repository"
 import { getTournamentCourseMappingRepository } from "@/lib/repositories/tournament-course-mapping-repository"
 import { findBestMatch } from "@/lib/domain/course/matcher"
-
-export interface GolfCourseImportResult {
-  status: "success" | "partial" | "failure"
-  coursesProcessed: number
-  coursesImported: number
-  holesImported: number
-  teesImported: number
-  errors: Array<{ courseId: number; error: string }>
-  startedAt: Date
-  finishedAt: Date
-  durationMs: number
-}
+import type { CourseImportSummary } from "@/lib/types/course-import"
 
 export interface TournamentCourseImportResult {
   status: "success" | "failure"
@@ -362,62 +351,78 @@ export async function importGolfCourses(
   client: GolfCourseAPIClient,
   courseIds: number[],
   prisma: PrismaClient = prismaClient,
-): Promise<GolfCourseImportResult> {
+): Promise<CourseImportSummary> {
   const startedAt = new Date()
-  let totalCoursesProcessed = 0
-  let totalCoursesImported = 0
-  let totalHolesImported = 0
-  let totalTeesImported = 0
-  const allErrors: Array<{ courseId: number; error: string }> = []
+  let coursesConsidered = courseIds.length
+  let coursesMatched = 0
+  let coursesImported = 0
+  let coursesUpdated = 0
+  let holesImported = 0
+  let holesUpdated = 0
+  let teeBoxesImported = 0
+  let teeBoxesUpdated = 0
+  const warnings: string[] = []
+  const failures: string[] = []
 
-  const importRunRepo = getImportRunRepository()
-
-  console.log(`[v0] Starting GolfCourse import for ${courseIds.length} courses`)
+  const importRunRepo = getImportRunRepository(prisma)
 
   for (const courseId of courseIds) {
-    const result = await importGolfCourse(client, courseId, prisma)
-    totalCoursesProcessed += result.coursesProcessed
-    totalCoursesImported += result.coursesImported
-    totalHolesImported += result.holesImported
-    totalTeesImported += result.teesImported
-    allErrors.push(...result.errors)
+    try {
+      const result = await importGolfCourse(client, courseId, prisma)
+      if (result.status !== "failure") {
+        coursesMatched++
+        coursesImported += result.coursesImported
+        coursesUpdated += result.coursesUpdated
+        holesImported += result.holesImported
+        holesUpdated += result.holesUpdated
+        teeBoxesImported += result.teesImported
+        // Note: importGolfCourse doesn't track teeBoxesUpdated separately yet
+      } else {
+        failures.push(`Course ${courseId}: ${result.error || "Import failed"}`)
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      failures.push(`Course ${courseId}: ${errorMsg}`)
+    }
   }
 
   const finishedAt = new Date()
   const durationMs = finishedAt.getTime() - startedAt.getTime()
-  const status = allErrors.length === 0 ? "success" : allErrors.length < courseIds.length ? "partial" : "failure"
 
   // Record import run
   await importRunRepo.create({
     provider: "golfcourseapi",
-    entity: "course",
-    status,
-    startedAt,
-    finishedAt,
-    durationMs,
-    processed: totalCoursesProcessed,
-    inserted: totalCoursesImported,
-    updated: 0,
-    skipped: 0,
-    failed: allErrors.length,
-    warnings: 0,
-    summary: `Imported ${totalCoursesImported}/${totalCoursesProcessed} courses, ${totalHolesImported} holes, ${totalTeesImported} tees`,
-    error: allErrors.length > 0 ? allErrors[0].error : null,
+    entity: "course-batch",
+    status: failures.length === 0 ? "success" : failures.length < coursesMatched ? "partial" : "failure",
+    recordsProcessed: coursesMatched,
+    recordsSucceeded: coursesMatched - failures.length,
+    recordsFailed: failures.length,
+    notes: [
+      `Courses considered: ${coursesConsidered}`,
+      `Courses matched: ${coursesMatched}`,
+      `Courses imported: ${coursesImported}`,
+      `Courses updated: ${coursesUpdated}`,
+      `Holes imported: ${holesImported}`,
+      `Holes updated: ${holesUpdated}`,
+      `Tee boxes imported: ${teeBoxesImported}`,
+      `Tee boxes updated: ${teeBoxesUpdated}`,
+      ...warnings,
+    ].join("\n"),
   })
 
-  console.log(
-    `[v0] GolfCourse import complete: ${totalCoursesImported}/${totalCoursesProcessed} courses, ${totalHolesImported} holes, ${totalTeesImported} tees`,
-  )
-
   return {
-    status,
-    coursesProcessed: totalCoursesProcessed,
-    coursesImported: totalCoursesImported,
-    holesImported: totalHolesImported,
-    teesImported: totalTeesImported,
-    errors: allErrors,
     startedAt,
-    finishedAt,
+    completedAt: finishedAt,
     durationMs,
+    coursesConsidered,
+    coursesMatched,
+    coursesImported,
+    coursesUpdated,
+    holesImported,
+    holesUpdated,
+    teeBoxesImported,
+    teeBoxesUpdated,
+    warnings,
+    failures,
   }
 }
