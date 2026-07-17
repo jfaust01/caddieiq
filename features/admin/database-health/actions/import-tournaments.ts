@@ -2,7 +2,6 @@
 
 import { auth } from "@/lib/auth"
 import { runTournamentImport } from "@/lib/imports"
-import { orchestrateTournamentCourseMapping } from "@/lib/imports/tournament-course-mapping-orchestration"
 import { headers } from "next/headers"
 
 export async function importTournamentsAction() {
@@ -19,19 +18,13 @@ export async function importTournamentsAction() {
       }
     }
 
-    // Run tournament import directly (no HTTP call needed, preserves auth context)
+    // Run tournament import only (course mapping is handled separately as background job)
     const result = await runTournamentImport()
-
-    // After tournament import succeeds, orchestrate tournament → course mapping
-    let mappingOrchestration = null
-    if (result.failed === 0) {
-      mappingOrchestration = await orchestrateTournamentCourseMapping()
-    }
 
     return {
       success: true,
       data: {
-        ok: result.failed === 0 && (mappingOrchestration?.ok ?? true),
+        ok: result.failed === 0,
         summary: {
           provider: result.provider,
           entity: result.entity,
@@ -46,22 +39,6 @@ export async function importTournamentsAction() {
           warnings: result.warnings,
           qualityScoreAverage: result.qualityScoreAverage,
         },
-        mapping: mappingOrchestration
-          ? {
-              tournamentCoursesProcessed: mappingOrchestration.tournamentCoursesProcessed,
-              mappingsCreated: mappingOrchestration.mappingRowsCreated,
-              golfCourseApiMatchesFound: mappingOrchestration.golfCourseApiMatchesFound,
-              golfCourseApiUnmatched: mappingOrchestration.golfCourseApiUnmatched,
-              mappingsUpdated: mappingOrchestration.mappingsUpdated,
-              mappingsReused: mappingOrchestration.mappingsReused,
-              skippedTournaments: mappingOrchestration.skippedTournaments,
-              totalErrors: mappingOrchestration.totalErrors,
-              durationMs: mappingOrchestration.durationMs,
-              summary: mappingOrchestration.summary,
-              firstErrorMessage: mappingOrchestration.firstErrorMessage,
-              firstErrorCause: mappingOrchestration.firstErrorCause,
-            }
-          : null,
         errors: result.errors.slice(0, 50),
       },
     }
