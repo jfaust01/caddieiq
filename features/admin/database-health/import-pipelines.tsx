@@ -240,28 +240,53 @@ export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[]
       {/* Mapping Status Notification */}
       {mappingStatus && isPolling && (
         <Card className="border-blue-500/50 bg-blue-500/10 p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h4 className="font-semibold text-blue-700 dark:text-blue-300">Course Mapping in Progress</h4>
-              <div className="mt-2 space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Progress:</span>
-                  <span className="font-mono text-xs">
-                    {mappingStatus.completed}/{mappingStatus.total} ({mappingStatus.percentage}%)
-                  </span>
-                </div>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="font-semibold text-blue-700 dark:text-blue-300">
+                {mappingStatus.status === "in_progress" ? "Course Mapping in Progress" : "Course Mapping Complete"}
+              </h4>
+              <div className="mt-3 space-y-2">
+                {/* Progress bar */}
                 {mappingStatus.status === "in_progress" && (
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-900">
-                    <div
-                      className="h-full bg-blue-500 transition-all duration-300"
-                      style={{ width: `${mappingStatus.percentage}%` }}
-                    />
-                  </div>
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Processing:</span>
+                      <span className="font-mono text-xs">
+                        {mappingStatus.completed}/{mappingStatus.total} ({mappingStatus.percentage}%)
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-900">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-300"
+                        style={{ width: `${mappingStatus.percentage}%` }}
+                      />
+                    </div>
+                  </>
                 )}
+
+                {/* Summary metrics */}
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2">
+                  <div className="text-muted-foreground">
+                    <span className="block">Already Mapped:</span>
+                    <span className="font-mono font-semibold">{mappingStatus.alreadyMapped}</span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    <span className="block">Newly Mapped:</span>
+                    <span className="font-mono font-semibold">{mappingStatus.created}</span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    <span className="block">Updated:</span>
+                    <span className="font-mono font-semibold">{mappingStatus.updated}</span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    <span className="block">Failed:</span>
+                    <span className="font-mono font-semibold">{mappingStatus.failed}</span>
+                  </div>
+                </div>
               </div>
             </div>
             {mappingStatus.status === "in_progress" && (
-              <RefreshCw className="size-4 animate-spin flex-shrink-0 text-blue-500" />
+              <RefreshCw className="size-5 animate-spin flex-shrink-0 text-blue-500 mt-1" />
             )}
           </div>
         </Card>

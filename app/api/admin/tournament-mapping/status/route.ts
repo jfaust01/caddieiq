@@ -50,11 +50,14 @@ export async function GET(request: NextRequest) {
     // Extract the MappingProgress result from the workflow
     const progress = fullRun.output || {
       total: 0,
+      alreadyMapped: 0,
       completed: 0,
       created: 0,
       updated: 0,
       reused: 0,
-      errors: 0,
+      failed: 0,
+      apiCallsMade: 0,
+      totalDurationMs: 0,
       status: "in_progress",
       message: "Workflow in progress",
     }
@@ -70,12 +73,17 @@ export async function GET(request: NextRequest) {
       data: {
         status,
         total: progress.total,
+        alreadyMapped: progress.alreadyMapped || 0,
         completed: progress.completed,
-        percentage: progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0,
+        percentage: (progress.total - progress.alreadyMapped) > 0 
+          ? Math.round((progress.completed / (progress.total - progress.alreadyMapped)) * 100) 
+          : 100,
         created: progress.created,
         updated: progress.updated,
         reused: progress.reused,
-        errors: progress.errors,
+        failed: progress.failed || 0,
+        apiCallsMade: progress.apiCallsMade || 0,
+        totalDurationMs: progress.totalDurationMs || 0,
         message: progress.message,
         runId: mappingRun.id,
       },
