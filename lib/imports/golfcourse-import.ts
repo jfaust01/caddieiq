@@ -13,6 +13,8 @@ import { getCourseDetailsRepository } from "@/lib/repositories/course-details-re
 import { getCourseHoleRepository } from "@/lib/repositories/course-hole-repository"
 import { getCourseTeeRepository } from "@/lib/repositories/course-tee-repository"
 import { getImportRunRepository } from "@/lib/repositories/import-run-repository"
+import { getTournamentCourseMappingRepository } from "@/lib/repositories/tournament-course-mapping-repository"
+import { findBestMatch } from "@/lib/domain/course/matcher"
 
 export interface GolfCourseImportResult {
   status: "success" | "partial" | "failure"
@@ -24,6 +26,161 @@ export interface GolfCourseImportResult {
   startedAt: Date
   finishedAt: Date
   durationMs: number
+}
+
+export interface TournamentCourseImportResult {
+  status: "success" | "failure"
+  tournamentId: string
+  courseName: string
+  golfCourseApiCourseId?: number
+  mappingCreated: boolean
+  mappingReused: boolean
+  mappingConfidence?: number
+  courseImported: boolean
+  holesImported: number
+  teesImported: number
+  error?: string
+}
+
+/**
+ * Import a tournament's course from GolfCourse API.
+ * Uses the mapping layer to avoid duplicate searches and store course enrichment data.
+ *
+ * Flow:
+ * 1. Check if mapping exists for this tournament
+ * 2. If mapping exists and verified, use stored GolfCourse API ID
+ * 3. If mapping doesn't exist, search GolfCourse API, select best match, create mapping
+ * 4. Import course details, holes, and tees
+ */
+export async function importTournamentCourse(
+  client: GolfCourseAPIClient,
+  tournamentId: string,
+  sportsDataIoCourseId: string | undefined,
+  tournamentCourseName: string,
+  sportsDataIoCourseData: {
+    name?: string
+    clubName?: string
+    city?: string
+    state?: string
+    country?: string
+  },
+  prisma: PrismaClient = prismaClient,
+): Promise<TournamentCourseImportResult> {
+  const mappingRepo = getTournamentCourseMappingRepository(prisma)
+  const courseDetailsRepo = getCourseDetailsRepository(prisma)
+  const courseHoleRepo = getCourseHoleRepository(prisma)
+  const courseTeeRepo = getCourseTeeRepository(prisma)
+
+  try {
+    // Step 1: Check for existing mapping
+    const existingMappingResult = await mappingRepo.findByTournamentId(tournamentId)
+    if (existingMappingResult.outcome === "ok" && existingMappingResult.record) {
+      const mapping = existingMappingResult.record
+      console.log(
+        `[v0] Mapping reused for tournament ${tournamentId}: GolfCourse ID ${mapping.golfCourseApiCourseId} (confidence: ${mapping.matchConfidence}%)`,
+      )
+
+      // If verified, skip searching and use the mapped course
+      if (mapping.verified) {
+        console.log(`[v0] Mapping verified, importing course ${mapping.golfCourseApiCourseId}`)
+        const importResult = await importGolfCourse(client, mapping.golfCourseApiCourseId, prisma)
+        return {
+          status: importResult.status === "failure" ? "failure" : "success",
+          tournamentId,
+          courseName: tournamentCourseName,
+          golfCourseApiCourseId: mapping.golfCourseApiCourseId,
+          mappingCreated: false,
+          mappingReused: true,
+          mappingConfidence: mapping.matchConfidence ?? undefined,
+          courseImported: importResult.coursesImported > 0,
+          holesImported: importResult.holesImported,
+          teesImported: importResult.teesImported,
+          error: importResult.errors.length > 0 ? importResult.errors[0].error : undefined,
+        }
+      }
+    }
+
+    // Step 2: If no mapping exists, search GolfCourse API
+    console.log(`[v0] No mapping found for tournament ${tournamentId}, searching GolfCourse API`)
+    const searchResults = await client.searchCourses(tournamentCourseName)
+
+    if (!searchResults || searchResults.length === 0) {
+      return {
+        status: "failure",
+        tournamentId,
+        courseName: tournamentCourseName,
+        mappingCreated: false,
+        mappingReused: false,
+        courseImported: false,
+        holesImported: 0,
+        teesImported: 0,
+        error: `No courses found for "${tournamentCourseName}"`,
+      }
+    }
+
+    // Step 3: Find best match using matcher
+    const bestMatch = findBestMatch(sportsDataIoCourseData, searchResults)
+    if (!bestMatch) {
+      return {
+        status: "failure",
+        tournamentId,
+        courseName: tournamentCourseName,
+        mappingCreated: false,
+        mappingReused: false,
+        courseImported: false,
+        holesImported: 0,
+        teesImported: 0,
+        error: `No suitable match found for "${tournamentCourseName}" (confidence threshold not met)`,
+      }
+    }
+
+    // Step 4: Create mapping
+    console.log(
+      `[v0] New mapping created for tournament ${tournamentId}: GolfCourse ID ${bestMatch.courseId} (confidence: ${bestMatch.confidence}%)`,
+    )
+    await mappingRepo.create({
+      tournamentId,
+      sportsDataIoCourseId,
+      golfCourseApiCourseId: bestMatch.courseId,
+      tournamentCourseName,
+      golfCourseCourseName: searchResults.find((c) => c.id === bestMatch.courseId)?.name,
+      matchConfidence: bestMatch.confidence,
+      matchedBy: bestMatch.matchedBy,
+      verified: false, // Pending admin verification
+    })
+
+    // Step 5: Import course details
+    const importResult = await importGolfCourse(client, bestMatch.courseId, prisma)
+
+    return {
+      status: importResult.status === "failure" ? "failure" : "success",
+      tournamentId,
+      courseName: tournamentCourseName,
+      golfCourseApiCourseId: bestMatch.courseId,
+      mappingCreated: true,
+      mappingReused: false,
+      mappingConfidence: bestMatch.confidence,
+      courseImported: importResult.coursesImported > 0,
+      holesImported: importResult.holesImported,
+      teesImported: importResult.teesImported,
+      error: importResult.errors.length > 0 ? importResult.errors[0].error : undefined,
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[v0] Tournament course import failed: ${errorMsg}`)
+
+    return {
+      status: "failure",
+      tournamentId,
+      courseName: tournamentCourseName,
+      mappingCreated: false,
+      mappingReused: false,
+      courseImported: false,
+      holesImported: 0,
+      teesImported: 0,
+      error: errorMsg,
+    }
+  }
 }
 
 /**

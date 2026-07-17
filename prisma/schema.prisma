@@ -1355,3 +1355,38 @@ model CourseTee {
   @@index([courseId])
   @@map("course_tees")
 }
+
+/// Tournament to GolfCourse API mapping layer.
+/// Stores the persistent relationship between SportsDataIO tournaments and GolfCourse API courses.
+/// This mapping becomes the single source of truth for course enrichment and prevents duplicate searches.
+model TournamentCourseMapping {
+  id                      String    @id @default(cuid())
+  /// Reference to tournament (SportsDataIO tournament ID)
+  tournamentId            String    @unique
+  /// Course ID from SportsDataIO tournament data
+  sportsDataIoCourseId    String?
+  /// Course ID from GolfCourse API - the authoritative source
+  golfCourseApiCourseId   Int
+  
+  /// Display names for reference
+  tournamentCourseName    String?
+  golfCourseCourseName    String?
+  
+  /// Matching metadata
+  /// Confidence score 0-100 from the matching algorithm
+  matchConfidence         Int?      @default(0)
+  /// How the match was determined (e.g., "manual", "auto-matched", "search")
+  matchedBy               String?   @default("auto-matched")
+  /// Admin verification status - defaults to false pending review
+  verified                Boolean   @default(false)
+  
+  /// Audit timestamps
+  lastSyncedAt            DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  @@index([tournamentId])
+  @@index([golfCourseApiCourseId])
+  @@index([sportsDataIoCourseId])
+  @@map("tournament_course_mappings")
+}
