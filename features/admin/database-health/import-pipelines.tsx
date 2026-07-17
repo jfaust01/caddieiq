@@ -8,16 +8,56 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import type { ImportPipelineCard } from "@/lib/system-health/database-health"
+import { importTournamentsAction } from "./actions/import-tournaments"
 
 /**
  * Display import pipeline cards with status, recency, and performance metrics.
  */
 export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[] }) {
   const [mounted, setMounted] = useState(false)
+  const [loadingPipeline, setLoadingPipeline] = useState<string | null>(null)
+  const [refreshResult, setRefreshResult] = useState<{
+    pipeline: string
+    success: boolean
+    message: string
+  } | null>(null)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  const handleRefresh = async (pipelineName: string) => {
+    setLoadingPipeline(pipelineName)
+    setRefreshResult(null)
+
+    try {
+      if (pipelineName === "Tournaments") {
+        const result = await importTournamentsAction()
+        if (result.success) {
+          setRefreshResult({
+            pipeline: pipelineName,
+            success: true,
+            message: `Tournament import completed. ${result.data?.mapping ? `Created ${result.data.mapping.mappingsCreated} mappings, reused ${result.data.mapping.mappingsReused}.` : ""}`,
+          })
+        } else {
+          setRefreshResult({
+            pipeline: pipelineName,
+            success: false,
+            message: result.error || "Import failed",
+          })
+        }
+      }
+      // Add other pipeline handlers here as needed
+    } catch (error) {
+      setRefreshResult({
+        pipeline: pipelineName,
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+      })
+    } finally {
+      setLoadingPipeline(null)
+    }
+  }
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Healthy":
@@ -106,15 +146,39 @@ export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[]
               variant="outline"
               size="sm"
               className="mt-auto gap-2"
-              disabled={pipeline.status === "Error"}
+              disabled={pipeline.status === "Error" || loadingPipeline !== null}
+              onClick={() => handleRefresh(pipeline.name)}
               title="Trigger manual import for this pipeline"
             >
-              <RefreshCw className="size-4" />
-              Refresh
+              <RefreshCw className={cn("size-4", loadingPipeline === pipeline.name && "animate-spin")} />
+              {loadingPipeline === pipeline.name ? "Importing..." : "Refresh"}
             </Button>
           )}
         </Card>
       ))}
+
+      {/* Result Notification */}
+      {refreshResult && (
+        <Card className={cn("p-4", refreshResult.success ? "border-emerald-500/50 bg-emerald-500/10" : "border-destructive/50 bg-destructive/10")}>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h4 className={cn("font-semibold", refreshResult.success ? "text-emerald-700 dark:text-emerald-300" : "text-destructive")}>
+                {refreshResult.pipeline} Import {refreshResult.success ? "Completed" : "Failed"}
+              </h4>
+              <p className={cn("mt-1 text-sm", refreshResult.success ? "text-emerald-600 dark:text-emerald-400" : "text-destructive/80")}>
+                {refreshResult.message}
+              </p>
+            </div>
+            <button
+              onClick={() => setRefreshResult(null)}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </Card>
+      )}
     </div>
   )
 }
