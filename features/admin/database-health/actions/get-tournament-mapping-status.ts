@@ -6,8 +6,9 @@ import { headers } from "next/headers"
 /**
  * Get the status of the tournament mapping workflow.
  * Calls the status API endpoint which queries the actual Workflow SDK run state.
+ * Accepts an optional runId to query a specific workflow run.
  */
-export async function getTournamentMappingStatusAction() {
+export async function getTournamentMappingStatusAction(runId?: string) {
   try {
     // Get headers first, before any other awaits (Next.js 16 requirement)
     const hdrs = await headers()
@@ -26,16 +27,18 @@ export async function getTournamentMappingStatusAction() {
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000"
 
-    const response = await fetch(
-      `${baseUrl}/api/admin/tournament-mapping/status`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: hdrs.get("cookie") || "",
-        },
-      }
-    )
+    const url = new URL(`${baseUrl}/api/admin/tournament-mapping/status`)
+    if (runId) {
+      url.searchParams.append("runId", runId)
+    }
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: hdrs.get("cookie") || "",
+      },
+    })
 
     if (!response.ok) {
       const error = await response.json()
