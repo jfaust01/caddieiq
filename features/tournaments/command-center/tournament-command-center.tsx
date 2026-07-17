@@ -19,6 +19,7 @@ import { FieldRankingLeaders } from '@/features/tournaments/components/field-ran
 import { TournamentCourseIntelligence } from '@/features/tournaments/components/tournament-course-intelligence'
 import { TournamentCourseAnalytics } from '@/features/tournaments/components/tournament-course-analytics'
 import { TournamentCourseOverviewWrapper } from '@/features/tournaments/components/tournament-course-overview-wrapper'
+import { TournamentCourseIntelligenceWrapper } from '@/features/tournaments/components/tournament-course-intelligence-wrapper'
 import { TournamentWeatherIntelligence } from '@/features/tournaments/components/tournament-weather-intelligence'
 import { TournamentOddsIntelligence } from '@/features/tournaments/components/tournament-odds-intelligence'
 import { TournamentSkillLeaderboards } from '@/features/tournaments/components/tournament-skill-leaderboards'
@@ -241,6 +242,16 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
           icon={<Compass className="size-4 text-primary" aria-hidden />}
         >
           <TournamentCourseOverviewWrapper tournamentId={tournament.id} />
+        </CommandCenterWidget>
+      ) : null}
+
+      {courseRef ? (
+        <CommandCenterWidget
+          id="course-intelligence-engine"
+          title="Course Intelligence Engine"
+          icon={<Sparkles className="size-4 text-primary" aria-hidden />}
+        >
+          <TournamentCourseIntelligenceWrapper tournamentId={tournament.id} />
         </CommandCenterWidget>
       ) : null}
 
