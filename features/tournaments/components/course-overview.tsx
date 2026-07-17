@@ -264,7 +264,7 @@ export function CourseOverview({ course, holes, tees }: CourseOverviewProps) {
       {/* Hole-by-Hole Breakdown */}
       <div className="border-t border-border pt-4">
         {holes && holes.length > 0 ? (
-          <HoleByHoleBreakdown holes={holes} />
+          <HoleByHoleBreakdown holes={holes} courseId={course.id} />
         ) : (
           <div className="rounded-lg border border-border bg-card/50 p-6 text-center">
             <p className="text-sm text-muted-foreground">

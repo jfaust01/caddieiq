@@ -13,10 +13,12 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/shared/section-header'
+import { HoleVisualization } from './hole-visualization'
 import type { CourseHole as CourseHoleRecord } from '@/lib/generated/prisma/client'
 
 interface HoleByHoleBreakdownProps {
   holes: CourseHoleRecord[]
+  courseId: string
 }
 
 /**
@@ -44,10 +46,12 @@ function calculateTotals(holes: CourseHoleRecord[]) {
  */
 function HoleCard({
   hole,
+  courseId,
   isExpanded,
   onToggle,
 }: {
   hole: CourseHoleRecord
+  courseId: string
   isExpanded: boolean
   onToggle: () => void
 }) {
@@ -96,27 +100,47 @@ function HoleCard({
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="border-t border-border px-4 py-3">
-          <dl className="grid gap-3 text-sm">
-            <div className="flex justify-between">
-              <dt className="font-medium text-muted-foreground">Hole Number</dt>
-              <dd className="font-semibold text-foreground">{hole.holeNumber}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="font-medium text-muted-foreground">Par</dt>
-              <dd className="font-semibold text-foreground">{hole.par ?? '—'}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="font-medium text-muted-foreground">Yardage</dt>
-              <dd className="font-semibold text-foreground">
-                {hole.yardage ? `${hole.yardage.toLocaleString()} yards` : '—'}
-              </dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="font-medium text-muted-foreground">Stroke Index</dt>
-              <dd className="font-semibold text-foreground">{hole.handicap ?? '—'}</dd>
-            </div>
-          </dl>
+        <div className="border-t border-border">
+          {/* Hole Details Section */}
+          <div className="px-4 py-3">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Hole Details</h3>
+            <dl className="grid gap-3 text-sm">
+              <div className="flex justify-between">
+                <dt className="font-medium text-muted-foreground">Hole Number</dt>
+                <dd className="font-semibold text-foreground">{hole.holeNumber}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="font-medium text-muted-foreground">Par</dt>
+                <dd className="font-semibold text-foreground">{hole.par ?? '—'}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="font-medium text-muted-foreground">Yardage</dt>
+                <dd className="font-semibold text-foreground">
+                  {hole.yardage ? `${hole.yardage.toLocaleString()} yards` : '—'}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="font-medium text-muted-foreground">Stroke Index</dt>
+                <dd className="font-semibold text-foreground">{hole.handicap ?? '—'}</dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Visualization Separator */}
+          <div className="border-t border-border px-4 py-3">
+            <HoleVisualization
+              courseId={courseId}
+              holeNumber={hole.holeNumber}
+            />
+          </div>
+
+          {/* Additional Information Section */}
+          <div className="border-t border-border px-4 py-3">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Additional Information</h3>
+            <p className="text-sm text-muted-foreground">
+              More hole details and analytics will be available in future updates.
+            </p>
+          </div>
         </div>
       )}
     </div>
@@ -127,7 +151,7 @@ function HoleCard({
  * Hole-by-Hole Breakdown — interactive display of all 18 holes.
  * Features expandable cards, scorecard view, and summary information.
  */
-export function HoleByHoleBreakdown({ holes }: HoleByHoleBreakdownProps) {
+export function HoleByHoleBreakdown({ holes, courseId }: HoleByHoleBreakdownProps) {
   const [expandedHoles, setExpandedHoles] = useState<Set<string>>(new Set())
   const sortedHoles = [...holes].sort((a, b) => a.holeNumber - b.holeNumber)
   const totals = calculateTotals(sortedHoles)
@@ -280,6 +304,7 @@ export function HoleByHoleBreakdown({ holes }: HoleByHoleBreakdownProps) {
           <HoleCard
             key={hole.id}
             hole={hole}
+            courseId={courseId}
             isExpanded={expandedHoles.has(hole.id)}
             onToggle={() => toggleHole(hole.id)}
           />
