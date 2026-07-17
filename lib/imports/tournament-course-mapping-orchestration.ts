@@ -33,6 +33,8 @@ export interface TournamentCourseMappingOrchestrationResult {
   durationMs: number
   results: TournamentCourseMappingOrchestrationItem[]
   summary: string
+  firstErrorMessage?: string
+  firstErrorCause?: string
 }
 
 export interface TournamentCourseMappingOrchestrationItem {
@@ -63,6 +65,8 @@ export async function orchestrateTournamentCourseMapping(
   let mappingsReused = 0
   let skippedTournaments = 0
   let totalErrors = 0
+  let firstErrorMessage: string | undefined
+  let firstErrorCause: string | undefined
 
   console.log("[v0] ╔════════════════════════════════════════════════════════╗")
   console.log(
@@ -180,9 +184,12 @@ export async function orchestrateTournamentCourseMapping(
           }
         } catch (searchError) {
           golfCourseApiUnmatched++
+          const searchErrorMsg = searchError instanceof Error ? searchError.message : "unknown error"
+          const searchErrorStack = searchError instanceof Error ? searchError.stack : ""
           console.log(
-            `[v0] Error searching GolfCourseAPI for ${course.name}: ${searchError instanceof Error ? searchError.message : "unknown error"}`,
+            `[v0] Error searching GolfCourseAPI for ${course.name} (tournament ${tournament.id}): ${searchErrorMsg}`,
           )
+          console.log(`[v0] Search error stack: ${searchErrorStack}`)
         }
 
         // Create or update mapping (regardless of whether GolfCourseAPI match was found)
@@ -241,6 +248,13 @@ export async function orchestrateTournamentCourseMapping(
       } catch (error) {
         totalErrors++
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
+        const errorStack = error instanceof Error ? error.stack : ""
+
+        // Capture first error for UI reporting
+        if (!firstErrorMessage) {
+          firstErrorMessage = errorMessage
+          firstErrorCause = errorStack
+        }
 
         results.push({
           tournamentId: tournament.id,
@@ -251,8 +265,9 @@ export async function orchestrateTournamentCourseMapping(
         })
 
         console.log(
-          `[v0] ✗ ${tournament.name}: Exception - ${errorMessage}`,
+          `[v0] ✗ ${tournament.name} (id: ${tournament.id}): Exception - ${errorMessage}`,
         )
+        console.log(`[v0] ✗ Stack trace: ${errorStack}`)
       }
     }
 
@@ -301,14 +316,18 @@ export async function orchestrateTournamentCourseMapping(
       durationMs,
       results,
       summary,
+      firstErrorMessage,
+      firstErrorCause,
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    const errorStack = error instanceof Error ? error.stack : ""
     const durationMs = Date.now() - startTime
 
     console.log("[v0] ╔════════════════════════════════════════════════════════╗")
     console.log("[v0] ║  ORCHESTRATION FAILED                                 ║")
     console.log(`[v0] ║ Error: ${errorMessage}`)
+    console.log(`[v0] ║ Stack: ${errorStack}`)
     console.log("[v0] ╚════════════════════════════════════════════════════════╝")
 
     return {
@@ -324,6 +343,8 @@ export async function orchestrateTournamentCourseMapping(
       durationMs,
       results,
       summary: `Orchestration failed: ${errorMessage}`,
+      firstErrorMessage: errorMessage,
+      firstErrorCause: errorStack,
     }
   }
 }
