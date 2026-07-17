@@ -6,6 +6,8 @@
 
 import { getTournamentCourseIntelligence } from "@/lib/course-intelligence"
 import { CourseIntelligenceCard } from "./course-intelligence-card"
+import { StatusBadge } from "./status-badge"
+import { Zap } from "lucide-react"
 
 interface TournamentCourseIntelligenceWrapperProps {
   tournamentId: string
@@ -21,10 +23,20 @@ export async function TournamentCourseIntelligenceWrapper({
 
   if (!intelligence) {
     return (
-      <div className="rounded-lg border border-border bg-card/50 p-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          Course intelligence not available. Course data may not be fully imported yet.
-        </p>
+      <div className="space-y-4">
+        <div className="flex items-start gap-4">
+          <Zap className="size-5 shrink-0 text-muted-foreground/50" />
+          <div className="flex-1 space-y-2">
+            <p className="font-medium text-sm">Course Intelligence Not Yet Generated</p>
+            <p className="text-xs text-muted-foreground">
+              Course Intelligence is calculated from hole data, tee specifications, and course details.
+              Once your course is fully imported, intelligence metrics will be available here.
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-center">
+          <StatusBadge variant="not-generated" label="Not Generated" showIcon />
+        </div>
       </div>
     )
   }
