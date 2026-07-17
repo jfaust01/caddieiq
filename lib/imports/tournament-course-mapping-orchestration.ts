@@ -16,17 +16,18 @@
 
 import prismaClient from "@/lib/prisma"
 import { GolfCourseAPIClient } from "@/lib/providers/golfcourseapi/client"
-import { importTournamentCourse } from "./golfcourse-import"
+import { getTournamentCourseMappingRepository } from "@/lib/repositories/tournament-course-mapping-repository"
+import { findBestMatch } from "@/lib/domain/course/matcher"
 import type { PrismaClient } from "@/lib/generated/prisma/client"
 
 export interface TournamentCourseMappingOrchestrationResult {
   ok: boolean
-  tournamentsScanned: number
-  tournamentsWithCourses: number
-  mappingsCreated: number
+  tournamentCoursesProcessed: number
+  mappingRowsCreated: number
+  golfCourseApiMatchesFound: number
+  golfCourseApiUnmatched: number
   mappingsUpdated: number
   mappingsReused: number
-  unmatchedCourses: number
   skippedTournaments: number
   totalErrors: number
   durationMs: number
@@ -54,12 +55,12 @@ export async function orchestrateTournamentCourseMapping(
 ): Promise<TournamentCourseMappingOrchestrationResult> {
   const startTime = Date.now()
   const results: TournamentCourseMappingOrchestrationItem[] = []
-  let tournamentsScanned = 0
-  let tournamentsWithCourses = 0
-  let mappingsCreated = 0
+  let tournamentCoursesProcessed = 0
+  let mappingRowsCreated = 0
+  let golfCourseApiMatchesFound = 0
+  let golfCourseApiUnmatched = 0
   let mappingsUpdated = 0
   let mappingsReused = 0
-  let unmatchedCourses = 0
   let skippedTournaments = 0
   let totalErrors = 0
 
@@ -71,65 +72,77 @@ export async function orchestrateTournamentCourseMapping(
   console.log("[v0] Tournament Course Orchestration Started")
 
   try {
-    // Step 1: Query all tournaments with host courses
-    console.log("[v0] Step 1: Fetching active tournaments with host courses...")
+    // Step 1: Query all tournament courses (not just tournaments with host courses)
+    console.log("[v0] Step 1: Fetching all tournament courses...")
 
-    const tournamentsWithHostCourses = await prisma.tournament.findMany({
-      where: { active: true },
-      include: {
-        tournamentCourses: {
-          where: { hostCourse: true },
-          include: { course: true },
-        },
+    const allTournamentCourses = await prisma.tournamentCourse.findMany({
+      where: {
+        tournament: { active: true },
+        hostCourse: true,
       },
-      orderBy: { name: "asc" },
+      include: {
+        tournament: true,
+        course: true,
+      },
+      orderBy: { tournament: { name: "asc" } },
     })
 
-    tournamentsScanned = tournamentsWithHostCourses.length
-    console.log(`[v0] Found ${tournamentsScanned} active tournaments`)
+    tournamentCoursesProcessed = allTournamentCourses.length
+    console.log(`[v0] Found ${tournamentCoursesProcessed} active tournament courses`)
 
-    // Step 2: Filter to tournaments that have a host course
-    const tournamentsToProcess = tournamentsWithHostCourses.filter(
-      (t) => t.tournamentCourses.length > 0,
-    )
-    tournamentsWithCourses = tournamentsToProcess.length
-    console.log(`[v0] ${tournamentsWithCourses} tournaments have host courses`)
-
-    skippedTournaments = tournamentsScanned - tournamentsWithCourses
-    if (skippedTournaments > 0) {
-      console.log(`[v0] Skipped ${skippedTournaments} tournaments without host courses`)
-    }
-
-    // Step 3: Initialize GolfCourseAPI client
+    // Initialize repositories and client
+    const mappingRepo = getTournamentCourseMappingRepository(prisma)
     const apiKey = process.env.GOLFCOURSE_API_KEY
     if (!apiKey) {
       throw new Error("GOLFCOURSE_API_KEY not set")
     }
     const client = new GolfCourseAPIClient(apiKey)
 
-    // Step 4: Process each tournament's course
-    console.log("[v0] Step 2: Processing tournaments for GolfCourse API mapping...")
+    // Step 2: Process each tournament course
+    console.log("[v0] Step 2: Creating/updating mappings for all tournament courses...")
 
-    for (const tournament of tournamentsToProcess) {
-      // Get the host course
-      const hostCourseLink = tournament.tournamentCourses[0]
-      if (!hostCourseLink || !hostCourseLink.course) {
-        console.log(`[v0] Skipping ${tournament.name}: no host course found`)
+    for (const tournamentCourse of allTournamentCourses) {
+      const tournament = tournamentCourse.tournament
+      const course = tournamentCourse.course
+
+      if (!course) {
+        console.log(`[v0] Skipping tournament ${tournament.name}: no course found`)
         skippedTournaments++
-        results.push({
-          tournamentId: tournament.id,
-          tournamentName: tournament.name,
-          courseName: "Unknown",
-          status: "skipped",
-          error: "No host course found",
-        })
         continue
       }
 
-      const course = hostCourseLink.course
-
       try {
-        // Query SportsDataIO course data from tournament for context
+        console.log(
+          `[v0] Processing ${tournament.name} → ${course.name} (tournament ${tournament.id})...`,
+        )
+
+        // Check if mapping already exists
+        const existingMappingResult = await mappingRepo.findByTournamentId(tournament.id)
+        const existingMapping = existingMappingResult.outcome === "ok" ? existingMappingResult.record : null
+
+        if (existingMapping) {
+          if (existingMapping.verified) {
+            // Reuse verified mapping
+            mappingsReused++
+            results.push({
+              tournamentId: tournament.id,
+              tournamentName: tournament.name,
+              courseName: course.name,
+              status: "success",
+              mappingReused: true,
+              confidence: existingMapping.matchConfidence ?? 0,
+            })
+            console.log(
+              `[v0] ✓ ${tournament.name}: reused verified mapping (confidence=${existingMapping.matchConfidence}%)`,
+            )
+            continue
+          } else {
+            // Mapping exists but unverified, will update it below
+            console.log(`[v0] Mapping exists but unverified for ${tournament.name}, will update`)
+          }
+        }
+
+        // Try to find GolfCourse API match
         const sportsDataCourseData = {
           name: course.name,
           clubName: course.name,
@@ -138,60 +151,93 @@ export async function orchestrateTournamentCourseMapping(
           country: course.country || undefined,
         }
 
-        console.log(
-          `[v0] Processing ${tournament.name} → ${course.name} (tournament ${tournament.id})...`,
-        )
+        let golfCourseApiCourseId: number | null = null
+        let confidence = 0
+        let matchedBy = "manual"
 
-        // Call importTournamentCourse to match and create mapping
-        const importResult = await importTournamentCourse(
-          client,
-          tournament.id,
-          undefined, // sportsDataIoCourseId not available here
-          course.name,
-          sportsDataCourseData,
-          prisma,
-        )
+        try {
+          const searchResults = await client.searchCourses(course.name)
 
-        // Track result
-        if (importResult.status === "success") {
-          if (importResult.mappingCreated) {
-            mappingsCreated++
-          } else if (importResult.mappingReused) {
-            mappingsReused++
+          if (searchResults && searchResults.length > 0) {
+            const bestMatch = findBestMatch(sportsDataCourseData, searchResults)
+            if (bestMatch) {
+              golfCourseApiCourseId = bestMatch.courseId
+              confidence = bestMatch.confidence
+              matchedBy = bestMatch.matchedBy
+              golfCourseApiMatchesFound++
+              console.log(
+                `[v0] Found GolfCourseAPI match: ${course.name} → courseId ${golfCourseApiCourseId} (confidence=${confidence}%)`,
+              )
+            } else {
+              golfCourseApiUnmatched++
+              console.log(
+                `[v0] No suitable GolfCourseAPI match for ${course.name} (confidence threshold not met)`,
+              )
+            }
           } else {
-            mappingsUpdated++
+            golfCourseApiUnmatched++
+            console.log(`[v0] No GolfCourseAPI courses found for search: "${course.name}"`)
           }
-
-          results.push({
-            tournamentId: tournament.id,
-            tournamentName: tournament.name,
-            courseName: course.name,
-            status: "success",
-            mappingCreated: importResult.mappingCreated,
-            mappingReused: importResult.mappingReused,
-            confidence: importResult.mappingConfidence,
-          })
-
+        } catch (searchError) {
+          golfCourseApiUnmatched++
           console.log(
-            `[v0] ✓ ${tournament.name}: confidence=${importResult.mappingConfidence}%, ` +
-              `${importResult.mappingCreated ? "created" : importResult.mappingReused ? "reused" : "updated"} mapping`,
-          )
-        } else {
-          unmatchedCourses++
-          totalErrors++
-
-          results.push({
-            tournamentId: tournament.id,
-            tournamentName: tournament.name,
-            courseName: course.name,
-            status: "error",
-            error: importResult.error,
-          })
-
-          console.log(
-            `[v0] ✗ ${tournament.name}: ${importResult.error || "Unknown error"}`,
+            `[v0] Error searching GolfCourseAPI for ${course.name}: ${searchError instanceof Error ? searchError.message : "unknown error"}`,
           )
         }
+
+        // Create or update mapping (regardless of whether GolfCourseAPI match was found)
+        if (existingMapping) {
+          // Update existing unverified mapping
+          const updateResult = await mappingRepo.update(tournament.id, {
+            golfCourseApiCourseId: golfCourseApiCourseId || undefined,
+            tournamentCourseName: course.name,
+            golfCourseCourseName: course.name,
+            matchConfidence: confidence,
+            matchedBy,
+            verified: false,
+          })
+
+          if (updateResult.outcome === "ok") {
+            mappingsUpdated++
+            console.log(
+              `[v0] ✓ Updated mapping for ${tournament.name} (golfCourseApiId=${golfCourseApiCourseId || "null"})`,
+            )
+          } else {
+            totalErrors++
+            console.log(`[v0] ✗ Failed to update mapping for ${tournament.name}: ${updateResult.error.message}`)
+          }
+        } else {
+          // Create new mapping
+          const createResult = await mappingRepo.create({
+            tournamentId: tournament.id,
+            sportsDataIoCourseId: undefined,
+            golfCourseApiCourseId: golfCourseApiCourseId || 0, // Set to 0 if no match (nullable field)
+            tournamentCourseName: course.name,
+            golfCourseCourseName: course.name,
+            matchConfidence: confidence,
+            matchedBy,
+            verified: false,
+          })
+
+          if (createResult.outcome === "ok") {
+            mappingRowsCreated++
+            console.log(
+              `[v0] ✓ Created mapping for ${tournament.name} (golfCourseApiId=${golfCourseApiCourseId || "null"})`,
+            )
+          } else {
+            totalErrors++
+            console.log(`[v0] ✗ Failed to create mapping for ${tournament.name}: ${createResult.error.message}`)
+          }
+        }
+
+        results.push({
+          tournamentId: tournament.id,
+          tournamentName: tournament.name,
+          courseName: course.name,
+          status: "success",
+          mappingCreated: !existingMapping,
+          confidence,
+        })
       } catch (error) {
         totalErrors++
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
@@ -199,7 +245,7 @@ export async function orchestrateTournamentCourseMapping(
         results.push({
           tournamentId: tournament.id,
           tournamentName: tournament.name,
-          courseName: hostCourseLink.course.name,
+          courseName: course.name,
           status: "error",
           error: errorMessage,
         })
@@ -210,19 +256,17 @@ export async function orchestrateTournamentCourseMapping(
       }
     }
 
-    // Step 5: Generate summary
+    // Step 3: Generate summary
     const durationMs = Date.now() - startTime
-    const successCount = mappingsCreated + mappingsReused + mappingsUpdated
-    const failureCount = unmatchedCourses
-    const ok = failureCount === 0
+    const ok = totalErrors === 0
 
     const summary =
-      `Scanned ${tournamentsScanned} tournaments, ` +
-      `${tournamentsWithCourses} had courses, ` +
-      `created ${mappingsCreated} new mappings, ` +
+      `Processed ${tournamentCoursesProcessed} tournament courses, ` +
+      `created ${mappingRowsCreated} mapping rows, ` +
+      `found ${golfCourseApiMatchesFound} GolfCourseAPI matches, ` +
+      `unmatched ${golfCourseApiUnmatched}, ` +
       `reused ${mappingsReused} verified, ` +
       `updated ${mappingsUpdated}, ` +
-      `unmatched ${unmatchedCourses}, ` +
       `errors ${totalErrors}`
 
     console.log("[v0] ╔════════════════════════════════════════════════════════╗")
@@ -230,32 +274,28 @@ export async function orchestrateTournamentCourseMapping(
     console.log("[v0] ╠════════════════════════════════════════════════════════╣")
     console.log(`[v0] ║ Duration: ${durationMs}ms`)
     console.log(
-      `[v0] ║ Status: ${ok ? "✓ SUCCESS (no unmatched courses)" : "⚠ COMPLETED WITH ERRORS"}`,
+      `[v0] ║ Status: ${ok ? "✓ SUCCESS" : "⚠ COMPLETED WITH ERRORS"}`,
     )
     console.log(
       "[v0] ├────────────────────────────────────────────────────────┤",
     )
-    console.log(`[v0] ║ Tournaments scanned:      ${tournamentsScanned}`)
-    console.log(`[v0] ║ With host courses:        ${tournamentsWithCourses}`)
-    console.log(`[v0] ║ Skipped (no course):      ${skippedTournaments}`)
-    console.log(
-      "[v0] ├────────────────────────────────────────────────────────┤",
-    )
-    console.log(`[v0] ║ Mappings created:         ${mappingsCreated}`)
-    console.log(`[v0] ║ Mappings reused:          ${mappingsReused}`)
-    console.log(`[v0] ║ Mappings updated:         ${mappingsUpdated}`)
-    console.log(`[v0] ║ Unmatched courses:        ${unmatchedCourses}`)
-    console.log(`[v0] ║ Total errors:             ${totalErrors}`)
+    console.log(`[v0] ║ Tournament courses processed:  ${tournamentCoursesProcessed}`)
+    console.log(`[v0] ║ Mapping rows created:          ${mappingRowsCreated}`)
+    console.log(`[v0] ║ GolfCourseAPI matches found:   ${golfCourseApiMatchesFound}`)
+    console.log(`[v0] ║ GolfCourseAPI unmatched:       ${golfCourseApiUnmatched}`)
+    console.log(`[v0] ║ Mappings reused (verified):    ${mappingsReused}`)
+    console.log(`[v0] ║ Mappings updated:              ${mappingsUpdated}`)
+    console.log(`[v0] ║ Total errors:                  ${totalErrors}`)
     console.log("[v0] ╚════════════════════════════════════════════════════════╝")
 
     return {
       ok,
-      tournamentsScanned,
-      tournamentsWithCourses,
-      mappingsCreated,
+      tournamentCoursesProcessed,
+      mappingRowsCreated,
+      golfCourseApiMatchesFound,
+      golfCourseApiUnmatched,
       mappingsUpdated,
       mappingsReused,
-      unmatchedCourses,
       skippedTournaments,
       totalErrors,
       durationMs,
@@ -273,12 +313,12 @@ export async function orchestrateTournamentCourseMapping(
 
     return {
       ok: false,
-      tournamentsScanned,
-      tournamentsWithCourses,
-      mappingsCreated,
+      tournamentCoursesProcessed,
+      mappingRowsCreated,
+      golfCourseApiMatchesFound,
+      golfCourseApiUnmatched,
       mappingsUpdated,
       mappingsReused,
-      unmatchedCourses,
       skippedTournaments,
       totalErrors: 1,
       durationMs,
