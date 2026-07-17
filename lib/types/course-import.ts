@@ -29,6 +29,9 @@ export interface CourseImportSummary extends ImportSummary {
   // Course Insights metrics
   insightsGenerated?: number
 
+  // Course Metric Explanations metrics
+  explanationsGenerated?: number
+
   // Performance metric (courses per second, rounded to 1 decimal)
   throughputPerSecond: number
 }

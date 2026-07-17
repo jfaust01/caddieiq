@@ -1474,11 +1474,47 @@ model CourseIntelligence {
   /// Relations
   course                          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
   insights                        CourseInsight[]
+  explanations                    CourseMetricExplanation[]
   
   @@unique([courseId, calculationVersion])
   @@index([courseId])
   @@index([calculatedAt])
   @@map("course_intelligence")
+}
+
+/// Course Metric Explanations — transparent factors behind each intelligence metric.
+/// Generated deterministically from CourseIntelligence and source course data.
+/// Explains why each metric received its score through contributing factors.
+model CourseMetricExplanation {
+  id                              String    @id @default(cuid())
+  
+  /// Reference to course intelligence
+  courseIntelligenceId            String
+  courseIntelligence              CourseIntelligence @relation(fields: [courseIntelligenceId], references: [id], onDelete: Cascade)
+  
+  /// Metric identifier (e.g., "drivingImportance", "puttingImportance")
+  metric                          String    @db.VarChar(50)
+  
+  /// Human-readable title
+  title                           String
+  
+  /// Summary explanation of why this metric scored as it did
+  summary                         String    @db.Text
+  
+  /// Contributing factors formatted as bullet list
+  contributingFactors             String    @db.Text
+  
+  /// Algorithm version for future updates
+  calculationVersion              String    @default("v1")
+  
+  /// Audit timestamps
+  createdAt                       DateTime  @default(now())
+  updatedAt                       DateTime  @updatedAt
+  
+  @@unique([courseIntelligenceId, metric, calculationVersion])
+  @@index([courseIntelligenceId])
+  @@index([metric])
+  @@map("course_metric_explanations")
 }
 
 /// Course Insights — human-readable intelligence derived from metrics.

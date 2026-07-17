@@ -11,6 +11,7 @@ import type { CourseImportSummary } from "@/lib/types/course-import"
 import { generateImportJobId } from "@/lib/types/import-summary"
 import { persistCourseIntelligence } from "@/lib/course-intelligence/service"
 import { generateAndPersistInsights } from "@/lib/course-intelligence/insights"
+import { generateAndPersistExplanations } from "@/lib/course-intelligence/explanations"
 
 /**
  * Validate course data has required fields and structure.
@@ -89,6 +90,7 @@ export async function importCourseIntelligence(
   let intelligenceAnalyzed = 0
   let intelligenceGenerated = 0
   let insightsGenerated = 0
+  let explanationsGenerated = 0
   const warnings: string[] = []
   const failures: string[] = []
 
@@ -118,6 +120,8 @@ export async function importCourseIntelligence(
         teeBoxesSkipped: 0,
         intelligenceAnalyzed: 0,
         intelligenceGenerated: 0,
+        insightsGenerated: 0,
+        explanationsGenerated: 0,
         throughputPerSecond: 0,
         warnings,
         failures,
@@ -253,6 +257,18 @@ export async function importCourseIntelligence(
                 if (insights.length > 0) {
                   insightsGenerated += insights.length
                   console.log(`[v0] Generated ${insights.length} insights for ${courseDetail.name}`)
+
+                  // Generate and persist course metric explanations
+                  try {
+                    const explanations = await generateAndPersistExplanations(courseId)
+                    if (explanations.length > 0) {
+                      explanationsGenerated += explanations.length
+                      console.log(`[v0] Generated ${explanations.length} explanations for ${courseDetail.name}`)
+                    }
+                  } catch (explanationError) {
+                    const errorMsg = explanationError instanceof Error ? explanationError.message : String(explanationError)
+                    warnings.push(`Failed to generate explanations for ${courseDetail.name}: ${errorMsg}`)
+                  }
                 }
               } catch (insightError) {
                 const errorMsg = insightError instanceof Error ? insightError.message : String(insightError)
@@ -334,6 +350,7 @@ export async function importCourseIntelligence(
       intelligenceAnalyzed,
       intelligenceGenerated,
       insightsGenerated,
+      explanationsGenerated,
       throughputPerSecond,
       warnings,
       failures,
@@ -367,6 +384,7 @@ export async function importCourseIntelligence(
       intelligenceAnalyzed,
       intelligenceGenerated,
       insightsGenerated,
+      explanationsGenerated,
       throughputPerSecond,
       warnings,
       failures,
