@@ -1280,3 +1280,78 @@ model ImportRun {
   @@index([startedAt])
   @@map("import_runs")
 }
+
+// ---------------------------------------------------------------------------
+// GolfCourse API Models (Sprint 13.0)
+// ---------------------------------------------------------------------------
+
+/// Course details from GolfCourse API.
+/// Stores rich course information for reuse throughout the application.
+model CourseDetails {
+  id                String    @id @default(cuid())
+  /// External course ID from GolfCourse API
+  externalCourseId  String    @unique
+  courseName        String
+  clubName          String?
+  city              String?
+  state             String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
+  website           String?
+  phone             String?
+  par               Int?
+  totalYardage      Int?
+  courseRating      Float?
+  slopeRating       Int?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  /// Relations
+  holes             CourseHole[]
+  tees              CourseTee[]
+
+  @@index([externalCourseId])
+  @@index([courseName])
+  @@map("course_details")
+}
+
+/// Individual holes for a course.
+model CourseHole {
+  id               String         @id @default(cuid())
+  courseId         String
+  holeNumber       Int
+  par              Int?
+  yardage          Int?
+  handicap         Int?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  
+  /// Relations
+  course           CourseDetails  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, holeNumber])
+  @@index([courseId])
+  @@map("course_holes")
+}
+
+/// Tee information for a course (different sets for different players).
+model CourseTee {
+  id               String         @id @default(cuid())
+  courseId         String
+  teeName          String
+  teeColor         String?
+  gender           String?
+  yardage          Int?
+  rating           Float?
+  slope            Int?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  
+  /// Relations
+  course           CourseDetails  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, teeName])
+  @@index([courseId])
+  @@map("course_tees")
+}

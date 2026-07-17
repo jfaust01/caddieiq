@@ -62,6 +62,11 @@ export class ImportRunRepository {
     return this.prisma.importRun.create({ data: input })
   }
 
+  /** Alias for record() for convenience. */
+  async create(input: ImportRunInput): Promise<ImportRun> {
+    return this.record(input)
+  }
+
   /**
    * The most recent run for every entity that has ever run, newest first. Uses
    * `DISTINCT ON (entity)` so the dashboard gets exactly one row per pipeline —
