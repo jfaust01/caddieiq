@@ -42,7 +42,7 @@ export function ImportHistoricalResults() {
         </div>
       </div>
       <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-      <div>
+        <div>
         <h3 className="font-semibold">Historical Results Import</h3>
         <p className="text-sm text-muted-foreground">
           Import tournament rounds and player scores from historical leaderboards
