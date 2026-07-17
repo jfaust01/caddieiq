@@ -58,7 +58,8 @@ const FORECAST_STATUS_CODES = new Set([
  * real forecast as loaded — so the header shows an honest placeholder instead
  * of a stale or fabricated reading.
  */
-function weatherSummary(weather: WeatherIntelligence): string | null {
+function weatherSummary(weather: WeatherIntelligence | null): string | null {
+  if (!weather || !weather.statusReport) return null
   if (!FORECAST_STATUS_CODES.has(weather.statusReport.code)) return null
   if (weather.status !== 'available' || !weather.current) return null
   const parts: string[] = []
@@ -325,13 +326,15 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         </CommandCenterWidget>
       ) : null}
 
-      <CommandCenterWidget
-        id="weather"
-        title="Weather Intelligence"
-        icon={<Cloud className="size-4 text-primary" aria-hidden />}
-      >
-        <TournamentWeatherIntelligence weather={weather} admin={weatherAdmin} />
-      </CommandCenterWidget>
+      {weather ? (
+        <CommandCenterWidget
+          id="weather"
+          title="Weather Intelligence"
+          icon={<Cloud className="size-4 text-primary" aria-hidden />}
+        >
+          <TournamentWeatherIntelligence weather={weather} admin={weatherAdmin} />
+        </CommandCenterWidget>
+      ) : null}
 
       <CommandCenterWidget
         id="odds"
