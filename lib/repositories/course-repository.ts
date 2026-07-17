@@ -411,7 +411,7 @@ export class CourseRepository extends BaseRepository {
       if (result.outcome === "inserted") {
         records.push(result.record!)
         inserted++
-        this.logger.create(char.courseId)
+        this.logger.insert(char.courseId)
       } else if (result.outcome === "updated") {
         records.push(result.record!)
         updated++
