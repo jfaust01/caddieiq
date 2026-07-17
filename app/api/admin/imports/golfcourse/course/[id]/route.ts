@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getCourseDetailsRepository } from "@/lib/repositories/course-details-repository"
 import prismaClient from "@/lib/prisma"
 
@@ -8,11 +8,11 @@ import prismaClient from "@/lib/prisma"
  */
 
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const { id } = params
+    const { id } = await params
 
     if (!id) {
       return NextResponse.json(

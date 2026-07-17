@@ -84,7 +84,7 @@ function detail(report: TournamentFieldReport): string {
 }
 
 interface TournamentFieldBannerProps {
-  report: TournamentFieldReport
+  report: TournamentFieldReport | null
   className?: string
 }
 
@@ -104,6 +104,8 @@ interface TournamentFieldBannerProps {
  * that is already playing.
  */
 export function TournamentFieldBanner({ report, className }: TournamentFieldBannerProps) {
+  if (!report) return null
+  
   const Icon = STATUS_ICON[report.status]
   const accent = STATUS_ACCENT[report.status]
 

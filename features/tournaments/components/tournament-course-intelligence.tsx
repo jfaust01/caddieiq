@@ -4,48 +4,72 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/shared/section-header'
 import { CourseIntelligencePanel } from '@/features/courses/components/course-intelligence-panel'
+import { TournamentFantasyAnalysis } from '@/features/tournaments/components/tournament-fantasy-analysis'
+import { CourseIntelligencePremium } from '@/features/tournaments/components/premium-intelligence/course-intelligence-premium'
 import type { CourseProfile } from '@/lib/domain/course'
 
 interface TournamentCourseIntelligenceProps {
   /** The normalized profile of the event's host venue. */
-  profile: CourseProfile
+  profile: CourseProfile | null
   /** Host course identity, for the section heading and the deep link. */
-  course: { id: string; name: string }
+  course: { id: string; name: string } | null
 }
 
 /**
- * Host-venue Course Intelligence on the Tournament hub. Reuses the exact same
- * {@link CourseIntelligencePanel} the Course Page renders — so the tournament
- * view and the course view can never disagree — and adds a heading plus a deep
- * link to the full course profile. Rendered only when the event is linked to a
- * course; the panel itself honestly reports how much is verified.
+ * Host-venue Course Intelligence on the Tournament hub. Combines verified course
+ * characteristics with Fantasy Analysis insights that transform GolfCourseAPI data
+ * into actionable player archetype recommendations and skill importance rankings.
+ * Includes premium analytics for strategic guidance.
  */
-export function TournamentCourseIntelligence({
+export async function TournamentCourseIntelligence({
   profile,
   course,
 }: TournamentCourseIntelligenceProps) {
-  return (
-    <section className="flex flex-col gap-4">
-      <SectionHeader
-        as="h3"
-        title="Course intelligence"
-        description={`The verified characteristics of ${course.name}, the host venue — the same profile that powers course fit.`}
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={
-              <Link href={`/courses/${course.id}`}>
-                View course
-                <ArrowUpRight data-icon="inline-end" />
-              </Link>
-            }
-          />
-        }
-      />
+  if (!profile || !course) {
+    return null
+  }
 
-      <CourseIntelligencePanel profile={profile} />
+  return (
+    <section className="flex flex-col gap-12">
+      {/* Premium Course Intelligence (NEW) */}
+      <div className="border-t pt-8">
+        <CourseIntelligencePremium profile={profile} courseName={course.name} />
+      </div>
+
+      {/* Course Characteristics */}
+      <div className="flex flex-col gap-4 border-t pt-8">
+        <SectionHeader
+          as="h3"
+          title="Course characteristics"
+          description={`The verified characteristics of ${course.name}, the host venue — the same profile that powers course fit.`}
+          actions={
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link href={`/courses/${course.id}`}>
+                  View course
+                  <ArrowUpRight data-icon="inline-end" />
+                </Link>
+              }
+            />
+          }
+        />
+
+        <CourseIntelligencePanel profile={profile} />
+      </div>
+
+      {/* Fantasy Analysis */}
+      <div className="flex flex-col gap-4 border-t pt-8">
+        <SectionHeader
+          as="h3"
+          title="Fantasy analysis"
+          description={`How ${course.name}'s characteristics impact player archetypes and lineup strategy — transform course data into DFS insights.`}
+        />
+
+        <TournamentFantasyAnalysis profile={profile} courseName={course.name} />
+      </div>
     </section>
   )
 }

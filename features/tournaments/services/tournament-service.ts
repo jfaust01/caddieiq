@@ -62,8 +62,37 @@ import {
   getTournamentRepository,
   type TournamentSearchParams,
 } from '@/lib/repositories/tournament-repository'
+import { getRoundRepository } from '@/lib/repositories/round-repository'
+import { getPlayerRoundRepository } from '@/lib/repositories/player-round-repository'
 
 import { mapFieldEntrant, mapTournamentSummary } from './tournament-mapper'
+
+/**
+ * Round with player scores for UI display.
+ * Combines Round data with PlayerRound entries and player name resolution.
+ */
+export interface RoundWithScores {
+  roundId: string
+  roundNumber: number
+  scheduledDate: Date | null
+  status: string
+  playerScores: PlayerScoreEntry[]
+}
+
+/**
+ * Single player's score and status for a round.
+ */
+export interface PlayerScoreEntry {
+  playerRoundId: string
+  playerId: string
+  playerName: string
+  position: number | null
+  score: number | null
+  toPar: number | null
+  madeCut: boolean | null
+  withdrawn: boolean
+  disqualified: boolean
+}
 
 /**
  * Load one tournament by id, mapped to the UI shape, or `null` when it does not
@@ -82,6 +111,63 @@ const getTournamentByIdCached = cache(
       createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
       updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
     }
+  },
+)
+
+/**
+ * Load all rounds with player scores for a tournament.
+ * Reuses RoundRepository and PlayerRoundRepository; joins with field data for player names.
+ * Wrapped in React cache for request-level caching.
+ */
+const getRoundsByTournamentCached = cache(
+  async (tournamentId: string): Promise<RoundWithScores[]> => {
+    const roundRepo = getRoundRepository()
+    const playerRoundRepo = getPlayerRoundRepository()
+    const fieldRepo = getFieldRepository()
+
+    // Fetch all rounds for the tournament
+    const rounds = await roundRepo.getByTournament(tournamentId)
+
+    if (rounds.length === 0) {
+      return []
+    }
+
+    // Fetch player scores for each round and build the result
+    const result: RoundWithScores[] = []
+
+    for (const round of rounds) {
+      const playerRounds = await playerRoundRepo.getByRound(round.id)
+
+      // Build player score entries with name resolution
+      const playerScores: PlayerScoreEntry[] = playerRounds
+        .map((pr) => {
+          // Extract player name from tournamentField relationship
+          const playerName = pr.tournamentField?.player?.fullName || 'Unknown Player'
+
+          return {
+            playerRoundId: pr.id,
+            playerId: pr.tournamentField?.playerId || '',
+            playerName,
+            position: pr.position,
+            score: pr.score,
+            toPar: pr.toPar,
+            madeCut: pr.madeCut,
+            withdrawn: pr.withdrawn,
+            disqualified: pr.disqualified,
+          }
+        })
+        .filter((entry) => entry.playerId) // Filter out entries without player resolution
+
+      result.push({
+        roundId: round.id,
+        roundNumber: round.roundNumber,
+        scheduledDate: round.scheduledDate,
+        status: round.status,
+        playerScores,
+      })
+    }
+
+    return result
   },
 )
 
@@ -607,5 +693,238 @@ export const tournamentService = {
     const years = await getTournamentRepository().listReferencedSeasons()
     const options = years.map((year) => ({ value: String(year), label: String(year) }))
     return [{ value: 'ALL', label: 'All seasons' }, ...options]
+  },
+
+  /**
+   * Compute course difficulty (0-10) from CourseProfile characteristics.
+   * Weights: length (40%), green size (25%), hazards/OB (20%), wind (15%).
+   */
+  computeCourseDifficulty(profile: typeof import('@/lib/domain/course').CourseProfile | null): number {
+    if (!profile) return 5 // Neutral if no profile
+
+    let score = 5
+    if (profile.avgYardage > 7300) score += 2
+    else if (profile.avgYardage > 7000) score += 1.5
+    else if (profile.avgYardage < 6500) score -= 1
+
+    if (profile.avgGreenSize === 'small') score += 1.5
+    else if (profile.avgGreenSize === 'tiny') score += 2.5
+
+    if (profile.hazardCount > 50) score += 1.5
+    else if (profile.hazardCount > 30) score += 1
+
+    if (profile.windExposure === 'high') score += 1
+    else if (profile.windExposure === 'moderate') score += 0.5
+
+    return Math.max(0, Math.min(10, score))
+  },
+
+  /**
+   * Extract dynamic characteristic chips from CourseProfile.
+   * Returns concise, player-facing descriptors like "Tight Fairways", "Small Greens", etc.
+   */
+  extractCourseCharacteristics(profile: typeof import('@/lib/domain/course').CourseProfile | null): string[] {
+    if (!profile) return []
+
+    const chips: string[] = []
+
+    if (profile.avgYardage > 7200) chips.push('Ultra-Long')
+    else if (profile.avgYardage > 7000) chips.push('Long')
+
+    if (profile.fairwayWidth === 'narrow') chips.push('Tight Fairways')
+    else if (profile.fairwayWidth === 'very_narrow') chips.push('Very Narrow Fairways')
+
+    if (profile.avgGreenSize === 'small') chips.push('Small Greens')
+    else if (profile.avgGreenSize === 'tiny') chips.push('Tiny Greens')
+
+    if (profile.hazardCount > 50) chips.push('Hazard-Heavy')
+    if (profile.outOfBoundsCount > 15) chips.push('OB Risk')
+
+    if (profile.windExposure === 'high') chips.push('Wind Sensitive')
+    if (profile.elevationChange > 200) chips.push('Elevation Play')
+    if (profile.waterHazards > 10) chips.push('Water in Play')
+
+    if (profile.grassType?.includes('Bentgrass')) chips.push('Bentgrass Greens')
+    if (profile.grassType?.includes('Poa')) chips.push('Poa Annua Greens')
+
+    return chips.slice(0, 6)
+  },
+
+  /**
+   * Generate 3-6 fantasy-relevant takeaways from CourseProfile and CourseDetails.
+   * AI-style insights that help DFS players understand course demands.
+   */
+  generateFantasyTakeaways(
+    profile: typeof import('@/lib/domain/course').CourseProfile | null,
+    details: any, // CourseDetails shape
+  ): string[] {
+    if (!profile) return []
+
+    const takeaways: string[] = []
+
+    // Length takeaway
+    if (profile.avgYardage > 7300) {
+      takeaways.push('Bombers have an edge on this ultra-long track—accuracy matters but distance is king.')
+    } else if (profile.avgYardage < 6500) {
+      takeaways.push('This short course favors well-rounded players who can convert scoring opportunities.')
+    }
+
+    // Putting takeaway
+    if (profile.avgGreenSize === 'small' || profile.avgGreenSize === 'tiny') {
+      takeaways.push('Small greens demand precise approaches; elite putters can gain strokes on approach misses.')
+    }
+
+    // Driving accuracy
+    if (profile.fairwayWidth === 'very_narrow' || profile.outOfBoundsCount > 15) {
+      takeaways.push('Directional accuracy is critical—straight hitters outperform bombers off the tee.')
+    }
+
+    // Wind/elevation
+    if (profile.windExposure === 'high' || profile.elevationChange > 200) {
+      takeaways.push('Course conditions are volatile; players with consistent form may outpace high-ceiling targets.')
+    }
+
+    // Risk reward
+    if (profile.waterHazards > 10 || profile.hazardCount > 50) {
+      takeaways.push('High-risk holes reward conservative play—aggressive players face penalty strokes.')
+    }
+
+    // Tee grass
+    if (details?.grassType?.includes('Poa')) {
+      takeaways.push('Poa Annua greens can be unpredictable; factor in weather and green speed volatility.')
+    }
+
+    return takeaways.slice(0, 6)
+  },
+
+  /**
+   * Generate skill importance explanations with confidence levels.
+   * Returns object with driving, irons, short game, putting, course management skills
+   * each with a band (low/medium/high) and explanation.
+   */
+  getSkillImportanceExplanations(profile: typeof import('@/lib/domain/course').CourseProfile | null): Record<string, { band: string; explanation: string }> {
+    if (!profile) {
+      return {
+        driving: { band: 'medium', explanation: 'Data unavailable' },
+        irons: { band: 'medium', explanation: 'Data unavailable' },
+        shortGame: { band: 'medium', explanation: 'Data unavailable' },
+        putting: { band: 'medium', explanation: 'Data unavailable' },
+        courseManagement: { band: 'medium', explanation: 'Data unavailable' },
+      }
+    }
+
+    return {
+      driving: {
+        band: profile.avgYardage > 7200 ? 'high' : profile.avgYardage < 6500 ? 'low' : 'medium',
+        explanation: profile.avgYardage > 7200 
+          ? 'Distance off the tee is critical on this ultra-long layout. Bombers gain a significant advantage.'
+          : profile.avgYardage < 6500
+          ? 'Distance is less important than accuracy and precision. Consistent ball strikers thrive here.'
+          : 'Balanced importance of both distance and accuracy throughout the round.',
+      },
+      irons: {
+        band: profile.fairwayWidth === 'narrow' || profile.fairwayWidth === 'very_narrow' ? 'high' : 'medium',
+        explanation: profile.fairwayWidth === 'narrow' || profile.fairwayWidth === 'very_narrow'
+          ? 'Tight fairways demand precise iron play. Poor approach shots result in difficult recoveries.'
+          : 'Solid iron play helps but is not as critical as other skills on this course.',
+      },
+      shortGame: {
+        band: profile.avgGreenSize === 'small' || profile.avgGreenSize === 'tiny' ? 'high' : 'medium',
+        explanation: profile.avgGreenSize === 'small' || profile.avgGreenSize === 'tiny'
+          ? 'Small greens punish approach misses severely. Elite chippers and wedge players gain significant strokes.'
+          : 'Short game proficiency is important but not the primary differentiator.',
+      },
+      putting: {
+        band: profile.greenSpeed === 'high' || profile.greenSpeed === 'very_high' ? 'high' : 'medium',
+        explanation: profile.greenSpeed === 'high' || profile.greenSpeed === 'very_high'
+          ? 'Fast greens require expert touch and reading. Elite putters can dominate scoring.'
+          : 'Putting skill is important but greens are relatively forgiving for speed control.',
+      },
+      courseManagement: {
+        band: profile.windExposure === 'high' || profile.elevationChange > 200 ? 'high' : 'medium',
+        explanation: profile.windExposure === 'high' || profile.elevationChange > 200
+          ? 'Weather conditions and elevation changes are highly variable. Smart club selection and course strategy matter greatly.'
+          : 'Course management is a supporting skill; other factors are more impactful.',
+      },
+    }
+  },
+
+  /**
+   * Generate a strategic one-paragraph summary of why this course matters for DFS.
+   * Explains how the course characteristics translate to player selection strategy.
+   */
+  generateStrategySummary(profile: typeof import('@/lib/domain/course').CourseProfile | null, courseName: string): string {
+    if (!profile) {
+      return `Limited course data available for ${courseName}. Review player recent form and course history.`
+    }
+
+    const key = profile.avgYardage > 7200 ? 'length' : profile.fairwayWidth === 'narrow' ? 'accuracy' : profile.avgGreenSize === 'small' ? 'precision' : 'balance'
+
+    const strategies: Record<string, string> = {
+      length: `${courseName} is an ultra-long test that favors distance-based players and bombers off the tee. Target golfers with strong recent form in long-course conditions and proven accuracy in driving. Avoid short hitters unless they have elite short game skills to compensate. The length also means scoring will be lower, so stack multiple proven scorers.`,
+      accuracy: `${courseName} demands directional precision with tight fairways and punishing rough. Build your lineup around accurate drivers and consistent ball strikers who minimize mistakes. Distance becomes secondary to accuracy here—value precision over power. Consider stacking proven performers who excel in accuracy-focused courses.`,
+      precision: `${courseName} features small greens that severely punish approach misses. Prioritize players with elite approach play and short game proficiency. Look for golfers on hot streaks with strong GIR statistics and scoring averages. The small greens level the playing field—even mid-tier golfers can capitalize on good approach shots.`,
+      balance: `${courseName} presents a balanced test where multiple skills are important in equal measure. Build a diverse lineup featuring distance, accuracy, and short game. Look for well-rounded players with consistent all-around statistics rather than specialists. This course rewards consistency and punishes volatility—fade high-variance plays.`,
+    }
+
+    return strategies[key] || strategies.balance
+  },
+
+  /**
+   * Generate player archetypes for best fits and potential fades.
+   * Returns { bestFits: string[], potentialFades: string[] } with explanations.
+   */
+  generatePlayerArchetypes(profile: typeof import('@/lib/domain/course').CourseProfile | null): { bestFits: Array<{ name: string; why: string }>; potentialFades: Array<{ name: string; why: string }> } {
+    if (!profile) {
+      return {
+        bestFits: [{ name: 'Balanced Players', why: 'Data unavailable for detailed analysis' }],
+        potentialFades: [],
+      }
+    }
+
+    const bestFits: Array<{ name: string; why: string }> = []
+    const potentialFades: Array<{ name: string; why: string }> = []
+
+    // Length-based archetypes
+    if (profile.avgYardage > 7200) {
+      bestFits.push({ name: 'Long Hitters with Accuracy', why: 'Ultra-long course rewards distance without sacrificing control' })
+      potentialFades.push({ name: 'Short Hitters', why: 'Length becomes a significant disadvantage on 7,400+ yard courses' })
+    } else if (profile.avgYardage < 6500) {
+      bestFits.push({ name: 'Precision Ball Strikers', why: 'Shorter courses emphasize accuracy over pure distance' })
+      potentialFades.push({ name: 'Pure Bombers', why: 'Distance is a wasted advantage when the course is relatively short' })
+    }
+
+    // Accuracy-based archetypes
+    if (profile.fairwayWidth === 'narrow' || profile.fairwayWidth === 'very_narrow') {
+      bestFits.push({ name: 'Directionally Accurate Drivers', why: 'Tight fairways heavily punish wild tee shots' })
+      potentialFades.push({ name: 'Aggressive Risk-Takers', why: 'Missing fairways on narrow layouts leads to severe penalties' })
+    }
+
+    // Greens-based archetypes
+    if (profile.avgGreenSize === 'small' || profile.avgGreenSize === 'tiny') {
+      bestFits.push({ name: 'Elite Approach Players', why: 'Small greens reward precise approach play and punish misses' })
+      bestFits.push({ name: 'Short Game Specialists', why: 'Chipping and wedge play become critical with limited target areas' })
+      potentialFades.push({ name: 'Inconsistent Approach Players', why: 'Poor ball striking is amplified when greens are tiny' })
+    } else {
+      bestFits.push({ name: 'Elite Putters', why: 'Larger greens provide more room for putting skill to shine' })
+    }
+
+    // Wind/elevation archetypes
+    if (profile.windExposure === 'high' || profile.elevationChange > 200) {
+      bestFits.push({ name: 'Course Management Masters', why: 'Variable conditions reward smart club selection and strategy' })
+      potentialFades.push({ name: 'Wind-Sensitive Players', why: 'High-wind or elevation variance penalizes inconsistent ball striking' })
+    }
+
+    return { bestFits, potentialFades }
+  },
+
+  /**
+   * Return all rounds with player scores for a tournament. Reuses
+   * RoundRepository and PlayerRoundRepository; joins with field data for player
+   * name resolution. Returns an empty array when no rounds exist or the
+   * tournament has no scoring data yet.
+   */
+  getRoundsByTournament(id: string): Promise<RoundWithScores[]> {
+    return getRoundsByTournamentCached(id)
   },
 }

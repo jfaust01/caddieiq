@@ -15,11 +15,18 @@ interface TournamentCourseIntelligenceWrapperProps {
 
 /**
  * Fetch course intelligence for tournament and render card.
+ * Gracefully handles errors by treating them as "not available".
  */
 export async function TournamentCourseIntelligenceWrapper({
   tournamentId,
 }: TournamentCourseIntelligenceWrapperProps) {
-  const intelligence = await getTournamentCourseIntelligence(tournamentId)
+  let intelligence
+  try {
+    intelligence = await getTournamentCourseIntelligence(tournamentId)
+  } catch (error) {
+    console.error('[v0] getTournamentCourseIntelligence error:', error)
+    intelligence = null
+  }
 
   if (!intelligence) {
     return (

@@ -67,7 +67,10 @@ export function mapSportsDataPlayerRound(
   const position = player?.Rank ?? null
 
   // madeCut indicates whether the player made the cut (null before/at cut time)
-  const madeCut = player?.MadeCut ?? null
+  // Note: SportsDataIO may return this as float (1.0, 1.1) instead of boolean,
+  // so we coerce to boolean explicitly before passing to Prisma
+  const rawMadeCut = player?.MadeCut
+  const madeCut = rawMadeCut === undefined || rawMadeCut === null ? null : !!rawMadeCut
 
   // withdrawn indicates withdrawal
   const withdrawn = player?.IsWithdrawn ?? false
