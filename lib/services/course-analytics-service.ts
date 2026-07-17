@@ -624,12 +624,32 @@ export async function buildAllCourseAnalytics(
 
 /**
  * Fetch the stored analytics for a single course. Returns null if not yet calculated.
+ * 
+ * NOTE: The Prisma client may not have the courseAnalytics delegate if it wasn't
+ * properly regenerated. This method gracefully handles that case by returning null
+ * instead of throwing an error.
  */
 export async function getCourseAnalytics(
   courseId: string,
   prisma: PrismaClient = prismaClient,
 ) {
-  return prisma.courseAnalytics.findUnique({
-    where: { courseId },
-  })
+  try {
+    // Check if the delegate exists before calling it
+    if (!prisma.courseAnalytics) {
+      console.warn('[v0] Prisma client missing courseAnalytics delegate - returning null')
+      return null
+    }
+    
+    return await prisma.courseAnalytics.findUnique({
+      where: { courseId },
+    })
+  } catch (error) {
+    // If the delegate throws an error (e.g., undefined), log and return null
+    if (error instanceof Error && error.message.includes('reading')) {
+      console.warn('[v0] CourseAnalytics query failed (delegate missing):', error.message)
+      return null
+    }
+    // Re-throw other errors
+    throw error
+  }
 }
