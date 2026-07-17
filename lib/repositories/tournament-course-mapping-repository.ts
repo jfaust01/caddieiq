@@ -226,6 +226,23 @@ export class TournamentCourseMappingRepository extends BaseRepository {
       return fail(repoError)
     }
   }
+
+  /**
+   * Find all verified mappings (ready for import).
+   */
+  async findVerified(): Promise<Result<TournamentCourseMapping[]>> {
+    try {
+      const mappings = await this.prisma.tournamentCourseMapping.findMany({
+        where: { verified: true },
+        orderBy: { createdAt: "asc" },
+      })
+      return ok(mappings)
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure("verified-mappings", repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
 }
 
 export function getTournamentCourseMappingRepository(

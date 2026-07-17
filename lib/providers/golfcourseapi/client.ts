@@ -39,6 +39,23 @@ export interface GolfCourseDetail {
     courseRating?: number
     slopeRating?: number
   }
+  metadata?: {
+    architect?: string
+    yearBuilt?: number
+    courseStyle?: string
+  }
+  playingConditions?: {
+    grassTypeFairway?: string
+    grassTypeGreen?: string
+    greenSize?: string
+    greenSpeed?: string
+    elevation?: number
+  }
+  facilities?: {
+    drivingRange?: boolean
+    puttingGreen?: boolean
+    shortGameArea?: boolean
+  }
   holes?: Array<{
     number: number
     par?: number
@@ -98,6 +115,13 @@ export class GolfCourseAPIClient {
     })
 
     return response.data || null
+  }
+
+  /**
+   * Alias for getCourseDetails for convenience.
+   */
+  async fetchCourse(courseId: number): Promise<GolfCourseDetail | null> {
+    return this.getCourseDetails(courseId)
   }
 
   /**

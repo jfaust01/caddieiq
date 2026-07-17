@@ -1291,6 +1291,8 @@ model CourseDetails {
   id                String    @id @default(cuid())
   /// External course ID from GolfCourse API
   externalCourseId  String    @unique
+  
+  // Basic
   courseName        String
   clubName          String?
   city              String?
@@ -1298,12 +1300,34 @@ model CourseDetails {
   country           String?
   latitude          Float?
   longitude         Float?
-  website           String?
-  phone             String?
+  
+  // Course Specifications
   par               Int?
   totalYardage      Int?
   courseRating      Float?
   slopeRating       Int?
+  
+  // Contact & Web
+  website           String?
+  phone             String?
+  
+  // Metadata (Sprint 13.1)
+  architect         String?
+  yearBuilt         Int?
+  courseStyle       String?
+  
+  // Playing Conditions (Sprint 13.1)
+  grassTypeFairway  String?
+  grassTypeGreen    String?
+  greenSize         String?
+  greenSpeed        String?
+  elevation         Int?
+  
+  // Facilities (Sprint 13.1)
+  drivingRange      Boolean?
+  puttingGreen      Boolean?
+  shortGameArea     Boolean?
+  
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   

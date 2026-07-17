@@ -32,6 +32,20 @@ export interface CourseDetailsInput {
   totalYardage?: number | null
   courseRating?: number | null
   slopeRating?: number | null
+  // Metadata (Sprint 13.1)
+  architect?: string | null
+  yearBuilt?: number | null
+  courseStyle?: string | null
+  // Playing Conditions (Sprint 13.1)
+  grassTypeFairway?: string | null
+  grassTypeGreen?: string | null
+  greenSize?: string | null
+  greenSpeed?: string | null
+  elevation?: number | null
+  // Facilities (Sprint 13.1)
+  drivingRange?: boolean | null
+  puttingGreen?: boolean | null
+  shortGameArea?: boolean | null
 }
 
 export class CourseDetailsRepository extends BaseRepository {
@@ -116,6 +130,17 @@ export class CourseDetailsRepository extends BaseRepository {
             totalYardage: input.totalYardage,
             courseRating: input.courseRating,
             slopeRating: input.slopeRating,
+            architect: input.architect,
+            yearBuilt: input.yearBuilt,
+            courseStyle: input.courseStyle,
+            grassTypeFairway: input.grassTypeFairway,
+            grassTypeGreen: input.grassTypeGreen,
+            greenSize: input.greenSize,
+            greenSpeed: input.greenSpeed,
+            elevation: input.elevation,
+            drivingRange: input.drivingRange,
+            puttingGreen: input.puttingGreen,
+            shortGameArea: input.shortGameArea,
           },
         })
         this.logger.update(input.externalCourseId)
@@ -138,6 +163,17 @@ export class CourseDetailsRepository extends BaseRepository {
           totalYardage: input.totalYardage,
           courseRating: input.courseRating,
           slopeRating: input.slopeRating,
+          architect: input.architect,
+          yearBuilt: input.yearBuilt,
+          courseStyle: input.courseStyle,
+          grassTypeFairway: input.grassTypeFairway,
+          grassTypeGreen: input.grassTypeGreen,
+          greenSize: input.greenSize,
+          greenSpeed: input.greenSpeed,
+          elevation: input.elevation,
+          drivingRange: input.drivingRange,
+          puttingGreen: input.puttingGreen,
+          shortGameArea: input.shortGameArea,
         },
       })
       this.logger.insert(input.externalCourseId)
