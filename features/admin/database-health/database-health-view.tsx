@@ -8,6 +8,7 @@ import { ImportPipelines } from "./import-pipelines"
 import { KpiCards } from "./kpi-cards"
 import { RebuildCourseIntelligence } from "./rebuild-course-intelligence"
 import { RebuildCourseAnalytics } from "./rebuild-course-analytics"
+import { ImportHistoricalResults } from "./import-historical-results"
 import { SystemWarningsPanel } from "./system-warnings-panel"
 import { TableHealthPanel } from "./table-health-panel"
 
@@ -73,9 +74,12 @@ export function DatabaseHealthView({ report }: { report: DatabaseHealthReport })
           title="Administrative Actions"
           description="Tools for rebuilding and maintaining platform intelligence"
         />
-        <div className="grid gap-4 md:grid-cols-2">
-          <RebuildCourseIntelligence />
-          <RebuildCourseAnalytics />
+        <div className="grid gap-4">
+          <ImportHistoricalResults />
+          <div className="grid gap-4 md:grid-cols-2">
+            <RebuildCourseIntelligence />
+            <RebuildCourseAnalytics />
+          </div>
         </div>
       </section>
 
