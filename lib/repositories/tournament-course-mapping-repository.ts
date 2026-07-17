@@ -30,7 +30,7 @@ const globalForRepository = globalThis as unknown as {
 
 export class TournamentCourseMappingRepository extends BaseRepository {
   constructor(prisma: PrismaClient, logger?: RepositoryLogSink) {
-    super("TournamentCourseMappingRepository", prisma, logger)
+    super(prisma, "TournamentCourseMappingRepository", logger)
   }
 
   /**
