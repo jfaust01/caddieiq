@@ -89,31 +89,6 @@ export class RoundRepository extends BaseRepository {
       } as any
     }
   }
-    
-    console.log(`[v0-repo] RoundRepository.upsert: ✓ Persistence verified (record exists in database)`)
-    // Return with both old ('ok', 'data') and new ('outcome', 'record') properties for compatibility
-    return {
-      ok: true,
-      data: verified,
-      outcome: "inserted",
-      record: verified,
-    } as any
-  } catch (error) {
-    const repoError = toRepositoryError(error)
-    console.error(`[v0-repo] RoundRepository.upsert: Exception - ${repoError}`)
-    this.log({
-      level: "error",
-      stage: "persist",
-      message: `Failed to upsert round for tournament ${input.tournamentId}`,
-      error: repoError,
-    })
-    return {
-      ok: false,
-      error: repoError,
-      outcome: "failed",
-    } as any
-  }
-}
 
   /**
    * Bulk upsert rounds by (tournamentId, roundNumber).
