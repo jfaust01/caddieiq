@@ -18,6 +18,10 @@ import { PlayerSkillCard } from '@/features/players/components/player-skill-card
 import { UpcomingTournamentCard } from '@/features/players/components/upcoming-tournament-card'
 import { PlayerRankingCards } from '@/features/players/components/player-ranking-cards'
 import { AiSummaryCard } from '@/features/players/components/ai-summary-card'
+import { PlayerTournamentContextWrapper } from '@/features/players/components/player-tournament-context-wrapper'
+import { PlayerAiSummaryEnhanced } from '@/features/players/components/player-ai-summary-enhanced'
+import { PlayerFormChart } from '@/features/players/components/player-form-chart'
+import { PlayerSeasonStatsCategorized } from '@/features/players/components/player-season-stats-categorized'
 import { CourseHistory } from '@/features/players/components/course-history'
 import { TournamentHistory } from '@/features/players/components/tournament-history'
 import { RecentActivity } from '@/features/players/components/recent-activity'
@@ -121,21 +125,21 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
           />
         </TabsContent>
 
-        <TabsContent value="overview">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="flex flex-col gap-6 lg:col-span-2">
-              <CareerSummary summary={player.careerSummary} />
-              <RecentForm
-                form={player.recentForm}
-                className="rounded-lg border border-border bg-card p-4"
-              />
-            </div>
+        <TabsContent value="overview" className="flex flex-col gap-6">
+          <PlayerAiSummaryEnhanced player={player} />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <PlayerFormChart player={player} />
             <PlayerRankingPanel rankings={player.rankings} />
           </div>
+          <CareerSummary summary={player.careerSummary} />
         </TabsContent>
 
         <TabsContent value="analytics" className="flex flex-col gap-6">
           <PlayerRankingCards profile={player.rankingProfile} />
+          <PlayerTournamentContextWrapper
+            player={player}
+            courseProfile={player.upcoming?.courseIntelligence ? { coverage: { verified: 1, total: 1 } } as any : null}
+          />
           <PlayerDfsValueCard playerId={player.id} playerName={player.fullName} />
           <PlayerSkillCard playerId={player.id} playerName={player.fullName} />
           <PlayerOddsCard playerId={player.id} />
@@ -143,7 +147,8 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
           <UpcomingTournamentCard context={player.upcoming} />
         </TabsContent>
 
-        <TabsContent value="statistics">
+        <TabsContent value="statistics" className="flex flex-col gap-6">
+          <PlayerSeasonStatsCategorized player={player} />
           <PlayerStatsGrid
             seasonStatistics={player.seasonStatistics}
             verifiedWorldRanking={player.worldRanking}
