@@ -77,7 +77,8 @@ export async function importTournamentsAction() {
       },
     }
 
-    console.log("[v0] RETURN SUCCESS")
+    console.log("[v0] RETURN SUCCESS: response object built, about to return")
+    console.log("[v0] RETURN SUCCESS: mapping results =", mappingOrchestration ? `${mappingOrchestration.mappingRowsCreated} created, ${mappingOrchestration.totalErrors} errors` : "null")
     return responseData
   } catch (error) {
     console.log("[v0] THROW caught in catch block")
@@ -88,5 +89,7 @@ export async function importTournamentsAction() {
       success: false,
       error: message,
     }
+  } finally {
+    console.log("[v0] FINALLY BLOCK: Action execution completed (success or error)")
   }
 }
