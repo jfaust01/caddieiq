@@ -36,7 +36,8 @@ const FORECAST_STATUS_CODES = new Set(['forecast-available', 'live-forecast', 'h
  * forecast as loaded — so a completed or too-far-out event shows the hero's
  * honest status placeholder instead of a stale or fabricated reading.
  */
-function weatherSummary(weather: WeatherIntelligence): string | null {
+function weatherSummary(weather: WeatherIntelligence | null): string | null {
+  if (!weather || !weather.statusReport) return null
   if (!FORECAST_STATUS_CODES.has(weather.statusReport.code)) return null
   if (weather.status !== 'available' || !weather.current) return null
   const parts: string[] = []
@@ -112,10 +113,10 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
         tournament={tournament}
         fieldSize={field.size}
         weatherSummary={weatherSummary(weather)}
-        weatherPlaceholder={weather.statusReport.label}
+        weatherPlaceholder={weather?.statusReport?.label}
       />
 
-      <TournamentFieldBanner report={fieldReport} />
+      {fieldReport ? <TournamentFieldBanner report={fieldReport} /> : null}
 
       <TournamentIntelligence />
 

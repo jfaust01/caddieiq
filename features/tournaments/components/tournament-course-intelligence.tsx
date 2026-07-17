@@ -9,9 +9,9 @@ import type { CourseProfile } from '@/lib/domain/course'
 
 interface TournamentCourseIntelligenceProps {
   /** The normalized profile of the event's host venue. */
-  profile: CourseProfile
+  profile: CourseProfile | null
   /** Host course identity, for the section heading and the deep link. */
-  course: { id: string; name: string }
+  course: { id: string; name: string } | null
 }
 
 /**
@@ -23,6 +23,10 @@ export function TournamentCourseIntelligence({
   profile,
   course,
 }: TournamentCourseIntelligenceProps) {
+  if (!profile || !course) {
+    return null
+  }
+
   return (
     <section className="flex flex-col gap-8">
       {/* Course Characteristics */}
