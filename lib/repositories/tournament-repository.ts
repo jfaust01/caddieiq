@@ -171,7 +171,31 @@ export class TournamentRepository extends BaseRepository {
 
   /** Find a tournament by internal id. Excludes soft-deleted rows. */
   async findById(id: string): Promise<TournamentRecord | null> {
-    const record = await this.prisma.tournament.findUnique({ where: { id } })
+    const record = await this.prisma.tournament.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        tourId: true,
+        seasonId: true,
+        name: true,
+        officialName: true,
+        slug: true,
+        status: true,
+        format: true,
+        startDate: true,
+        endDate: true,
+        purse: true,
+        fedExPoints: true,
+        worldRankingPoints: true,
+        cutAfterRounds: true,
+        cutLine: true,
+        numberOfRounds: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
+      },
+    })
     return record && record.deletedAt === null ? record : null
   }
 
@@ -523,7 +547,31 @@ export class TournamentRepository extends BaseRepository {
     const slug = tournament.slug
 
     try {
-      const existing = await this.prisma.tournament.findUnique({ where: { slug } })
+      const existing = await this.prisma.tournament.findUnique({
+        where: { slug },
+        select: {
+          id: true,
+          tourId: true,
+          seasonId: true,
+          name: true,
+          officialName: true,
+          slug: true,
+          status: true,
+          format: true,
+          startDate: true,
+          endDate: true,
+          purse: true,
+          fedExPoints: true,
+          worldRankingPoints: true,
+          cutAfterRounds: true,
+          cutLine: true,
+          numberOfRounds: true,
+          active: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
+        },
+      })
 
       if (existing) {
         const record = await this.prisma.tournament.update({
