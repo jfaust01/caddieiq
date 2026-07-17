@@ -29,6 +29,7 @@ import { FieldFitBoard } from '@/features/tournaments/components/field-fit-board
 import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
 import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
 import { TournamentHealthWrapper } from '@/features/tournaments/components/tournament-health-wrapper'
+import { TournamentElevationHub } from '@/features/tournaments/components/tournament-elevation/tournament-elevation-hub'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
 import { courseService } from '@/features/courses/services/course-service'
 import {
@@ -37,6 +38,13 @@ import {
   buildTrending,
   buildCoachRecommendations,
 } from '@/lib/command-center'
+import {
+  analyzeFieldStrength,
+  analyzeWeatherImpact,
+  generateDfsStrategy,
+  generatePremiumInsights,
+  identifyRiskFactors,
+} from '@/features/tournaments/utils/tournament-elevation'
 import { isCurrentUserAdmin } from '@/lib/session'
 import type { TournamentSummary } from '@/features/tournaments/types'
 import type { WeatherIntelligence } from '@/lib/weather-intelligence'
@@ -118,6 +126,13 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
   const story = buildTournamentStory({ field, fitBoard, weather, odds, dfsField })
   const trending = buildTrending({ dfsField, odds, fitBoard })
   const coach = buildCoachRecommendations({ dfsField, fitBoard })
+
+  // Tournament Elevation Analytics
+  const fieldStrength = analyzeFieldStrength(field)
+  const weatherImpact = analyzeWeatherImpact(weather, courseProfile)
+  const dfsStrategy = generateDfsStrategy(courseProfile, fieldStrength)
+  const risks = identifyRiskFactors(courseProfile, weather, fieldStrength)
+  const insights = generatePremiumInsights(courseProfile, fieldStrength, risks)
 
   const dataConfidence = field.analyticsSummary.ratedPlayers > 0 ? 'verified' : null
 
@@ -243,6 +258,15 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
       >
         <CaddieChat tournamentId={tournament.id} compact />
       </CommandCenterWidget>
+
+      {/* Tournament Elevation Analytics — Premium Strategy Hub */}
+      <TournamentElevationHub
+        fieldStrength={fieldStrength}
+        weatherImpact={weatherImpact}
+        strategy={dfsStrategy}
+        risks={risks}
+        insights={insights}
+      />
 
       {/* Verified intelligence engines, each collapsible */}
       {hasField ? (
