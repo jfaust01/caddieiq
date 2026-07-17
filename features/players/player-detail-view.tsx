@@ -25,6 +25,7 @@ import { RecentForm } from '@/features/players/components/recent-form'
 import { PlayerNews } from '@/features/players/components/player-news'
 import { PlayerDetailSkeleton } from '@/features/players/components/player-detail-skeleton'
 import { DecisionWorkspace } from '@/features/players/components/decision-workspace'
+import { PlayerProfileV2View } from '@/features/players/components/profile-v2'
 import { toOverallRatingExplanation } from '@/lib/explainability'
 
 interface PlayerDetailViewProps {
@@ -91,8 +92,9 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
 
       <AiSummaryCard analytics={player.analytics} playerName={player.fullName} />
 
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue="profile-v2">
         <TabsList>
+          <TabsTrigger value="profile-v2">Profile 2.0</TabsTrigger>
           <TabsTrigger value="workspace">Workspace</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -101,6 +103,10 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
           <TabsTrigger value="news">News</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="profile-v2" className="flex flex-col gap-6">
+          <PlayerProfileV2View player={player} />
+        </TabsContent>
 
         <TabsContent value="workspace" className="flex flex-col gap-6">
           <DecisionWorkspace
