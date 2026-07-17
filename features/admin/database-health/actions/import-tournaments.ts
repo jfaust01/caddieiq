@@ -6,10 +6,12 @@ import { orchestrateTournamentCourseMapping } from "@/lib/imports/tournament-cou
 import { headers } from "next/headers"
 
 export async function importTournamentsAction() {
+  console.log("[v0] ACTION START")
   try {
     // Verify the user is authenticated (already done in the UI, but enforce here)
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session) {
+      console.log("[v0] RETURN ERROR: Unauthorized")
       return {
         success: false,
         error: "Unauthorized: You must be logged in to perform imports",
@@ -19,22 +21,25 @@ export async function importTournamentsAction() {
     console.log("[v0] importTournamentsAction: Starting tournament import...")
 
     // Run tournament import directly (no HTTP call needed, preserves auth context)
+    console.log("[v0] Before runTournamentImport()")
     const result = await runTournamentImport()
+    console.log("[v0] After runTournamentImport()")
 
     // After tournament import succeeds, orchestrate tournament → course mapping
     let mappingOrchestration = null
     if (result.failed === 0) {
-      console.log("[v0] Tournament import succeeded. Starting course mapping orchestration...")
+      console.log("[v0] Tournament import succeeded. Before orchestrateTournamentCourseMapping()...")
       mappingOrchestration = await orchestrateTournamentCourseMapping()
+      console.log("[v0] After orchestrateTournamentCourseMapping()")
     } else {
       console.log(
         `[v0] Tournament import had ${result.failed} failures. Skipping course mapping orchestration.`,
       )
     }
 
-    console.log("[v0] importTournamentsAction: Complete")
+    console.log("[v0] importTournamentsAction: Before building response object")
 
-    return {
+    const responseData = {
       success: true,
       data: {
         ok: result.failed === 0 && (mappingOrchestration?.ok ?? true),
@@ -71,9 +76,14 @@ export async function importTournamentsAction() {
         errors: result.errors.slice(0, 50),
       },
     }
+
+    console.log("[v0] RETURN SUCCESS")
+    return responseData
   } catch (error) {
+    console.log("[v0] THROW caught in catch block")
     const message = error instanceof Error ? error.message : "Unknown error occurred"
-    console.error("[v0] importTournamentsAction error:", message)
+    console.error("[v0] importTournamentsAction error:", message, error instanceof Error ? error.stack : "")
+    console.log("[v0] RETURN ERROR")
     return {
       success: false,
       error: message,
