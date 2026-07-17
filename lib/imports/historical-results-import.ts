@@ -71,7 +71,7 @@ export async function importHistoricalResults(
 
   // Fetch all completed tournaments from our DB
   const tournaments = await prisma.tournament.findMany({
-    where: { completed: true },
+    where: { status: "COMPLETED", deletedAt: null },
     include: { tournamentCourses: true },
     orderBy: { startDate: "desc" },
   })
