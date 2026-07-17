@@ -283,7 +283,14 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         </CommandCenterWidget>
       ) : null}
 
-      <TournamentRoundsTable rounds={rounds} isAdmin={isAdmin} />
+      <CommandCenterWidget
+        id="round-scoring"
+        title="Round Scoring"
+        subtitle="Scoring results from completed tournament rounds"
+        icon={<TrendingUp className="size-4 text-primary" aria-hidden />}
+      >
+        <TournamentRoundsTable rounds={rounds} isAdmin={isAdmin} />
+      </CommandCenterWidget>
 
       {courseRef ? (
         <CommandCenterWidget
