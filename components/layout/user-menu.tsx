@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { CircleHelp, LogOut, Settings, User, ShieldCheck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -40,6 +41,11 @@ export function UserMenu() {
   const user = session?.user
   const isAdmin =
     (user as { role?: string } | undefined)?.role === 'ADMIN'
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   async function handleSignOut() {
     await signOut()
@@ -59,7 +65,7 @@ export function UserMenu() {
           >
             <Avatar className="size-8">
               <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">
-                {initialsFromName(user?.name)}
+                {isMounted ? initialsFromName(user?.name) : 'CQ'}
               </AvatarFallback>
             </Avatar>
           </Button>
