@@ -2,7 +2,6 @@
 
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
-import { processTournamentCourseMapping } from "@/lib/imports/tournament-mapping-background"
 
 export async function startTournamentMappingAction() {
   try {
@@ -18,18 +17,36 @@ export async function startTournamentMappingAction() {
       }
     }
 
-    // Start the background mapping job (fire and forget)
-    // This returns immediately while the mapping processes in the background
-    processTournamentCourseMapping().catch((error) => {
-      console.error("[v0] Tournament mapping background job failed:", error)
-    })
+    // Call the API route to start the background job
+    // The route returns 202 Accepted immediately while processing continues independently
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000"
 
+    const response = await fetch(
+      `${baseUrl}/api/admin/tournament-mapping/start`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Pass the authorization headers to the API route
+          Cookie: hdrs.get("cookie") || "",
+        },
+      }
+    )
+
+    if (!response.ok) {
+      const error = await response.json()
+      return {
+        success: false,
+        error: error.error || "Failed to start mapping",
+      }
+    }
+
+    const result = await response.json()
     return {
       success: true,
-      data: {
-        message: "Tournament course mapping started",
-        status: "pending",
-      },
+      data: result.data,
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error occurred"
