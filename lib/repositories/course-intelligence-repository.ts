@@ -56,31 +56,36 @@ export function getCourseIntelligenceRepository(prisma: PrismaClient = prismaCli
      * Create new course intelligence record.
      */
     async create(input: CourseIntelligenceInput): Promise<CourseIntelligenceRecord> {
-      return await prisma.courseIntelligence.create({
-        data: {
-          courseId: input.courseId,
-          overallDifficultyScore: input.overallDifficultyScore,
-          overallDifficultyStars: input.overallDifficultyStars,
-          drivingImportanceScore: input.drivingImportanceScore,
-          drivingImportanceStars: input.drivingImportanceStars,
-          approachImportanceScore: input.approachImportanceScore,
-          approachImportanceStars: input.approachImportanceStars,
-          shortGameImportanceScore: input.shortGameImportanceScore,
-          shortGameImportanceStars: input.shortGameImportanceStars,
-          puttingImportanceScore: input.puttingImportanceScore,
-          puttingImportanceStars: input.puttingImportanceStars,
-          windSensitivityScore: input.windSensitivityScore,
-          windSensitivityStars: input.windSensitivityStars,
-          penaltySeverityScore: input.penaltySeverityScore,
-          penaltySeverityStars: input.penaltySeverityStars,
-          birdiePotentialScore: input.birdiePotentialScore,
-          birdiePotentialStars: input.birdiePotentialStars,
-          scoringVolatilityScore: input.scoringVolatilityScore,
-          scoringVolatilityStars: input.scoringVolatilityStars,
-          calculationVersion: input.calculationVersion || 'v1',
-          calculatedAt: new Date(),
-        },
-      })
+      try {
+        return await prisma.courseIntelligence.create({
+          data: {
+            courseId: input.courseId,
+            overallDifficultyScore: input.overallDifficultyScore,
+            overallDifficultyStars: input.overallDifficultyStars,
+            drivingImportanceScore: input.drivingImportanceScore,
+            drivingImportanceStars: input.drivingImportanceStars,
+            approachImportanceScore: input.approachImportanceScore,
+            approachImportanceStars: input.approachImportanceStars,
+            shortGameImportanceScore: input.shortGameImportanceScore,
+            shortGameImportanceStars: input.shortGameImportanceStars,
+            puttingImportanceScore: input.puttingImportanceScore,
+            puttingImportanceStars: input.puttingImportanceStars,
+            windSensitivityScore: input.windSensitivityScore,
+            windSensitivityStars: input.windSensitivityStars,
+            penaltySeverityScore: input.penaltySeverityScore,
+            penaltySeverityStars: input.penaltySeverityStars,
+            birdiePotentialScore: input.birdiePotentialScore,
+            birdiePotentialStars: input.birdiePotentialStars,
+            scoringVolatilityScore: input.scoringVolatilityScore,
+            scoringVolatilityStars: input.scoringVolatilityStars,
+            calculationVersion: input.calculationVersion || 'v1',
+            calculatedAt: new Date(),
+          },
+        })
+      } catch (error) {
+        console.error(`[v0] CourseIntelligenceRepository.create failed for courseId: ${input.courseId}`, error)
+        throw error
+      }
     },
 
     /**
@@ -123,54 +128,59 @@ export function getCourseIntelligenceRepository(prisma: PrismaClient = prismaCli
      * Upsert: create if not exists, update if exists.
      */
     async upsert(input: CourseIntelligenceInput): Promise<CourseIntelligenceRecord> {
-      return await prisma.courseIntelligence.upsert({
-        where: { courseId: input.courseId },
-        create: {
-          courseId: input.courseId,
-          overallDifficultyScore: input.overallDifficultyScore,
-          overallDifficultyStars: input.overallDifficultyStars,
-          drivingImportanceScore: input.drivingImportanceScore,
-          drivingImportanceStars: input.drivingImportanceStars,
-          approachImportanceScore: input.approachImportanceScore,
-          approachImportanceStars: input.approachImportanceStars,
-          shortGameImportanceScore: input.shortGameImportanceScore,
-          shortGameImportanceStars: input.shortGameImportanceStars,
-          puttingImportanceScore: input.puttingImportanceScore,
-          puttingImportanceStars: input.puttingImportanceStars,
-          windSensitivityScore: input.windSensitivityScore,
-          windSensitivityStars: input.windSensitivityStars,
-          penaltySeverityScore: input.penaltySeverityScore,
-          penaltySeverityStars: input.penaltySeverityStars,
-          birdiePotentialScore: input.birdiePotentialScore,
-          birdiePotentialStars: input.birdiePotentialStars,
-          scoringVolatilityScore: input.scoringVolatilityScore,
-          scoringVolatilityStars: input.scoringVolatilityStars,
-          calculationVersion: input.calculationVersion || 'v1',
-          calculatedAt: new Date(),
-        },
-        update: {
-          overallDifficultyScore: input.overallDifficultyScore,
-          overallDifficultyStars: input.overallDifficultyStars,
-          drivingImportanceScore: input.drivingImportanceScore,
-          drivingImportanceStars: input.drivingImportanceStars,
-          approachImportanceScore: input.approachImportanceScore,
-          approachImportanceStars: input.approachImportanceStars,
-          shortGameImportanceScore: input.shortGameImportanceScore,
-          shortGameImportanceStars: input.shortGameImportanceStars,
-          puttingImportanceScore: input.puttingImportanceScore,
-          puttingImportanceStars: input.puttingImportanceStars,
-          windSensitivityScore: input.windSensitivityScore,
-          windSensitivityStars: input.windSensitivityStars,
-          penaltySeverityScore: input.penaltySeverityScore,
-          penaltySeverityStars: input.penaltySeverityStars,
-          birdiePotentialScore: input.birdiePotentialScore,
-          birdiePotentialStars: input.birdiePotentialStars,
-          scoringVolatilityScore: input.scoringVolatilityScore,
-          scoringVolatilityStars: input.scoringVolatilityStars,
-          calculationVersion: input.calculationVersion || 'v1',
-          calculatedAt: new Date(),
-        },
-      })
+      try {
+        return await prisma.courseIntelligence.upsert({
+          where: { courseId: input.courseId },
+          create: {
+            courseId: input.courseId,
+            overallDifficultyScore: input.overallDifficultyScore,
+            overallDifficultyStars: input.overallDifficultyStars,
+            drivingImportanceScore: input.drivingImportanceScore,
+            drivingImportanceStars: input.drivingImportanceStars,
+            approachImportanceScore: input.approachImportanceScore,
+            approachImportanceStars: input.approachImportanceStars,
+            shortGameImportanceScore: input.shortGameImportanceScore,
+            shortGameImportanceStars: input.shortGameImportanceStars,
+            puttingImportanceScore: input.puttingImportanceScore,
+            puttingImportanceStars: input.puttingImportanceStars,
+            windSensitivityScore: input.windSensitivityScore,
+            windSensitivityStars: input.windSensitivityStars,
+            penaltySeverityScore: input.penaltySeverityScore,
+            penaltySeverityStars: input.penaltySeverityStars,
+            birdiePotentialScore: input.birdiePotentialScore,
+            birdiePotentialStars: input.birdiePotentialStars,
+            scoringVolatilityScore: input.scoringVolatilityScore,
+            scoringVolatilityStars: input.scoringVolatilityStars,
+            calculationVersion: input.calculationVersion || 'v1',
+            calculatedAt: new Date(),
+          },
+          update: {
+            overallDifficultyScore: input.overallDifficultyScore,
+            overallDifficultyStars: input.overallDifficultyStars,
+            drivingImportanceScore: input.drivingImportanceScore,
+            drivingImportanceStars: input.drivingImportanceStars,
+            approachImportanceScore: input.approachImportanceScore,
+            approachImportanceStars: input.approachImportanceStars,
+            shortGameImportanceScore: input.shortGameImportanceScore,
+            shortGameImportanceStars: input.shortGameImportanceStars,
+            puttingImportanceScore: input.puttingImportanceScore,
+            puttingImportanceStars: input.puttingImportanceStars,
+            windSensitivityScore: input.windSensitivityScore,
+            windSensitivityStars: input.windSensitivityStars,
+            penaltySeverityScore: input.penaltySeverityScore,
+            penaltySeverityStars: input.penaltySeverityStars,
+            birdiePotentialScore: input.birdiePotentialScore,
+            birdiePotentialStars: input.birdiePotentialStars,
+            scoringVolatilityScore: input.scoringVolatilityScore,
+            scoringVolatilityStars: input.scoringVolatilityStars,
+            calculationVersion: input.calculationVersion || 'v1',
+            calculatedAt: new Date(),
+          },
+        })
+      } catch (error) {
+        console.error(`[v0] CourseIntelligenceRepository.upsert failed for courseId: ${input.courseId}`, error)
+        throw error
+      }
     },
 
     /**

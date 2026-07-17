@@ -110,134 +110,158 @@ async function buildExplanationInput(
  * Generate and persist explanations for a course.
  */
 export async function generateAndPersistExplanations(courseId: string): Promise<CourseMetricExplanationRecord[]> {
-  const explanationRepo = getCourseMetricExplanationRepository(prismaClient)
+  try {
+    const explanationRepo = getCourseMetricExplanationRepository(prismaClient)
 
-  // Get course intelligence
-  const intelligence = await prismaClient.courseIntelligence.findUnique({
-    where: { courseId },
-  })
+    // Get course intelligence
+    const intelligence = await prismaClient.courseIntelligence.findUnique({
+      where: { courseId },
+    })
 
-  if (!intelligence) {
-    console.warn(`[v0] No course intelligence found for courseId: ${courseId}`)
+    if (!intelligence) {
+      console.warn(`[v0] No course intelligence found for courseId: ${courseId}`)
+      return []
+    }
+
+    // Build input for explanation generation
+    const input = await buildExplanationInput(intelligence, courseId)
+    if (!input) {
+      console.warn(`[v0] Could not build explanation input for courseId: ${courseId}`)
+      return []
+    }
+
+    // Generate all explanations
+    const rawExplanations = generateAllExplanations(input)
+
+    // Prepare for storage
+    const toStore = prepareExplanationsForStorage(rawExplanations).map(exp => ({
+      ...exp,
+      courseIntelligenceId: intelligence.id,
+    }))
+
+    // Delete existing explanations
+    await explanationRepo.deleteForCourseIntelligence(intelligence.id)
+
+    // Persist new explanations
+    const persisted = await explanationRepo.upsertMany(toStore)
+
+    console.log(`[v0] Generated ${persisted.length} explanations for courseId: ${courseId}`)
+
+    return persisted
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[v0] generateAndPersistExplanations failed for ${courseId}: ${errorMsg}`)
     return []
   }
-
-  // Build input for explanation generation
-  const input = await buildExplanationInput(intelligence, courseId)
-  if (!input) {
-    console.warn(`[v0] Could not build explanation input for courseId: ${courseId}`)
-    return []
-  }
-
-  // Generate all explanations
-  const rawExplanations = generateAllExplanations(input)
-
-  // Prepare for storage
-  const toStore = prepareExplanationsForStorage(rawExplanations).map(exp => ({
-    ...exp,
-    courseIntelligenceId: intelligence.id,
-  }))
-
-  // Delete existing explanations
-  await explanationRepo.deleteForCourseIntelligence(intelligence.id)
-
-  // Persist new explanations
-  const persisted = await explanationRepo.upsertMany(toStore)
-
-  console.log(`[v0] Generated ${persisted.length} explanations for courseId: ${courseId}`)
-
-  return persisted
 }
 
 /**
  * Get persisted explanations for a course.
  */
 export async function getPersistedExplanations(courseId: string): Promise<CourseMetricExplanationRecord[]> {
-  const explanationRepo = getCourseMetricExplanationRepository(prismaClient)
+  try {
+    const explanationRepo = getCourseMetricExplanationRepository(prismaClient)
 
-  // Get course intelligence
-  const intelligence = await prismaClient.courseIntelligence.findUnique({
-    where: { courseId },
-  })
+    // Get course intelligence
+    const intelligence = await prismaClient.courseIntelligence.findUnique({
+      where: { courseId },
+    })
 
-  if (!intelligence) {
+    if (!intelligence) {
+      return []
+    }
+
+    return explanationRepo.findByCourseIntelligence(intelligence.id)
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[v0] getPersistedExplanations failed for ${courseId}: ${errorMsg}`)
     return []
   }
-
-  return explanationRepo.findByCourseIntelligence(intelligence.id)
 }
 
 /**
  * Get explanations formatted for display with parsed factors.
  */
 export async function getDisplayExplanations(courseId: string): Promise<DisplayExplanation[]> {
-  const records = await getPersistedExplanations(courseId)
+  try {
+    const records = await getPersistedExplanations(courseId)
 
-  // Get intelligence to include score/stars
-  const intelligence = await prismaClient.courseIntelligence.findUnique({
-    where: { courseId },
-  })
+    // Get intelligence to include score/stars
+    const intelligence = await prismaClient.courseIntelligence.findUnique({
+      where: { courseId },
+    })
 
-  if (!intelligence) {
+    if (!intelligence) {
+      return []
+    }
+
+    // Map records to display format
+    const scoreMap: Record<string, { score: number; stars: number }> = {
+      overallDifficulty: {
+        score: intelligence.overallDifficultyScore,
+        stars: intelligence.overallDifficultyStars,
+      },
+      drivingImportance: {
+        score: intelligence.drivingImportanceScore,
+        stars: intelligence.drivingImportanceStars,
+      },
+      approachImportance: {
+        score: intelligence.approachImportanceScore,
+        stars: intelligence.approachImportanceStars,
+      },
+      shortGameImportance: {
+        score: intelligence.shortGameImportanceScore,
+        stars: intelligence.shortGameImportanceStars,
+      },
+      puttingImportance: {
+        score: intelligence.puttingImportanceScore,
+        stars: intelligence.puttingImportanceStars,
+      },
+      windSensitivity: {
+        score: intelligence.windSensitivityScore,
+        stars: intelligence.windSensitivityStars,
+      },
+      penaltySeverity: {
+        score: intelligence.penaltySeverityScore,
+        stars: intelligence.penaltySeverityStars,
+      },
+      birdiePotential: {
+        score: intelligence.birdiePotentialScore,
+        stars: intelligence.birdiePotentialStars,
+      },
+      scoringVolatility: {
+        score: intelligence.scoringVolatilityScore,
+        stars: intelligence.scoringVolatilityStars,
+      },
+    }
+
+    return records.map(record => {
+      const scoreData = scoreMap[record.metric] || { score: 0, stars: 1 }
+      return {
+        metric: record.metric as any,
+        title: record.title,
+        summary: record.summary,
+        factors: parseFactorsFromStorage(record.contributingFactors),
+        score: scoreData.score,
+        stars: scoreData.stars,
+      }
+    })
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[v0] getDisplayExplanations failed for ${courseId}: ${errorMsg}`)
     return []
   }
-
-  // Map records to display format
-  const scoreMap: Record<string, { score: number; stars: number }> = {
-    overallDifficulty: {
-      score: intelligence.overallDifficultyScore,
-      stars: intelligence.overallDifficultyStars,
-    },
-    drivingImportance: {
-      score: intelligence.drivingImportanceScore,
-      stars: intelligence.drivingImportanceStars,
-    },
-    approachImportance: {
-      score: intelligence.approachImportanceScore,
-      stars: intelligence.approachImportanceStars,
-    },
-    shortGameImportance: {
-      score: intelligence.shortGameImportanceScore,
-      stars: intelligence.shortGameImportanceStars,
-    },
-    puttingImportance: {
-      score: intelligence.puttingImportanceScore,
-      stars: intelligence.puttingImportanceStars,
-    },
-    windSensitivity: {
-      score: intelligence.windSensitivityScore,
-      stars: intelligence.windSensitivityStars,
-    },
-    penaltySeverity: {
-      score: intelligence.penaltySeverityScore,
-      stars: intelligence.penaltySeverityStars,
-    },
-    birdiePotential: {
-      score: intelligence.birdiePotentialScore,
-      stars: intelligence.birdiePotentialStars,
-    },
-    scoringVolatility: {
-      score: intelligence.scoringVolatilityScore,
-      stars: intelligence.scoringVolatilityStars,
-    },
-  }
-
-  return records.map(record => {
-    const scoreData = scoreMap[record.metric] || { score: 0, stars: 1 }
-    return {
-      metric: record.metric as any,
-      title: record.title,
-      summary: record.summary,
-      factors: parseFactorsFromStorage(record.contributingFactors),
-      score: scoreData.score,
-      stars: scoreData.stars,
-    }
-  })
 }
 
 /**
  * Refresh explanations for a course (delete and regenerate).
  */
 export async function refreshCourseExplanations(courseId: string): Promise<CourseMetricExplanationRecord[]> {
-  return generateAndPersistExplanations(courseId)
+  try {
+    return await generateAndPersistExplanations(courseId)
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[v0] refreshCourseExplanations failed for ${courseId}: ${errorMsg}`)
+    return []
+  }
 }

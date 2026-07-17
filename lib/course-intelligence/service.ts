@@ -142,52 +142,58 @@ export async function persistCourseIntelligence(courseId: string): Promise<Cours
  * @returns Persisted CourseIntelligence or null if not found
  */
 export async function getPersistedCourseIntelligence(courseId: string): Promise<CourseIntelligence | null> {
-  const intelligenceRepo = getCourseIntelligenceRepository(prismaClient)
-  const record = await intelligenceRepo.findByCourseId(courseId)
+  try {
+    const intelligenceRepo = getCourseIntelligenceRepository(prismaClient)
+    const record = await intelligenceRepo.findByCourseId(courseId)
 
-  if (!record) {
+    if (!record) {
+      return null
+    }
+
+    return {
+      courseId: record.courseId,
+      generatedAt: record.calculatedAt,
+      overallDifficulty: {
+        stars: record.overallDifficultyStars,
+        score: record.overallDifficultyScore,
+      },
+      drivingImportance: {
+        stars: record.drivingImportanceStars,
+        score: record.drivingImportanceScore,
+      },
+      approachImportance: {
+        stars: record.approachImportanceStars,
+        score: record.approachImportanceScore,
+      },
+      shortGameImportance: {
+        stars: record.shortGameImportanceStars,
+        score: record.shortGameImportanceScore,
+      },
+      puttingImportance: {
+        stars: record.puttingImportanceStars,
+        score: record.puttingImportanceScore,
+      },
+      windSensitivity: {
+        stars: record.windSensitivityStars,
+        score: record.windSensitivityScore,
+      },
+      penaltySeverity: {
+        stars: record.penaltySeverityStars,
+        score: record.penaltySeverityScore,
+      },
+      birdiePotential: {
+        stars: record.birdiePotentialStars,
+        score: record.birdiePotentialScore,
+      },
+      scoringVolatility: {
+        stars: record.scoringVolatilityStars,
+        score: record.scoringVolatilityScore,
+      },
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.log(`[v0] getPersistedCourseIntelligence failed for ${courseId}: ${errorMsg}`)
     return null
-  }
-
-  return {
-    courseId: record.courseId,
-    generatedAt: record.calculatedAt,
-    overallDifficulty: {
-      stars: record.overallDifficultyStars,
-      score: record.overallDifficultyScore,
-    },
-    drivingImportance: {
-      stars: record.drivingImportanceStars,
-      score: record.drivingImportanceScore,
-    },
-    approachImportance: {
-      stars: record.approachImportanceStars,
-      score: record.approachImportanceScore,
-    },
-    shortGameImportance: {
-      stars: record.shortGameImportanceStars,
-      score: record.shortGameImportanceScore,
-    },
-    puttingImportance: {
-      stars: record.puttingImportanceStars,
-      score: record.puttingImportanceScore,
-    },
-    windSensitivity: {
-      stars: record.windSensitivityStars,
-      score: record.windSensitivityScore,
-    },
-    penaltySeverity: {
-      stars: record.penaltySeverityStars,
-      score: record.penaltySeverityScore,
-    },
-    birdiePotential: {
-      stars: record.birdiePotentialStars,
-      score: record.birdiePotentialScore,
-    },
-    scoringVolatility: {
-      stars: record.scoringVolatilityStars,
-      score: record.scoringVolatilityScore,
-    },
   }
 }
 
@@ -200,30 +206,36 @@ export async function getPersistedCourseIntelligence(courseId: string): Promise<
  * @returns CourseIntelligence or null if mapping or course not found
  */
 export async function getTournamentCourseIntelligence(tournamentId: string): Promise<CourseIntelligence | null> {
-  // Find tournament-course mapping
-  const mapping = await prismaClient.tournamentCourseMapping.findUnique({
-    where: { tournamentId },
-    select: { golfCourseApiCourseId: true },
-  })
+  try {
+    // Find tournament-course mapping
+    const mapping = await prismaClient.tournamentCourseMapping.findUnique({
+      where: { tournamentId },
+      select: { golfCourseApiCourseId: true },
+    })
 
-  if (!mapping) {
+    if (!mapping) {
+      return null
+    }
+
+    // Find course details by external ID
+    const courseDetailsRepo = getCourseDetailsRepository(prismaClient)
+    const courseResult = await courseDetailsRepo.findByExternalId(mapping.golfCourseApiCourseId.toString())
+
+    if (courseResult.outcome !== "ok" || !courseResult.record) {
+      return null
+    }
+
+    // Try to get persisted intelligence first
+    const persisted = await getPersistedCourseIntelligence(courseResult.record.id)
+    if (persisted) {
+      return persisted
+    }
+
+    // Fall back to calculating if not persisted
+    return getCourseIntelligence(courseResult.record.id)
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.log(`[v0] getTournamentCourseIntelligence failed for ${tournamentId}: ${errorMsg}`)
     return null
   }
-
-  // Find course details by external ID
-  const courseDetailsRepo = getCourseDetailsRepository(prismaClient)
-  const courseResult = await courseDetailsRepo.findByExternalId(mapping.golfCourseApiCourseId.toString())
-
-  if (courseResult.outcome !== "ok" || !courseResult.record) {
-    return null
-  }
-
-  // Try to get persisted intelligence first
-  const persisted = await getPersistedCourseIntelligence(courseResult.record.id)
-  if (persisted) {
-    return persisted
-  }
-
-  // Fall back to calculating if not persisted
-  return getCourseIntelligence(courseResult.record.id)
 }

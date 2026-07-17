@@ -22,51 +22,57 @@ import { generateAllInsights } from "./insight-engine"
  * @returns Array of persisted insights
  */
 export async function generateAndPersistInsights(courseId: string): Promise<CourseInsightRecord[]> {
-  const intelligenceRepo = getCourseIntelligenceRepository(prismaClient)
-  const insightRepo = getCourseInsightRepository(prismaClient)
+  try {
+    const intelligenceRepo = getCourseIntelligenceRepository(prismaClient)
+    const insightRepo = getCourseInsightRepository(prismaClient)
 
-  // Find course intelligence
-  const intelligence = await intelligenceRepo.findByCourseId(courseId)
-  if (!intelligence) {
-    console.warn(`[v0] No course intelligence found for courseId: ${courseId}`)
+    // Find course intelligence
+    const intelligence = await intelligenceRepo.findByCourseId(courseId)
+    if (!intelligence) {
+      console.warn(`[v0] No course intelligence found for courseId: ${courseId}`)
+      return []
+    }
+
+    // Generate insights
+    const rawInsights = generateAllInsights({
+      courseIntelligenceId: intelligence.id,
+      courseId: intelligence.courseId,
+      overallDifficultyStars: intelligence.overallDifficultyStars,
+      drivingImportanceStars: intelligence.drivingImportanceStars,
+      approachImportanceStars: intelligence.approachImportanceStars,
+      shortGameImportanceStars: intelligence.shortGameImportanceStars,
+      puttingImportanceStars: intelligence.puttingImportanceStars,
+      windSensitivityStars: intelligence.windSensitivityStars,
+      penaltySeverityStars: intelligence.penaltySeverityStars,
+      birdiePotentialStars: intelligence.birdiePotentialStars,
+      scoringVolatilityStars: intelligence.scoringVolatilityStars,
+    })
+
+    // Delete existing insights
+    const deletedCount = await insightRepo.deleteForCourseIntelligence(intelligence.id)
+    console.log(`[v0] Deleted ${deletedCount} existing insights for courseId: ${courseId}`)
+
+    // Persist new insights
+    const persistedInsights = await insightRepo.upsertMany(
+      rawInsights.map((insight) => ({
+        courseIntelligenceId: intelligence.id,
+        category: insight.category,
+        title: insight.title,
+        summary: insight.summary,
+        importance: insight.importance,
+        icon: insight.icon,
+        displayOrder: insight.displayOrder,
+      }))
+    )
+
+    console.log(`[v0] Generated and persisted ${persistedInsights.length} insights for courseId: ${courseId}`)
+
+    return persistedInsights as CourseInsightRecord[]
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[v0] generateAndPersistInsights failed for ${courseId}: ${errorMsg}`)
     return []
   }
-
-  // Generate insights
-  const rawInsights = generateAllInsights({
-    courseIntelligenceId: intelligence.id,
-    courseId: intelligence.courseId,
-    overallDifficultyStars: intelligence.overallDifficultyStars,
-    drivingImportanceStars: intelligence.drivingImportanceStars,
-    approachImportanceStars: intelligence.approachImportanceStars,
-    shortGameImportanceStars: intelligence.shortGameImportanceStars,
-    puttingImportanceStars: intelligence.puttingImportanceStars,
-    windSensitivityStars: intelligence.windSensitivityStars,
-    penaltySeverityStars: intelligence.penaltySeverityStars,
-    birdiePotentialStars: intelligence.birdiePotentialStars,
-    scoringVolatilityStars: intelligence.scoringVolatilityStars,
-  })
-
-  // Delete existing insights
-  const deletedCount = await insightRepo.deleteForCourseIntelligence(intelligence.id)
-  console.log(`[v0] Deleted ${deletedCount} existing insights for courseId: ${courseId}`)
-
-  // Persist new insights
-  const persistedInsights = await insightRepo.upsertMany(
-    rawInsights.map((insight) => ({
-      courseIntelligenceId: intelligence.id,
-      category: insight.category,
-      title: insight.title,
-      summary: insight.summary,
-      importance: insight.importance,
-      icon: insight.icon,
-      displayOrder: insight.displayOrder,
-    }))
-  )
-
-  console.log(`[v0] Generated and persisted ${persistedInsights.length} insights for courseId: ${courseId}`)
-
-  return persistedInsights as CourseInsightRecord[]
 }
 
 /**
@@ -78,19 +84,25 @@ export async function generateAndPersistInsights(courseId: string): Promise<Cour
  * @returns Array of persisted insights
  */
 export async function getCourseInsights(courseId: string): Promise<CourseInsightRecord[]> {
-  const intelligenceRepo = getCourseIntelligenceRepository(prismaClient)
+  try {
+    const intelligenceRepo = getCourseIntelligenceRepository(prismaClient)
 
-  // Find course intelligence
-  const intelligence = await intelligenceRepo.findByCourseId(courseId)
-  if (!intelligence) {
+    // Find course intelligence
+    const intelligence = await intelligenceRepo.findByCourseId(courseId)
+    if (!intelligence) {
+      return []
+    }
+
+    // Get insights
+    const insightRepo = getCourseInsightRepository(prismaClient)
+    const insights = await insightRepo.findByCourseIntelligence(intelligence.id)
+
+    return insights as CourseInsightRecord[]
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[v0] getCourseInsights failed for ${courseId}: ${errorMsg}`)
     return []
   }
-
-  // Get insights
-  const insightRepo = getCourseInsightRepository(prismaClient)
-  const insights = await insightRepo.findByCourseIntelligence(intelligence.id)
-
-  return insights as CourseInsightRecord[]
 }
 
 /**
@@ -103,6 +115,12 @@ export async function getCourseInsights(courseId: string): Promise<CourseInsight
  * @returns Array of refreshed insights
  */
 export async function refreshCourseInsights(courseId: string): Promise<CourseInsightRecord[]> {
-  console.log(`[v0] Refreshing insights for courseId: ${courseId}`)
-  return generateAndPersistInsights(courseId)
+  try {
+    console.log(`[v0] Refreshing insights for courseId: ${courseId}`)
+    return await generateAndPersistInsights(courseId)
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[v0] refreshCourseInsights failed for ${courseId}: ${errorMsg}`)
+    return []
+  }
 }
