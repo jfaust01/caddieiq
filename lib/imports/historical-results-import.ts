@@ -59,6 +59,8 @@ export async function importHistoricalResults(
   const roundRepo = getRoundRepository(prisma, logger)
   const playerRoundRepo = getPlayerRoundRepository(prisma, logger)
 
+  let firstApiError: { tournament: string; localId: string; externalId: string; message: string; error: unknown } | null = null
+
   const summary: HistoricalResultsImportSummary = {
     tournamentsConsidered: 0,
     tournamentsWithLeaderboard: 0,
@@ -93,11 +95,42 @@ export async function importHistoricalResults(
         `[v0] Processing tournament: ${tournament.name} (id: ${tournament.id}, externalId: ${tournament.externalId})`,
       )
 
+      // Verify we have the SportsDataIO tournament ID
+      if (!tournament.externalId) {
+        const errMsg = `ERROR: Tournament ${tournament.name} (${tournament.id}) has no externalId - cannot fetch leaderboard`
+        console.error(`[v0] ${errMsg}`)
+        summary.notes.push(errMsg)
+        continue
+      }
+
       // Fetch the leaderboard from SportsDataIO using the provider's tournament ID
       console.log(
         `[v0] Fetching leaderboard from SportsDataIO for externalId: ${tournament.externalId}`,
       )
-      const leaderboardResp = await prov.getLeaderboard(String(tournament.externalId))
+      
+      let leaderboardResp
+      try {
+        leaderboardResp = await prov.getLeaderboard(String(tournament.externalId))
+      } catch (apiError) {
+        // Capture first API error for debugging
+        if (!firstApiError) {
+          firstApiError = {
+            tournament: tournament.name,
+            localId: tournament.id,
+            externalId: tournament.externalId || "undefined",
+            message: apiError instanceof Error ? apiError.message : String(apiError),
+            error: apiError,
+          }
+          console.error(`[v0] FIRST API ERROR - Tournament: ${tournament.name}`)
+          console.error(`[v0]   Local ID: ${tournament.id}`)
+          console.error(`[v0]   External ID: ${tournament.externalId}`)
+          console.error(`[v0]   Error: ${firstApiError.message}`)
+        }
+        const logMsg = `Leaderboard fetch failed for ${tournament.name}: ${apiError instanceof Error ? apiError.message : String(apiError)}`
+        summary.notes.push(logMsg)
+        console.error(`[v0] ${logMsg}`)
+        continue
+      }
 
       console.log(
         `[v0] SportsDataIO response received: meta.provider=${leaderboardResp.meta?.provider}, has data: ${!!leaderboardResp.data}`,
@@ -247,6 +280,22 @@ export async function importHistoricalResults(
         console.error(`[v0] Stack trace: ${stack}`)
       }
     }
+  }
+
+  // Log details of the first API error if any occurred
+  if (firstApiError) {
+    console.error(`\n[v0] ═════════════════════════════════════════════════════════════`)
+    console.error(`[v0] FIRST API ERROR DETAILS (likely root cause of HTTP 400)`)
+    console.error(`[v0] ═════════════════════════════════════════════════════════════`)
+    console.error(`[v0] Tournament: ${firstApiError.tournament}`)
+    console.error(`[v0] Local Tournament ID: ${firstApiError.localId}`)
+    console.error(`[v0] SportsDataIO External ID: ${firstApiError.externalId}`)
+    console.error(`[v0] Error Message: ${firstApiError.message}`)
+    if (firstApiError.error instanceof Error && firstApiError.error.stack) {
+      console.error(`[v0] Stack Trace:`)
+      console.error(firstApiError.error.stack)
+    }
+    console.error(`[v0] ═════════════════════════════════════════════════════════════\n`)
   }
 
   // IMPORT COMPLETED SUCCESSFULLY - All repositories verified persistence
