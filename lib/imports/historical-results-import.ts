@@ -238,29 +238,44 @@ export async function importHistoricalResults(
   }
 
   // PHASE 6: Final verification - Query database to confirm actual persistence
+  console.log(`\n[v0] ═════════════════════════════════════════════════════════════`)
   console.log(`[v0] PHASE 6: Final Persistence Verification`)
-  console.log(`[v0] Querying actual database state...`)
+  console.log(`[v0] ═════════════════════════════════════════════════════════════`)
   
+  console.log(`[v0] Querying actual database state using same Prisma client...`)
   const actualRoundCount = await prisma.round.count()
   const actualPlayerRoundCount = await prisma.playerRound.count()
+  const actualRoundStatsCount = await (prisma.roundStatistics?.count?.() ?? Promise.resolve(0))
   
-  console.log(`[v0] ACTUAL DATABASE STATE:`)
-  console.log(`[v0]   Rounds in database: ${actualRoundCount}`)
-  console.log(`[v0]   PlayerRounds in database: ${actualPlayerRoundCount}`)
-  console.log(`[v0] REPORTED COUNTS (from repositories):`)
-  console.log(`[v0]   Rounds created (reported): ${summary.roundsCreated}`)
-  console.log(`[v0]   PlayerRounds created (reported): ${summary.playerRoundsCreated}`)
-  console.log(`[v0]   PlayerRounds updated (reported): ${summary.playerRoundsUpdated}`)
+  console.log(`\n[v0] ACTUAL DATABASE STATE (verified by Prisma.count()):`)
+  console.log(`[v0]   rounds: ${actualRoundCount}`)
+  console.log(`[v0]   player_rounds: ${actualPlayerRoundCount}`)
+  console.log(`[v0]   round_statistics: ${actualRoundStatsCount}`)
   
-  // Check for mismatch
-  if (actualRoundCount === 0 && summary.roundsCreated > 0) {
-    console.error(`[v0] ⚠️  CRITICAL: Rounds reported as created (${summary.roundsCreated}) but database contains 0!`)
+  console.log(`\n[v0] REPORTED COUNTS (from import summary):`)
+  console.log(`[v0]   Rounds created: ${summary.roundsCreated}`)
+  console.log(`[v0]   PlayerRounds created: ${summary.playerRoundsCreated}`)
+  console.log(`[v0]   PlayerRounds updated: ${summary.playerRoundsUpdated}`)
+  console.log(`[v0]   PlayerRounds failed: ${summary.playerRoundsFailed}`)
+  
+  // Critical validation
+  const roundMismatch = actualRoundCount !== summary.roundsCreated
+  const playerRoundMismatch = actualPlayerRoundCount !== (summary.playerRoundsCreated + summary.playerRoundsUpdated)
+  
+  if (roundMismatch) {
+    console.error(`\n[v0] ⚠️  CRITICAL MISMATCH: Rounds`)
+    console.error(`[v0]    Reported: ${summary.roundsCreated} created`)
+    console.error(`[v0]    Actual:   ${actualRoundCount} in database`)
+    console.error(`[v0]    Difference: ${Math.abs(actualRoundCount - summary.roundsCreated)}`)
   }
-  if (actualPlayerRoundCount === 0 && (summary.playerRoundsCreated + summary.playerRoundsUpdated) > 0) {
-    console.error(`[v0] ⚠️  CRITICAL: PlayerRounds reported as created/updated (${summary.playerRoundsCreated + summary.playerRoundsUpdated}) but database contains 0!`)
+  if (playerRoundMismatch) {
+    console.error(`\n[v0] ⚠️  CRITICAL MISMATCH: PlayerRounds`)
+    console.error(`[v0]    Reported: ${summary.playerRoundsCreated + summary.playerRoundsUpdated} created/updated`)
+    console.error(`[v0]    Actual:   ${actualPlayerRoundCount} in database`)
+    console.error(`[v0]    Difference: ${Math.abs(actualPlayerRoundCount - (summary.playerRoundsCreated + summary.playerRoundsUpdated))}`)
   }
 
-  console.log(`[v0] Historical Results Import Summary:`)
+  console.log(`\n[v0] Historical Results Import Summary:`)
   console.log(
     `[v0]   Tournaments considered: ${summary.tournamentsConsidered}`,
   )
@@ -277,6 +292,7 @@ export async function importHistoricalResults(
       console.log(`[v0]     ${i + 1}. ${note}`)
     })
   }
+  console.log(`[v0] ═════════════════════════════════════════════════════════════\n`)
 
   return summary
 }

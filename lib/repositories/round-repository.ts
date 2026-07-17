@@ -28,6 +28,10 @@ export class RoundRepository extends BaseRepository {
 
   /**
    * Upsert a single round by (tournamentId, roundNumber).
+   * 
+   * CRITICAL: Includes post-write verification to confirm the record actually
+   * persisted in the database, not just returned from Prisma. If verification fails,
+   * returns fail() instead of success, preventing silent persistence failures.
    */
   async upsert(input: RoundPersistInput): Promise<RepositoryResult<RoundRecord>> {
     try {
@@ -42,17 +46,74 @@ export class RoundRepository extends BaseRepository {
           completed: true,
         },
       })
-      return ok(record)
+
+      // VERIFICATION: Query database immediately to confirm persistence
+      const verified = await this.prisma.round.findUnique({
+        where: { tournamentId_roundNumber: { tournamentId: input.tournamentId, roundNumber: input.roundNumber } },
+      })
+
+      if (!verified) {
+        const err = `Persistence verification failed: record not found in database after upsert`
+        this.log({
+          level: "error",
+          stage: "persist",
+          message: err,
+          error: toRepositoryError(err),
+        })
+        return {
+          ok: false,
+          error: toRepositoryError(err),
+          outcome: "failed",
+        } as any
+      }
+
+      // Return with both old ('ok', 'data') and new ('outcome', 'record') properties for compatibility
+      return {
+        ok: true,
+        data: verified,
+        outcome: "inserted",
+        record: verified,
+      } as any
     } catch (error) {
+      const repoError = toRepositoryError(error)
       this.log({
         level: "error",
         stage: "persist",
         message: `Failed to upsert round for tournament ${input.tournamentId}`,
-        error: toRepositoryError(error),
+        error: repoError,
       })
-      return fail(toRepositoryError(error))
+      return {
+        ok: false,
+        error: repoError,
+        outcome: "failed",
+      } as any
     }
   }
+    
+    console.log(`[v0-repo] RoundRepository.upsert: ✓ Persistence verified (record exists in database)`)
+    // Return with both old ('ok', 'data') and new ('outcome', 'record') properties for compatibility
+    return {
+      ok: true,
+      data: verified,
+      outcome: "inserted",
+      record: verified,
+    } as any
+  } catch (error) {
+    const repoError = toRepositoryError(error)
+    console.error(`[v0-repo] RoundRepository.upsert: Exception - ${repoError}`)
+    this.log({
+      level: "error",
+      stage: "persist",
+      message: `Failed to upsert round for tournament ${input.tournamentId}`,
+      error: repoError,
+    })
+    return {
+      ok: false,
+      error: repoError,
+      outcome: "failed",
+    } as any
+  }
+}
 
   /**
    * Bulk upsert rounds by (tournamentId, roundNumber).
