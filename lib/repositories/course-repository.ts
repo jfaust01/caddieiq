@@ -387,6 +387,7 @@ export class CourseRepository extends BaseRepository {
       const outcome = existing ? ("updated" as const) : ("inserted" as const)
       return ok(result, outcome)
     } catch (error) {
+      console.error("CourseCharacteristic upsert failed:", error)
       return fail(toRepositoryError(error))
     }
   }
