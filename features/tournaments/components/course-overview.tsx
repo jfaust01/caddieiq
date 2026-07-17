@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe, Phone } from 'lucide-react'
+import { Globe, Phone, Zap, Cloud } from 'lucide-react'
 import Link from 'next/link'
 
 import {
@@ -180,7 +180,7 @@ export function CourseOverview({ course, holes, tees }: CourseOverviewProps) {
           </div>
 
           <div className="flex items-center gap-2 rounded-lg border border-border/50 p-3">
-            <Cloud className="size-4 text-muted-foreground" />
+            <Zap className="size-4 text-muted-foreground" />
             <div className="flex-1">
               <p className="text-xs text-muted-foreground">Putting Green</p>
               <p className="text-sm font-medium text-foreground">
