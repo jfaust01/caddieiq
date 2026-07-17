@@ -55,7 +55,7 @@ export async function importTournamentsAction() {
         mapping: mappingOrchestration
           ? {
               tournamentCoursesProcessed: mappingOrchestration.tournamentCoursesProcessed,
-              mappingRowsCreated: mappingOrchestration.mappingRowsCreated,
+              mappingsCreated: mappingOrchestration.mappingRowsCreated,
               golfCourseApiMatchesFound: mappingOrchestration.golfCourseApiMatchesFound,
               golfCourseApiUnmatched: mappingOrchestration.golfCourseApiUnmatched,
               mappingsUpdated: mappingOrchestration.mappingsUpdated,
