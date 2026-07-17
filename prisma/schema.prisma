@@ -656,6 +656,8 @@ model Tournament {
   cutLine            Int?
   numberOfRounds     Int              @default(4)
   active             Boolean          @default(true)
+  /// SportsDataIO tournament ID for leaderboard/results fetching
+  externalId         String?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   deletedAt          DateTime?
