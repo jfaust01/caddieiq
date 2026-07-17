@@ -261,12 +261,18 @@ export const playerService = {
     // analytics so the verified skill profile is available; adds one course read
     // at most, and only when the context is verified.
     const upcoming = await buildUpcomingContext(id, analytics, context)
+    // Fetch historical course analytics for the same resolved course id — only
+    // when a verified course exists. Null when analytics haven't been calculated.
+    const courseAnalytics = upcoming.course
+      ? await courseService.getCourseAnalyticsById(upcoming.course.id)
+      : null
     return {
       ...mapPlayerDetail(record),
       analytics,
       rankingProfile,
       news: newsRows.map(mapPlayerNews),
       upcoming,
+      courseAnalytics,
     }
   },
 

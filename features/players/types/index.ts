@@ -235,6 +235,13 @@ export interface PlayerDetail extends Player {
    * articles linked to this player.
    */
   news: PlayerNewsItem[]
+  /**
+   * Historically-derived analytics for the upcoming tournament's host course.
+   * Null when the player has no upcoming verified event or when analytics have
+   * not yet been calculated for that course. Fetched in parallel with Course Fit
+   * from the same resolved course id — never fabricated.
+   */
+  courseAnalytics: CourseAnalytics | null
 }
 
 /**
