@@ -3,6 +3,8 @@ import type { Metadata } from "next"
 import { CaddieView } from "@/features/caddie/caddie-view"
 import { getCaddieTournamentContext } from "@/features/caddie/services/caddie-service"
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: "AI Caddie",
   description:
