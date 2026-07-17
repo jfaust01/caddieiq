@@ -213,6 +213,9 @@ export async function importGolfCourse(
     const address = courseDetail.address || {}
     const contact = courseDetail.contact || {}
     const specs = courseDetail.specifications || {}
+    const metadata = courseDetail.metadata || {}
+    const conditions = courseDetail.playingConditions || {}
+    const facilities = courseDetail.facilities || {}
 
     const courseDetailsResult = await courseDetailsRepo.upsert({
       externalCourseId: String(courseDetail.id),
@@ -229,6 +232,20 @@ export async function importGolfCourse(
       totalYardage: specs.totalYardage,
       courseRating: specs.courseRating,
       slopeRating: specs.slopeRating,
+      // Metadata fields
+      architect: metadata.architect,
+      yearBuilt: metadata.yearBuilt,
+      courseStyle: metadata.courseStyle,
+      // Playing conditions fields
+      grassTypeFairway: conditions.grassTypeFairway,
+      grassTypeGreen: conditions.grassTypeGreen,
+      greenSize: conditions.greenSize,
+      greenSpeed: conditions.greenSpeed,
+      elevation: conditions.elevation,
+      // Facilities fields
+      drivingRange: facilities.drivingRange,
+      puttingGreen: facilities.puttingGreen,
+      shortGameArea: facilities.shortGameArea,
     })
 
     if (courseDetailsResult.outcome === "failed") {
