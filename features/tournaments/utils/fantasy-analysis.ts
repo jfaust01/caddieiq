@@ -23,8 +23,10 @@ export interface FantasyAnalysis {
 
 /**
  * Extract the band from a CourseSignal (handling both rating and unknown types).
+ * Safely handles null/undefined signals.
  */
-function extractBand(signal: CourseSignal): "low" | "medium" | "high" | null {
+function extractBand(signal: CourseSignal | undefined | null): "low" | "medium" | "high" | null {
+  if (!signal) return null
   if (signal.status === "unknown") return null
   if (signal.kind === "rating") {
     return signal.band

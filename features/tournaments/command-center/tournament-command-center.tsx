@@ -168,7 +168,8 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         }
       />
 
-      {/* Tournament System Health */}
+      {/* Tournament System Health - DISABLED pending database migration */}
+      {/* TODO: Re-enable once CourseDetails table exists
       <CommandCenterWidget
         id="tournament-health"
         title="Tournament Health"
@@ -177,11 +178,12 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
       >
         <TournamentHealthWrapper
           tournament={tournament}
-          weatherStatus={weather.status === 'available' ? 'available' : weather.statusReport.code === 'fetch-pending' ? 'pending' : 'unavailable'}
-          oddsStatus={odds.leaderboards && odds.leaderboards.length > 0 ? 'available' : 'pending'}
+          weatherStatus={weather?.status === 'available' ? 'available' : weather?.statusReport?.code === 'fetch-pending' ? 'pending' : 'unavailable'}
+          oddsStatus={odds?.leaderboards && odds.leaderboards.length > 0 ? 'available' : 'pending'}
           hasHistoricalResults={false}
         />
       </CommandCenterWidget>
+      */}
 
       {/* Decision-first summary row */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
