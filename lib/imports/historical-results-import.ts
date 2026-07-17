@@ -211,10 +211,7 @@ export async function importHistoricalResults(
         summary.playerRoundsFailed += bulkRes.failed
 
         console.log(
-          `[v0] Bulk upsert complete (verified persistence): created=${bulkRes.created}, updated=${bulkRes.updated}, failed=${bulkRes.failed}`,
-        )
-        console.log(
-          `[v0] Records persisted in database: ${bulkRes.records.length} verified entries`,
+          `[v0] Bulk upsert complete: created=${bulkRes.created}, updated=${bulkRes.updated}, failed=${bulkRes.failed}`,
         )
 
         if (bulkRes.errors.length > 0) {
@@ -238,6 +235,29 @@ export async function importHistoricalResults(
         console.error(`[v0] Stack trace: ${stack}`)
       }
     }
+  }
+
+  // PHASE 6: Final verification - Query database to confirm actual persistence
+  console.log(`[v0] PHASE 6: Final Persistence Verification`)
+  console.log(`[v0] Querying actual database state...`)
+  
+  const actualRoundCount = await prisma.round.count()
+  const actualPlayerRoundCount = await prisma.playerRound.count()
+  
+  console.log(`[v0] ACTUAL DATABASE STATE:`)
+  console.log(`[v0]   Rounds in database: ${actualRoundCount}`)
+  console.log(`[v0]   PlayerRounds in database: ${actualPlayerRoundCount}`)
+  console.log(`[v0] REPORTED COUNTS (from repositories):`)
+  console.log(`[v0]   Rounds created (reported): ${summary.roundsCreated}`)
+  console.log(`[v0]   PlayerRounds created (reported): ${summary.playerRoundsCreated}`)
+  console.log(`[v0]   PlayerRounds updated (reported): ${summary.playerRoundsUpdated}`)
+  
+  // Check for mismatch
+  if (actualRoundCount === 0 && summary.roundsCreated > 0) {
+    console.error(`[v0] ⚠️  CRITICAL: Rounds reported as created (${summary.roundsCreated}) but database contains 0!`)
+  }
+  if (actualPlayerRoundCount === 0 && (summary.playerRoundsCreated + summary.playerRoundsUpdated) > 0) {
+    console.error(`[v0] ⚠️  CRITICAL: PlayerRounds reported as created/updated (${summary.playerRoundsCreated + summary.playerRoundsUpdated}) but database contains 0!`)
   }
 
   console.log(`[v0] Historical Results Import Summary:`)
