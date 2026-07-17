@@ -1,7 +1,7 @@
 'use client'
 
 import { RefreshCw } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import type { ImportPipelineCard } from "@/lib/system-health/database-health"
 import { importTournamentsAction } from "./actions/import-tournaments"
+import { startTournamentMappingAction } from "./actions/start-tournament-mapping"
+import { getTournamentMappingStatusAction } from "./actions/get-tournament-mapping-status"
 
 /**
  * Display import pipeline cards with status, recency, and performance metrics.
@@ -21,10 +23,57 @@ export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[]
     success: boolean
     message: string
   } | null>(null)
+  const [mappingStatus, setMappingStatus] = useState<{
+    status: "pending" | "in_progress" | "completed"
+    total: number
+    completed: number
+    percentage: number
+  } | null>(null)
+  const [isPolling, setIsPolling] = useState(false)
+  const [pollIntervalId, setPollIntervalId] = useState<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Poll for mapping status updates
+  const pollMappingStatus = useCallback(async () => {
+    try {
+      const result = await getTournamentMappingStatusAction()
+      if (result.success && result.data) {
+        setMappingStatus(result.data)
+        // Stop polling if completed
+        if (result.data.status === "completed") {
+          setIsPolling(false)
+          if (pollIntervalId) {
+            clearInterval(pollIntervalId)
+            setPollIntervalId(null)
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error polling mapping status:", error)
+    }
+  }, [pollIntervalId])
+
+  // Start polling when mapping begins
+  const startMappingPolling = useCallback(() => {
+    setIsPolling(true)
+    // Poll immediately
+    pollMappingStatus()
+    // Then set up interval for every 2 seconds
+    const interval = setInterval(pollMappingStatus, 2000)
+    setPollIntervalId(interval)
+  }, [pollMappingStatus])
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalId) {
+        clearInterval(pollIntervalId)
+      }
+    }
+  }, [pollIntervalId])
 
   const handleRefresh = async (pipelineName: string) => {
     setLoadingPipeline(pipelineName)
@@ -32,18 +81,26 @@ export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[]
 
     try {
       if (pipelineName === "Tournaments") {
-        const result = await importTournamentsAction()
-        if (result.success) {
+        // Step 1: Run tournament import
+        const importResult = await importTournamentsAction()
+        if (importResult.success) {
           setRefreshResult({
             pipeline: pipelineName,
             success: true,
-            message: `Tournament import completed. ${result.data?.mapping ? `Created ${result.data.mapping.mappingsCreated} mappings, reused ${result.data.mapping.mappingsReused}.` : ""}`,
+            message: `Tournament import completed with ${importResult.data?.summary?.inserted || 0} new tournaments. Starting course mapping in background...`,
           })
+
+          // Step 2: Start background mapping job
+          const mappingStartResult = await startTournamentMappingAction()
+          if (mappingStartResult.success) {
+            // Step 3: Begin polling for mapping status
+            startMappingPolling()
+          }
         } else {
           setRefreshResult({
             pipeline: pipelineName,
             success: false,
-            message: result.error || "Import failed",
+            message: importResult.error || "Import failed",
           })
         }
       }
@@ -176,6 +233,61 @@ export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[]
             >
               ✕
             </button>
+          </div>
+        </Card>
+      )}
+
+      {/* Mapping Status Notification */}
+      {mappingStatus && isPolling && (
+        <Card className="border-blue-500/50 bg-blue-500/10 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="font-semibold text-blue-700 dark:text-blue-300">
+                {mappingStatus.status === "in_progress" ? "Course Mapping in Progress" : "Course Mapping Complete"}
+              </h4>
+              <div className="mt-3 space-y-2">
+                {/* Progress bar */}
+                {mappingStatus.status === "in_progress" && (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Processing:</span>
+                      <span className="font-mono text-xs">
+                        {mappingStatus.completed}/{mappingStatus.total} ({mappingStatus.percentage}%)
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-900">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-300"
+                        style={{ width: `${mappingStatus.percentage}%` }}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Summary metrics */}
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2">
+                  <div className="text-muted-foreground">
+                    <span className="block">Already Mapped:</span>
+                    <span className="font-mono font-semibold">{mappingStatus.alreadyMapped}</span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    <span className="block">Newly Mapped:</span>
+                    <span className="font-mono font-semibold">{mappingStatus.created}</span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    <span className="block">Updated:</span>
+                    <span className="font-mono font-semibold">{mappingStatus.updated}</span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    <span className="block">Failed:</span>
+                    <span className="font-mono font-semibold">{mappingStatus.failed}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {mappingStatus.status === "in_progress" && (
+              <RefreshCw className="size-5 animate-spin flex-shrink-0 text-blue-500 mt-1" />
+            )}
           </div>
         </Card>
       )}
