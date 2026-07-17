@@ -20,6 +20,29 @@ const GROUP_ORDER: readonly { key: CourseProfileGroup; label: string }[] = [
   { key: 'scoring', label: 'Scoring profile' },
 ]
 
+/** Tooltips explaining each course characteristic metric. */
+const METRIC_TOOLTIPS: Record<string, string> = {
+  style: 'Course architectural style (Links, Parkland, Desert, etc.)',
+  fairwayGrass: 'Primary grass type on fairways',
+  roughGrass: 'Primary grass type in rough areas',
+  greenGrass: 'Primary grass type on putting greens',
+  greenSpeed: 'How fast the greens are prepared (Stimp rating)',
+  fairwayWidth: 'Average fairway width relative to PGA Tour standard (Low = tight, High = wide)',
+  roughLength: 'Rough depth relative to Tour standard (Low = playable, High = severe)',
+  treeLined: 'Tree coverage and impact on play (Low = open, High = heavily tree-lined)',
+  waterHazards: 'Prevalence of water hazards affecting play (Low = minimal, High = extensive)',
+  windExposure: 'Exposure to wind relative to local geography (Low = sheltered, High = exposed)',
+  elevationChange: 'Topography and elevation swings (Low = flat, High = rolling)',
+  drivingImportance: 'How much accurate driving affects scoring (Low = secondary, High = critical)',
+  approachImportance: 'How much approach shot precision affects scoring (Low = secondary, High = critical)',
+  shortGameImportance: 'How much chipping and pitching affect scoring (Low = secondary, High = critical)',
+  puttingImportance: 'How much putting affects scoring relative to other skills (Low = secondary, High = critical)',
+  scramblingDifficulty: 'Difficulty of recovering from poor shots (Low = forgiving, High = punishing)',
+  birdieRate: 'Historical birdie frequency during tournaments',
+  bogeyRate: 'Historical bogey frequency during tournaments',
+  varianceRating: 'Score variance across field (Low = consistent, High = volatile)',
+}
+
 /** Which of the three band segments are lit, per band. */
 const BAND_FILL: Record<CourseBand, number> = { low: 1, medium: 2, high: 3 }
 
@@ -48,7 +71,7 @@ function BandMeter({ band }: { band: CourseBand }) {
 function SignalValue({ signal }: { signal: CourseSignal }) {
   if (signal.status === 'unknown') {
     return (
-      <span className="text-sm text-muted-foreground/70 italic">Not yet available</span>
+      <span className="text-sm font-medium text-muted-foreground">—</span>
     )
   }
   if (signal.kind === 'rating') {
@@ -70,8 +93,9 @@ function SignalValue({ signal }: { signal: CourseSignal }) {
 function CharacteristicRow({ characteristic }: { characteristic: CourseCharacteristic }) {
   const { meta, signal } = characteristic
   const verified = signal.status === 'verified'
+  const tooltip = METRIC_TOOLTIPS[meta.key]
   return (
-    <div className="flex items-center justify-between gap-4 py-2.5">
+    <div className="flex items-center justify-between gap-4 py-2.5" title={tooltip}>
       <div className="flex min-w-0 flex-col gap-0.5">
         <span
           className={cn(

@@ -416,23 +416,18 @@ export class CourseRepository extends BaseRepository {
         records.push(result.record!)
         updated++
         this.logger.update(char.courseId)
-      } else if (result.outcome === "error") {
+      } else if (result.outcome === "failed") {
         failed++
-        errors.push({
-          index: i,
-          reference: char.courseId,
-          error: result.error || new Error("Unknown error in upsertCharacteristic"),
-        })
-        this.logger.failure(char.courseId, result.error?.message || "Unknown error")
-      } else {
-        // Explicitly handle "skipped" outcome if it occurs
-        failed++
-        errors.push({
-          index: i,
-          reference: char.courseId,
-          error: new Error(`Unexpected outcome: ${result.outcome}`),
-        })
+        if (result.error) {
+          errors.push({
+            index: i,
+            reference: char.courseId,
+            error: result.error,
+          })
+          this.logger.failure(char.courseId, result.error.message)
+        }
       }
+      // Note: "skipped" outcome is handled by the default (no action needed)
     }
 
     return {
