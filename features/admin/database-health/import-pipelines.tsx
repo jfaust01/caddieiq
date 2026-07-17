@@ -11,6 +11,7 @@ import type { ImportPipelineCard } from "@/lib/system-health/database-health"
 import { importTournamentsAction } from "./actions/import-tournaments"
 import { startTournamentMappingAction } from "./actions/start-tournament-mapping"
 import { getTournamentMappingStatusAction } from "./actions/get-tournament-mapping-status"
+import { getActiveTournamentRunAction } from "./actions/get-active-tournament-run"
 
 /**
  * Display import pipeline cards with status, recency, and performance metrics.
@@ -39,11 +40,31 @@ export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[]
     runId: string
   } | null>(null)
   const [mappingRunId, setMappingRunId] = useState<string | null>(null)
+  const [lastRunAt, setLastRunAt] = useState<string | null>(null)
   const [isPolling, setIsPolling] = useState(false)
   const [pollIntervalId, setPollIntervalId] = useState<NodeJS.Timeout | null>(null)
 
+  // On mount, check if there's an active workflow to reconnect to
   useEffect(() => {
     setMounted(true)
+    
+    // Try to reconnect to an active workflow if browser was refreshed
+    const checkActiveRun = async () => {
+      const result = await getActiveTournamentRunAction()
+      if (result.success && result.data?.runId && result.data.status === "in_progress") {
+        // There's an active workflow - reconnect and resume polling
+        console.log("[v0] Reconnecting to active workflow:", result.data.runId)
+        setMappingRunId(result.data.runId)
+        setLastRunAt(result.data.startedAt)
+        // Start polling immediately
+        setIsPolling(true)
+      } else if (result.success && result.data?.runId && result.data.status !== "idle") {
+        // Show the last run status even if not active
+        setLastRunAt(result.data.startedAt)
+      }
+    }
+
+    checkActiveRun()
   }, [])
 
   // Poll for mapping status updates
@@ -261,8 +282,24 @@ export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[]
 
         {/* Stats */}
         <div className="space-y-2 text-sm">
+          {/* Last Run timestamp - always show if available */}
+          {lastRunAt && (
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Last Run:</span>
+              <span className="font-mono">{mounted ? new Date(lastRunAt).toLocaleString() : lastRunAt}</span>
+            </div>
+          )}
+
           {mappingStatus && (
             <>
+              {/* Current activity - only show if in progress */}
+              {mappingStatus.status === "in_progress" && mappingStatus.currentTournament && (
+                <div className="rounded-sm bg-blue-500/10 p-2 text-xs text-blue-600 dark:text-blue-400">
+                  <span className="font-semibold">Processing:</span> {mappingStatus.currentTournament}
+                  {mappingStatus.currentStep && ` - ${mappingStatus.currentStep}`}
+                </div>
+              )}
+
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Evaluated:</span>
                 <span className="font-mono text-xs">{mappingStatus.total}</span>
@@ -368,7 +405,8 @@ export function ImportPipelines({ pipelines }: { pipelines: ImportPipelineCard[]
         {/* Error message */}
         {mappingStatus?.status === "failed" && (
           <div className="rounded-sm border border-destructive/50 bg-destructive/10 p-2">
-            <p className="text-xs text-destructive">{mappingStatus.message}</p>
+            <p className="text-xs font-semibold text-destructive">Error:</p>
+            <p className="text-xs text-destructive">{mappingStatus.errorMessage || mappingStatus.message}</p>
           </div>
         )}
       </Card>

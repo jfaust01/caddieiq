@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { getRun } from "workflow/api"
 
 /**
@@ -114,6 +115,26 @@ export async function GET(request: NextRequest) {
       ? Math.round((progress.completed / unmappedTotal) * 100) 
       : 100
 
+    // Update ImportRun record if workflow has completed
+    if (status === "completed" || status === "failed") {
+      try {
+        await prisma.importRun.updateMany({
+          where: {
+            workflowRunId: runId,
+          },
+          data: {
+            status: status === "completed" ? "completed" : "failed",
+            completedAt: new Date(),
+            rowsImported: progress.created + progress.updated,
+            errors: progress.failed || 0,
+          },
+        })
+      } catch (dbError) {
+        console.warn("[v0] Failed to update ImportRun record:", dbError)
+        // Don't fail the response if DB update fails
+      }
+    }
+
     return NextResponse.json({
       data: {
         status,
@@ -128,6 +149,9 @@ export async function GET(request: NextRequest) {
         apiCallsMade: progress.apiCallsMade || 0,
         totalDurationMs: progress.totalDurationMs || 0,
         message: progress.message,
+        errorMessage: progress.errorMessage,
+        currentStep: progress.currentStep,
+        currentTournament: progress.currentTournament,
         runId: mappingRun.id,
       },
     })

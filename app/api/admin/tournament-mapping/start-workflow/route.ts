@@ -1,6 +1,7 @@
 import { start } from "workflow/api";
 import { tournamentMappingWorkflow } from "@/lib/workflows/tournament-mapping-workflow";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 
 /**
@@ -24,6 +25,24 @@ export async function POST() {
     const run = await start(tournamentMappingWorkflow, []);
 
     console.log(`[v0] Tournament mapping workflow started: ${run.runId}`);
+
+    // Create ImportRun record to persist workflow execution history
+    try {
+      await prisma.importRun.create({
+        data: {
+          pipeline: "TournamentCourseMapping",
+          status: "in_progress",
+          startedAt: new Date(),
+          workflowRunId: run.runId,
+          rowsImported: 0,
+          errors: 0,
+        },
+      });
+      console.log(`[v0] Created ImportRun record for workflow ${run.runId}`);
+    } catch (dbError) {
+      console.warn(`[v0] Failed to create ImportRun record:`, dbError);
+      // Don't fail the whole operation if DB tracking fails
+    }
 
     return Response.json(
       {

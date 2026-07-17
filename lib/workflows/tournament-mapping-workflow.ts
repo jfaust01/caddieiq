@@ -17,6 +17,10 @@ type MappingProgress = {
   totalDurationMs: number;
   status: "in_progress" | "completed" | "failed";
   message: string;
+  currentStep?: string; // e.g., "Searching course X"
+  currentTournament?: string; // e.g., "PGA Championship 2024"
+  errorMessage?: string; // Detailed error if failed
+  lastRunAt?: string; // ISO timestamp of when workflow started
 };
 
 /**
