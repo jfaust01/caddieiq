@@ -12,7 +12,7 @@ import type { PlayerRound } from "@/lib/domain/round/types"
 import { BaseRepository } from "./base-repository"
 import { toRepositoryError } from "./errors"
 import type { RepositoryLogSink } from "./logger"
-import { fail, ok, type BulkRepositoryResult, type RepositoryResult } from "./repository-result"
+import { accumulate, emptyBulkResult, fail, ok, type BulkRepositoryResult, type RepositoryResult } from "./repository-result"
 
 export interface ResolvedPlayerRound {
   roundId: string
@@ -68,26 +68,17 @@ export class PlayerRoundRepository extends BaseRepository {
       })
 
       if (!verified) {
-        const err = `Persistence verification failed: record not found in database after upsert`
+        const err = toRepositoryError(`Persistence verification failed: record not found in database after upsert`)
         this.log({
           level: "error",
           stage: "persist",
-          message: err,
-          error: toRepositoryError(err),
+          message: `Failed to upsert player round for field ${input.tournamentFieldId}`,
+          error: err,
         })
-        return {
-          ok: false,
-          error: toRepositoryError(err),
-          outcome: "failed",
-        } as any
+        return fail(err)
       }
 
-      return {
-        ok: true,
-        data: verified,
-        outcome: "inserted",
-        record: verified,
-      } as any
+      return ok(verified, "inserted")
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.log({
@@ -96,11 +87,7 @@ export class PlayerRoundRepository extends BaseRepository {
         message: `Failed to upsert player round for field ${input.tournamentFieldId}`,
         error: repoError,
       })
-      return {
-        ok: false,
-        error: repoError,
-        outcome: "failed",
-      } as any
+      return fail(repoError)
     }
   }
 
@@ -112,15 +99,10 @@ export class PlayerRoundRepository extends BaseRepository {
    * database state, not intended writes.
    */
   async bulkUpsert(inputs: ResolvedPlayerRound[]): Promise<BulkRepositoryResult<PlayerRoundRecord>> {
-    const result: BulkRepositoryResult<PlayerRoundRecord> = {
-      created: 0,
-      updated: 0,
-      failed: 0,
-      records: [],
-      errors: [],
-    }
+    const result = emptyBulkResult<PlayerRoundRecord>()
 
-    for (const input of inputs) {
+    for (let index = 0; index < inputs.length; index++) {
+      const input = inputs[index]
       try {
         // Get the existing record BEFORE upsert to track created vs updated
         const beforeUpsert = await this.prisma.playerRound.findUnique({
@@ -129,34 +111,30 @@ export class PlayerRoundRepository extends BaseRepository {
 
         // Perform the upsert
         const res = await this.upsert(input)
-        if (!res.ok) {
-          result.failed++
-          result.errors.push(res.error)
-          continue
-        }
-
-        // Verify the record persisted by querying it again
-        const afterUpsert = await this.prisma.playerRound.findUnique({
-          where: { roundId_tournamentFieldId: { roundId: input.roundId, tournamentFieldId: input.tournamentFieldId } },
-        })
-
-        if (!afterUpsert) {
-          result.failed++
-          result.errors.push("Record not found after upsert - persistence verification failed")
-          continue
-        }
-
-        result.records.push(afterUpsert)
-
-        // Determine if created or updated based on pre/post state
-        if (beforeUpsert) {
-          result.updated++
+        
+        // Determine outcome based on pre/post state
+        let outcome: "inserted" | "updated" | "failed"
+        if (res.outcome === "failed") {
+          outcome = "failed"
+        } else if (beforeUpsert) {
+          outcome = "updated"
         } else {
-          result.created++
+          outcome = "inserted"
         }
+
+        // Create normalized result and accumulate
+        const normalizedResult: RepositoryResult<PlayerRoundRecord> = {
+          outcome,
+          record: res.record,
+          error: res.error,
+        }
+        accumulate(result, normalizedResult, index, input.tournamentFieldId)
       } catch (error) {
-        result.failed++
-        result.errors.push(toRepositoryError(error))
+        const normalizedResult: RepositoryResult<PlayerRoundRecord> = {
+          outcome: "failed",
+          error: toRepositoryError(error),
+        }
+        accumulate(result, normalizedResult, index, input.tournamentFieldId)
       }
     }
 
