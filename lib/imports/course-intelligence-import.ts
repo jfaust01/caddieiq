@@ -10,6 +10,7 @@ import { getImportRunRepository } from "@/lib/repositories/import-run-repository
 import type { CourseImportSummary } from "@/lib/types/course-import"
 import { generateImportJobId } from "@/lib/types/import-summary"
 import { persistCourseIntelligence } from "@/lib/course-intelligence/service"
+import { generateAndPersistInsights } from "@/lib/course-intelligence/insights"
 
 /**
  * Validate course data has required fields and structure.
@@ -87,6 +88,7 @@ export async function importCourseIntelligence(
   let teeBoxesSkipped = 0
   let intelligenceAnalyzed = 0
   let intelligenceGenerated = 0
+  let insightsGenerated = 0
   const warnings: string[] = []
   const failures: string[] = []
 
@@ -244,6 +246,18 @@ export async function importCourseIntelligence(
             if (intelligence) {
               intelligenceGenerated++
               console.log(`[v0] Course intelligence generated for ${courseDetail.name}`)
+
+              // Generate and persist course insights
+              try {
+                const insights = await generateAndPersistInsights(courseId)
+                if (insights.length > 0) {
+                  insightsGenerated += insights.length
+                  console.log(`[v0] Generated ${insights.length} insights for ${courseDetail.name}`)
+                }
+              } catch (insightError) {
+                const errorMsg = insightError instanceof Error ? insightError.message : String(insightError)
+                warnings.push(`Failed to generate insights for ${courseDetail.name}: ${errorMsg}`)
+              }
             } else {
               warnings.push(`Could not generate intelligence for ${courseDetail.name}`)
             }
@@ -319,6 +333,7 @@ export async function importCourseIntelligence(
       teeBoxesSkipped,
       intelligenceAnalyzed,
       intelligenceGenerated,
+      insightsGenerated,
       throughputPerSecond,
       warnings,
       failures,
@@ -351,6 +366,7 @@ export async function importCourseIntelligence(
       teeBoxesSkipped,
       intelligenceAnalyzed,
       intelligenceGenerated,
+      insightsGenerated,
       throughputPerSecond,
       warnings,
       failures,

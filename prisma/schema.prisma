@@ -1473,9 +1473,46 @@ model CourseIntelligence {
   
   /// Relations
   course                          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  insights                        CourseInsight[]
   
   @@unique([courseId, calculationVersion])
   @@index([courseId])
   @@index([calculatedAt])
   @@map("course_intelligence")
+}
+
+/// Course Insights — human-readable intelligence derived from metrics.
+/// Generated deterministically from CourseIntelligence metrics.
+/// Displayed on Tournament Hub, DFS pages, and premium reports.
+model CourseInsight {
+  id                              String    @id @default(cuid())
+  
+  /// Reference to course intelligence
+  courseIntelligenceId            String
+  courseIntelligence              CourseIntelligence @relation(fields: [courseIntelligenceId], references: [id], onDelete: Cascade)
+  
+  /// Insight category
+  category                        String    @db.VarChar(50)
+  
+  /// Insight content
+  title                           String
+  summary                         String    @db.Text
+  
+  /// Importance for display ordering (1-5)
+  importance                      Int       @default(3)
+  
+  /// Icon identifier for UI rendering
+  icon                            String    @db.VarChar(50)
+  
+  /// Display order within category
+  displayOrder                    Int       @default(0)
+  
+  /// Audit timestamps
+  createdAt                       DateTime  @default(now())
+  updatedAt                       DateTime  @updatedAt
+  
+  @@unique([courseIntelligenceId, category])
+  @@index([courseIntelligenceId])
+  @@index([category])
+  @@map("course_insights")
 }

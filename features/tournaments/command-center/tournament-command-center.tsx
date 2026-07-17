@@ -20,6 +20,7 @@ import { TournamentCourseIntelligence } from '@/features/tournaments/components/
 import { TournamentCourseAnalytics } from '@/features/tournaments/components/tournament-course-analytics'
 import { TournamentCourseOverviewWrapper } from '@/features/tournaments/components/tournament-course-overview-wrapper'
 import { TournamentCourseIntelligenceWrapper } from '@/features/tournaments/components/tournament-course-intelligence-wrapper'
+import { TournamentCourseInsightsWrapper } from '@/features/tournaments/components/tournament-course-insights-wrapper'
 import { TournamentWeatherIntelligence } from '@/features/tournaments/components/tournament-weather-intelligence'
 import { TournamentOddsIntelligence } from '@/features/tournaments/components/tournament-odds-intelligence'
 import { TournamentSkillLeaderboards } from '@/features/tournaments/components/tournament-skill-leaderboards'
@@ -242,6 +243,16 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
           icon={<Compass className="size-4 text-primary" aria-hidden />}
         >
           <TournamentCourseOverviewWrapper tournamentId={tournament.id} />
+        </CommandCenterWidget>
+      ) : null}
+
+      {courseRef ? (
+        <CommandCenterWidget
+          id="course-insights"
+          title="Course Insights"
+          icon={<Newspaper className="size-4 text-primary" aria-hidden />}
+        >
+          <TournamentCourseInsightsWrapper tournamentId={tournament.id} />
         </CommandCenterWidget>
       ) : null}
 
