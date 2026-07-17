@@ -62,8 +62,37 @@ import {
   getTournamentRepository,
   type TournamentSearchParams,
 } from '@/lib/repositories/tournament-repository'
+import { getRoundRepository } from '@/lib/repositories/round-repository'
+import { getPlayerRoundRepository } from '@/lib/repositories/player-round-repository'
 
 import { mapFieldEntrant, mapTournamentSummary } from './tournament-mapper'
+
+/**
+ * Round with player scores for UI display.
+ * Combines Round data with PlayerRound entries and player name resolution.
+ */
+export interface RoundWithScores {
+  roundId: string
+  roundNumber: number
+  scheduledDate: Date | null
+  status: string
+  playerScores: PlayerScoreEntry[]
+}
+
+/**
+ * Single player's score and status for a round.
+ */
+export interface PlayerScoreEntry {
+  playerRoundId: string
+  playerId: string
+  playerName: string
+  position: number | null
+  score: number | null
+  toPar: number | null
+  madeCut: boolean | null
+  withdrawn: boolean
+  disqualified: boolean
+}
 
 /**
  * Load one tournament by id, mapped to the UI shape, or `null` when it does not
@@ -82,6 +111,63 @@ const getTournamentByIdCached = cache(
       createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
       updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
     }
+  },
+)
+
+/**
+ * Load all rounds with player scores for a tournament.
+ * Reuses RoundRepository and PlayerRoundRepository; joins with field data for player names.
+ * Wrapped in React cache for request-level caching.
+ */
+const getRoundsByTournamentCached = cache(
+  async (tournamentId: string): Promise<RoundWithScores[]> => {
+    const roundRepo = getRoundRepository()
+    const playerRoundRepo = getPlayerRoundRepository()
+    const fieldRepo = getFieldRepository()
+
+    // Fetch all rounds for the tournament
+    const rounds = await roundRepo.getByTournament(tournamentId)
+
+    if (rounds.length === 0) {
+      return []
+    }
+
+    // Fetch player scores for each round and build the result
+    const result: RoundWithScores[] = []
+
+    for (const round of rounds) {
+      const playerRounds = await playerRoundRepo.getByRound(round.id)
+
+      // Build player score entries with name resolution
+      const playerScores: PlayerScoreEntry[] = playerRounds
+        .map((pr) => {
+          // Extract player name from tournamentField relationship
+          const playerName = pr.tournamentField?.player?.fullName || 'Unknown Player'
+
+          return {
+            playerRoundId: pr.id,
+            playerId: pr.tournamentField?.playerId || '',
+            playerName,
+            position: pr.position,
+            score: pr.score,
+            toPar: pr.toPar,
+            madeCut: pr.madeCut,
+            withdrawn: pr.withdrawn,
+            disqualified: pr.disqualified,
+          }
+        })
+        .filter((entry) => entry.playerId) // Filter out entries without player resolution
+
+      result.push({
+        roundId: round.id,
+        roundNumber: round.roundNumber,
+        scheduledDate: round.scheduledDate,
+        status: round.status,
+        playerScores,
+      })
+    }
+
+    return result
   },
 )
 
@@ -830,5 +916,15 @@ export const tournamentService = {
     }
 
     return { bestFits, potentialFades }
+  },
+
+  /**
+   * Return all rounds with player scores for a tournament. Reuses
+   * RoundRepository and PlayerRoundRepository; joins with field data for player
+   * name resolution. Returns an empty array when no rounds exist or the
+   * tournament has no scoring data yet.
+   */
+  getRoundsByTournament(id: string): Promise<RoundWithScores[]> {
+    return getRoundsByTournamentCached(id)
   },
 }

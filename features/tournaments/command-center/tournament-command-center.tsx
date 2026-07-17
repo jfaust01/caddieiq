@@ -25,6 +25,7 @@ import { TournamentWeatherIntelligence } from '@/features/tournaments/components
 import { TournamentOddsIntelligence } from '@/features/tournaments/components/tournament-odds-intelligence'
 import { TournamentSkillLeaderboards } from '@/features/tournaments/components/tournament-skill-leaderboards'
 import { TournamentDfsLeaderboards } from '@/features/tournaments/components/tournament-dfs-leaderboards'
+import { TournamentRoundsTable } from '@/features/tournaments/components/tournament-rounds-table'
 import { FieldFitBoard } from '@/features/tournaments/components/field-fit-board'
 import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
 import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
@@ -47,6 +48,7 @@ import {
 } from '@/features/tournaments/utils/tournament-elevation'
 import { isCurrentUserAdmin } from '@/lib/session'
 import type { TournamentSummary } from '@/features/tournaments/types'
+import type { RoundWithScores } from '@/features/tournaments/services/tournament-service'
 import type { WeatherIntelligence } from '@/lib/weather-intelligence'
 
 interface TournamentCommandCenterProps {
@@ -98,6 +100,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
     skillLeaderboards,
     dfsField,
     isAdmin,
+    rounds,
   ] = await Promise.all([
     tournamentService.getTournamentField(tournament.id),
     tournamentService.getFieldReport(tournament.id),
@@ -110,6 +113,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
     tournamentService.getSkillLeaderboards(tournament.id),
     tournamentService.getDfsValueField(tournament.id),
     isCurrentUserAdmin(),
+    tournamentService.getRoundsByTournament(tournament.id),
   ])
 
   const weatherAdmin = isAdmin
@@ -278,6 +282,8 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
           <TournamentDfsLeaderboards field={dfsField} />
         </CommandCenterWidget>
       ) : null}
+
+      <TournamentRoundsTable rounds={rounds} isAdmin={isAdmin} />
 
       {courseRef ? (
         <CommandCenterWidget
