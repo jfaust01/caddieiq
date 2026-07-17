@@ -64,6 +64,8 @@ export async function importTournamentsAction() {
               totalErrors: mappingOrchestration.totalErrors,
               durationMs: mappingOrchestration.durationMs,
               summary: mappingOrchestration.summary,
+              firstErrorMessage: mappingOrchestration.firstErrorMessage,
+              firstErrorCause: mappingOrchestration.firstErrorCause,
             }
           : null,
         errors: result.errors.slice(0, 50),
