@@ -642,8 +642,15 @@ function scalarFields(tournament: Tournament) {
     endDate: tournament.endDate,
     // `purse` is `Decimal?` in the schema; Prisma accepts number | string | null.
     purse: tournament.purse,
+    fedExPoints: tournament.fedExPoints,
+    worldRankingPoints: tournament.worldRankingPoints,
+    cutAfterRounds: tournament.cutAfterRounds,
+    cutLine: tournament.cutLine,
+    numberOfRounds: tournament.numberOfRounds,
+    active: tournament.active,
     // Store the SportsDataIO tournament ID for leaderboard/results fetching
     externalId: tournament.externalRef?.externalId,
+    deletedAt: tournament.deletedAt,
   }
 }
 
