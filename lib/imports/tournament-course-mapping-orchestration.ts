@@ -112,6 +112,10 @@ export async function orchestrateTournamentCourseMapping(
       const tournament = tournamentCourse.tournament
       const course = tournamentCourse.course
 
+      const isMissingTournament = tournament.name === "Workday Charity Open" || tournament.name === "World Golf Championships-Dell Match Play"
+      if (isMissingTournament) {
+        console.log(`[v0] *** TRACKING MISSING TOURNAMENT: ${tournament.name}`)
+      }
       console.log(`[v0] LOOP ITERATION ${i + 1}/${allTournamentCourses.length}: ${tournament.name}`)
 
       if (!course) {
@@ -126,8 +130,14 @@ export async function orchestrateTournamentCourseMapping(
         )
 
         // Check if mapping already exists
+        if (isMissingTournament) {
+          console.log(`[v0] *** [${tournament.name}] START: mappingRepo.findByTournamentId(${tournament.id})`)
+        }
         console.log(`[v0] START: mappingRepo.findByTournamentId(${tournament.id})`)
         const existingMappingResult = await mappingRepo.findByTournamentId(tournament.id)
+        if (isMissingTournament) {
+          console.log(`[v0] *** [${tournament.name}] END: mappingRepo.findByTournamentId - outcome: ${existingMappingResult.outcome}, record: ${existingMappingResult.record ? "EXISTS" : "NULL"}`)
+        }
         console.log(`[v0] END: mappingRepo.findByTournamentId(${tournament.id})`)
         const existingMapping = existingMappingResult.outcome === "ok" ? existingMappingResult.record : null
 
@@ -202,8 +212,14 @@ export async function orchestrateTournamentCourseMapping(
         }
 
         // Create or update mapping (regardless of whether GolfCourseAPI match was found)
+        if (isMissingTournament) {
+          console.log(`[v0] *** [${tournament.name}] CREATE/UPDATE DECISION: existingMapping=${existingMapping ? "TRUE" : "FALSE"}, golfCourseApiCourseId=${golfCourseApiCourseId || "null"}, confidence=${confidence}`)
+        }
         if (existingMapping) {
           // Update existing unverified mapping
+          if (isMissingTournament) {
+            console.log(`[v0] *** [${tournament.name}] TAKING UPDATE PATH`)
+          }
           console.log(`[v0] START: mappingRepo.update(${tournament.id})`)
           const updateResult = await mappingRepo.update(tournament.id, {
             golfCourseApiCourseId: golfCourseApiCourseId || undefined,
@@ -226,6 +242,9 @@ export async function orchestrateTournamentCourseMapping(
           }
         } else {
           // Create new mapping
+          if (isMissingTournament) {
+            console.log(`[v0] *** [${tournament.name}] TAKING CREATE PATH`)
+          }
           console.log(`[v0] START: mappingRepo.create(${tournament.id})`)
           const createResult = await mappingRepo.create({
             tournamentId: tournament.id,
@@ -237,6 +256,12 @@ export async function orchestrateTournamentCourseMapping(
             matchedBy,
             verified: false,
           })
+          if (isMissingTournament) {
+            console.log(`[v0] *** [${tournament.name}] END: mappingRepo.create - outcome: ${createResult.outcome}`)
+            if (createResult.outcome !== "ok") {
+              console.log(`[v0] *** [${tournament.name}] CREATE FAILED: ${JSON.stringify(createResult.error)}`)
+            }
+          }
           console.log(`[v0] END: mappingRepo.create(${tournament.id}) - outcome: ${createResult.outcome}`)
 
           if (createResult.outcome === "ok") {
@@ -277,6 +302,12 @@ export async function orchestrateTournamentCourseMapping(
           error: errorMessage,
         })
 
+        if (isMissingTournament) {
+          console.log(
+            `[v0] *** [${tournament.name}] EXCEPTION CAUGHT - Message: ${errorMessage}`,
+          )
+          console.log(`[v0] *** [${tournament.name}] Stack trace: ${errorStack}`)
+        }
         console.log(
           `[v0] ✗ ${tournament.name} (id: ${tournament.id}): Exception - ${errorMessage}`,
         )
