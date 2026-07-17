@@ -21,7 +21,6 @@ import { TournamentCourseAnalytics } from '@/features/tournaments/components/tou
 import { TournamentCourseOverviewWrapper } from '@/features/tournaments/components/tournament-course-overview-wrapper'
 import { TournamentCourseIntelligenceWrapper } from '@/features/tournaments/components/tournament-course-intelligence-wrapper'
 import { TournamentCourseInsightsWrapper } from '@/features/tournaments/components/tournament-course-insights-wrapper'
-import { CourseIntelligenceHub } from '@/features/tournaments/components/course-intelligence-hub'
 import { TournamentWeatherIntelligence } from '@/features/tournaments/components/tournament-weather-intelligence'
 import { TournamentOddsIntelligence } from '@/features/tournaments/components/tournament-odds-intelligence'
 import { TournamentSkillLeaderboards } from '@/features/tournaments/components/tournament-skill-leaderboards'
@@ -283,7 +282,9 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         </CommandCenterWidget>
       ) : null}
 
-      {courseRef && courseProfile ? (
+      {/* Premium Course Intelligence widget disabled pending CourseDetails table migration */}
+      {/* TODO: Re-enable when CourseDetails table exists in database */}
+      {/* {courseRef && courseProfile ? (
         <CommandCenterWidget
           id="course-intelligence-premium"
           title="Premium Course Intelligence"
@@ -296,7 +297,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
             profile={courseProfile}
           />
         </CommandCenterWidget>
-      ) : null}
+      ) : null} */}
 
       {courseRef && courseProfile ? (
         <CommandCenterWidget

@@ -349,7 +349,7 @@ export function TournamentWeatherIntelligence({
   // forecast as loaded AND we actually have an available profile. Otherwise the
   // honest status placeholder renders — so a completed event shows "historical
   // unavailable", not last week's stale forecast.
-  const showForecast = FORECAST_CODES.has(status.code) && weather.status === 'available'
+  const showForecast = status && FORECAST_CODES.has(status.code) && weather.status === 'available'
 
   return (
     <section className="flex flex-col gap-4">
@@ -396,6 +396,22 @@ export function TournamentWeatherIntelligence({
  */
 function StatusPlaceholder({ weather }: { weather: WeatherIntelligence }) {
   const status = weather.statusReport
+  
+  // Gracefully handle missing status report
+  if (!status) {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-surface/50 p-4">
+        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full">
+          <Info className="size-4 aria-hidden" />
+        </span>
+        <div className="flex flex-col gap-1">
+          <p className="text-sm font-medium text-foreground text-balance">Weather data unavailable</p>
+          <p className="text-xs leading-relaxed text-muted-foreground text-pretty">Status report could not be loaded</p>
+        </div>
+      </div>
+    )
+  }
+  
   const Icon = STATUS_ICON[status.code] ?? Info
 
   return (
