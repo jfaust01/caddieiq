@@ -19,8 +19,10 @@ interface MappingInput {
   tournamentCourseName?: string
   golfCourseCourseName?: string
   matchConfidence?: number
+  confidenceReason?: string
   matchedBy?: string
   verified?: boolean
+  autoVerified?: boolean
   lastSyncedAt?: Date
 }
 
@@ -98,8 +100,10 @@ export class TournamentCourseMappingRepository extends BaseRepository {
           tournamentCourseName: input.tournamentCourseName,
           golfCourseCourseName: input.golfCourseCourseName,
           matchConfidence: input.matchConfidence ?? 0,
+          confidenceReason: input.confidenceReason,
           matchedBy: input.matchedBy ?? "manual",
           verified: input.verified ?? false,
+          autoVerified: input.autoVerified ?? false,
           lastSyncedAt: input.lastSyncedAt,
         },
       })
@@ -124,8 +128,10 @@ export class TournamentCourseMappingRepository extends BaseRepository {
           tournamentCourseName: input.tournamentCourseName,
           golfCourseCourseName: input.golfCourseCourseName,
           matchConfidence: input.matchConfidence,
+          confidenceReason: input.confidenceReason,
           matchedBy: input.matchedBy,
           verified: input.verified,
+          autoVerified: input.autoVerified,
           lastSyncedAt: input.lastSyncedAt,
           updatedAt: new Date(),
         },
@@ -152,7 +158,9 @@ export class TournamentCourseMappingRepository extends BaseRepository {
           tournamentCourseName: input.tournamentCourseName,
           golfCourseCourseName: input.golfCourseCourseName,
           matchConfidence: input.matchConfidence ?? 0,
+          confidenceReason: input.confidenceReason,
           matchedBy: input.matchedBy ?? "auto-matched",
+          autoVerified: input.autoVerified ?? false,
           lastSyncedAt: input.lastSyncedAt ?? new Date(),
           updatedAt: new Date(),
         },
@@ -163,8 +171,10 @@ export class TournamentCourseMappingRepository extends BaseRepository {
           tournamentCourseName: input.tournamentCourseName,
           golfCourseCourseName: input.golfCourseCourseName,
           matchConfidence: input.matchConfidence ?? 0,
+          confidenceReason: input.confidenceReason,
           matchedBy: input.matchedBy ?? "auto-matched",
           verified: input.verified ?? false,
+          autoVerified: input.autoVerified ?? false,
           lastSyncedAt: input.lastSyncedAt ?? new Date(),
         },
       })
@@ -240,6 +250,130 @@ export class TournamentCourseMappingRepository extends BaseRepository {
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("verified-mappings", repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Find all low-confidence unverified mappings (pending admin review).
+   * Returns mappings with confidence < 95 that need manual verification.
+   */
+  async findLowConfidenceForReview(limit = 50): Promise<RepositoryResult<TournamentCourseMapping[]>> {
+    try {
+      const mappings = await this.prisma.tournamentCourseMapping.findMany({
+        where: {
+          verified: false,
+          autoVerified: false,
+          matchConfidence: { lt: 95 },
+        },
+        orderBy: [{ matchConfidence: "asc" }, { createdAt: "asc" }],
+        take: limit,
+      })
+      return ok(mappings)
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure("low-confidence-mappings", repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Find high-confidence auto-verified mappings (confidence >= 95).
+   */
+  async findAutoVerified(): Promise<RepositoryResult<TournamentCourseMapping[]>> {
+    try {
+      const mappings = await this.prisma.tournamentCourseMapping.findMany({
+        where: { autoVerified: true },
+        orderBy: { matchConfidence: "desc" },
+      })
+      return ok(mappings)
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure("auto-verified-mappings", repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Get confidence statistics for all mappings.
+   */
+  async getConfidenceStatistics(): Promise<
+    RepositoryResult<{
+      totalMappings: number
+      averageConfidence: number
+      autoVerifiedCount: number
+      manualVerifiedCount: number
+      pendingReviewCount: number
+      confidenceDistribution: {
+        veryHigh: number // 95-100
+        high: number // 80-94
+        medium: number // 60-79
+        low: number // 40-59
+        veryLow: number // 0-39
+      }
+    }>
+  > {
+    try {
+      const [stats] = await this.prisma.$queryRaw<
+        Array<{
+          total: number
+          avg_confidence: number
+          auto_verified: number
+          manual_verified: number
+          pending: number
+        }>
+      >`
+        SELECT
+          COUNT(*) as total,
+          ROUND(AVG(CAST("matchConfidence" AS FLOAT)), 2) as avg_confidence,
+          SUM(CASE WHEN "autoVerified" = true THEN 1 ELSE 0 END) as auto_verified,
+          SUM(CASE WHEN "verified" = true AND "autoVerified" = false THEN 1 ELSE 0 END) as manual_verified,
+          SUM(CASE WHEN "verified" = false THEN 1 ELSE 0 END) as pending
+        FROM "tournament_course_mappings"
+      `
+
+      const distribution = await this.prisma.$queryRaw<
+        Array<{
+          range: string
+          count: number
+        }>
+      >`
+        SELECT
+          CASE
+            WHEN "matchConfidence" >= 95 THEN 'veryHigh'
+            WHEN "matchConfidence" >= 80 THEN 'high'
+            WHEN "matchConfidence" >= 60 THEN 'medium'
+            WHEN "matchConfidence" >= 40 THEN 'low'
+            ELSE 'veryLow'
+          END as range,
+          COUNT(*) as count
+        FROM "tournament_course_mappings"
+        GROUP BY range
+      `
+
+      const dist = {
+        veryHigh: 0,
+        high: 0,
+        medium: 0,
+        low: 0,
+        veryLow: 0,
+      }
+
+      for (const d of distribution) {
+        dist[d.range as keyof typeof dist] = d.count
+      }
+
+      return ok({
+        totalMappings: stats.total || 0,
+        averageConfidence: stats.avg_confidence || 0,
+        autoVerifiedCount: stats.auto_verified || 0,
+        manualVerifiedCount: stats.manual_verified || 0,
+        pendingReviewCount: stats.pending || 0,
+        confidenceDistribution: dist,
+      })
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure("confidence-statistics", repoError.message, { code: repoError.code })
       return fail(repoError)
     }
   }

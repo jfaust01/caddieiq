@@ -1510,10 +1510,14 @@ model TournamentCourseMapping {
   /// Matching metadata
   /// Confidence score 0-100 from the matching algorithm
   matchConfidence         Int?      @default(0)
+  /// Reasons why the confidence score was assigned (e.g., "Exact name match + City/State match")
+  confidenceReason        String?
   /// How the match was determined (e.g., "manual", "auto-matched", "search")
   matchedBy               String?   @default("auto-matched")
   /// Admin verification status - defaults to false pending review
   verified                Boolean   @default(false)
+  /// Auto-verified when confidence >= 95%, set by migration or confidence algorithm
+  autoVerified            Boolean   @default(false)
   
   /// Audit timestamps
   lastSyncedAt            DateTime?
