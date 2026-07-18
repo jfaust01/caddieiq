@@ -23,11 +23,16 @@ import {
   mapSportsDataRound,
   mapSportsDataPlayerRound,
 } from "@/lib/domain/round/mapper"
+import { mapSportsDataRoundStatistic } from "@/lib/domain/round-statistic/mapper"
 import { getRoundRepository, type RoundPersistInput } from "@/lib/repositories/round-repository"
 import {
   getPlayerRoundRepository,
   type ResolvedPlayerRound,
 } from "@/lib/repositories/player-round-repository"
+import {
+  getRoundStatisticRepository,
+  type ResolvedRoundStatistic,
+} from "@/lib/repositories/round-statistic-repository"
 import { createImportLogger } from "./import-logger"
 
 /**
@@ -40,6 +45,9 @@ export interface HistoricalResultsImportSummary {
   playerRoundsCreated: number
   playerRoundsUpdated: number
   playerRoundsFailed: number
+  roundStatisticsCreated: number
+  roundStatisticsUpdated: number
+  roundStatisticsFailed: number
   notes: string[]
 }
 
@@ -68,6 +76,9 @@ export async function importHistoricalResults(
     playerRoundsCreated: 0,
     playerRoundsUpdated: 0,
     playerRoundsFailed: 0,
+    roundStatisticsCreated: 0,
+    roundStatisticsUpdated: 0,
+    roundStatisticsFailed: 0,
     notes: [],
   }
 
@@ -231,8 +242,11 @@ export async function importHistoricalResults(
             `[v0] Player matched: ${player.Name} → fieldEntryId=${fieldEntry.id}`,
           )
 
-          // Map player to PlayerRound
-          const playerRound = mapSportsDataPlayerRound(roundId, fieldEntry.id, player)
+          // Map player to PlayerRound. If player has round scorecard data, use the first round
+          // (most tournaments will have completed round 1 at minimum when imported). Otherwise,
+          // the mapper will use tournament-level position/madeCut data with null score/toPar.
+          const roundData = player.Rounds && player.Rounds.length > 0 ? player.Rounds[0] : undefined
+          const playerRound = mapSportsDataPlayerRound(roundId, fieldEntry.id, player, roundData)
           playerRoundInputs.push({
             roundId,
             tournamentFieldId: fieldEntry.id,
@@ -274,6 +288,83 @@ export async function importHistoricalResults(
         console.log(
           `[v0] All player rounds persisted successfully`,
         )
+
+        // TASK 3: Populate RoundStatistic from scorecard data
+        // Now that PlayerRounds are persisted, upsert RoundStatistics for all players with scorecard data
+        console.log(`[v0] TASK 3: Populating RoundStatistic from scorecard data`)
+        const roundStatisticInputs: ResolvedRoundStatistic[] = []
+        const roundStatisticRepo = getRoundStatisticRepository(prisma)
+
+        // Build round statistics from player scorecard data
+        if (leaderboard.Players && Array.isArray(leaderboard.Players)) {
+          for (const player of leaderboard.Players) {
+            if (!player.Name || !player.Rounds || player.Rounds.length === 0) {
+              continue
+            }
+
+            // Get the player field entry to look up the player round
+            const playerSlug = slugify(player.Name)
+            const fieldEntry = await prisma.tournamentField.findFirst({
+              where: {
+                tournamentId: tournament.id,
+                player: { slug: playerSlug },
+              },
+            })
+
+            if (!fieldEntry) {
+              continue
+            }
+
+            // For each round, create a RoundStatistic
+            for (const roundData of player.Rounds) {
+              // Find the corresponding PlayerRound
+              const playerRound = await prisma.playerRound.findFirst({
+                where: {
+                  roundId,
+                  tournamentFieldId: fieldEntry.id,
+                },
+              })
+
+              if (!playerRound) {
+                continue
+              }
+
+              // Map the scorecard data to RoundStatistic
+              const roundStatistic = mapSportsDataRoundStatistic(playerRound.id, roundData)
+              roundStatisticInputs.push({
+                playerRoundId: playerRound.id,
+                roundStatistic,
+              })
+            }
+          }
+        }
+
+        // Bulk upsert round statistics
+        if (roundStatisticInputs.length > 0) {
+          console.log(
+            `[v0] Preparing bulk upsert of ${roundStatisticInputs.length} round statistics`,
+          )
+          const statsRes = await roundStatisticRepo.bulkUpsert(roundStatisticInputs)
+
+          console.log(
+            `[v0] RoundStatistic bulk upsert complete: inserted=${statsRes.inserted}, updated=${statsRes.updated}, failed=${statsRes.failed}`,
+          )
+
+          // FAIL FAST: If any round statistics failed persistence verification
+          if (statsRes.failed > 0) {
+            const errorMessages = statsRes.errors.map(e => `${e.reference}: ${e.error}`).join("; ")
+            const errMsg = `PERSISTENCE VERIFICATION FAILED: ${statsRes.failed} round statistics failed verification for ${tournament.name} (${tournament.id}). Errors: ${errorMessages}`
+            console.error(`[v0] ${errMsg}`)
+            throw new Error(errMsg)
+          }
+
+          summary.roundStatisticsCreated += statsRes.inserted
+          summary.roundStatisticsUpdated += statsRes.updated
+
+          console.log(`[v0] All round statistics persisted successfully`)
+        } else {
+          console.log(`[v0] No round statistics to upsert (no scorecard data available)`)
+        }
       } else {
         console.log(`[v0] No player rounds to upsert (all players failed to match)`)
       }
