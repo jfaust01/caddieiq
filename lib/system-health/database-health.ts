@@ -314,6 +314,93 @@ async function getTableMetrics(): Promise<{
                  `${courseIntelligence}/${courseDetails} courses analyzed`,
   })
   totalRows += courseIntelligence
+
+  // Phase 13.1: Normalized GolfCourseAPI Entities
+  const courseAddresses = await prisma.courseAddress.count()
+  tables.push({
+    tableName: "courseAddresses",
+    rowCount: courseAddresses,
+    status: courseAddresses === courseDetails ? "Healthy" : courseAddresses > 0 ? "Warning" : "Waiting",
+    purpose: "Normalized course addresses (city, state, country, phone, website)",
+    expected: false,
+    lastUpdatedAt: courseAddresses > 0 ? new Date().toISOString() : null,
+    healthScore: courseDetails > 0 ? Math.floor((courseAddresses / courseDetails) * 100) : 50,
+    explanation: courseAddresses === 0 ? "Awaiting course import" : 
+                 `${courseAddresses}/${courseDetails} courses with address data`,
+  })
+  totalRows += courseAddresses
+
+  const courseCoordinates = await prisma.courseCoordinates.count()
+  tables.push({
+    tableName: "courseCoordinates",
+    rowCount: courseCoordinates,
+    status: courseCoordinates === courseDetails ? "Healthy" : courseCoordinates > 0 ? "Warning" : "Waiting",
+    purpose: "Normalized GPS coordinates (latitude, longitude, elevation)",
+    expected: false,
+    lastUpdatedAt: courseCoordinates > 0 ? new Date().toISOString() : null,
+    healthScore: courseDetails > 0 ? Math.floor((courseCoordinates / courseDetails) * 100) : 50,
+    explanation: courseCoordinates === 0 ? "Awaiting course import" : 
+                 `${courseCoordinates}/${courseDetails} courses with coordinates`,
+  })
+  totalRows += courseCoordinates
+
+  const courseSpecifications = await prisma.courseSpecifications.count()
+  tables.push({
+    tableName: "courseSpecifications",
+    rowCount: courseSpecifications,
+    status: courseSpecifications === courseDetails ? "Healthy" : courseSpecifications > 0 ? "Warning" : "Waiting",
+    purpose: "Normalized course specs (par, yardage, USGA rating, slope)",
+    expected: false,
+    lastUpdatedAt: courseSpecifications > 0 ? new Date().toISOString() : null,
+    healthScore: courseDetails > 0 ? Math.floor((courseSpecifications / courseDetails) * 100) : 50,
+    explanation: courseSpecifications === 0 ? "Awaiting course import" : 
+                 `${courseSpecifications}/${courseDetails} courses with specifications`,
+  })
+  totalRows += courseSpecifications
+
+  const courseMetadata = await prisma.courseMetadata.count()
+  tables.push({
+    tableName: "courseMetadata",
+    rowCount: courseMetadata,
+    status: courseMetadata === courseDetails ? "Healthy" : courseMetadata > 0 ? "Warning" : "Waiting",
+    purpose: "Normalized metadata (architect, year built, style, facilities)",
+    expected: false,
+    lastUpdatedAt: courseMetadata > 0 ? new Date().toISOString() : null,
+    healthScore: courseDetails > 0 ? Math.floor((courseMetadata / courseDetails) * 100) : 50,
+    explanation: courseMetadata === 0 ? "Awaiting course import" : 
+                 `${courseMetadata}/${courseDetails} courses with metadata`,
+  })
+  totalRows += courseMetadata
+
+  const playingConditions = await prisma.playingConditions.count()
+  tables.push({
+    tableName: "playingConditions",
+    rowCount: playingConditions,
+    status: playingConditions > 0 ? "Healthy" : "Waiting",
+    purpose: "Playing conditions tracking (grass types, green conditions, historical)",
+    expected: false,
+    lastUpdatedAt: playingConditions > 0 ? new Date().toISOString() : null,
+    healthScore: playingConditions > 0 ? 100 : 50,
+    explanation: playingConditions === 0 ? "Awaiting course import" : 
+                 `${playingConditions} condition records (may be multiple per course)`,
+  })
+  totalRows += playingConditions
+
+  const teeHoleYardages = await prisma.teeHoleYardage.count()
+  const expectedYardages = Math.max(courseHoles * courseTeesPerCourse, 1)
+  tables.push({
+    tableName: "teeHoleYardages",
+    rowCount: teeHoleYardages,
+    status: teeHoleYardages > expectedYardages ? "Healthy" : teeHoleYardages > 0 ? "Warning" : "Waiting",
+    purpose: "Per-tee per-hole yardages (matrix: tees × holes)",
+    expected: false,
+    lastUpdatedAt: teeHoleYardages > 0 ? new Date().toISOString() : null,
+    healthScore: expectedYardages > 0 ? Math.floor((teeHoleYardages / expectedYardages) * 100) : 50,
+    explanation: teeHoleYardages === 0 ? "Awaiting course import" : 
+                 `${teeHoleYardages}/${expectedYardages} expected yardage records`,
+  })
+  totalRows += teeHoleYardages
+
   totalRows += weatherPeriods
 
   const dfsSalaries = await prisma.dfsSalary.count()
