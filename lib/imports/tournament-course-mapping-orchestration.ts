@@ -230,7 +230,7 @@ export async function orchestrateTournamentCourseMapping(
           const createResult = await mappingRepo.create({
             tournamentId: tournament.id,
             sportsDataIoCourseId: undefined,
-            golfCourseApiCourseId: golfCourseApiCourseId || 0, // Set to 0 if no match (nullable field)
+            golfCourseApiCourseId: golfCourseApiCourseId || null, // Only populate if match found; null otherwise
             tournamentCourseName: course.name,
             golfCourseCourseName: course.name,
             matchConfidence: confidence,

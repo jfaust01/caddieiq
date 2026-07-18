@@ -193,6 +193,23 @@ export async function importCourseIntelligence(
       const golfCourseApiId = mapping.golfCourseApiCourseId
 
       try {
+        // Log detailed mapping information before API call
+        console.log(`[v0] === Processing Mapping ===`)
+        console.log(`[v0]   tournamentId: ${mapping.tournamentId}`)
+        console.log(`[v0]   golfCourseApiCourseId: ${golfCourseApiId}`)
+        console.log(`[v0]   sportsDataIoCourseId: ${mapping.sportsDataIoCourseId}`)
+        console.log(`[v0]   courseName: ${mapping.golfCourseCourseName}`)
+        console.log(`[v0]   requestURL: https://api.golfcourseapi.com/course/${golfCourseApiId}`)
+
+        // Skip if golfCourseApiId is invalid (null, undefined, or 0)
+        if (!golfCourseApiId || golfCourseApiId === 0) {
+          const err = `Cannot fetch course intelligence: golfCourseApiId is invalid (${golfCourseApiId})`
+          failures.push(err)
+          console.log(`[v0] ⊘ SKIPPED: ${err}`)
+          coursesMatched-- // This mapping is not actually matched to a valid API course
+          continue
+        }
+
         // Fetch course details from GolfCourse API
         console.log(`[v0] Fetching course intelligence for GolfCourse API ID: ${golfCourseApiId}`)
         const courseDetail = await apiClient.fetchCourse(golfCourseApiId)
@@ -200,6 +217,7 @@ export async function importCourseIntelligence(
         if (!courseDetail) {
           const err = `Course not found for GolfCourse API ID ${golfCourseApiId}`
           failures.push(err)
+          console.log(`[v0] ✗ ${err}`)
           continue
         }
 
@@ -451,6 +469,7 @@ export async function importCourseIntelligence(
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error)
         failures.push(`GolfCourse API ID ${golfCourseApiId}: ${errorMsg}`)
+        console.log(`[v0] ✗ Error processing mapping (ID: ${golfCourseApiId}): ${errorMsg}`)
       }
     }
 
