@@ -237,6 +237,83 @@ async function getTableMetrics(): Promise<{
     healthScore: weatherPeriods > 0 ? 100 : 50,
     explanation: weatherPeriods === 0 ? "Populated with weather snapshots when tournaments are in forecast window" : undefined,
   })
+
+  // GolfCourseAPI integration tables
+  const courseDetails = await prisma.courseDetails.count()
+  tables.push({
+    tableName: "courseDetails",
+    rowCount: courseDetails,
+    status: courseDetails > 0 ? "Healthy" : "Waiting",
+    purpose: "GolfCourseAPI course details (address, specifications, metadata)",
+    expected: false,
+    lastUpdatedAt: courseDetails > 0 ? new Date().toISOString() : null,
+    healthScore: courseDetails > 0 ? 100 : 50,
+    explanation: courseDetails === 0 ? "Awaiting course intelligence import - run when courses are synced" : undefined,
+  })
+  totalRows += courseDetails
+
+  const courseHoles = await prisma.courseHole.count()
+  const courseHolesBySplit = courseDetails > 0 ? Math.floor(courseHoles / courseDetails) : 0
+  const holesHealthy = courseHolesBySplit === 18
+  tables.push({
+    tableName: "courseHoles",
+    rowCount: courseHoles,
+    status: courseHoles > courseDetails * 17 ? "Healthy" : "Waiting",
+    purpose: "Individual golf holes (1-18 per course)",
+    expected: false,
+    lastUpdatedAt: courseHoles > 0 ? new Date().toISOString() : null,
+    healthScore: holesHealthy ? 100 : 60,
+    explanation: courseHoles === 0 ? "Populated with course details import" : 
+                 !holesHealthy ? `${courseHolesBySplit} holes per course (expected 18)` : undefined,
+  })
+  totalRows += courseHoles
+
+  const courseTees = await prisma.courseTee.count()
+  const courseTeesPerCourse = courseDetails > 0 ? Math.floor(courseTees / courseDetails) : 0
+  tables.push({
+    tableName: "courseTees",
+    rowCount: courseTees,
+    status: courseTees > courseDetails ? "Healthy" : "Waiting",
+    purpose: "Tee boxes per course (Blue, White, Red, etc.)",
+    expected: false,
+    lastUpdatedAt: courseTees > 0 ? new Date().toISOString() : null,
+    healthScore: courseTees > courseDetails * 2 ? 100 : 60,
+    explanation: courseTees === 0 ? "Populated with course details import" : 
+                 `${courseTeesPerCourse} tees per course avg`,
+  })
+  totalRows += courseTees
+
+  const mappings = await prisma.tournamentCourseMapping.count()
+  const verifiedMappings = await prisma.tournamentCourseMapping.count({
+    where: { verified: true }
+  })
+  const mappingScore = mappings > 0 ? Math.floor((verifiedMappings / mappings) * 100) : 0
+  tables.push({
+    tableName: "tournamentCourseMappings",
+    rowCount: mappings,
+    status: mappings > 0 && mappingScore >= 80 ? "Healthy" : mappings > 0 ? "Warning" : "Waiting",
+    purpose: "Tournament → GolfCourseAPI course mappings",
+    expected: false,
+    lastUpdatedAt: mappings > 0 ? new Date().toISOString() : null,
+    healthScore: mappingScore,
+    explanation: mappings === 0 ? "No mappings yet - populate during tournament import" : 
+                 `${verifiedMappings}/${mappings} verified (${mappingScore}%)`,
+  })
+  totalRows += mappings
+
+  const courseIntelligence = await prisma.courseIntelligence.count()
+  tables.push({
+    tableName: "courseIntelligence",
+    rowCount: courseIntelligence,
+    status: courseIntelligence === courseDetails ? "Healthy" : courseIntelligence > 0 ? "Warning" : "Waiting",
+    purpose: "Calculated course metrics (difficulty, driving importance, etc.)",
+    expected: false,
+    lastUpdatedAt: courseIntelligence > 0 ? new Date().toISOString() : null,
+    healthScore: courseDetails > 0 ? Math.floor((courseIntelligence / courseDetails) * 100) : 50,
+    explanation: courseIntelligence === 0 ? "Run course enrichment after importing courses" : 
+                 `${courseIntelligence}/${courseDetails} courses analyzed`,
+  })
+  totalRows += courseIntelligence
   totalRows += weatherPeriods
 
   const dfsSalaries = await prisma.dfsSalary.count()
