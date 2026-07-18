@@ -1288,23 +1288,50 @@ model ImportRun {
 /// Course details from GolfCourse API.
 /// Stores rich course information for reuse throughout the application.
 model CourseDetails {
-  id                String              @id @default(cuid())
+  id                String    @id @default(cuid())
   /// External course ID from GolfCourse API
-  externalCourseId  String              @unique
+  externalCourseId  String    @unique
   
   // Basic
   courseName        String
   clubName          String?
+  city              String?
+  state             String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
   
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  // Course Specifications
+  par               Int?
+  totalYardage      Int?
+  courseRating      Float?
+  slopeRating       Int?
   
-  /// Relations (normalized components)
-  address           CourseAddress?
-  coordinates       CourseCoordinates?
-  specifications    CourseSpecifications?
-  metadata          CourseMetadata?
-  playingConditions PlayingConditions[]
+  // Contact & Web
+  website           String?
+  phone             String?
+  
+  // Metadata (for future normalization)
+  architect         String?
+  yearBuilt         Int?
+  courseStyle       String?
+  
+  // Playing Conditions (can be extended to separate table later)
+  grassTypeFairway  String?
+  grassTypeGreen    String?
+  greenSize         String?
+  greenSpeed        String?
+  elevation         Int?
+  
+  // Facilities
+  drivingRange      Boolean?
+  puttingGreen      Boolean?
+  shortGameArea     Boolean?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  /// Relations
   holes             CourseHole[]
   tees              CourseTee[]
   intelligence      CourseIntelligence?
@@ -1314,131 +1341,19 @@ model CourseDetails {
   @@map("course_details")
 }
 
-/// Course address information (normalized 1:1).
-model CourseAddress {
-  id              String      @id @default(cuid())
-  courseId        String      @unique
-  
-  city            String?
-  state           String?
-  country         String?
-  postalCode      String?
-  
-  website         String?
-  phone           String?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  /// Relations
-  course          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-  @@index([courseId])
-  @@map("course_addresses")
-}
-
-/// Course GPS coordinates (normalized 1:1).
-model CourseCoordinates {
-  id              String      @id @default(cuid())
-  courseId        String      @unique
-  
-  latitude        Float?
-  longitude       Float?
-  elevation       Int?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  /// Relations
-  course          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-  @@index([courseId])
-  @@index([latitude, longitude])
-  @@map("course_coordinates")
-}
-
-/// Course specifications (normalized 1:1) - par, yardage, USGA ratings.
-model CourseSpecifications {
-  id              String      @id @default(cuid())
-  courseId        String      @unique
-  
-  par             Int?
-  totalYardage    Int?
-  courseRating    Float?
-  slopeRating     Int?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  /// Relations
-  course          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-  @@index([courseId])
-  @@map("course_specifications")
-}
-
-/// Course metadata (normalized 1:1) - architect, style, facilities.
-model CourseMetadata {
-  id              String      @id @default(cuid())
-  courseId        String      @unique
-  
-  architect       String?
-  yearBuilt       Int?
-  courseStyle     String?
-  
-  // Facilities
-  drivingRange    Boolean?
-  puttingGreen    Boolean?
-  shortGameArea   Boolean?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  /// Relations
-  course          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-  @@index([courseId])
-  @@map("course_metadata")
-}
-
-/// Playing conditions (normalized 1:M) - grass types, green conditions, temporal tracking.
-model PlayingConditions {
-  id              String      @id @default(cuid())
-  courseId        String
-  
-  grassTypeFairway String?
-  grassTypeGreen  String?
-  greenSize       String?
-  greenSpeed      String?
-  
-  /// When these conditions were observed (allows historical tracking)
-  observedAt      DateTime    @default(now())
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  /// Relations
-  course          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-  @@index([courseId])
-  @@index([courseId, observedAt])
-  @@map("playing_conditions")
-}
-
 /// Individual holes for a course.
 model CourseHole {
-  id               String              @id @default(cuid())
+  id               String         @id @default(cuid())
   courseId         String
   holeNumber       Int
   par              Int?
   yardage          Int?
   handicap         Int?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   
   /// Relations
-  course           CourseDetails       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  teeYardages      TeeHoleYardage[]
+  course           CourseDetails  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, holeNumber])
   @@index([courseId])
@@ -1447,7 +1362,7 @@ model CourseHole {
 
 /// Tee information for a course (different sets for different players).
 model CourseTee {
-  id               String              @id @default(cuid())
+  id               String         @id @default(cuid())
   courseId         String
   teeName          String
   teeColor         String?
@@ -1455,40 +1370,15 @@ model CourseTee {
   yardage          Int?
   rating           Float?
   slope            Int?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  
-  /// Relations
-  course           CourseDetails       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  holeYardages     TeeHoleYardage[]
-
-  @@unique([courseId, teeName])
-  @@index([courseId])
-  @@map("course_tees")
-}
-
-/// Per-hole yardage for each tee (many-to-many through holes).
-model TeeHoleYardage {
-  id               String         @id @default(cuid())
-  teeId            String
-  holeId           String
-  courseId         String         // Denormalized for query efficiency
-  
-  yardage          Int?
-  handicap         Int?           // May vary by tee
-  
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   
   /// Relations
-  tee              CourseTee      @relation(fields: [teeId], references: [id], onDelete: Cascade)
-  hole             CourseHole     @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  course           CourseDetails  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  @@unique([teeId, holeId])
-  @@index([teeId])
-  @@index([holeId])
+  @@unique([courseId, teeName])
   @@index([courseId])
-  @@map("tee_hole_yardages")
+  @@map("course_tees")
 }
 
 /// Tournament to GolfCourse API mapping layer.
