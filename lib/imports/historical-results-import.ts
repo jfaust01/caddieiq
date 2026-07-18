@@ -84,6 +84,7 @@ export async function importHistoricalResults(
       provider = SportsDataProvider.fromEnv()
     }
 
+    const startTime = Date.now()
     const logger = createImportLogger()
     const roundRepo = getRoundRepository(prisma)
     const playerRoundRepo = getPlayerRoundRepository(prisma)
@@ -379,31 +380,38 @@ export async function importHistoricalResults(
         const roundStatisticInputs: ResolvedRoundStatistic[] = []
         const roundStatisticRepo = getRoundStatisticRepository(prisma)
 
+        // OPTIMIZATION: Batch-load all field entries and player rounds to avoid N+1 queries
+        console.log(`[v0] PHASE 3: Batch-loading field entries for tournament ${tournament.id}`)
+        const allFieldEntries = await prisma.tournamentField.findMany({
+          where: { tournamentId: tournament.id },
+          include: { player: true },
+        })
+        const fieldEntriesByPlayerSlug = new Map(allFieldEntries.map(fe => [fe.player.slug, fe]))
+
+        console.log(`[v0] PHASE 3: Batch-loading player rounds for ${roundIdsByNumber.size} rounds`)
+        const allPlayerRounds = await prisma.playerRound.findMany({
+          where: {
+            round: { tournamentId: tournament.id },
+          },
+        })
+        const playerRoundsByKey = new Map(
+          allPlayerRounds.map(pr => [`${pr.roundId}|${pr.tournamentFieldId}`, pr])
+        )
+
         // Build round statistics from player scorecard data
         if (leaderboard.Players && Array.isArray(leaderboard.Players)) {
           for (const player of leaderboard.Players) {
             if (!player.Name || !player.Rounds || player.Rounds.length === 0) {
-              console.log(`[v0] PHASE 3: Skipping ${player.Name}: no rounds data`)
               continue
             }
 
-            console.log(`[v0] PHASE 3: Processing ${player.Name} with ${player.Rounds.length} rounds`)
-
-            // Get the player field entry
+            // Get the player field entry using pre-loaded map
             const playerSlug = slugify(player.Name)
-            const fieldEntry = await prisma.tournamentField.findFirst({
-              where: {
-                tournamentId: tournament.id,
-                player: { slug: playerSlug },
-              },
-            })
+            const fieldEntry = fieldEntriesByPlayerSlug.get(playerSlug)
 
             if (!fieldEntry) {
-              console.log(`[v0] PHASE 3: ✗ Field entry not found for ${player.Name} (slug=${playerSlug})`)
               continue
             }
-
-            console.log(`[v0] PHASE 3: ✓ Field entry found: ${fieldEntry.id}`)
 
             // For each round, find the corresponding PlayerRound and create RoundStatistic
             for (const roundData of player.Rounds) {
@@ -411,23 +419,11 @@ export async function importHistoricalResults(
               const roundId = roundIdsByNumber.get(roundNumber)
 
               if (!roundId) {
-                console.log(
-                  `[v0] PHASE 3: ⚠ Skipping RoundStatistic for ${player.Name}: roundNumber=${roundNumber} not in mapping`,
-                )
                 continue
               }
 
-              console.log(
-                `[v0] PHASE 3: Looking up PlayerRound: roundId=${roundId}, fieldEntryId=${fieldEntry.id}`,
-              )
-
-              // Find the corresponding PlayerRound
-              const playerRound = await prisma.playerRound.findFirst({
-                where: {
-                  roundId,
-                  tournamentFieldId: fieldEntry.id,
-                },
-              })
+              // Lookup PlayerRound using pre-loaded map (O(1) instead of database query)
+              const playerRound = playerRoundsByKey.get(`${roundId}|${fieldEntry.id}`)
 
               if (!playerRound) {
                 console.log(
@@ -562,6 +558,9 @@ export async function importHistoricalResults(
     console.error(`[v0]    Difference: ${Math.abs(actualPlayerRoundCount - (summary.playerRoundsCreated + summary.playerRoundsUpdated))}`)
   }
 
+  const endTime = Date.now()
+  const durationSeconds = ((endTime - startTime) / 1000).toFixed(2)
+  
   console.log(`\n[v0] ✅ Historical Results Import Summary (VERIFIED PERSISTENCE):`)
   console.log(
     `[v0]   Tournaments considered: ${summary.tournamentsConsidered}`,
@@ -572,6 +571,7 @@ export async function importHistoricalResults(
   console.log(`[v0]   Rounds created: ${summary.roundsCreated}`)
   console.log(`[v0]   Player rounds created: ${summary.playerRoundsCreated}`)
   console.log(`[v0]   Player rounds updated: ${summary.playerRoundsUpdated}`)
+  console.log(`[v0]   Execution time: ${durationSeconds}s`)
   if (summary.notes.length > 0) {
     console.log(`[v0]   Notes (${summary.notes.length}):`)
     summary.notes.forEach((note, i) => {
