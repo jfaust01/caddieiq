@@ -178,32 +178,58 @@ export async function importHistoricalResults(
       )
       summary.tournamentsWithLeaderboard++
 
-      // Create a Round for this tournament
-      console.log(`[v0] Creating Round for tournament: ${tournament.name}`)
-      const round = mapSportsDataRound(tournament.id, leaderboard.Tournament)
-      const roundRes = await roundRepo.upsert({
-        tournamentId: tournament.id,
-        roundNumber: 1,
-        scheduledDate: round.scheduledDate,
-      })
-
-      if (roundRes.outcome === "failed") {
-        const errMsg = `PERSISTENCE VERIFICATION FAILED: Round upsert for ${tournament.name} (${tournament.id}) failed verification. Error: ${roundRes.error}`
-        console.error(`[v0] ${errMsg}`)
-        throw new Error(errMsg)
+      // PHASE 1: Detect distinct round numbers from player data
+      const distinctRoundNumbers = new Set<number>()
+      if (leaderboard.Players && Array.isArray(leaderboard.Players)) {
+        for (const player of leaderboard.Players) {
+          if (player.Rounds && Array.isArray(player.Rounds)) {
+            for (const round of player.Rounds) {
+              if (round.Number !== undefined && round.Number !== null) {
+                distinctRoundNumbers.add(round.Number)
+              }
+            }
+          }
+        }
       }
 
-      summary.roundsCreated++
-      const roundId = roundRes.record!.id
+      const sortedRoundNumbers = Array.from(distinctRoundNumbers).sort((a, b) => a - b)
       console.log(
-        `[v0] Round created successfully: roundId=${roundId}, status=${roundRes.record!.status}`,
+        `[v0] PHASE 1: Detected ${sortedRoundNumbers.length} distinct round(s): ${sortedRoundNumbers.join(", ")}`,
       )
 
-      // Map each player in the leaderboard to a PlayerRound
+      // PHASE 1: Create one Round record for each detected roundNumber
+      const roundIdsByNumber = new Map<number, string>()
+      const baseRound = mapSportsDataRound(tournament.id, leaderboard.Tournament)
+
+      for (const roundNumber of sortedRoundNumbers) {
+        console.log(
+          `[v0] PHASE 1: Creating Round for tournament: ${tournament.name}, roundNumber=${roundNumber}`,
+        )
+        const roundRes = await roundRepo.upsert({
+          tournamentId: tournament.id,
+          roundNumber,
+          scheduledDate: baseRound.scheduledDate,
+        })
+
+        if (roundRes.outcome === "failed") {
+          const errMsg = `PERSISTENCE VERIFICATION FAILED: Round upsert for ${tournament.name} (${tournament.id}), roundNumber=${roundNumber} failed verification. Error: ${roundRes.error}`
+          console.error(`[v0] ${errMsg}`)
+          throw new Error(errMsg)
+        }
+
+        summary.roundsCreated++
+        const roundId = roundRes.record!.id
+        roundIdsByNumber.set(roundNumber, roundId)
+        console.log(
+          `[v0] PHASE 1: Round created: roundNumber=${roundNumber}, roundId=${roundId}`,
+        )
+      }
+
+      // PHASE 2: Create PlayerRounds for each player in each round
       const playerRoundInputs: ResolvedPlayerRound[] = []
 
       if (leaderboard.Players && Array.isArray(leaderboard.Players)) {
-        console.log(`[v0] Processing ${leaderboard.Players.length} players from leaderboard`)
+        console.log(`[v0] PHASE 2: Processing ${leaderboard.Players.length} players from leaderboard`)
         let playersMatched = 0
         let playersMissed = 0
 
@@ -239,20 +265,52 @@ export async function importHistoricalResults(
           }
 
           console.log(
-            `[v0] Player matched: ${player.Name} → fieldEntryId=${fieldEntry.id}`,
+            `[v0] PHASE 2: Player matched: ${player.Name} → fieldEntryId=${fieldEntry.id}`,
           )
 
-          // Map player to PlayerRound. If player has round scorecard data, use the first round
-          // (most tournaments will have completed round 1 at minimum when imported). Otherwise,
-          // the mapper will use tournament-level position/madeCut data with null score/toPar.
-          const roundData = player.Rounds && player.Rounds.length > 0 ? player.Rounds[0] : undefined
-          const playerRound = mapSportsDataPlayerRound(roundId, fieldEntry.id, player, roundData)
-          playerRoundInputs.push({
-            roundId,
-            tournamentFieldId: fieldEntry.id,
-            playerRound,
-          })
-          playersMatched++
+          // PHASE 2: Create one PlayerRound for each round this player played
+          // PHASE 4: Use actual round score data (not Rank) via roundData parameter
+          if (player.Rounds && Array.isArray(player.Rounds)) {
+            for (const roundData of player.Rounds) {
+              const roundNumber = roundData.Number ?? 0
+              const roundId = roundIdsByNumber.get(roundNumber)
+
+              if (!roundId) {
+                console.log(
+                  `[v0] PHASE 2: ⚠ Skipping round for ${player.Name}: roundNumber=${roundNumber} not found in round mapping`,
+                )
+                continue
+              }
+
+              // PHASE 4: Map using actual round scorecard data
+              // This provides Score (strokes), Par, and enables toPar calculation
+              const playerRound = mapSportsDataPlayerRound(roundId, fieldEntry.id, player, roundData)
+              playerRoundInputs.push({
+                roundId,
+                tournamentFieldId: fieldEntry.id,
+                playerRound,
+              })
+              console.log(
+                `[v0] PHASE 2: Created PlayerRound for ${player.Name}, round ${roundNumber}: score=${roundData.Score}, par=${roundData.Par}`,
+              )
+            }
+            playersMatched++
+          } else {
+            console.log(
+              `[v0] PHASE 2: ⚠ Player ${player.Name} has no round data, creating aggregate PlayerRound`,
+            )
+            // Fallback: create one PlayerRound with tournament-level data if no round data exists
+            const firstRoundId = roundIdsByNumber.values().next().value
+            if (firstRoundId) {
+              const playerRound = mapSportsDataPlayerRound(firstRoundId, fieldEntry.id, player, undefined)
+              playerRoundInputs.push({
+                roundId: firstRoundId,
+                tournamentFieldId: fieldEntry.id,
+                playerRound,
+              })
+              playersMatched++
+            }
+          }
         }
 
         console.log(
@@ -289,9 +347,10 @@ export async function importHistoricalResults(
           `[v0] All player rounds persisted successfully`,
         )
 
-        // TASK 3: Populate RoundStatistic from scorecard data
-        // Now that PlayerRounds are persisted, upsert RoundStatistics for all players with scorecard data
-        console.log(`[v0] TASK 3: Populating RoundStatistic from scorecard data`)
+        // PHASE 3: Populate RoundStatistic from scorecard data
+        // Now that PlayerRounds are persisted with correct roundId/roundNumber mapping,
+        // create RoundStatistics for all player-round combinations
+        console.log(`[v0] PHASE 3: Populating RoundStatistic from scorecard data`)
         const roundStatisticInputs: ResolvedRoundStatistic[] = []
         const roundStatisticRepo = getRoundStatisticRepository(prisma)
 
@@ -299,13 +358,13 @@ export async function importHistoricalResults(
         if (leaderboard.Players && Array.isArray(leaderboard.Players)) {
           for (const player of leaderboard.Players) {
             if (!player.Name || !player.Rounds || player.Rounds.length === 0) {
-              console.log(`[v0] Skipping ${player.Name}: no rounds data`)
+              console.log(`[v0] PHASE 3: Skipping ${player.Name}: no rounds data`)
               continue
             }
 
-            console.log(`[v0] Processing ${player.Name} with ${player.Rounds.length} rounds`)
+            console.log(`[v0] PHASE 3: Processing ${player.Name} with ${player.Rounds.length} rounds`)
 
-            // Get the player field entry to look up the player round
+            // Get the player field entry
             const playerSlug = slugify(player.Name)
             const fieldEntry = await prisma.tournamentField.findFirst({
               where: {
@@ -315,20 +374,28 @@ export async function importHistoricalResults(
             })
 
             if (!fieldEntry) {
-              console.log(`[v0]   ✗ Field entry not found for ${player.Name} (slug=${playerSlug})`)
+              console.log(`[v0] PHASE 3: ✗ Field entry not found for ${player.Name} (slug=${playerSlug})`)
               continue
             }
 
-            console.log(`[v0]   ✓ Field entry found: ${fieldEntry.id}`)
+            console.log(`[v0] PHASE 3: ✓ Field entry found: ${fieldEntry.id}`)
 
-            // For each round, create a RoundStatistic
-            for (let roundIdx = 0; roundIdx < player.Rounds.length; roundIdx++) {
-              const roundData = player.Rounds[roundIdx]
-              console.log(`[v0]   Round ${roundIdx + 1}: Number=${roundData.Number}, Score=${roundData.Score}, Par=${roundData.Par}`)
+            // For each round, find the corresponding PlayerRound and create RoundStatistic
+            for (const roundData of player.Rounds) {
+              const roundNumber = roundData.Number ?? 0
+              const roundId = roundIdsByNumber.get(roundNumber)
 
-              // CRITICAL BUG: Looking up with roundId (tournament round), not round number
-              console.log(`[v0]     Query: roundId=${roundId}, tournamentFieldId=${fieldEntry.id}`)
-              
+              if (!roundId) {
+                console.log(
+                  `[v0] PHASE 3: ⚠ Skipping RoundStatistic for ${player.Name}: roundNumber=${roundNumber} not in mapping`,
+                )
+                continue
+              }
+
+              console.log(
+                `[v0] PHASE 3: Looking up PlayerRound: roundId=${roundId}, fieldEntryId=${fieldEntry.id}`,
+              )
+
               // Find the corresponding PlayerRound
               const playerRound = await prisma.playerRound.findFirst({
                 where: {
@@ -338,11 +405,15 @@ export async function importHistoricalResults(
               })
 
               if (!playerRound) {
-                console.log(`[v0]     ✗ PlayerRound NOT FOUND`)
+                console.log(
+                  `[v0] PHASE 3: ✗ PlayerRound NOT FOUND for ${player.Name}, round ${roundNumber}`,
+                )
                 continue
               }
 
-              console.log(`[v0]     ✓ PlayerRound found: ${playerRound.id}`)
+              console.log(
+                `[v0] PHASE 3: ✓ PlayerRound found: ${playerRound.id}`,
+              )
 
               // Map the scorecard data to RoundStatistic
               const roundStatistic = mapSportsDataRoundStatistic(playerRound.id, roundData)
@@ -350,21 +421,23 @@ export async function importHistoricalResults(
                 playerRoundId: playerRound.id,
                 roundStatistic,
               })
-              console.log(`[v0]     Mapped to RoundStatistic: birdies=${roundData.Birdies}, score=${roundData.Score}`)
+              console.log(
+                `[v0] PHASE 3: Mapped RoundStatistic for ${player.Name} round ${roundNumber}: score=${roundData.Score}, birdies=${roundData.Birdies}`,
+              )
             }
           }
         }
 
         // Bulk upsert round statistics
-        console.log(`[v0] STEP 3 SUMMARY: roundStatisticInputs.length = ${roundStatisticInputs.length}`)
-        if (roundStatisticInputs > 0) {
+        console.log(`[v0] PHASE 3 SUMMARY: roundStatisticInputs.length = ${roundStatisticInputs.length}`)
+        if (roundStatisticInputs.length > 0) {
           console.log(
-            `[v0] Preparing bulk upsert of ${roundStatisticInputs.length} round statistics`,
+            `[v0] PHASE 3: Preparing bulk upsert of ${roundStatisticInputs.length} round statistics`,
           )
           const statsRes = await roundStatisticRepo.bulkUpsert(roundStatisticInputs)
 
           console.log(
-            `[v0] RoundStatistic bulk upsert complete: inserted=${statsRes.inserted}, updated=${statsRes.updated}, failed=${statsRes.failed}`,
+            `[v0] PHASE 3: Bulk upsert complete: inserted=${statsRes.inserted}, updated=${statsRes.updated}, failed=${statsRes.failed}`,
           )
 
           // FAIL FAST: If any round statistics failed persistence verification
@@ -378,9 +451,9 @@ export async function importHistoricalResults(
           summary.roundStatisticsCreated += statsRes.inserted
           summary.roundStatisticsUpdated += statsRes.updated
 
-          console.log(`[v0] All round statistics persisted successfully`)
+          console.log(`[v0] PHASE 3: All round statistics persisted successfully`)
         } else {
-          console.log(`[v0] No round statistics to upsert (no scorecard data available)`)
+          console.log(`[v0] PHASE 3: No round statistics to upsert (no scorecard data available)`)
         }
       } else {
         console.log(`[v0] No player rounds to upsert (all players failed to match)`)
