@@ -34,13 +34,7 @@ export function ImportHistoricalResults() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="w-full border-4 border-red-600 bg-red-500 p-4">
-        <div className="text-center text-2xl font-bold text-white">
-          🚨 DEBUG: ImportHistoricalResults component is rendering 🚨
-        </div>
-      </div>
-      <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
         <div>
         <h3 className="font-semibold">Historical Results Import</h3>
         <p className="text-sm text-muted-foreground">
@@ -154,7 +148,6 @@ export function ImportHistoricalResults() {
           ) : null}
         </div>
       )}
-      </div>
     </div>
   )
 }
