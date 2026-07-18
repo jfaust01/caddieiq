@@ -18,16 +18,25 @@ export type RepositoryOutcome = "inserted" | "updated" | "skipped" | "failed"
 /**
  * The result of a single-record repository operation.
  *
- * @typeParam T - The persisted record type (a Prisma model).
+ * Supports both single records (write operations) and arrays (read operations).
+ * - Write operations: populate `record` with outcome "inserted"/"updated"/"skipped"
+ * - Read operations: populate `records` with outcome undefined (no write semantic)
+ *
+ * @typeParam T - The persisted record type (a Prisma model or array of models).
  */
 export interface RepositoryResult<T> {
-  /** What happened to the record. */
-  outcome: RepositoryOutcome
+  /** What happened to the record (for writes). Undefined for reads. */
+  outcome?: RepositoryOutcome
   /**
    * The persisted record, when the operation produced or found one. Absent for
-   * `failed` and, depending on the call, `skipped`.
+   * `failed` and, depending on the call, `skipped`. Used for write operations.
    */
   record?: T
+  /**
+   * Array of records from read operations. Used by findVerified(), findByGolfCourseApiId(), etc.
+   * When present, `outcome` is typically undefined since reads have no write semantics.
+   */
+  records?: T[]
   /** The failure, when `outcome` is `failed`. */
   error?: RepositoryError
 }
@@ -69,9 +78,20 @@ export interface BulkItemError {
   error: RepositoryError
 }
 
-/** Build a single-record success result. */
-export function ok<T>(record: T, outcome: Exclude<RepositoryOutcome, "failed">): RepositoryResult<T> {
+/** Build a single-record success result (write operation). */
+export function ok<T>(
+  record: T,
+  outcome: Exclude<RepositoryOutcome, "failed">
+): RepositoryResult<T> {
   return { outcome, record }
+}
+
+/**
+ * Build a read-operation success result (array of records).
+ * Read operations have no write semantics, so outcome is undefined.
+ */
+export function okRead<T>(records: T[]): RepositoryResult<T[]> {
+  return { records }
 }
 
 /** Build a single-record failure result. */

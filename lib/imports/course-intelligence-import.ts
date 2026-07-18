@@ -122,75 +122,12 @@ export async function importCourseIntelligence(
 
   try {
     // =========================================================================
-    // INVESTIGATION: TRACE ALL FILTERS AND COUNTS
-    // =========================================================================
-    console.log(`\n[v0] ╔════════════════════════════════════════════════════════╗`)
-    console.log(`[v0] ║  COURSE INTELLIGENCE IMPORT - FILTERING PIPELINE TRACE  ║`)
-    console.log(`[v0] ║  Job ID: ${jobId.padEnd(40)} ║`)
-    console.log(`[v0] ╚════════════════════════════════════════════════════════╝\n`)
-
-    // STEP 1: Query total tournament_course_mapping records (unfiltered)
-    console.log(`[v0] STEP 1: Load all tournament_course_mappings (no filter)`)
-    const allMappingsRaw = await prisma.tournamentCourseMapping.findMany()
-    console.log(`[v0]   Count: ${allMappingsRaw.length} records`)
-    console.log(`[v0]   SQL Equivalent: SELECT * FROM tournament_course_mapping`)
-    if (allMappingsRaw.length > 0) {
-      console.log(`[v0]   First 10 records:`)
-      allMappingsRaw.slice(0, 10).forEach((m, i) => {
-        console.log(`[v0]     [${i}] tournament=${m.tournamentId}, courseId=${m.golfCourseApiCourseId}, verified=${m.verified}, lastSynced=${m.lastSyncedAt}`)
-      })
-    }
-
-    // STEP 2: Show the verified breakdown BEFORE filtering
-    console.log(`\n[v0] STEP 2: Analyze verified status breakdown`)
-    const verifiedRecords = allMappingsRaw.filter(m => m.verified === true)
-    const unverifiedRecords = allMappingsRaw.filter(m => m.verified === false)
-    const nullVerifiedRecords = allMappingsRaw.filter(m => m.verified === null)
-    console.log(`[v0]   verified = true:  ${verifiedRecords.length} records`)
-    console.log(`[v0]   verified = false: ${unverifiedRecords.length} records`)
-    console.log(`[v0]   verified = null:  ${nullVerifiedRecords.length} records`)
-    console.log(`[v0]   Total: ${verifiedRecords.length + unverifiedRecords.length + nullVerifiedRecords.length}`)
-
-    if (unverifiedRecords.length > 0) {
-      console.log(`[v0]   First 10 UNVERIFIED records (the ones being filtered OUT):`)
-      unverifiedRecords.slice(0, 10).forEach((m, i) => {
-        console.log(`[v0]     [${i}] tournament=${m.tournamentId}, courseId=${m.golfCourseApiCourseId}, verified=${m.verified}`)
-      })
-    }
-
-    // STEP 3: Apply the verified filter (supports both legacy verified boolean and new verificationStatus enum)
-    console.log(`\n[v0] STEP 3: Apply verified filter (legacy boolean OR new status enum)`)
-    console.log(`[v0]   Filter applied: WHERE verified = true OR verificationStatus = 'VERIFIED'`)
-    const mappingsResult = await mappingRepo.findVerified()
-    console.log(`[v0]   Records AFTER filter: ${mappingsResult.records?.length ?? 0}`)
-    console.log(`[v0]   Outcome: ${mappingsResult.outcome}`)
-
-    if (mappingsResult.records && mappingsResult.records.length > 0) {
-      console.log(`[v0]   First 5 verified records returned:`)
-      mappingsResult.records.slice(0, 5).forEach((m, i) => {
-        console.log(`[v0]     [${i}] tournament=${m.tournamentId}, courseId=${m.golfCourseApiCourseId}, verified=${m.verified}`)
-      })
-    } else {
-      console.log(`[v0]   ❌ NO RECORDS MATCHED THE VERIFIED FILTER`)
-      console.log(`[v0]   Reason: All 205 mappings have verified=false, but findVerified() requires verified=true`)
-    }
-
-    // STEP 4: Check early return
-    console.log(`\n[v0] STEP 4: Early return check`)
-    if (mappingsResult.outcome !== "ok" || !mappingsResult.records || mappingsResult.records.length === 0) {
-      console.log(`[v0] ❌ EARLY RETURN TRIGGERED`)
-      console.log(`[v0]    Condition: mappingsResult.outcome !== "ok" OR !mappingsResult.records OR records.length === 0`)
-      console.log(`[v0]    Outcome: ${mappingsResult.outcome}`)
-      console.log(`[v0]    Has records: ${!!mappingsResult.records}`)
-      console.log(`[v0]    Length: ${mappingsResult.records?.length ?? 0}`)
-      console.log(`[v0]    → Returning with coursesConsidered: 0`)
-      console.log(`[v0]\n[v0] ╔════════════════════════════════════════════════════════╗`)
-      console.log(`[v0] ║  ROOT CAUSE IDENTIFIED                                  ║`)
-      console.log(`[v0] ║  No verified mappings exist in database                  ║`)
-      console.log(`[v0] ║  All 205 mappings have verified=false                    ║`)
-      console.log(`[v0] ║  importCourseIntelligence requires verified=true         ║`)
-      console.log(`[v0] ║  Result: coursesConsidered = 0                           ║`)
-      console.log(`[v0] ╚════════════════════════════════════════════════════════╝\n`)
+    // Fetch verified mappings (throws RepositoryError on database failure)
+    let mappings: TournamentCourseMapping[]
+    try {
+      mappings = await mappingRepo.findVerified()
+    } catch (error) {
+      logger.error("Failed to fetch verified mappings", { error: String(error) })
       const finishedAt = new Date()
       const durationMs = finishedAt.getTime() - startedAt.getTime()
       return {
@@ -219,7 +156,35 @@ export async function importCourseIntelligence(
       }
     }
 
-    const mappings = mappingsResult.records
+    // Early return if no verified mappings found
+    if (mappings.length === 0) {
+      const finishedAt = new Date()
+      const durationMs = finishedAt.getTime() - startedAt.getTime()
+      return {
+        jobId,
+        startedAt,
+        completedAt: finishedAt,
+        durationMs,
+        coursesConsidered: 0,
+        coursesMatched: 0,
+        coursesImported: 0,
+        coursesUpdated: 0,
+        coursesSkipped: 0,
+        holesImported: 0,
+        holesUpdated: 0,
+        holesSkipped: 0,
+        teeBoxesImported: 0,
+        teeBoxesUpdated: 0,
+        teeBoxesSkipped: 0,
+        intelligenceAnalyzed: 0,
+        intelligenceGenerated: 0,
+        insightsGenerated: 0,
+        explanationsGenerated: 0,
+        throughputPerSecond: 0,
+        warnings,
+        failures,
+      }
+    }
     coursesConsidered = mappings.length
     coursesMatched = mappings.length
 
