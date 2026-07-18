@@ -36,6 +36,14 @@ import {
 import { createImportLogger } from "./import-logger"
 
 /**
+ * Options for historical results import.
+ */
+export interface HistoricalResultsImportOptions {
+  /** Optional SportsDataIO tournament ID to import only a single tournament */
+  tournamentId?: number
+}
+
+/**
  * Summary of a historical results import run.
  */
 export interface HistoricalResultsImportSummary {
@@ -59,10 +67,22 @@ export interface HistoricalResultsImportSummary {
  * @returns Import summary with counts and notes
  */
 export async function importHistoricalResults(
-  provider?: SportsDataProvider,
+  optionsOrProvider?: HistoricalResultsImportOptions | SportsDataProvider,
   prisma: PrismaClient = prismaClient,
 ): Promise<HistoricalResultsImportSummary> {
-  const prov = provider || SportsDataProvider.fromEnv()
+  // Support both old API (provider as second param) and new API (options as first param)
+  let provider: SportsDataProvider
+  let options: HistoricalResultsImportOptions = {}
+
+  if (optionsOrProvider instanceof SportsDataProvider) {
+    provider = optionsOrProvider
+  } else if (optionsOrProvider && typeof optionsOrProvider === "object") {
+    options = optionsOrProvider
+    provider = SportsDataProvider.fromEnv()
+  } else {
+    provider = SportsDataProvider.fromEnv()
+  }
+
   const logger = createImportLogger()
   const roundRepo = getRoundRepository(prisma)
   const playerRoundRepo = getPlayerRoundRepository(prisma)
@@ -82,18 +102,22 @@ export async function importHistoricalResults(
     notes: [],
   }
 
-  console.log("[v0] Starting Historical Results Import")
+  console.log("[v0] Starting Historical Results Import" + (options.tournamentId ? ` (single tournament: ${options.tournamentId})` : ""))
 
-  // Fetch all completed tournaments from our DB
+  // Fetch completed tournaments from our DB
+  const whereClause = options.tournamentId
+    ? { status: "COMPLETED" as const, deletedAt: null, externalId: String(options.tournamentId) }
+    : { status: "COMPLETED" as const, deletedAt: null }
+
   const tournaments = await prisma.tournament.findMany({
-    where: { status: "COMPLETED", deletedAt: null },
+    where: whereClause,
     include: { tournamentCourses: true },
     orderBy: { startDate: "desc" },
   })
 
   summary.tournamentsConsidered = tournaments.length
   console.log(
-    `[v0] Found ${tournaments.length} completed tournaments to process`,
+    `[v0] Found ${tournaments.length} completed tournament${tournaments.length === 1 ? "" : "s"} to process`,
   )
   if (tournaments.length === 0) {
     console.log("[v0] No completed tournaments found, exiting")
