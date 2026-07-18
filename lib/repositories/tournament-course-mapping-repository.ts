@@ -9,7 +9,7 @@
 import type { PrismaClient, TournamentCourseMapping } from "@/lib/generated/prisma/client"
 
 import { BaseRepository, type RepositoryLogSink } from "./base-repository"
-import { fail, ok, okRead, type RepositoryResult } from "./repository-result"
+import { fail, ok, type RepositoryResult } from "./repository-result"
 import { toRepositoryError } from "./errors"
 
 interface MappingInput {
@@ -243,7 +243,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
    * Find all verified mappings (ready for import).
    * Checks both legacy verified boolean and new verificationStatus enum for compatibility.
    */
-  async findVerified(): Promise<RepositoryResult<TournamentCourseMapping[]>> {
+  async findVerified(): Promise<TournamentCourseMapping[]> {
     try {
       const mappings = await this.prisma.tournamentCourseMapping.findMany({
         where: {
@@ -254,11 +254,11 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         },
         orderBy: { createdAt: "asc" },
       })
-      return okRead(mappings)
+      return mappings
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("verified-mappings", repoError.message, { code: repoError.code })
-      return fail(repoError)
+      throw repoError
     }
   }
 
@@ -288,17 +288,17 @@ export class TournamentCourseMappingRepository extends BaseRepository {
   /**
    * Find high-confidence auto-verified mappings (confidence >= 95).
    */
-  async findAutoVerified(): Promise<RepositoryResult<TournamentCourseMapping[]>> {
+  async findAutoVerified(): Promise<TournamentCourseMapping[]> {
     try {
       const mappings = await this.prisma.tournamentCourseMapping.findMany({
         where: { autoVerified: true },
         orderBy: { matchConfidence: "desc" },
       })
-      return okRead(mappings)
+      return mappings
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("auto-verified-mappings", repoError.message, { code: repoError.code })
-      return fail(repoError)
+      throw repoError
     }
   }
 
@@ -390,7 +390,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
    * Find all mappings pending manual review.
    * Returns confidence < 95 that have not been verified or rejected.
    */
-  async findPendingReview(): Promise<RepositoryResult<TournamentCourseMapping[]>> {
+  async findPendingReview(): Promise<TournamentCourseMapping[]> {
     try {
       const mappings = await this.prisma.tournamentCourseMapping.findMany({
         where: {
@@ -398,18 +398,18 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         },
         orderBy: [{ matchConfidence: "asc" }, { createdAt: "asc" }],
       })
-      return okRead(mappings)
+      return mappings
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("pending-review-mappings", repoError.message, { code: repoError.code })
-      return fail(repoError)
+      throw repoError
     }
   }
 
   /**
    * Find all rejected mappings.
    */
-  async findRejected(): Promise<RepositoryResult<TournamentCourseMapping[]>> {
+  async findRejected(): Promise<TournamentCourseMapping[]> {
     try {
       const mappings = await this.prisma.tournamentCourseMapping.findMany({
         where: {
@@ -417,11 +417,11 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         },
         orderBy: { createdAt: "desc" },
       })
-      return okRead(mappings)
+      return mappings
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("rejected-mappings", repoError.message, { code: repoError.code })
-      return fail(repoError)
+      throw repoError
     }
   }
 

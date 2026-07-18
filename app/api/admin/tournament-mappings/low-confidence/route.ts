@@ -12,14 +12,8 @@ export async function GET() {
   try {
     const repo = getTournamentCourseMappingRepository(prisma)
 
-    // Fetch low-confidence mappings
-    const mappingsResult = await repo.findLowConfidenceForReview(100)
-    if (mappingsResult.outcome !== "ok") {
-      return NextResponse.json(
-        { error: "Failed to fetch mappings" },
-        { status: 500 }
-      )
-    }
+    // Fetch low-confidence mappings (throws on database error)
+    const mappings = await repo.findLowConfidenceForReview(100)
 
     // Fetch statistics
     const statsResult = await repo.getConfidenceStatistics()
@@ -31,7 +25,7 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      mappings: mappingsResult.records || [],
+      mappings,
       stats: statsResult.records
         ? {
             totalMappings: statsResult.records.totalMappings,
