@@ -70,39 +70,40 @@ export async function importHistoricalResults(
   optionsOrProvider?: HistoricalResultsImportOptions | SportsDataProvider,
   prisma: PrismaClient = prismaClient,
 ): Promise<HistoricalResultsImportSummary> {
-  // Support both old API (provider as second param) and new API (options as first param)
-  let provider: SportsDataProvider
-  let options: HistoricalResultsImportOptions = {}
+  try {
+    // Support both old API (provider as second param) and new API (options as first param)
+    let provider: SportsDataProvider
+    let options: HistoricalResultsImportOptions = {}
 
-  if (optionsOrProvider instanceof SportsDataProvider) {
-    provider = optionsOrProvider
-  } else if (optionsOrProvider && typeof optionsOrProvider === "object") {
-    options = optionsOrProvider
-    provider = SportsDataProvider.fromEnv()
-  } else {
-    provider = SportsDataProvider.fromEnv()
-  }
+    if (optionsOrProvider instanceof SportsDataProvider) {
+      provider = optionsOrProvider
+    } else if (optionsOrProvider && typeof optionsOrProvider === "object") {
+      options = optionsOrProvider
+      provider = SportsDataProvider.fromEnv()
+    } else {
+      provider = SportsDataProvider.fromEnv()
+    }
 
-  const logger = createImportLogger()
-  const roundRepo = getRoundRepository(prisma)
-  const playerRoundRepo = getPlayerRoundRepository(prisma)
+    const logger = createImportLogger()
+    const roundRepo = getRoundRepository(prisma)
+    const playerRoundRepo = getPlayerRoundRepository(prisma)
 
-  let firstApiError: { tournament: string; localId: string; externalId: string; message: string; error: unknown } | null = null
+    let firstApiError: { tournament: string; localId: string; externalId: string; message: string; error: unknown } | null = null
 
-  const summary: HistoricalResultsImportSummary = {
-    tournamentsConsidered: 0,
-    tournamentsWithLeaderboard: 0,
-    roundsCreated: 0,
-    playerRoundsCreated: 0,
-    playerRoundsUpdated: 0,
-    playerRoundsFailed: 0,
-    roundStatisticsCreated: 0,
-    roundStatisticsUpdated: 0,
-    roundStatisticsFailed: 0,
-    notes: [],
-  }
+    const summary: HistoricalResultsImportSummary = {
+      tournamentsConsidered: 0,
+      tournamentsWithLeaderboard: 0,
+      roundsCreated: 0,
+      playerRoundsCreated: 0,
+      playerRoundsUpdated: 0,
+      playerRoundsFailed: 0,
+      roundStatisticsCreated: 0,
+      roundStatisticsUpdated: 0,
+      roundStatisticsFailed: 0,
+      notes: [],
+    }
 
-  console.log("[v0] Starting Historical Results Import" + (options.tournamentId ? ` (single tournament: ${options.tournamentId})` : ""))
+    console.log("[v0] Starting Historical Results Import" + (options.tournamentId ? ` (single tournament: ${options.tournamentId})` : ""))
 
   // Fetch completed tournaments from our DB
   const whereClause = options.tournamentId
@@ -145,7 +146,7 @@ export async function importHistoricalResults(
       
       let leaderboardResp
       try {
-        leaderboardResp = await prov.getLeaderboard(String(tournament.externalId))
+        leaderboardResp = await provider.getLeaderboard(String(tournament.externalId))
       } catch (apiError) {
         // Capture first API error for debugging with full diagnostics
         if (!firstApiError) {
@@ -577,7 +578,40 @@ export async function importHistoricalResults(
       console.log(`[v0]     ${i + 1}. ${note}`)
     })
   }
-  console.log(`[v0] ═════════════════════════════════════════════════════════════\n`)
+    console.log(`[v0] ═════════════════════════════════════════════════════════════\n`)
 
-  return summary
+    return summary
+  } catch (runtimeError) {
+    // Catch-all for runtime errors with complete stack trace
+    const message = runtimeError instanceof Error ? runtimeError.message : String(runtimeError)
+    const stack = runtimeError instanceof Error ? runtimeError.stack ?? "" : ""
+    const name = runtimeError instanceof Error ? runtimeError.name : "UnknownError"
+
+    console.error(`\n[v0] ═════════════════════════════════════════════════════════════`)
+    console.error(`[v0] RUNTIME ERROR - Import Failed`)
+    console.error(`[v0] ═════════════════════════════════════════════════════════════`)
+    console.error(`[v0] Error Type: ${name}`)
+    console.error(`[v0] Error Message: ${message}`)
+    if (stack) {
+      console.error(`[v0] Stack Trace:`)
+      const stackLines = stack.split("\n")
+      stackLines.forEach(line => {
+        console.error(`[v0] ${line}`)
+      })
+    }
+    console.error(`[v0] ═════════════════════════════════════════════════════════════\n`)
+
+    return {
+      tournamentsConsidered: 0,
+      tournamentsWithLeaderboard: 0,
+      roundsCreated: 0,
+      playerRoundsCreated: 0,
+      playerRoundsUpdated: 0,
+      playerRoundsFailed: 0,
+      roundStatisticsCreated: 0,
+      roundStatisticsUpdated: 0,
+      roundStatisticsFailed: 0,
+      notes: [`IMPORT FAILED: ${name}: ${message}`],
+    }
+  }
 }
