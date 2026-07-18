@@ -9,7 +9,7 @@
 import type { PrismaClient, TournamentCourseMapping } from "@/lib/generated/prisma/client"
 
 import { BaseRepository, type RepositoryLogSink } from "./base-repository"
-import { fail, ok, type RepositoryResult } from "./repository-result"
+import { fail, ok, okRead, type RepositoryResult } from "./repository-result"
 import { toRepositoryError } from "./errors"
 
 interface MappingInput {
@@ -63,7 +63,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         where: { golfCourseApiCourseId },
         orderBy: { createdAt: "desc" },
       })
-      return ok(mappings)
+      return okRead(mappings)
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure(`golfcourse-${golfCourseApiCourseId}`, repoError.message, { code: repoError.code })
@@ -81,7 +81,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         where: { sportsDataIoCourseId },
         orderBy: { createdAt: "desc" },
       })
-      return ok(mappings)
+      return okRead(mappings)
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure(`sportsdataio-${sportsDataIoCourseId}`, repoError.message, { code: repoError.code })
@@ -231,7 +231,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         orderBy: { createdAt: "asc" },
         take: limit,
       })
-      return ok(mappings)
+      return okRead(mappings)
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("unverified-mappings", repoError.message, { code: repoError.code })
@@ -254,11 +254,9 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         },
         orderBy: { createdAt: "asc" },
       })
-      console.log(`[v0] findVerified() repository method result: ${mappings.length} records`)
-      return ok(mappings)
+      return okRead(mappings)
     } catch (error) {
       const repoError = toRepositoryError(error)
-      console.log(`[v0] findVerified() repository method ERROR: ${repoError.message}`)
       this.logger.failure("verified-mappings", repoError.message, { code: repoError.code })
       return fail(repoError)
     }
@@ -279,7 +277,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         orderBy: [{ matchConfidence: "asc" }, { createdAt: "asc" }],
         take: limit,
       })
-      return ok(mappings)
+      return okRead(mappings)
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("low-confidence-mappings", repoError.message, { code: repoError.code })
@@ -296,7 +294,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         where: { autoVerified: true },
         orderBy: { matchConfidence: "desc" },
       })
-      return ok(mappings)
+      return okRead(mappings)
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("auto-verified-mappings", repoError.message, { code: repoError.code })
@@ -400,7 +398,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         },
         orderBy: [{ matchConfidence: "asc" }, { createdAt: "asc" }],
       })
-      return ok(mappings)
+      return okRead(mappings)
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("pending-review-mappings", repoError.message, { code: repoError.code })
@@ -419,7 +417,7 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         },
         orderBy: { createdAt: "desc" },
       })
-      return ok(mappings)
+      return okRead(mappings)
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("rejected-mappings", repoError.message, { code: repoError.code })
