@@ -43,27 +43,38 @@ export function mapSportsDataRound(
 
 /**
  * Map a SportsDataIO leaderboard player into a PlayerRound domain object.
- * Extracted tournament-level scores become the round score. Position is derived
- * from Rank; madeCut from MadeCut; withdrawn from IsWithdrawn.
+ *
+ * When roundData is provided (from Players[].Rounds[]), uses the actual round score
+ * and calculates toPar. When roundData is null (aggregate tournament data), falls
+ * back to player-level fields for position and cut status.
  *
  * @param roundId — Resolved CaddieIQ round id
  * @param tournamentFieldId — Resolved CaddieIQ tournament field entry id
  * @param player — The player row from the leaderboard
+ * @param roundData — Optional: specific round's scorecard data (Players[].Rounds[i])
  * @returns A PlayerRound domain object
  */
 export function mapSportsDataPlayerRound(
   roundId: string,
   tournamentFieldId: string,
   player: SdioLeaderboardPlayer | undefined,
+  roundData?: typeof import("@/lib/providers/sportsdataio/types").SdioRound | undefined,
 ): PlayerRound {
-  // Extract score from player row. SportsDataIO does not provide a "Score" field
-  // directly in the leaderboard for golf tier. However, we use the score field to
-  // store the player's rank (finishing position) as a proxy, since it must not be NULL
-  // (database constraint). This allows us to persist the leaderboard data and use it
-  // for analytics. Position is the actual finishing position.
-  const score = player?.Rank ?? 999 // Use rank as score proxy to avoid NULL constraint
+  // TASK 2: Use actual round score from scorecard if available, otherwise null
+  // The score represents total strokes for the round.
+  let score: number | null = null
+  let toPar: number | null = null
 
-  // Rank is the player's finishing position (1 = winner)
+  if (roundData?.Score !== undefined && roundData.Score !== null) {
+    score = roundData.Score
+    // Calculate toPar if both score and par are available
+    if (roundData.Par !== undefined && roundData.Par !== null) {
+      toPar = roundData.Score - roundData.Par
+    }
+  }
+
+  // Rank is the player's finishing position (1 = winner) — use from player level
+  // This represents the player's final tournament position, which applies to all rounds
   const position = player?.Rank ?? null
 
   // madeCut indicates whether the player made the cut (null before/at cut time)
@@ -75,17 +86,25 @@ export function mapSportsDataPlayerRound(
   // withdrawn indicates withdrawal
   const withdrawn = player?.IsWithdrawn ?? false
 
+  // Use round-specific tee time if available, otherwise fall back to tournament start time
+  let teeTime: Date | null = null
+  if (roundData?.TeeTime) {
+    teeTime = new Date(roundData.TeeTime)
+  } else if (player?.TeeTime) {
+    teeTime = new Date(player.TeeTime)
+  }
+
   return {
     id: "", // Will be set by repository
     roundId,
     tournamentFieldId,
-    score,
-    toPar: null, // Provider does not expose strokes-to-par at field level
+    score, // Now: actual strokes (e.g., 68, 70, 87), previously was Rank
+    toPar, // Now: calculated score-minus-par (e.g., -2, 0, +16), previously was always null
     position,
     madeCut,
     withdrawn,
     disqualified: false, // SportsDataIO does not expose disqualification
-    teeTime: player?.TeeTime ? new Date(player.TeeTime) : null,
+    teeTime,
     startedAt: null, // Provider does not expose actual start time
     finishedAt: null, // Provider does not expose actual finish time
     createdAt: new Date(),

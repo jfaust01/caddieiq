@@ -90,6 +90,74 @@ export interface SdioCourse extends SdioRecord {
 }
 
 /**
+ * Raw SportsDataIO hole-level detail from scorecard (nested in Rounds).
+ *
+ * Individual hole scores with strokes, par, and relative scoring.
+ */
+export interface SdioRoundHole extends SdioRecord {
+  Number?: number
+  Par?: number
+  Score?: number
+  ToPar?: number
+  HoleInOne?: boolean
+  Eagle?: boolean
+  Birdie?: boolean
+  IsPar?: boolean
+  Bogey?: boolean
+  DoubleBogey?: boolean
+}
+
+/**
+ * Raw SportsDataIO round-level scorecard data (nested in player object).
+ *
+ * The Leaderboard endpoint returns per-player, per-round scorecard data including
+ * individual round strokes, par, and detailed statistics. This represents one
+ * player's performance in one round of a multi-round tournament.
+ */
+export interface SdioRound extends SdioRecord {
+  /** Unique identifier for this player-round combination. */
+  PlayerRoundID?: number
+  /** Player-tournament junction ID. */
+  PlayerTournamentID?: number
+  /** Round number (1, 2, 3, 4 for typical tournaments). */
+  Number?: number
+  /** Round date (ISO-ish). */
+  Day?: string
+  /** Course par for this round. */
+  Par?: number
+  /** Total strokes for this round. */
+  Score?: number
+  /** Count of hole-in-ones. */
+  HoleInOnes?: number
+  /** Count of eagles. */
+  Eagles?: number
+  /** Count of birdies. */
+  Birdies?: number
+  /** Count of pars. */
+  Pars?: number
+  /** Count of bogeys. */
+  Bogeys?: number
+  /** Count of double bogeys. */
+  DoubleBogeys?: number
+  /** Count of triple+ bogeys. */
+  TripleBogeys?: number
+  /** Count of scores worse than double bogey. */
+  WorseThanDoubleBogey?: number
+  /** Count of double eagles (albatrosses). */
+  DoubleEagles?: number
+  /** Whether the round was bogey-free. */
+  BogeyFree?: boolean
+  /** Tee time for this round (if different from first round). */
+  TeeTime?: string
+  /** Whether player started on back nine. */
+  BackNineStart?: boolean
+  /** Longest consecutive birdie-or-better streak in this round. */
+  LongestBirdieOrBetterStreak?: number
+  /** Hole-by-hole detail. */
+  Holes?: SdioRoundHole[]
+}
+
+/**
  * Raw SportsDataIO leaderboard **player** row.
  *
  * The `/json/Leaderboard/{tournamentid}` resource is the only feed that
@@ -105,6 +173,10 @@ export interface SdioCourse extends SdioRecord {
  * uniformly obfuscated (literally `"Scrambled"`), so it carries no signal. The
  * mapper derives a real status from `IsWithdrawn`/`IsAlternate`/`MadeCut`
  * instead of trusting this field.
+ *
+ * **Round Scorecard Data**: The `Rounds` array contains per-player, per-round
+ * scorecard detail (strokes, par, statistics) for each round the player completed.
+ * This is the primary source for RoundStatistic population.
  */
 export interface SdioLeaderboardPlayer extends SdioRecord {
   PlayerID: number
@@ -127,6 +199,8 @@ export interface SdioLeaderboardPlayer extends SdioRecord {
   TeeTime?: string
   /** Obfuscated in the current tier — do not trust; kept for completeness. */
   TournamentStatus?: string
+  /** Per-round scorecard data for each round this player completed. */
+  Rounds?: SdioRound[]
 }
 
 /**

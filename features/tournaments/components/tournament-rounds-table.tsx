@@ -27,17 +27,17 @@ export function TournamentRoundsTable({
   onImportClick,
   isLoading = false,
 }: TournamentRoundsTableProps) {
-  // DEBUG: Component render log
-  console.log('[v0] TournamentRoundsTable rendering')
-  console.log('[v0]   rounds.length:', rounds.length)
 
-  const [activeRound, setActiveRound] = useState<number | 'overall'>(0)
+
+  // Initialize activeRound to the first round's number (not 0, which may not exist)
+  const [activeRound, setActiveRound] = useState<number | 'overall'>(() => {
+    return rounds.length > 0 ? rounds[0].roundNumber : 'overall'
+  })
   const [sortBy, setSortBy] = useState<'position' | 'score' | 'player'>('position')
   const [sortAsc, setSortAsc] = useState(true)
 
   // Handle empty state
   if (rounds.length === 0) {
-    console.log('[v0] TournamentRoundsTable showing empty state')
     return (
       <Card className="border-dashed">
           <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
@@ -81,13 +81,6 @@ export function TournamentRoundsTable({
           playerScores: aggregateScores(rounds),
         }
       : rounds.find((r) => r.roundNumber === activeRound)
-
-  // DEBUG: Log activeRound data
-  console.log('[v0] ════════════════════════════════════════════════════')
-  console.log('[v0] INSIDE TournamentRoundsTable')
-  console.log('[v0] activeRound:', activeRound)
-  console.log('[v0] currentRound.playerScores.length:', currentRound?.playerScores?.length ?? 'currentRound is null')
-  console.log('[v0] ════════════════════════════════════════════════════')
 
   if (!currentRound) {
     return null

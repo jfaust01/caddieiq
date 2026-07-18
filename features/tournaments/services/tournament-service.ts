@@ -143,7 +143,6 @@ const getRoundsByTournamentCached = cache(
 
     for (const round of rounds) {
       const playerRounds = await playerRoundRepo.getByRound(round.id)
-      console.log(`[v0] Round ${round.roundNumber}: playerRoundRepo.getByRound returned ${playerRounds.length} player rounds`)
 
       // Build player score entries with name resolution
       const playerScores: PlayerScoreEntry[] = playerRounds
