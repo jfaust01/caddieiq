@@ -2,32 +2,31 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
+import { AlertCircle, CheckCircle, Loader2, ChevronDown, ChevronUp } from "lucide-react"
 import { importHistoricalResultsAction } from "./actions/import-historical-results"
 import type { HistoricalResultsImportSummary } from "@/lib/imports/historical-results-import"
+import type { ImportHistoricalResultsResponse } from "./actions/import-historical-results"
 
 export function ImportHistoricalResults() {
   const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState<{
-    summary: HistoricalResultsImportSummary
-    error?: string
-  } | null>(null)
+  const [result, setResult] = useState<ImportHistoricalResultsResponse | null>(null)
+  const [showStackTrace, setShowStackTrace] = useState(false)
 
   async function handleImport() {
     setIsLoading(true)
     setResult(null)
+    setShowStackTrace(false)
 
     try {
       const res = await importHistoricalResultsAction()
-      if (res.success && res.summary) {
-        setResult({ summary: res.summary })
-      } else {
-        setResult({ summary: null as any, error: res.error })
-      }
+      setResult(res)
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error"
+      const stack = error instanceof Error ? error.stack : undefined
       setResult({
-        summary: null as any,
-        error: error instanceof Error ? error.message : "Unknown error",
+        success: false,
+        error: message,
+        stack,
       })
     } finally {
       setIsLoading(false)
@@ -62,13 +61,33 @@ export function ImportHistoricalResults() {
 
       {result && (
         <div className="space-y-2 rounded bg-muted p-3 text-sm">
-          {result.error ? (
+          {!result.success ? (
             <>
               <div className="flex items-center gap-2 text-red-600">
                 <AlertCircle className="size-4" />
                 <span className="font-semibold">Import Failed</span>
               </div>
-              <p>{result.error}</p>
+              <p className="text-sm">{result.error}</p>
+              {result.stack && (
+                <div className="mt-2 border-t border-red-200 pt-2">
+                  <button
+                    onClick={() => setShowStackTrace(!showStackTrace)}
+                    className="flex items-center gap-1 text-xs font-mono text-red-600 hover:text-red-700"
+                  >
+                    {showStackTrace ? (
+                      <ChevronUp className="size-3" />
+                    ) : (
+                      <ChevronDown className="size-3" />
+                    )}
+                    {showStackTrace ? "Hide Stack Trace" : "Show Stack Trace"}
+                  </button>
+                  {showStackTrace && (
+                    <pre className="mt-1 overflow-x-auto rounded bg-red-50 p-2 text-xs text-red-900">
+                      {result.stack}
+                    </pre>
+                  )}
+                </div>
+              )}
             </>
           ) : result.summary ? (
             <>

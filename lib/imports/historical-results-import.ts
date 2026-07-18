@@ -601,17 +601,9 @@ export async function importHistoricalResults(
     }
     console.error(`[v0] ═════════════════════════════════════════════════════════════\n`)
 
-    return {
-      tournamentsConsidered: 0,
-      tournamentsWithLeaderboard: 0,
-      roundsCreated: 0,
-      playerRoundsCreated: 0,
-      playerRoundsUpdated: 0,
-      playerRoundsFailed: 0,
-      roundStatisticsCreated: 0,
-      roundStatisticsUpdated: 0,
-      roundStatisticsFailed: 0,
-      notes: [`IMPORT FAILED: ${name}: ${message}`],
-    }
+    // Re-throw the error to be handled by the action layer
+    // Include original exception to preserve stack trace
+    const error = runtimeError instanceof Error ? runtimeError : new Error(String(runtimeError))
+    throw error
   }
 }
