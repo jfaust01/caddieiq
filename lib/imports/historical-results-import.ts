@@ -299,8 +299,11 @@ export async function importHistoricalResults(
         if (leaderboard.Players && Array.isArray(leaderboard.Players)) {
           for (const player of leaderboard.Players) {
             if (!player.Name || !player.Rounds || player.Rounds.length === 0) {
+              console.log(`[v0] Skipping ${player.Name}: no rounds data`)
               continue
             }
+
+            console.log(`[v0] Processing ${player.Name} with ${player.Rounds.length} rounds`)
 
             // Get the player field entry to look up the player round
             const playerSlug = slugify(player.Name)
@@ -312,11 +315,20 @@ export async function importHistoricalResults(
             })
 
             if (!fieldEntry) {
+              console.log(`[v0]   ✗ Field entry not found for ${player.Name} (slug=${playerSlug})`)
               continue
             }
 
+            console.log(`[v0]   ✓ Field entry found: ${fieldEntry.id}`)
+
             // For each round, create a RoundStatistic
-            for (const roundData of player.Rounds) {
+            for (let roundIdx = 0; roundIdx < player.Rounds.length; roundIdx++) {
+              const roundData = player.Rounds[roundIdx]
+              console.log(`[v0]   Round ${roundIdx + 1}: Number=${roundData.Number}, Score=${roundData.Score}, Par=${roundData.Par}`)
+
+              // CRITICAL BUG: Looking up with roundId (tournament round), not round number
+              console.log(`[v0]     Query: roundId=${roundId}, tournamentFieldId=${fieldEntry.id}`)
+              
               // Find the corresponding PlayerRound
               const playerRound = await prisma.playerRound.findFirst({
                 where: {
@@ -326,8 +338,11 @@ export async function importHistoricalResults(
               })
 
               if (!playerRound) {
+                console.log(`[v0]     ✗ PlayerRound NOT FOUND`)
                 continue
               }
+
+              console.log(`[v0]     ✓ PlayerRound found: ${playerRound.id}`)
 
               // Map the scorecard data to RoundStatistic
               const roundStatistic = mapSportsDataRoundStatistic(playerRound.id, roundData)
@@ -335,12 +350,14 @@ export async function importHistoricalResults(
                 playerRoundId: playerRound.id,
                 roundStatistic,
               })
+              console.log(`[v0]     Mapped to RoundStatistic: birdies=${roundData.Birdies}, score=${roundData.Score}`)
             }
           }
         }
 
         // Bulk upsert round statistics
-        if (roundStatisticInputs.length > 0) {
+        console.log(`[v0] STEP 3 SUMMARY: roundStatisticInputs.length = ${roundStatisticInputs.length}`)
+        if (roundStatisticInputs > 0) {
           console.log(
             `[v0] Preparing bulk upsert of ${roundStatisticInputs.length} round statistics`,
           )
