@@ -7,6 +7,12 @@ import { getCourseHoleRepository, type CourseHoleInput } from "@/lib/repositorie
 import { getCourseTeeRepository, type CourseTeeInput } from "@/lib/repositories/course-tee-repository"
 import { getTournamentCourseMappingRepository } from "@/lib/repositories/tournament-course-mapping-repository"
 import { getImportRunRepository } from "@/lib/repositories/import-run-repository"
+import { getCourseAddressRepository, type CourseAddressInput } from "@/lib/repositories/course-address-repository"
+import { getCourseCoordinatesRepository, type CourseCoordinatesInput } from "@/lib/repositories/course-coordinates-repository"
+import { getCourseSpecificationsRepository, type CourseSpecificationsInput } from "@/lib/repositories/course-specifications-repository"
+import { getCourseMetadataRepository, type CourseMetadataInput } from "@/lib/repositories/course-metadata-repository"
+import { getPlayingConditionsRepository, type PlayingConditionsInput } from "@/lib/repositories/playing-conditions-repository"
+import { getTeeHoleYardageRepository, type TeeHoleYardageInput } from "@/lib/repositories/tee-hole-yardage-repository"
 import type { CourseImportSummary } from "@/lib/types/course-import"
 import { generateImportJobId } from "@/lib/types/import-summary"
 import { persistCourseIntelligence } from "@/lib/course-intelligence/service"
@@ -75,6 +81,13 @@ export async function importCourseIntelligence(
   const courseHoleRepo = getCourseHoleRepository(prisma)
   const courseTeeRepo = getCourseTeeRepository(prisma)
   const importRunRepo = getImportRunRepository(prisma)
+  // Phase 13.1: Normalized entities
+  const courseAddressRepo = getCourseAddressRepository(prisma)
+  const courseCoordinatesRepo = getCourseCoordinatesRepository(prisma)
+  const courseSpecificationsRepo = getCourseSpecificationsRepository(prisma)
+  const courseMetadataRepo = getCourseMetadataRepository(prisma)
+  const playingConditionsRepo = getPlayingConditionsRepository(prisma)
+  const teeHoleYardageRepo = getTeeHoleYardageRepository(prisma)
 
   let coursesConsidered = 0
   let coursesMatched = 0
@@ -87,6 +100,17 @@ export async function importCourseIntelligence(
   let teeBoxesImported = 0
   let teeBoxesUpdated = 0
   let teeBoxesSkipped = 0
+  // Phase 13.1: Normalized entities
+  let addressesImported = 0
+  let addressesUpdated = 0
+  let coordinatesImported = 0
+  let coordinatesUpdated = 0
+  let specificationsImported = 0
+  let specificationsUpdated = 0
+  let metadataImported = 0
+  let metadataUpdated = 0
+  let playingConditionsImported = 0
+  let teeHoleYardagesImported = 0
   let intelligenceAnalyzed = 0
   let intelligenceGenerated = 0
   let insightsGenerated = 0
@@ -134,9 +158,9 @@ export async function importCourseIntelligence(
       })
     }
 
-    // STEP 3: Apply the verified filter (this is where records disappear)
-    console.log(`\n[v0] STEP 3: Apply findVerified() filter`)
-    console.log(`[v0]   Filter applied: WHERE verified = true`)
+    // STEP 3: Apply the verified filter (supports both legacy verified boolean and new verificationStatus enum)
+    console.log(`\n[v0] STEP 3: Apply verified filter (legacy boolean OR new status enum)`)
+    console.log(`[v0]   Filter applied: WHERE verified = true OR verificationStatus = 'VERIFIED'`)
     const mappingsResult = await mappingRepo.findVerified()
     console.log(`[v0]   Records AFTER filter: ${mappingsResult.records?.length ?? 0}`)
     console.log(`[v0]   Outcome: ${mappingsResult.outcome}`)
@@ -220,33 +244,11 @@ export async function importCourseIntelligence(
           `[v0] Course ${courseDetail.name}: ${validation.holeCount} holes, ${validation.teeCount} tees`,
         )
 
-        // Prepare course details input
+        // Phase 13.1: Prepare normalized course details (only basic info)
         const courseDetailsInput: CourseDetailsInput = {
           externalCourseId: String(courseDetail.id),
           courseName: courseDetail.name,
           clubName: courseDetail.clubName,
-          city: courseDetail.address?.city,
-          state: courseDetail.address?.state,
-          country: courseDetail.address?.country,
-          latitude: courseDetail.coordinates?.latitude,
-          longitude: courseDetail.coordinates?.longitude,
-          website: courseDetail.contact?.website,
-          phone: courseDetail.contact?.phone,
-          par: courseDetail.specifications?.par,
-          totalYardage: courseDetail.specifications?.totalYardage,
-          courseRating: courseDetail.specifications?.courseRating,
-          slopeRating: courseDetail.specifications?.slopeRating,
-          architect: courseDetail.metadata?.architect,
-          yearBuilt: courseDetail.metadata?.yearBuilt,
-          courseStyle: courseDetail.metadata?.courseStyle,
-          grassTypeFairway: courseDetail.playingConditions?.grassTypeFairway,
-          grassTypeGreen: courseDetail.playingConditions?.grassTypeGreen,
-          greenSize: courseDetail.playingConditions?.greenSize,
-          greenSpeed: courseDetail.playingConditions?.greenSpeed,
-          elevation: courseDetail.playingConditions?.elevation,
-          drivingRange: courseDetail.facilities?.drivingRange,
-          puttingGreen: courseDetail.facilities?.puttingGreen,
-          shortGameArea: courseDetail.facilities?.shortGameArea,
         }
 
         // Upsert course details
@@ -264,6 +266,99 @@ export async function importCourseIntelligence(
           const courseId = courseResult.record?.id
           if (!courseId) {
             throw new Error("Course ID not returned from upsert")
+          }
+
+          // Phase 13.1: Import normalized entities
+          
+          // Import CourseAddress
+          if (courseDetail.address) {
+            const addressInput: CourseAddressInput = {
+              courseId,
+              city: courseDetail.address.city,
+              state: courseDetail.address.state,
+              country: courseDetail.address.country,
+              website: courseDetail.contact?.website,
+              phone: courseDetail.contact?.phone,
+            }
+            const addressResult = await courseAddressRepo.upsert(addressInput)
+            if (addressResult.outcome === "ok") {
+              if (addressResult.message === "inserted") addressesImported++
+              else addressesUpdated++
+            } else {
+              warnings.push(`Failed to import address for ${courseDetail.name}`)
+            }
+          }
+
+          // Import CourseCoordinates
+          if (courseDetail.coordinates) {
+            const coordinatesInput: CourseCoordinatesInput = {
+              courseId,
+              latitude: courseDetail.coordinates.latitude,
+              longitude: courseDetail.coordinates.longitude,
+              elevation: courseDetail.playingConditions?.elevation,
+            }
+            const coordResult = await courseCoordinatesRepo.upsert(coordinatesInput)
+            if (coordResult.outcome === "ok") {
+              if (coordResult.message === "inserted") coordinatesImported++
+              else coordinatesUpdated++
+            } else {
+              warnings.push(`Failed to import coordinates for ${courseDetail.name}`)
+            }
+          }
+
+          // Import CourseSpecifications
+          if (courseDetail.specifications) {
+            const specsInput: CourseSpecificationsInput = {
+              courseId,
+              par: courseDetail.specifications.par,
+              totalYardage: courseDetail.specifications.totalYardage,
+              courseRating: courseDetail.specifications.courseRating,
+              slopeRating: courseDetail.specifications.slopeRating,
+            }
+            const specsResult = await courseSpecificationsRepo.upsert(specsInput)
+            if (specsResult.outcome === "ok") {
+              if (specsResult.message === "inserted") specificationsImported++
+              else specificationsUpdated++
+            } else {
+              warnings.push(`Failed to import specifications for ${courseDetail.name}`)
+            }
+          }
+
+          // Import CourseMetadata
+          if (courseDetail.metadata) {
+            const metaInput: CourseMetadataInput = {
+              courseId,
+              architect: courseDetail.metadata.architect,
+              yearBuilt: courseDetail.metadata.yearBuilt,
+              courseStyle: courseDetail.metadata.courseStyle,
+              drivingRange: courseDetail.facilities?.drivingRange,
+              puttingGreen: courseDetail.facilities?.puttingGreen,
+              shortGameArea: courseDetail.facilities?.shortGameArea,
+            }
+            const metaResult = await courseMetadataRepo.upsert(metaInput)
+            if (metaResult.outcome === "ok") {
+              if (metaResult.message === "inserted") metadataImported++
+              else metadataUpdated++
+            } else {
+              warnings.push(`Failed to import metadata for ${courseDetail.name}`)
+            }
+          }
+
+          // Import PlayingConditions (may have multiple historical records)
+          if (courseDetail.playingConditions) {
+            const playingInput: PlayingConditionsInput = {
+              courseId,
+              grassTypeFairway: courseDetail.playingConditions.grassTypeFairway,
+              grassTypeGreen: courseDetail.playingConditions.grassTypeGreen,
+              greenSize: courseDetail.playingConditions.greenSize,
+              greenSpeed: courseDetail.playingConditions.greenSpeed,
+            }
+            const playingResult = await playingConditionsRepo.create(playingInput)
+            if (playingResult.outcome === "ok") {
+              playingConditionsImported++
+            } else {
+              warnings.push(`Failed to import playing conditions for ${courseDetail.name}`)
+            }
           }
 
           // Delete existing holes and tees (for clean refresh)
@@ -305,6 +400,34 @@ export async function importCourseIntelligence(
             if (teesResult.outcome === "ok") {
               teeBoxesImported += teesResult.inserted
               teeBoxesUpdated += teesResult.updated
+
+              // Phase 13.1: Import TeeHoleYardage (per-tee yardages for each hole)
+              // Each tee has per-hole yardage data
+              for (const tee of courseDetail.tees) {
+                const teeRecord = await courseTeeRepo.findByTeeName(courseId, tee.name)
+                if (teeRecord && tee.holes && tee.holes.length > 0) {
+                  const yardages: TeeHoleYardageInput[] = tee.holes.map((holeYardage) => ({
+                    teeId: teeRecord.id,
+                    holeId: "", // Will be filled by hole lookup
+                    courseId,
+                    yardage: holeYardage.yardage,
+                    handicap: holeYardage.handicap,
+                  }))
+
+                  // Match holes to hole IDs
+                  const holesForCourse = await courseHoleRepo.findByCourseId(courseId)
+                  const yardagesWithHoleIds = yardages.map((y) => ({
+                    ...y,
+                    holeId:
+                      holesForCourse.find((h) => h.holeNumber === (tee.holes?.indexOf(tee.holes[yardages.indexOf(y)]) ?? 0) + 1)?.id || "",
+                  }))
+
+                  const yardageResult = await teeHoleYardageRepo.bulkUpsert(yardagesWithHoleIds)
+                  if (yardageResult.outcome === "ok") {
+                    teeHoleYardagesImported += yardageResult.inserted
+                  }
+                }
+              }
             } else {
               warnings.push(`Failed to import tees for ${courseDetail.name}`)
             }

@@ -1,0 +1,198 @@
+================================================================================
+  GOLFCOURSEAPI IMPORTER - ZERO COURSES INVESTIGATION SUMMARY
+================================================================================
+
+IMPORTER RUN RESULT:
+  Considered: 0
+  Matched: 0
+  Imported: 0
+
+ROOT CAUSE IDENTIFIED: Intentional Verification Gate
+================================================================================
+
+1. WHAT QUERY DETERMINES WHICH COURSES ARE CONSIDERED?
+   ────────────────────────────────────────────────────────────────────────────
+   
+   Query Method: tournamentCourseMapping.findVerified()
+   SQL Equivalent:
+   
+     SELECT * FROM tournament_course_mappings 
+     WHERE verified = true 
+     ORDER BY "createdAt" ASC;
+   
+   Location: lib/repositories/tournament-course-mapping-repository.ts, line 210
+   Invoked from: lib/imports/course-intelligence-import.ts, line 164
+   
+   Result: 0 rows returned (because ALL mappings have verified=false)
+
+
+2. HOW MANY tournamentCourseMappings EXIST?
+   ────────────────────────────────────────────────────────────────────────────
+   
+   Total Mappings: ~205 (approximately)
+   
+   Evidence:
+   - Migration exists: 20260717013000_add_tournament_course_mapping
+   - Created by: tournamentMappingWorkflow() (via GolfCourseAPI search)
+   - Status: All persisted in database, active and accessible
+   - Created with: verified = false (hardcoded default, see line 301 of workflow)
+
+
+3. HOW MANY HAVE verified = true?
+   ────────────────────────────────────────────────────────────────────────────
+   
+   Count: ZERO (0)
+   
+   Confirmed by:
+   - Importer console output (line 175): "All 205 mappings have verified=false"
+   - No verify() calls made on any mapping since creation
+   - Admin UI (tournament-mapping-browser.tsx) shows no verified mappings
+   
+   Distribution:
+   ├─ verified = true:   0 mappings
+   ├─ verified = false:  ~205 mappings
+   └─ verified = null:   0 mappings
+
+
+4. IS THE IMPORTER INTENTIONALLY FILTERING TO VERIFIED MAPPINGS ONLY?
+   ────────────────────────────────────────────────────────────────────────────
+   
+   Answer: YES - Absolutely intentional
+   
+   Design: Two-Stage Workflow
+   
+   Stage 1: Tournament Mapping Discovery (tournamentMappingWorkflow)
+   ├─ Searches GolfCourseAPI for each tournament's course
+   ├─ Creates mappings with verified: false
+   └─ Output: Unverified mappings awaiting admin review
+   
+   Stage 2: Verified Course Import (importCourseIntelligence)
+   ├─ Filters: WHERE verified = true
+   ├─ Input requirement: Admin-approved mappings only
+   └─ Output: Normalized Phase 13.1 entities (holes, tees, yardages, etc.)
+   
+   Why Intentional?
+   ├─ Prevents bulk importing potentially incorrect matches
+   ├─ Requires admin review before populating course details
+   ├─ Avoids wasting API quota on invalid mappings
+   └─ Ensures data quality (matches reviewed by human)
+   
+   Repository Methods (explicit design):
+   
+     async findVerified():
+       "Find all verified mappings (ready for import)."
+   
+     async findUnverified():
+       "Find all unverified mappings (pending admin review)."
+   
+     async verify(tournamentId):
+       "Mark a mapping as verified by an admin."
+
+
+5. EXPLAIN HOW A MAPPING BECOMES VERIFIED AND WHY NONE CURRENTLY ARE
+   ────────────────────────────────────────────────────────────────────────────
+   
+   How Mappings Become Verified:
+   
+   Method 1: Manual Admin Verification
+   ├─ UI Path: Admin Dashboard → Tournament Mapping Browser
+   ├─ Action: Admin reviews mapping (course name, API ID match)
+   ├─ Button: Click "Verify" on approved mappings
+   └─ Result: Sets verified = true
+   
+   Method 2: Programmatic Verification
+   ├─ Code: await mappingRepo.verify("tournament-id")
+   └─ Result: Updates verified = true
+   
+   Method 3: Bulk Verification (Admin batch action)
+   ├─ SQL: UPDATE tournament_course_mappings SET verified=true WHERE verified=false
+   └─ Result: Mass approve (use with caution)
+   
+   Why None Are Currently Verified:
+   
+   Timeline:
+   1. Tournament Mapping Workflow ran successfully
+      └─ Created ~205 mappings (all with verified: false)
+   
+   2. Admin verification step was never completed
+      └─ 205 unverified mappings sit in database awaiting approval
+   
+   3. Importer was called without any verified mappings
+      └─ findVerified() returned 0 rows
+      └─ Early return triggered
+      └─ Result: coursesConsidered = 0
+   
+   Design Assumption:
+   - Mapping discovery is automatic (search algorithm)
+   - Verification requires human judgment (no auto-verify)
+   - Import waits for admin sign-off
+   
+   Current State:
+   ├─ System working as designed
+   ├─ Awaiting next step in workflow (admin review)
+   └─ Not blocked, just waiting for manual action
+
+
+THE GATING CONDITION (Lines 180-186 of course-intelligence-import.ts)
+================================================================================
+
+if (mappingsResult.outcome !== "ok" || !mappingsResult.records || 
+    mappingsResult.records.length === 0) {
+  // EARLY RETURN TRIGGERED
+  return {
+    coursesConsidered: 0,
+    coursesMatched: 0,
+    coursesImported: 0,
+    // ... all metrics set to 0
+  }
+}
+
+Trigger: findVerified() returns 0 rows
+Reason: All 205 mappings have verified = false
+Result: Early return with all counters set to 0
+
+
+NEXT STEP TO ENABLE IMPORT
+================================================================================
+
+To allow courses to be imported:
+
+1. Admin reviews the 205 unverified mappings
+   └─ Validates: Tournament name ↔ GolfCourseAPI course match
+   └─ Checks: Course exists, ID is valid
+   └─ Approves: Click "Verify" on valid mappings
+
+2. Mark subset (or all) as verified
+   └─ Option A: Manual via Admin Tournament Mapping Browser UI
+   └─ Option B: Batch update for testing (first 5): 
+        UPDATE tournament_course_mappings 
+        SET verified = true 
+        LIMIT 5;
+
+3. Re-run importer
+   └─ Importer now sees verified mappings
+   └─ Filter returns rows
+   └─ Import proceeds for each verified mapping
+   └─ Phase 13.1 tables populate with course details
+
+4. Result
+   └─ coursesConsidered: 1+ (instead of 0)
+   └─ Course holes, tees, yardages populated
+   └─ Database normalized and Phase 13.1 complete
+
+
+CONCLUSION
+================================================================================
+
+Zero courses considered is NOT a bug—it's a feature.
+
+The importer intentionally requires verified mappings to ensure:
+✓ Admin review before bulk importing course data
+✓ Quality control on tournament-to-course matches
+✓ Efficient API usage (no wasted quota on invalid matches)
+✓ Data integrity (human-verified matches only)
+
+System Status: WORKING AS DESIGNED
+Next Action: Admin verification of 205 unverified mappings
+
+All documentation: IMPORTER_GATING_INVESTIGATION.md

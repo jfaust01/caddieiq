@@ -98,160 +98,734 @@ function determineOverallStatus(
   healthPercentage: number,
   criticalWarningCount: number,
 ): "Healthy" | "Warning" | "Critical" {
-  if (healthPercentage >= 90 && criticalWarningCount === 0) return "Healthy"
-  if (healthPercentage >= 70 || criticalWarningCount <= 1) return "Warning"
-  return "Critical"
+  if (criticalWarningCount > 0 || healthPercentage < 50) {
+    return "Critical"
+  }
+  if (healthPercentage < 75) {
+    return "Warning"
+  }
+  return "Healthy"
 }
 
 /**
- * Get basic table counts and metadata from database.
+ * Helper to safely query a table with error handling and structured logging.
  */
-async function getTableMetrics(): Promise<{
-  tables: TableHealthReport[]
-  totalRows: number
-}> {
+async function safeCountTable(
+  name: string,
+  countFn: () => Promise<number>,
+): Promise<{ count: number; error: string | null }> {
+  try {
+    console.log(`[v0] [DatabaseHealth] Loading ${name}...`)
+    const count = await countFn()
+    console.log(`[v0] [DatabaseHealth] ✓ ${name}: ${count} rows`)
+    return { count, error: null }
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err)
+    console.error(`[v0] [DatabaseHealth] ✗ ${name} failed: ${errorMsg}`)
+    return { count: 0, error: errorMsg }
+  }
+}
+
+/**
+ * Get table metrics for database health report with graceful degradation.
+ * If one table query fails, the page still renders with remaining tables and error indicators.
+ */
+async function getTableMetrics(): Promise<{ tables: TableHealthReport[]; totalRows: number }> {
   const tables: TableHealthReport[] = []
   let totalRows = 0
 
-  // Core tables - always populated
-  const users = await prisma.user.count()
-  tables.push({
-    tableName: "users",
-    rowCount: users,
-    status: users > 0 ? "Healthy" : "Error",
-    purpose: "Application users and authentication",
-    expected: true,
-    lastUpdatedAt: new Date().toISOString(),
-    healthScore: users > 0 ? 100 : 0,
-  })
-  totalRows += users
+  // User management tables
+  const usersResult = await safeCountTable("users", () => prisma.user.count())
+  if (!usersResult.error) {
+    tables.push({
+      tableName: "users",
+      rowCount: usersResult.count,
+      status: usersResult.count > 0 ? "Healthy" : "Expected Empty",
+      purpose: "User accounts",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: usersResult.count > 0 ? 100 : 50,
+      explanation: usersResult.count === 0 ? "Create users to access the system" : undefined,
+    })
+    totalRows += usersResult.count
+  } else {
+    tables.push({
+      tableName: "users",
+      rowCount: 0,
+      status: "Error",
+      purpose: "User accounts",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${usersResult.error}`,
+    })
+  }
 
-  const tours = await prisma.tour.count()
-  tables.push({
-    tableName: "tours",
-    rowCount: tours,
-    status: tours > 0 ? "Healthy" : "Critical",
-    purpose: "Golf tours (PGA, LIV, LPGA, etc.)",
-    expected: true,
-    lastUpdatedAt: new Date().toISOString(),
-    healthScore: tours > 0 ? 100 : 0,
-    explanation: tours === 0 ? "Foundational data missing - requires initial import" : undefined,
-  })
-  totalRows += tours
+  // Golf tour/event tables
+  const toursResult = await safeCountTable("tours", () => prisma.tour.count())
+  if (!toursResult.error) {
+    tables.push({
+      tableName: "tours",
+      rowCount: toursResult.count,
+      status: toursResult.count > 0 ? "Healthy" : "Waiting",
+      purpose: "Golf tours (PGA, DP World Tour, etc.)",
+      expected: false,
+      lastUpdatedAt: toursResult.count > 0 ? new Date().toISOString() : null,
+      healthScore: toursResult.count > 0 ? 100 : 50,
+      explanation: toursResult.count === 0 ? "Populated by external data import" : undefined,
+    })
+    totalRows += toursResult.count
+  } else {
+    tables.push({
+      tableName: "tours",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Golf tours (PGA, DP World Tour, etc.)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${toursResult.error}`,
+    })
+  }
 
-  const courses = await prisma.course.count({
-    where: { deletedAt: null },
-  })
-  tables.push({
-    tableName: "courses",
-    rowCount: courses,
-    status: courses > 0 ? "Healthy" : "Critical",
-    purpose: "Golf courses from imported tournaments",
-    expected: true,
-    lastUpdatedAt: new Date().toISOString(),
-    healthScore: courses > 0 ? 100 : 0,
-    explanation: courses === 0 ? "No courses imported yet - run tournament import" : undefined,
-  })
-  totalRows += courses
+  // GolfCourseAPI integration tables
+  const coursesResult = await safeCountTable("courses", () =>
+    prisma.course.count({
+      where: { deletedAt: null },
+    }),
+  )
 
-  // Event-driven tables
-  const tournaments = await prisma.tournament.count({
-    where: { deletedAt: null },
-  })
-  tables.push({
-    tableName: "tournaments",
-    rowCount: tournaments,
-    status: tournaments > 0 ? "Healthy" : "Expected Empty",
-    purpose: "Tournament schedules and metadata",
-    expected: false,
-    lastUpdatedAt: tournaments > 0 ? new Date().toISOString() : null,
-    healthScore: tournaments > 0 ? 100 : 50,
-    explanation: tournaments === 0 ? "Tournaments imported as scheduled - off-season may be empty" : undefined,
-  })
-  totalRows += tournaments
+  if (!coursesResult.error) {
+    const coursesNoLocationResult = await safeCountTable("courses without location", () =>
+      prisma.course.count({
+        where: {
+          deletedAt: null,
+          OR: [{ latitude: null }, { longitude: null }],
+        },
+      }),
+    )
 
-  const players = await prisma.player.count({
-    where: { deletedAt: null },
-  })
-  tables.push({
-    tableName: "players",
-    rowCount: players,
-    status: players > 0 ? "Healthy" : "Import Pending",
-    purpose: "Player roster and career data",
-    expected: false,
-    lastUpdatedAt: players > 0 ? new Date().toISOString() : null,
-    healthScore: players > 0 ? 100 : 30,
-    explanation: players === 0 ? "Awaiting player import - check import status" : undefined,
-  })
-  totalRows += players
+    tables.push({
+      tableName: "courses",
+      rowCount: coursesResult.count,
+      status: coursesResult.count > 0 ? "Healthy" : "Waiting",
+      purpose: "Golf courses from GolfCourseAPI",
+      expected: false,
+      lastUpdatedAt: coursesResult.count > 0 ? new Date().toISOString() : null,
+      healthScore:
+        coursesResult.count > 0 && !coursesNoLocationResult.error
+          ? Math.floor(((coursesResult.count - coursesNoLocationResult.count) / coursesResult.count) * 100)
+          : 50,
+      explanation:
+        coursesResult.count === 0
+          ? "Run course import"
+          : !coursesNoLocationResult.error && coursesNoLocationResult.count > 0
+            ? `${coursesNoLocationResult.count} courses missing coordinates`
+            : undefined,
+    })
+    totalRows += coursesResult.count
+  } else {
+    tables.push({
+      tableName: "courses",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Golf courses from GolfCourseAPI",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${coursesResult.error}`,
+    })
+  }
 
-  const rounds = await prisma.round.count()
-  tables.push({
-    tableName: "rounds",
-    rowCount: rounds,
-    status: rounds > 0 ? "Healthy" : "Expected Empty",
-    purpose: "Tournament rounds during events",
-    expected: false,
-    lastUpdatedAt: rounds > 0 ? new Date().toISOString() : null,
-    healthScore: rounds > 0 ? 100 : 50,
-    explanation: rounds === 0 ? "Populated during active tournament play" : undefined,
-  })
-  totalRows += rounds
+  const tournamentsResult = await safeCountTable("tournaments", () =>
+    prisma.tournament.count({
+      where: { deletedAt: null },
+    }),
+  )
+  if (!tournamentsResult.error) {
+    tables.push({
+      tableName: "tournaments",
+      rowCount: tournamentsResult.count,
+      status: tournamentsResult.count > 0 ? "Healthy" : "Waiting",
+      purpose: "Tournament events",
+      expected: false,
+      lastUpdatedAt: tournamentsResult.count > 0 ? new Date().toISOString() : null,
+      healthScore: tournamentsResult.count > 0 ? 100 : 50,
+      explanation: tournamentsResult.count === 0 ? "Run tournament import for upcoming season" : undefined,
+    })
+    totalRows += tournamentsResult.count
+  } else {
+    tables.push({
+      tableName: "tournaments",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Tournament events",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${tournamentsResult.error}`,
+    })
+  }
 
-  const courseCharacteristics = await prisma.courseCharacteristic.count()
-  tables.push({
-    tableName: "courseCharacteristics",
-    rowCount: courseCharacteristics,
-    status: courseCharacteristics > 0 ? "Healthy" : "Import Pending",
-    purpose: "Derived course intelligence (shot weights, confidence)",
-    expected: false,
-    lastUpdatedAt: courseCharacteristics > 0 ? new Date().toISOString() : null,
-    healthScore: courseCharacteristics > 0 ? 100 : 40,
-    explanation:
-      courseCharacteristics === 0 ? "Run course enrichment pipeline - see docs/COURSE_CHARACTERISTICS_ENRICHMENT.md" : undefined,
-  })
-  totalRows += courseCharacteristics
+  const playersResult = await safeCountTable("players", () =>
+    prisma.player.count({
+      where: { deletedAt: null },
+    }),
+  )
+  if (!playersResult.error) {
+    tables.push({
+      tableName: "players",
+      rowCount: playersResult.count,
+      status: playersResult.count > 0 ? "Healthy" : "Waiting",
+      purpose: "Professional golfers",
+      expected: false,
+      lastUpdatedAt: playersResult.count > 0 ? new Date().toISOString() : null,
+      healthScore: playersResult.count > 0 ? 100 : 50,
+      explanation: playersResult.count === 0 ? "Run player import" : undefined,
+    })
+    totalRows += playersResult.count
+  } else {
+    tables.push({
+      tableName: "players",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Professional golfers",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${playersResult.error}`,
+    })
+  }
 
-  const weatherSnapshots = await prisma.weatherSnapshot.count()
-  tables.push({
-    tableName: "weatherSnapshots",
-    rowCount: weatherSnapshots,
-    status: weatherSnapshots > 0 ? "Healthy" : "Waiting",
-    purpose: "Weather forecasts for upcoming tournaments",
-    expected: false,
-    lastUpdatedAt: weatherSnapshots > 0 ? new Date().toISOString() : null,
-    healthScore: weatherSnapshots > 0 ? 100 : 50,
-    explanation:
-      weatherSnapshots === 0 ? "No tournaments within 6-day forecast window - expected off-season" : undefined,
-  })
-  totalRows += weatherSnapshots
+  // Rounds (user generated content)
+  const roundsResult = await safeCountTable("rounds", () => prisma.round.count())
+  if (!roundsResult.error) {
+    tables.push({
+      tableName: "rounds",
+      rowCount: roundsResult.count,
+      status: roundsResult.count > 0 ? "Healthy" : "Expected Empty",
+      purpose: "User-recorded golf rounds",
+      expected: false,
+      lastUpdatedAt: roundsResult.count > 0 ? new Date().toISOString() : null,
+      healthScore: roundsResult.count > 0 ? 100 : 50,
+      explanation: roundsResult.count === 0 ? "Users will create rounds as they play" : undefined,
+    })
+    totalRows += roundsResult.count
+  } else {
+    tables.push({
+      tableName: "rounds",
+      rowCount: 0,
+      status: "Error",
+      purpose: "User-recorded golf rounds",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${roundsResult.error}`,
+    })
+  }
 
-  const weatherPeriods = await prisma.weatherPeriod.count()
-  tables.push({
-    tableName: "weatherPeriods",
-    rowCount: weatherPeriods,
-    status: weatherPeriods > 0 ? "Healthy" : "Waiting",
-    purpose: "Individual weather periods (3-hour forecast blocks)",
-    expected: false,
-    lastUpdatedAt: weatherPeriods > 0 ? new Date().toISOString() : null,
-    healthScore: weatherPeriods > 0 ? 100 : 50,
-    explanation: weatherPeriods === 0 ? "Populated with weather snapshots when tournaments are in forecast window" : undefined,
-  })
-  totalRows += weatherPeriods
+  // Course characteristics / ratings
+  const courseCharacteristicsResult = await safeCountTable("courseCharacteristics", () =>
+    prisma.courseCharacteristic.count(),
+  )
+  if (!courseCharacteristicsResult.error) {
+    tables.push({
+      tableName: "courseCharacteristics",
+      rowCount: courseCharacteristicsResult.count,
+      status: courseCharacteristicsResult.count > 0 ? "Healthy" : "Waiting",
+      purpose: "Course difficulty ratings (USGA course/slope)",
+      expected: false,
+      lastUpdatedAt: courseCharacteristicsResult.count > 0 ? new Date().toISOString() : null,
+      healthScore: courseCharacteristicsResult.count > 0 ? 100 : 50,
+      explanation: courseCharacteristicsResult.count === 0 ? "Populated with course intelligence" : undefined,
+    })
+    totalRows += courseCharacteristicsResult.count
+  } else {
+    tables.push({
+      tableName: "courseCharacteristics",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Course difficulty ratings (USGA course/slope)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${courseCharacteristicsResult.error}`,
+    })
+  }
 
-  const dfsSalaries = await prisma.dfsSalary.count()
-  tables.push({
-    tableName: "dfsSalaries",
-    rowCount: dfsSalaries,
-    status: dfsSalaries > 0 ? "Healthy" : "Expected Empty",
-    purpose: "DraftKings salary data for upcoming tournaments",
-    expected: false,
-    lastUpdatedAt: dfsSalaries > 0 ? new Date().toISOString() : null,
-    healthScore: dfsSalaries > 0 ? 100 : 50,
-    explanation:
-      dfsSalaries === 0 ? "DraftKings releases salaries ~3 days before tournament start - expected before week" : undefined,
-  })
-  totalRows += dfsSalaries
+  // Weather data
+  const weatherSnapshotsResult = await safeCountTable("weatherSnapshots", () =>
+    prisma.weatherSnapshot.count(),
+  )
+  if (!weatherSnapshotsResult.error) {
+    tables.push({
+      tableName: "weatherSnapshots",
+      rowCount: weatherSnapshotsResult.count,
+      status: weatherSnapshotsResult.count > 0 ? "Healthy" : "Waiting",
+      purpose: "Weather forecast snapshots (one per tournament per day)",
+      expected: false,
+      lastUpdatedAt: weatherSnapshotsResult.count > 0 ? new Date().toISOString() : null,
+      healthScore: weatherSnapshotsResult.count > 0 ? 100 : 50,
+      explanation:
+        weatherSnapshotsResult.count === 0 ? "No tournaments within 6-day forecast window - expected off-season" : undefined,
+    })
+    totalRows += weatherSnapshotsResult.count
+  } else {
+    tables.push({
+      tableName: "weatherSnapshots",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Weather forecast snapshots (one per tournament per day)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${weatherSnapshotsResult.error}`,
+    })
+  }
+
+  const weatherPeriodsResult = await safeCountTable("weatherPeriods", () => prisma.weatherPeriod.count())
+  if (!weatherPeriodsResult.error) {
+    tables.push({
+      tableName: "weatherPeriods",
+      rowCount: weatherPeriodsResult.count,
+      status: weatherPeriodsResult.count > 0 ? "Healthy" : "Waiting",
+      purpose: "Individual weather periods (3-hour forecast blocks)",
+      expected: false,
+      lastUpdatedAt: weatherPeriodsResult.count > 0 ? new Date().toISOString() : null,
+      healthScore: weatherPeriodsResult.count > 0 ? 100 : 50,
+      explanation:
+        weatherPeriodsResult.count === 0
+          ? "Populated with weather snapshots when tournaments are in forecast window"
+          : undefined,
+    })
+    totalRows += weatherPeriodsResult.count
+  } else {
+    tables.push({
+      tableName: "weatherPeriods",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Individual weather periods (3-hour forecast blocks)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${weatherPeriodsResult.error}`,
+    })
+  }
+
+  // Phase 13.1: Normalized GolfCourseAPI Entities - with graceful degradation
+  const courseDetailsResult = await safeCountTable("courseDetails", () => prisma.courseDetails.count())
+  let courseDetailsCount = 0
+  if (!courseDetailsResult.error) {
+    courseDetailsCount = courseDetailsResult.count
+    tables.push({
+      tableName: "courseDetails",
+      rowCount: courseDetailsCount,
+      status: courseDetailsCount > 0 ? "Healthy" : "Waiting",
+      purpose: "GolfCourseAPI course details (anchor)",
+      expected: false,
+      lastUpdatedAt: courseDetailsCount > 0 ? new Date().toISOString() : null,
+      healthScore: courseDetailsCount > 0 ? 100 : 50,
+      explanation:
+        courseDetailsCount === 0
+          ? "Awaiting course intelligence import - run when courses are synced"
+          : undefined,
+    })
+    totalRows += courseDetailsCount
+  } else {
+    tables.push({
+      tableName: "courseDetails",
+      rowCount: 0,
+      status: "Waiting",
+      purpose: "GolfCourseAPI course details (anchor)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `Phase 13.1 tables not yet migrated: Run 'pnpm prisma migrate deploy'`,
+    })
+  }
+
+  const courseHolesResult = await safeCountTable("courseHoles", () => prisma.courseHole.count())
+  let courseHolesCount = 0
+  if (!courseHolesResult.error) {
+    courseHolesCount = courseHolesResult.count
+    const courseHolesBySplit = courseDetailsCount > 0 ? Math.floor(courseHolesCount / courseDetailsCount) : 0
+    const holesHealthy = courseHolesBySplit === 18
+    tables.push({
+      tableName: "courseHoles",
+      rowCount: courseHolesCount,
+      status: courseHolesCount > courseDetailsCount * 17 ? "Healthy" : "Waiting",
+      purpose: "Individual golf holes (1-18 per course)",
+      expected: false,
+      lastUpdatedAt: courseHolesCount > 0 ? new Date().toISOString() : null,
+      healthScore: holesHealthy ? 100 : 60,
+      explanation:
+        courseHolesCount === 0
+          ? "Populated with course details import"
+          : !holesHealthy
+            ? `${courseHolesBySplit} holes per course (expected 18)`
+            : undefined,
+    })
+    totalRows += courseHolesCount
+  } else {
+    tables.push({
+      tableName: "courseHoles",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Individual golf holes (1-18 per course)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${courseHolesResult.error}`,
+    })
+  }
+
+  const courseTeesResult = await safeCountTable("courseTees", () => prisma.courseTee.count())
+  let courseTeesCount = 0
+  if (!courseTeesResult.error) {
+    courseTeesCount = courseTeesResult.count
+    const courseTeesPerCourse = courseDetailsCount > 0 ? Math.floor(courseTeesCount / courseDetailsCount) : 0
+    tables.push({
+      tableName: "courseTees",
+      rowCount: courseTeesCount,
+      status: courseTeesCount > courseDetailsCount ? "Healthy" : "Waiting",
+      purpose: "Tee boxes per course (Blue, White, Red, etc.)",
+      expected: false,
+      lastUpdatedAt: courseTeesCount > 0 ? new Date().toISOString() : null,
+      healthScore: courseTeesCount > courseDetailsCount * 2 ? 100 : 60,
+      explanation:
+        courseTeesCount === 0 ? "Populated with course details import" : `${courseTeesPerCourse} tees per course avg`,
+    })
+    totalRows += courseTeesCount
+  } else {
+    tables.push({
+      tableName: "courseTees",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Tee boxes per course (Blue, White, Red, etc.)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${courseTeesResult.error}`,
+    })
+  }
+
+  const mappingsResult = await safeCountTable("tournamentCourseMappings", () =>
+    prisma.tournamentCourseMapping.count(),
+  )
+  if (!mappingsResult.error) {
+    let verifiedMappingsCount = 0
+    try {
+      verifiedMappingsCount = await prisma.tournamentCourseMapping.count({
+        where: { verified: true },
+      })
+    } catch {
+      verifiedMappingsCount = 0
+    }
+    const mappingScore = mappingsResult.count > 0 ? Math.floor((verifiedMappingsCount / mappingsResult.count) * 100) : 0
+    tables.push({
+      tableName: "tournamentCourseMappings",
+      rowCount: mappingsResult.count,
+      status: mappingsResult.count > 0 && mappingScore >= 80 ? "Healthy" : mappingsResult.count > 0 ? "Warning" : "Waiting",
+      purpose: "Tournament → GolfCourseAPI course mappings",
+      expected: false,
+      lastUpdatedAt: mappingsResult.count > 0 ? new Date().toISOString() : null,
+      healthScore: mappingScore,
+      explanation:
+        mappingsResult.count === 0
+          ? "No mappings yet - populate during tournament import"
+          : `${verifiedMappingsCount}/${mappingsResult.count} verified (${mappingScore}%)`,
+    })
+    totalRows += mappingsResult.count
+  } else {
+    tables.push({
+      tableName: "tournamentCourseMappings",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Tournament → GolfCourseAPI course mappings",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${mappingsResult.error}`,
+    })
+  }
+
+  const courseIntelligenceResult = await safeCountTable("courseIntelligence", () =>
+    prisma.courseIntelligence.count(),
+  )
+  if (!courseIntelligenceResult.error) {
+    tables.push({
+      tableName: "courseIntelligence",
+      rowCount: courseIntelligenceResult.count,
+      status:
+        courseIntelligenceResult.count === courseDetailsCount
+          ? "Healthy"
+          : courseIntelligenceResult.count > 0
+            ? "Warning"
+            : "Waiting",
+      purpose: "Calculated course metrics (difficulty, driving importance, etc.)",
+      expected: false,
+      lastUpdatedAt: courseIntelligenceResult.count > 0 ? new Date().toISOString() : null,
+      healthScore:
+        courseDetailsCount > 0 ? Math.floor((courseIntelligenceResult.count / courseDetailsCount) * 100) : 50,
+      explanation:
+        courseIntelligenceResult.count === 0
+          ? "Run course enrichment after importing courses"
+          : `${courseIntelligenceResult.count}/${courseDetailsCount} courses analyzed`,
+    })
+    totalRows += courseIntelligenceResult.count
+  } else {
+    tables.push({
+      tableName: "courseIntelligence",
+      rowCount: 0,
+      status: "Error",
+      purpose: "Calculated course metrics (difficulty, driving importance, etc.)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${courseIntelligenceResult.error}`,
+    })
+  }
+
+  // Phase 13.1: Normalized GolfCourseAPI Entities - Safe queries with fallback
+  const courseAddressesResult = await safeCountTable("courseAddresses", () => prisma.courseAddress.count())
+  if (!courseAddressesResult.error) {
+    tables.push({
+      tableName: "courseAddresses",
+      rowCount: courseAddressesResult.count,
+      status:
+        courseAddressesResult.count === courseDetailsCount
+          ? "Healthy"
+          : courseAddressesResult.count > 0
+            ? "Warning"
+            : "Waiting",
+      purpose: "Normalized addresses (city, state, country, phone, website)",
+      expected: false,
+      lastUpdatedAt: courseAddressesResult.count > 0 ? new Date().toISOString() : null,
+      healthScore:
+        courseDetailsCount > 0 ? Math.floor((courseAddressesResult.count / courseDetailsCount) * 100) : 50,
+      explanation:
+        courseAddressesResult.count === 0
+          ? "Awaiting course import"
+          : `${courseAddressesResult.count}/${courseDetailsCount} courses with address data`,
+    })
+    totalRows += courseAddressesResult.count
+  } else {
+    tables.push({
+      tableName: "courseAddresses",
+      rowCount: 0,
+      status: "Waiting",
+      purpose: "Normalized addresses (city, state, country, phone, website)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: "Phase 13.1: Run 'pnpm prisma migrate deploy'",
+    })
+  }
+
+  const courseCoordinatesResult = await safeCountTable("courseCoordinates", () =>
+    prisma.courseCoordinates.count(),
+  )
+  if (!courseCoordinatesResult.error) {
+    tables.push({
+      tableName: "courseCoordinates",
+      rowCount: courseCoordinatesResult.count,
+      status:
+        courseCoordinatesResult.count === courseDetailsCount
+          ? "Healthy"
+          : courseCoordinatesResult.count > 0
+            ? "Warning"
+            : "Waiting",
+      purpose: "Normalized GPS coordinates (latitude, longitude, elevation)",
+      expected: false,
+      lastUpdatedAt: courseCoordinatesResult.count > 0 ? new Date().toISOString() : null,
+      healthScore:
+        courseDetailsCount > 0 ? Math.floor((courseCoordinatesResult.count / courseDetailsCount) * 100) : 50,
+      explanation:
+        courseCoordinatesResult.count === 0
+          ? "Awaiting course import"
+          : `${courseCoordinatesResult.count}/${courseDetailsCount} courses with coordinates`,
+    })
+    totalRows += courseCoordinatesResult.count
+  } else {
+    tables.push({
+      tableName: "courseCoordinates",
+      rowCount: 0,
+      status: "Waiting",
+      purpose: "Normalized GPS coordinates (latitude, longitude, elevation)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: "Phase 13.1: Run 'pnpm prisma migrate deploy'",
+    })
+  }
+
+  const courseSpecificationsResult = await safeCountTable("courseSpecifications", () =>
+    prisma.courseSpecifications.count(),
+  )
+  if (!courseSpecificationsResult.error) {
+    tables.push({
+      tableName: "courseSpecifications",
+      rowCount: courseSpecificationsResult.count,
+      status:
+        courseSpecificationsResult.count === courseDetailsCount
+          ? "Healthy"
+          : courseSpecificationsResult.count > 0
+            ? "Warning"
+            : "Waiting",
+      purpose: "Normalized specs (par, yardage, USGA rating, slope)",
+      expected: false,
+      lastUpdatedAt: courseSpecificationsResult.count > 0 ? new Date().toISOString() : null,
+      healthScore:
+        courseDetailsCount > 0 ? Math.floor((courseSpecificationsResult.count / courseDetailsCount) * 100) : 50,
+      explanation:
+        courseSpecificationsResult.count === 0
+          ? "Awaiting course import"
+          : `${courseSpecificationsResult.count}/${courseDetailsCount} courses with specs`,
+    })
+    totalRows += courseSpecificationsResult.count
+  } else {
+    tables.push({
+      tableName: "courseSpecifications",
+      rowCount: 0,
+      status: "Waiting",
+      purpose: "Normalized specs (par, yardage, USGA rating, slope)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: "Phase 13.1: Run 'pnpm prisma migrate deploy'",
+    })
+  }
+
+  const courseMetadataResult = await safeCountTable("courseMetadata", () => prisma.courseMetadata.count())
+  if (!courseMetadataResult.error) {
+    tables.push({
+      tableName: "courseMetadata",
+      rowCount: courseMetadataResult.count,
+      status:
+        courseMetadataResult.count === courseDetailsCount
+          ? "Healthy"
+          : courseMetadataResult.count > 0
+            ? "Warning"
+            : "Waiting",
+      purpose: "Normalized metadata (architect, year built, style, facilities)",
+      expected: false,
+      lastUpdatedAt: courseMetadataResult.count > 0 ? new Date().toISOString() : null,
+      healthScore:
+        courseDetailsCount > 0 ? Math.floor((courseMetadataResult.count / courseDetailsCount) * 100) : 50,
+      explanation:
+        courseMetadataResult.count === 0
+          ? "Awaiting course import"
+          : `${courseMetadataResult.count}/${courseDetailsCount} courses with metadata`,
+    })
+    totalRows += courseMetadataResult.count
+  } else {
+    tables.push({
+      tableName: "courseMetadata",
+      rowCount: 0,
+      status: "Waiting",
+      purpose: "Normalized metadata (architect, year built, style, facilities)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: "Phase 13.1: Run 'pnpm prisma migrate deploy'",
+    })
+  }
+
+  const playingConditionsResult = await safeCountTable("playingConditions", () =>
+    prisma.playingConditions.count(),
+  )
+  if (!playingConditionsResult.error) {
+    tables.push({
+      tableName: "playingConditions",
+      rowCount: playingConditionsResult.count,
+      status: playingConditionsResult.count > 0 ? "Healthy" : "Waiting",
+      purpose: "Playing conditions (grass types, green conditions, historical)",
+      expected: false,
+      lastUpdatedAt: playingConditionsResult.count > 0 ? new Date().toISOString() : null,
+      healthScore: playingConditionsResult.count > 0 ? 100 : 50,
+      explanation:
+        playingConditionsResult.count === 0
+          ? "Awaiting course import"
+          : `${playingConditionsResult.count} condition records (may be multiple per course)`,
+    })
+    totalRows += playingConditionsResult.count
+  } else {
+    tables.push({
+      tableName: "playingConditions",
+      rowCount: 0,
+      status: "Waiting",
+      purpose: "Playing conditions (grass types, green conditions, historical)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: "Phase 13.1: Run 'pnpm prisma migrate deploy'",
+    })
+  }
+
+  const teeHoleYardagesResult = await safeCountTable("teeHoleYardages", () => prisma.teeHoleYardage.count())
+  if (!teeHoleYardagesResult.error) {
+    const expectedYardages = Math.max(courseHolesCount * (courseTeesCount / (courseDetailsCount || 1)), 1)
+    tables.push({
+      tableName: "teeHoleYardages",
+      rowCount: teeHoleYardagesResult.count,
+      status:
+        teeHoleYardagesResult.count > expectedYardages
+          ? "Healthy"
+          : teeHoleYardagesResult.count > 0
+            ? "Warning"
+            : "Waiting",
+      purpose: "Per-tee per-hole yardages (matrix: tees × holes)",
+      expected: false,
+      lastUpdatedAt: teeHoleYardagesResult.count > 0 ? new Date().toISOString() : null,
+      healthScore:
+        expectedYardages > 0 ? Math.floor((teeHoleYardagesResult.count / expectedYardages) * 100) : 50,
+      explanation:
+        teeHoleYardagesResult.count === 0
+          ? "Awaiting course import"
+          : `${teeHoleYardagesResult.count}/${Math.round(expectedYardages)} yardage records`,
+    })
+    totalRows += teeHoleYardagesResult.count
+  } else {
+    tables.push({
+      tableName: "teeHoleYardages",
+      rowCount: 0,
+      status: "Waiting",
+      purpose: "Per-tee per-hole yardages (matrix: tees × holes)",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: "Phase 13.1: Run 'pnpm prisma migrate deploy'",
+    })
+  }
+
+  const dfsSalariesResult = await safeCountTable("dfsSalaries", () => prisma.dfsSalary.count())
+  if (!dfsSalariesResult.error) {
+    tables.push({
+      tableName: "dfsSalaries",
+      rowCount: dfsSalariesResult.count,
+      status: dfsSalariesResult.count > 0 ? "Healthy" : "Expected Empty",
+      purpose: "DraftKings salary data for upcoming tournaments",
+      expected: false,
+      lastUpdatedAt: dfsSalariesResult.count > 0 ? new Date().toISOString() : null,
+      healthScore: dfsSalariesResult.count > 0 ? 100 : 50,
+      explanation:
+        dfsSalariesResult.count === 0
+          ? "DraftKings releases salaries ~3 days before tournament start - expected before week"
+          : undefined,
+    })
+    totalRows += dfsSalariesResult.count
+  } else {
+    tables.push({
+      tableName: "dfsSalaries",
+      rowCount: 0,
+      status: "Error",
+      purpose: "DraftKings salary data for upcoming tournaments",
+      expected: false,
+      lastUpdatedAt: null,
+      healthScore: 0,
+      explanation: `⚠ Failed to load: ${dfsSalariesResult.error}`,
+    })
+  }
 
   return { tables, totalRows }
 }
@@ -455,10 +1029,11 @@ async function getDatabaseKpis(): Promise<DatabaseKpis> {
 }
 
 /**
- * Generate the complete database health report.
+ * Generate the complete database health report with graceful degradation.
  */
 export async function getDatabaseHealthReport(): Promise<DatabaseHealthReport> {
-  const generatedAt = new Date().toISOString()
+  console.log("[v0] [DatabaseHealth] === Starting database health check ===")
+  const startTime = Date.now()
 
   const [{ tables, totalRows }, pipelines, warnings, kpis] = await Promise.all([
     getTableMetrics(),
@@ -467,11 +1042,14 @@ export async function getDatabaseHealthReport(): Promise<DatabaseHealthReport> {
     getDatabaseKpis(),
   ])
 
+  const duration = Date.now() - startTime
+  console.log(`[v0] [DatabaseHealth] === Completed in ${duration}ms ===`)
+
   const healthPercentage = calculateHealthPercentage(tables, pipelines, warnings)
   const overallStatus = determineOverallStatus(healthPercentage, warnings.filter((w) => w.severity === "critical").length)
 
   return {
-    generatedAt,
+    generatedAt: new Date().toISOString(),
     overallStatus,
     healthPercentage,
     kpis: { ...kpis, totalRows },

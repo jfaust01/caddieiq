@@ -13,14 +13,19 @@ export function ImportHistoricalResults() {
   const [showStackTrace, setShowStackTrace] = useState(false)
 
   async function handleImport() {
+    console.log("[v0] Frontend: Import started")
     setIsLoading(true)
     setResult(null)
     setShowStackTrace(false)
 
     try {
+      console.log("[v0] Frontend: Calling importHistoricalResultsAction()")
       const res = await importHistoricalResultsAction()
+      console.log("[v0] Frontend: Response received from action", res)
       setResult(res)
+      console.log("[v0] Frontend: Result state updated, setting isLoading=false")
     } catch (error) {
+      console.error("[v0] Frontend: Caught exception in handleImport", error)
       const message = error instanceof Error ? error.message : "Unknown error"
       const stack = error instanceof Error ? error.stack : undefined
       setResult({
@@ -29,6 +34,7 @@ export function ImportHistoricalResults() {
         stack,
       })
     } finally {
+      console.log("[v0] Frontend: Cleared loading state (isLoading=false)")
       setIsLoading(false)
     }
   }

@@ -71,6 +71,9 @@ export async function importHistoricalResults(
   prisma: PrismaClient = prismaClient,
 ): Promise<HistoricalResultsImportSummary> {
   try {
+    const startTime = Date.now()
+    console.log("[v0] Importer: Historical Results Import starting")
+    
     // Support both old API (provider as second param) and new API (options as first param)
     let provider: SportsDataProvider
     let options: HistoricalResultsImportOptions = {}
@@ -83,8 +86,6 @@ export async function importHistoricalResults(
     } else {
       provider = SportsDataProvider.fromEnv()
     }
-
-    const startTime = Date.now()
     const logger = createImportLogger()
     const roundRepo = getRoundRepository(prisma)
     const playerRoundRepo = getPlayerRoundRepository(prisma)
@@ -579,7 +580,7 @@ export async function importHistoricalResults(
     })
   }
     console.log(`[v0] ═════════════════════════════════════════════════════════════\n`)
-
+    console.log(`[v0] Importer: Import finished, returning summary`)
     return summary
   } catch (runtimeError) {
     // Catch-all for runtime errors with complete stack trace
