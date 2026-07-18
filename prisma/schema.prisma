@@ -96,6 +96,15 @@ enum TournamentStatus {
   CANCELED
 }
 
+enum MappingVerificationStatus {
+  /// Awaiting manual admin review
+  PENDING_REVIEW
+  /// Verified and eligible for import
+  VERIFIED
+  /// Rejected and should not be imported
+  REJECTED
+}
+
 enum TournamentFormat {
   STROKE_PLAY
   MATCH_PLAY
@@ -1514,10 +1523,14 @@ model TournamentCourseMapping {
   confidenceReason        String?
   /// How the match was determined (e.g., "manual", "auto-matched", "search")
   matchedBy               String?   @default("auto-matched")
-  /// Admin verification status - defaults to false pending review
+  /// Verification status: PENDING_REVIEW → needs manual verification, VERIFIED → ready for import, REJECTED → should not be imported
+  verificationStatus      MappingVerificationStatus @default(PENDING_REVIEW)
+  /// Legacy field for importer compatibility - maps verificationStatus to boolean
   verified                Boolean   @default(false)
   /// Auto-verified when confidence >= 95%, set by migration or confidence algorithm
   autoVerified            Boolean   @default(false)
+  /// Notes for why mapping was rejected
+  rejectionReason         String?
   
   /// Audit timestamps
   lastSyncedAt            DateTime?

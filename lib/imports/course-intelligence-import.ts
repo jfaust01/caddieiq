@@ -158,9 +158,9 @@ export async function importCourseIntelligence(
       })
     }
 
-    // STEP 3: Apply the verified filter (this is where records disappear)
-    console.log(`\n[v0] STEP 3: Apply findVerified() filter`)
-    console.log(`[v0]   Filter applied: WHERE verified = true`)
+    // STEP 3: Apply the verified filter (supports both legacy verified boolean and new verificationStatus enum)
+    console.log(`\n[v0] STEP 3: Apply verified filter (legacy boolean OR new status enum)`)
+    console.log(`[v0]   Filter applied: WHERE verified = true OR verificationStatus = 'VERIFIED'`)
     const mappingsResult = await mappingRepo.findVerified()
     console.log(`[v0]   Records AFTER filter: ${mappingsResult.records?.length ?? 0}`)
     console.log(`[v0]   Outcome: ${mappingsResult.outcome}`)

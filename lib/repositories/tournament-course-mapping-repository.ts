@@ -23,6 +23,8 @@ interface MappingInput {
   matchedBy?: string
   verified?: boolean
   autoVerified?: boolean
+  verificationStatus?: "PENDING_REVIEW" | "VERIFIED" | "REJECTED"
+  rejectionReason?: string
   lastSyncedAt?: Date
 }
 
@@ -239,11 +241,17 @@ export class TournamentCourseMappingRepository extends BaseRepository {
 
   /**
    * Find all verified mappings (ready for import).
+   * Checks both legacy verified boolean and new verificationStatus enum for compatibility.
    */
   async findVerified(): Promise<RepositoryResult<TournamentCourseMapping[]>> {
     try {
       const mappings = await this.prisma.tournamentCourseMapping.findMany({
-        where: { verified: true },
+        where: {
+          OR: [
+            { verified: true }, // Legacy field for backwards compatibility
+            { verificationStatus: "VERIFIED" }, // New status enum
+          ],
+        },
         orderBy: { createdAt: "asc" },
       })
       return ok(mappings)
@@ -374,6 +382,250 @@ export class TournamentCourseMappingRepository extends BaseRepository {
     } catch (error) {
       const repoError = toRepositoryError(error)
       this.logger.failure("confidence-statistics", repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Find all mappings pending manual review.
+   * Returns confidence < 95 that have not been verified or rejected.
+   */
+  async findPendingReview(): Promise<RepositoryResult<TournamentCourseMapping[]>> {
+    try {
+      const mappings = await this.prisma.tournamentCourseMapping.findMany({
+        where: {
+          verificationStatus: "PENDING_REVIEW",
+        },
+        orderBy: [{ matchConfidence: "asc" }, { createdAt: "asc" }],
+      })
+      return ok(mappings)
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure("pending-review-mappings", repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Find all rejected mappings.
+   */
+  async findRejected(): Promise<RepositoryResult<TournamentCourseMapping[]>> {
+    try {
+      const mappings = await this.prisma.tournamentCourseMapping.findMany({
+        where: {
+          verificationStatus: "REJECTED",
+        },
+        orderBy: { createdAt: "desc" },
+      })
+      return ok(mappings)
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure("rejected-mappings", repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Verify a single mapping by setting status to VERIFIED.
+   */
+  async verifyMapping(tournamentId: string): Promise<RepositoryResult<TournamentCourseMapping>> {
+    try {
+      const mapping = await this.prisma.tournamentCourseMapping.update({
+        where: { tournamentId },
+        data: {
+          verificationStatus: "VERIFIED",
+          verified: true, // Legacy field for importer compatibility
+          rejectionReason: null, // Clear any previous rejection reason
+          updatedAt: new Date(),
+        },
+      })
+      return ok(mapping)
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure(`verify-${tournamentId}`, repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Reject a mapping by setting status to REJECTED with optional reason.
+   */
+  async rejectMapping(
+    tournamentId: string,
+    reason?: string,
+  ): Promise<RepositoryResult<TournamentCourseMapping>> {
+    try {
+      const mapping = await this.prisma.tournamentCourseMapping.update({
+        where: { tournamentId },
+        data: {
+          verificationStatus: "REJECTED",
+          verified: false, // Prevent importer from processing
+          rejectionReason: reason,
+          updatedAt: new Date(),
+        },
+      })
+      return ok(mapping)
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure(`reject-${tournamentId}`, repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Mark a mapping for re-searching.
+   * Returns it to PENDING_REVIEW status and clears verification data.
+   */
+  async markForReSearch(tournamentId: string): Promise<RepositoryResult<TournamentCourseMapping>> {
+    try {
+      const mapping = await this.prisma.tournamentCourseMapping.update({
+        where: { tournamentId },
+        data: {
+          verificationStatus: "PENDING_REVIEW",
+          verified: false,
+          autoVerified: false,
+          rejectionReason: "Marked for re-search",
+          matchConfidence: 0,
+          confidenceReason: "Awaiting re-search",
+          updatedAt: new Date(),
+        },
+      })
+      return ok(mapping)
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure(`research-${tournamentId}`, repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Bulk verify multiple mappings.
+   */
+  async bulkVerify(tournamentIds: string[]): Promise<RepositoryResult<number>> {
+    try {
+      const result = await this.prisma.tournamentCourseMapping.updateMany({
+        where: { tournamentId: { in: tournamentIds } },
+        data: {
+          verificationStatus: "VERIFIED",
+          verified: true,
+          rejectionReason: null,
+          updatedAt: new Date(),
+        },
+      })
+      return ok(result.count)
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure("bulk-verify", repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Bulk reject multiple mappings.
+   */
+  async bulkReject(
+    tournamentIds: string[],
+    reason?: string,
+  ): Promise<RepositoryResult<number>> {
+    try {
+      const result = await this.prisma.tournamentCourseMapping.updateMany({
+        where: { tournamentId: { in: tournamentIds } },
+        data: {
+          verificationStatus: "REJECTED",
+          verified: false,
+          rejectionReason: reason,
+          updatedAt: new Date(),
+        },
+      })
+      return ok(result.count)
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure("bulk-reject", repoError.message, { code: repoError.code })
+      return fail(repoError)
+    }
+  }
+
+  /**
+   * Get comprehensive verification statistics.
+   */
+  async getVerificationStatistics(): Promise<
+    RepositoryResult<{
+      totalMappings: number
+      verifiedCount: number
+      pendingReviewCount: number
+      rejectedCount: number
+      averageConfidence: number
+      confidenceDistribution: {
+        veryHigh: number // 95-100
+        high: number // 80-94
+        medium: number // 60-79
+        low: number // 40-59
+        veryLow: number // 0-39
+      }
+    }>
+  > {
+    try {
+      const stats = await this.prisma.$queryRaw<
+        Array<{
+          total: number
+          verified: number
+          pending: number
+          rejected: number
+          avg_confidence: number
+        }>
+      >`
+        SELECT
+          COUNT(*) as total,
+          SUM(CASE WHEN "verificationStatus" = 'VERIFIED' THEN 1 ELSE 0 END) as verified,
+          SUM(CASE WHEN "verificationStatus" = 'PENDING_REVIEW' THEN 1 ELSE 0 END) as pending,
+          SUM(CASE WHEN "verificationStatus" = 'REJECTED' THEN 1 ELSE 0 END) as rejected,
+          ROUND(AVG(CAST("matchConfidence" AS FLOAT)), 2) as avg_confidence
+        FROM "tournament_course_mappings"
+      `
+
+      const distribution = await this.prisma.$queryRaw<
+        Array<{
+          range: string
+          count: number
+        }>
+      >`
+        SELECT
+          CASE
+            WHEN "matchConfidence" >= 95 THEN 'veryHigh'
+            WHEN "matchConfidence" >= 80 THEN 'high'
+            WHEN "matchConfidence" >= 60 THEN 'medium'
+            WHEN "matchConfidence" >= 40 THEN 'low'
+            ELSE 'veryLow'
+          END as range,
+          COUNT(*) as count
+        FROM "tournament_course_mappings"
+        GROUP BY range
+      `
+
+      const [statRow] = stats
+      const dist = {
+        veryHigh: 0,
+        high: 0,
+        medium: 0,
+        low: 0,
+        veryLow: 0,
+      }
+
+      for (const d of distribution) {
+        dist[d.range as keyof typeof dist] = d.count
+      }
+
+      return ok({
+        totalMappings: statRow.total || 0,
+        verifiedCount: statRow.verified || 0,
+        pendingReviewCount: statRow.pending || 0,
+        rejectedCount: statRow.rejected || 0,
+        averageConfidence: statRow.avg_confidence || 0,
+        confidenceDistribution: dist,
+      })
+    } catch (error) {
+      const repoError = toRepositoryError(error)
+      this.logger.failure("verification-statistics", repoError.message, { code: repoError.code })
       return fail(repoError)
     }
   }
