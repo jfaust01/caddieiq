@@ -137,7 +137,11 @@ export class PlayerRoundRepository extends BaseRepository {
   async getByRound(roundId: string): Promise<PlayerRoundRecord[]> {
     return this.prisma.playerRound.findMany({
       where: { roundId },
-      include: { tournamentField: true },
+      include: {
+        tournamentField: {
+          include: { player: true },
+        },
+      },
     })
   }
 }
