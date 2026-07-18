@@ -70,7 +70,10 @@ export interface BulkItemError {
 }
 
 /** Build a single-record success result. */
-export function ok<T>(record: T, outcome: Exclude<RepositoryOutcome, "failed">): RepositoryResult<T> {
+export function ok<T>(
+  record: T,
+  outcome: Exclude<RepositoryOutcome, "failed"> = "updated"
+): RepositoryResult<T> {
   return { outcome, record }
 }
 

@@ -254,9 +254,11 @@ export class TournamentCourseMappingRepository extends BaseRepository {
         },
         orderBy: { createdAt: "asc" },
       })
+      console.log(`[v0] findVerified() repository method result: ${mappings.length} records`)
       return ok(mappings)
     } catch (error) {
       const repoError = toRepositoryError(error)
+      console.log(`[v0] findVerified() repository method ERROR: ${repoError.message}`)
       this.logger.failure("verified-mappings", repoError.message, { code: repoError.code })
       return fail(repoError)
     }

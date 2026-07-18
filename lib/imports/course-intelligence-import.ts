@@ -164,6 +164,7 @@ export async function importCourseIntelligence(
     const mappingsResult = await mappingRepo.findVerified()
     console.log(`[v0]   Records AFTER filter: ${mappingsResult.records?.length ?? 0}`)
     console.log(`[v0]   Outcome: ${mappingsResult.outcome}`)
+    console.log(`[v0]   Entire result object: ${JSON.stringify({outcome: mappingsResult.outcome, hasRecords: !!mappingsResult.records, recordsIsArray: Array.isArray(mappingsResult.records), length: mappingsResult.records?.length, firstRecord: mappingsResult.records?.[0] ? {tournamentId: mappingsResult.records[0].tournamentId} : null})}`)
 
     if (mappingsResult.records && mappingsResult.records.length > 0) {
       console.log(`[v0]   First 5 verified records returned:`)
@@ -219,7 +220,7 @@ export async function importCourseIntelligence(
       }
     }
 
-    const mappings = mappingsResult.records
+    const mappings = mappingsResult.record
     coursesConsidered = mappings.length
     coursesMatched = mappings.length
 
