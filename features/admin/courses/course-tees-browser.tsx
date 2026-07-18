@@ -262,7 +262,7 @@ export function CourseTeesBrowser() {
                       </div>
                       <div className="flex justify-between">
                         <p className="text-muted-foreground">Avg Par per Hole</p>
-                        <p className="font-medium">{(selectedTee.course.par ? selectedTee.course.par / 1 : "?").toFixed(1)}</p>
+                        <p className="font-medium">{selectedTee.course.par ? (selectedTee.course.par / 18).toFixed(1) : "?"}</p>
                       </div>
                       <div className="flex justify-between">
                         <p className="text-muted-foreground">Difficulty</p>
