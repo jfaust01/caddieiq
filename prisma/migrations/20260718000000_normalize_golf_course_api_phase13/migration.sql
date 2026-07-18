@@ -1,7 +1,41 @@
 -- Phase 13.1: Normalize GolfCourseAPI entities into separate relational tables
 
+-- Create CourseHole table (1:M with CourseDetails)
+CREATE TABLE IF NOT EXISTS "course_holes" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "courseId" TEXT NOT NULL,
+  "holeNumber" INTEGER NOT NULL,
+  "par" INTEGER,
+  "yardage" INTEGER,
+  "handicap" INTEGER,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "course_holes_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "course_details" ("id") ON DELETE CASCADE,
+  CONSTRAINT "course_holes_courseId_holeNumber_key" UNIQUE ("courseId", "holeNumber")
+);
+
+CREATE INDEX "course_holes_courseId_idx" ON "course_holes"("courseId");
+
+-- Create CourseTee table (1:M with CourseDetails)
+CREATE TABLE IF NOT EXISTS "course_tees" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "courseId" TEXT NOT NULL,
+  "teeName" TEXT NOT NULL,
+  "teeColor" TEXT,
+  "gender" TEXT,
+  "yardage" INTEGER,
+  "rating" DOUBLE PRECISION,
+  "slope" INTEGER,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "course_tees_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "course_details" ("id") ON DELETE CASCADE,
+  CONSTRAINT "course_tees_courseId_teeName_key" UNIQUE ("courseId", "teeName")
+);
+
+CREATE INDEX "course_tees_courseId_idx" ON "course_tees"("courseId");
+
 -- Create CourseAddress table (1:1 with CourseDetails)
-CREATE TABLE "course_addresses" (
+CREATE TABLE IF NOT EXISTS "course_addresses" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "courseId" TEXT NOT NULL UNIQUE,
   "city" TEXT,
@@ -18,7 +52,7 @@ CREATE TABLE "course_addresses" (
 CREATE INDEX "course_addresses_courseId_idx" ON "course_addresses"("courseId");
 
 -- Create CourseCoordinates table (1:1 with CourseDetails)
-CREATE TABLE "course_coordinates" (
+CREATE TABLE IF NOT EXISTS "course_coordinates" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "courseId" TEXT NOT NULL UNIQUE,
   "latitude" DOUBLE PRECISION,
@@ -33,7 +67,7 @@ CREATE INDEX "course_coordinates_courseId_idx" ON "course_coordinates"("courseId
 CREATE INDEX "course_coordinates_latitude_longitude_idx" ON "course_coordinates"("latitude", "longitude");
 
 -- Create CourseSpecifications table (1:1 with CourseDetails)
-CREATE TABLE "course_specifications" (
+CREATE TABLE IF NOT EXISTS "course_specifications" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "courseId" TEXT NOT NULL UNIQUE,
   "par" INTEGER,
@@ -48,7 +82,7 @@ CREATE TABLE "course_specifications" (
 CREATE INDEX "course_specifications_courseId_idx" ON "course_specifications"("courseId");
 
 -- Create CourseMetadata table (1:1 with CourseDetails)
-CREATE TABLE "course_metadata" (
+CREATE TABLE IF NOT EXISTS "course_metadata" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "courseId" TEXT NOT NULL UNIQUE,
   "architect" TEXT,
@@ -65,7 +99,7 @@ CREATE TABLE "course_metadata" (
 CREATE INDEX "course_metadata_courseId_idx" ON "course_metadata"("courseId");
 
 -- Create PlayingConditions table (1:M with CourseDetails)
-CREATE TABLE "playing_conditions" (
+CREATE TABLE IF NOT EXISTS "playing_conditions" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "courseId" TEXT NOT NULL,
   "grassTypeFairway" TEXT,
@@ -82,7 +116,7 @@ CREATE INDEX "playing_conditions_courseId_idx" ON "playing_conditions"("courseId
 CREATE INDEX "playing_conditions_courseId_observedAt_idx" ON "playing_conditions"("courseId", "observedAt");
 
 -- Create TeeHoleYardage table (many-to-many: tees × holes)
-CREATE TABLE "tee_hole_yardages" (
+CREATE TABLE IF NOT EXISTS "tee_hole_yardages" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "teeId" TEXT NOT NULL,
   "holeId" TEXT NOT NULL,
