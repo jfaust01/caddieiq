@@ -1510,7 +1510,7 @@ model TournamentCourseMapping {
   /// Course ID from SportsDataIO tournament data
   sportsDataIoCourseId    String?
   /// Course ID from GolfCourse API - the authoritative source
-  golfCourseApiCourseId   Int
+  golfCourseApiCourseId   Int?
   
   /// Display names for reference
   tournamentCourseName    String?
