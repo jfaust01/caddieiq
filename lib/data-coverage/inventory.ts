@@ -4,7 +4,9 @@ import type {
   PlatformInventorySummary,
   TableHealth,
   TableOwner,
+  DataProvider,
 } from "./types"
+import { getProviderForTable } from "./provider-config"
 
 /**
  * The static classification of every database table — the single source of
@@ -476,6 +478,7 @@ export function buildPlatformInventory(
   const entries: PlatformInventoryEntry[] = REGISTRY.map((entry) => {
     const rowCount = counts[entry.table] ?? 0
     const health = resolveHealth(entry, rowCount)
+    const provider = getProviderForTable(entry.table)
     summary[BUCKET_KEY[health]] += 1
     summary.total += 1
     return {
@@ -483,6 +486,7 @@ export function buildPlatformInventory(
       label: entry.label,
       purpose: entry.purpose,
       owner: entry.owner,
+      provider,
       populationMethod: entry.populationMethod,
       dependencies: entry.dependencies,
       expectedState: entry.expectedState,
