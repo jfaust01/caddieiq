@@ -38,6 +38,30 @@ export class TournamentCourseMappingRepository extends BaseRepository {
   }
 
   /**
+   * Validate that a mapping can be marked as verified.
+   * Mappings must have a valid golfCourseApiCourseId and positive matchConfidence to be verified.
+   */
+  private validateVerificationEligibility(input: Partial<MappingInput>): string | null {
+    // Only validate if explicitly setting verified to true
+    if (input.verified !== true) {
+      return null
+    }
+
+    // Must have a valid golfCourseApiCourseId (> 0, not null)
+    if (!input.golfCourseApiCourseId || input.golfCourseApiCourseId <= 0) {
+      return `Cannot verify mapping: golfCourseApiCourseId must be > 0, got ${input.golfCourseApiCourseId}`
+    }
+
+    // Must have positive matchConfidence
+    const confidence = input.matchConfidence ?? 0
+    if (confidence <= 0) {
+      return `Cannot verify mapping: matchConfidence must be > 0, got ${confidence}`
+    }
+
+    return null
+  }
+
+  /**
    * Find mapping by tournament ID.
    */
   async findByTournamentId(tournamentId: string): Promise<RepositoryResult<TournamentCourseMapping | null>> {
@@ -94,6 +118,15 @@ export class TournamentCourseMappingRepository extends BaseRepository {
    */
   async create(input: MappingInput): Promise<RepositoryResult<TournamentCourseMapping>> {
     try {
+      // Validate state before persisting
+      const validationError = this.validateVerificationEligibility(input)
+      if (validationError) {
+        return fail({
+          code: "INVALID_STATE",
+          message: validationError,
+        })
+      }
+
       const mapping = await this.prisma.tournamentCourseMapping.create({
         data: {
           tournamentId: input.tournamentId,
@@ -122,6 +155,34 @@ export class TournamentCourseMappingRepository extends BaseRepository {
    */
   async update(tournamentId: string, input: Partial<MappingInput>): Promise<RepositoryResult<TournamentCourseMapping>> {
     try {
+      // If updating verified state, validate eligibility
+      if (input.verified === true) {
+        // Need to fetch current mapping to validate with current values
+        const currentMapping = await this.prisma.tournamentCourseMapping.findUnique({
+          where: { tournamentId },
+        })
+        if (!currentMapping) {
+          return fail({
+            code: "NOT_FOUND",
+            message: `Mapping not found for tournament ${tournamentId}`,
+          })
+        }
+
+        // Validate with merged current + input values
+        const mergedInput = {
+          golfCourseApiCourseId: input.golfCourseApiCourseId ?? currentMapping.golfCourseApiCourseId,
+          matchConfidence: input.matchConfidence ?? currentMapping.matchConfidence,
+          verified: input.verified,
+        }
+        const validationError = this.validateVerificationEligibility(mergedInput)
+        if (validationError) {
+          return fail({
+            code: "INVALID_STATE",
+            message: validationError,
+          })
+        }
+      }
+
       const mapping = await this.prisma.tournamentCourseMapping.update({
         where: { tournamentId },
         data: {
@@ -503,6 +564,28 @@ export class TournamentCourseMappingRepository extends BaseRepository {
    */
   async bulkVerify(tournamentIds: string[]): Promise<RepositoryResult<number>> {
     try {
+      // NEW: Validate all mappings are eligible for verification
+      const mappings = await this.prisma.tournamentCourseMapping.findMany({
+        where: { tournamentId: { in: tournamentIds } },
+        select: { tournamentId, golfCourseApiCourseId, matchConfidence, verified },
+      })
+
+      // Check each mapping has valid state for verification
+      for (const mapping of mappings) {
+        if (!mapping.golfCourseApiCourseId || mapping.golfCourseApiCourseId <= 0) {
+          return fail({
+            code: "INVALID_STATE",
+            message: `Cannot verify: mapping ${mapping.tournamentId} has invalid golfCourseApiCourseId (${mapping.golfCourseApiCourseId})`,
+          })
+        }
+        if (mapping.matchConfidence <= 0) {
+          return fail({
+            code: "INVALID_CONFIDENCE",
+            message: `Cannot verify: mapping ${mapping.tournamentId} has insufficient confidence score (${mapping.matchConfidence})`,
+          })
+        }
+      }
+
       const result = await this.prisma.tournamentCourseMapping.updateMany({
         where: { tournamentId: { in: tournamentIds } },
         data: {
