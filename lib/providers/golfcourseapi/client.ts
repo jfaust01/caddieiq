@@ -93,7 +93,7 @@ export class GolfCourseAPIClient {
    */
   async searchCourses(query: string): Promise<GolfCourseSearchResult[]> {
     const url = `${this.baseUrl}/search`
-    const params = new URLSearchParams({ q: query })
+    const params = new URLSearchParams({ search_query: query })
 
     const response = await this.fetchWithRetry(`${url}?${params}`, {
       method: "GET",
