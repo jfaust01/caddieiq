@@ -92,15 +92,17 @@ export class GolfCourseAPIClient {
    * Search for courses by name, location, or other criteria.
    */
   async searchCourses(query: string): Promise<GolfCourseSearchResult[]> {
-    const url = `${this.baseUrl}/courses/search`
-    const params = new URLSearchParams({ q: query })
+    const url = `${this.baseUrl}/search`
+    const params = new URLSearchParams({ search_query: query })
 
     const response = await this.fetchWithRetry(`${url}?${params}`, {
       method: "GET",
       headers: this.getHeaders(),
     })
 
-    return response.data || []
+    // API returns { courses: [...] }, extract the array
+    const data = response.data as { courses?: GolfCourseSearchResult[] }
+    return data?.courses || []
   }
 
   /**
