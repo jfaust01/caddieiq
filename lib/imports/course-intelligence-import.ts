@@ -122,12 +122,11 @@ export async function importCourseIntelligence(
 
   try {
     // =========================================================================
-    // Fetch verified mappings (throws RepositoryError on database failure)
-    let mappings: TournamentCourseMapping[]
-    try {
-      mappings = await mappingRepo.findVerified()
-    } catch (error) {
-      logger.error("Failed to fetch verified mappings", { error: String(error) })
+    // Fetch verified mappings
+    const mappingsResult = await mappingRepo.findVerified()
+    
+    if (mappingsResult.outcome === "failed" || mappingsResult.error) {
+      logger.error("Failed to fetch verified mappings", { error: mappingsResult.error?.message })
       const finishedAt = new Date()
       const durationMs = finishedAt.getTime() - startedAt.getTime()
       return {
@@ -155,6 +154,8 @@ export async function importCourseIntelligence(
         failures,
       }
     }
+
+    const mappings = mappingsResult.records ?? []
 
     // Early return if no verified mappings found
     if (mappings.length === 0) {
