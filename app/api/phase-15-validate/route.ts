@@ -1,10 +1,46 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { buildPlayerIntelligence } from '@/lib/player-intelligence/player-intelligence-builder'
 
-export async function GET() {
+/**
+ * AUTHORIZATION REQUIRED: This endpoint must only be accessible to admins
+ * 
+ * Validates:
+ * - Bearer token present and valid
+ * - Admin authorization
+ * - Does not expose stack traces
+ * - Does not expose configuration
+ * - Returns only safe error messages
+ */
+function validateAdminAuthorization(request: NextRequest): boolean {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return false
+  }
+
+  // In production, verify token against admin user database or auth service
+  // For now, check against environment variable
+  const validToken = process.env.ADMIN_API_TOKEN
+  if (!validToken) {
+    console.error('[v0] ADMIN_API_TOKEN not configured')
+    return false
+  }
+
+  const token = authHeader.substring(7)
+  return token === validToken
+}
+
+export async function GET(request: NextRequest) {
   try {
-    console.log('[v0] ===== PHASE 15: PLAYER INTELLIGENCE VALIDATION =====')
+    console.log('[v0] ===== PHASE 15: PLAYER INTELLIGENCE VALIDATION =====' )
+    
+    // SECURITY: Require admin authorization
+    if (!validateAdminAuthorization(request)) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Valid admin token required' },
+        { status: 401 }
+      )
+    }
 
     // Find an active player with tournament history for testing
     console.log('[v0] Finding test player with tournament history...')
@@ -45,7 +81,7 @@ export async function GET() {
     // Build player intelligence
     console.log(`[v0] Building player intelligence for ${testPlayer.fullName}...`)
     const startTime = Date.now()
-    await buildPlayerIntelligence(testPlayer.id)
+    const buildResult = await buildPlayerIntelligence(testPlayer.id)
     const buildDuration = Date.now() - startTime
 
     // Retrieve built intelligence
@@ -85,6 +121,7 @@ export async function GET() {
     return NextResponse.json({
       status: 'SUCCESS',
       phase: 'Phase 15 - Player Intelligence Foundation',
+      buildResult,
       buildDuration: `${buildDuration}ms`,
       testPlayer: {
         id: testPlayer.id,
@@ -123,10 +160,12 @@ export async function GET() {
     })
   } catch (error) {
     console.error('[v0] Validation error:', error)
+    // SECURITY: Do not expose stack traces or configuration in response
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json({
       status: 'ERROR',
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack?.split('\n').slice(0, 3) : undefined,
-    })
+      error: errorMessage.substring(0, 200), // Truncate to prevent exposure
+      // NOTE: Stack trace intentionally omitted for security
+    }, { status: 500 })
   }
 }

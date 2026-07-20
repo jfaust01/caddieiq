@@ -65,51 +65,80 @@ export class PrismaPlayerIntelligenceRepository implements PlayerIntelligenceRep
     playerId: string,
     dataCompleteness: number,
     features: CalculatedFeature[],
-  ) {
-    // Create or update PlayerIntelligence record
-    const intelligence = await prisma.playerIntelligence.upsert({
-      where: { playerId },
-      create: {
-        playerId,
-        dataCompleteness,
-      },
-      update: {
-        dataCompleteness,
-        calculatedAt: new Date(),
-      },
-    })
-
-    // Upsert all features
-    for (const feature of features) {
-      await prisma.playerIntelligenceFeature.upsert({
-        where: {
-          playerIntelligenceId_featureName: {
-            playerIntelligenceId: intelligence.id,
-            featureName: feature.featureName,
-          },
-        },
+  ): Promise<{ intelligence: any; featureCount: number }> {
+    // ATOMIC TRANSACTION: All operations succeed or all rollback
+    return await prisma.$transaction(async (tx) => {
+      // 1. Upsert PlayerIntelligence record
+      const intelligence = await tx.playerIntelligence.upsert({
+        where: { playerId },
         create: {
-          playerIntelligenceId: intelligence.id,
-          featureName: feature.featureName,
-          featureCategory: feature.featureCategory,
-          featureValue: feature.featureValue,
-          featureValueStr: feature.featureValueStr,
-          confidence: feature.confidence,
-          source: feature.source,
-          explanation: feature.explanation,
+          playerId,
+          dataCompleteness,
         },
         update: {
-          featureValue: feature.featureValue,
-          featureValueStr: feature.featureValueStr,
-          confidence: feature.confidence,
-          source: feature.source,
-          explanation: feature.explanation,
-          lastCalculated: new Date(),
+          dataCompleteness,
+          calculatedAt: new Date(),
         },
       })
-    }
 
-    return intelligence
+      // 2. Get names of features being persisted (for stale cleanup)
+      const newFeatureNames = features.map((f) => f.featureName)
+
+      // 3. Delete stale features: those not in the new set
+      // This prevents orphaned features from previous builds
+      if (newFeatureNames.length > 0) {
+        await tx.playerIntelligenceFeature.deleteMany({
+          where: {
+            playerIntelligenceId: intelligence.id,
+            featureName: {
+              notIn: newFeatureNames,
+            },
+          },
+        })
+      } else {
+        // If no features, delete ALL features for this intelligence
+        await tx.playerIntelligenceFeature.deleteMany({
+          where: {
+            playerIntelligenceId: intelligence.id,
+          },
+        })
+      }
+
+      // 4. Upsert all new features (inside same transaction)
+      for (const feature of features) {
+        await tx.playerIntelligenceFeature.upsert({
+          where: {
+            playerIntelligenceId_featureName: {
+              playerIntelligenceId: intelligence.id,
+              featureName: feature.featureName,
+            },
+          },
+          create: {
+            playerIntelligenceId: intelligence.id,
+            featureName: feature.featureName,
+            featureCategory: feature.featureCategory,
+            featureValue: feature.featureValue,
+            featureValueStr: feature.featureValueStr,
+            confidence: feature.confidence,
+            source: feature.source,
+            explanation: feature.explanation,
+          },
+          update: {
+            featureValue: feature.featureValue,
+            featureValueStr: feature.featureValueStr,
+            confidence: feature.confidence,
+            source: feature.source,
+            explanation: feature.explanation,
+            lastCalculated: new Date(),
+          },
+        })
+      }
+
+      return {
+        intelligence,
+        featureCount: features.length,
+      }
+    })
   }
 }
 

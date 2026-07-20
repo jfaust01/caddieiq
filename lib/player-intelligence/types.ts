@@ -29,3 +29,17 @@ export type FeatureCategory =
   | 'sg_metrics'
   | 'calculated'
   | 'form_metrics'
+
+export interface BuildResult {
+  playerId: string
+  status: 'SUCCESS' | 'PARTIAL' | 'FAILED'
+  featureCount: number
+  completedFeatureCount: number
+  dataCompleteness: number
+  calculatedAt: Date
+  warnings: string[]
+  calculatorFailures: Array<{
+    calculatorName: string
+    error: string
+  }>
+}

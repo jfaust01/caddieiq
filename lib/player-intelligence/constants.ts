@@ -33,26 +33,39 @@ export const CONFIDENCE_THRESHOLDS = {
 
 /**
  * Calculate confidence level based on tournament count
+ * 
+ * Explicit boundaries:
+ * - count = 0: 0% confidence
+ * - count 1–3: 40% confidence (LOW)
+ * - count 4–12: 70% confidence (MEDIUM)
+ * - count 13+: 90% confidence (HIGH)
  */
 export function calculateTournamentConfidence(count: number): number {
-  if (count <= CONFIDENCE_THRESHOLDS.TOURNAMENT_COUNT.LOW.max) {
-    return 40 // LOW confidence for very few tournaments
-  }
-  if (count <= CONFIDENCE_THRESHOLDS.TOURNAMENT_COUNT.MEDIUM.max) {
-    return 70 // MEDIUM confidence
-  }
-  return 90 // HIGH confidence for 13+ tournaments
+  if (count === 0) return 0
+  if (count >= 1 && count <= 3) return 40
+  if (count >= 4 && count <= 12) return 70
+  if (count >= 13) return 90
+  return 0 // unreachable but safe default
 }
 
 /**
  * Calculate confidence based on data completeness ratio
+ * 
+ * Explicit boundaries:
+ * - ratio = 0: 0% confidence
+ * - ratio >0 and <25%: 30% confidence
+ * - ratio 25% through <50%: 50% confidence
+ * - ratio 50% through <75%: 70% confidence
+ * - ratio 75%+: 90% confidence
  */
 export function calculateDataRatioConfidence(validDataPoints: number, totalPossible: number): number {
   if (totalPossible === 0) return 0
   const ratio = validDataPoints / totalPossible
   
-  if (ratio < CONFIDENCE_THRESHOLDS.DATA_POINT_RATIO.LOW) return 30
-  if (ratio < CONFIDENCE_THRESHOLDS.DATA_POINT_RATIO.MEDIUM) return 50
-  if (ratio < CONFIDENCE_THRESHOLDS.DATA_POINT_RATIO.HIGH) return 70
-  return 90
+  if (ratio === 0) return 0
+  if (ratio > 0 && ratio < 0.25) return 30
+  if (ratio >= 0.25 && ratio < 0.5) return 50
+  if (ratio >= 0.5 && ratio < 0.75) return 70
+  if (ratio >= 0.75) return 90
+  return 0 // unreachable but safe default
 }
