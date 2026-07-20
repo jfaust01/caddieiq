@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma';
-import { DateTime } from 'luxon';
 
 /**
  * TemporalQueryService: Provides safe historical data access with temporal boundaries.
@@ -204,7 +203,7 @@ export class TemporalQueryService {
     return {
       eligible: true,
       reason: `Feature eligible from ${feature[0].validFrom}`,
-      effectiveValue: feature[0].featureValue,
+      effectiveValue: feature[0].featureValue ?? undefined,
     };
   }
 
