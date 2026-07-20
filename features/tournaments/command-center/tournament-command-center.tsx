@@ -16,6 +16,7 @@ import { CaddieChat } from '@/features/caddie/components/caddie-chat'
 import { TournamentDetailTabs } from '@/features/tournaments/components/tournament-detail-tabs'
 import { TournamentField } from '@/features/tournaments/components/tournament-field'
 import { FieldRankingLeaders } from '@/features/tournaments/components/field-ranking-leaders'
+import { TournamentCompactOverview } from '@/features/tournaments/components/tournament-compact-overview'
 import { TournamentCourseIntelligence } from '@/features/tournaments/components/tournament-course-intelligence'
 import { TournamentCourseAnalytics } from '@/features/tournaments/components/tournament-course-analytics'
 import { TournamentCourseOverviewWrapper } from '@/features/tournaments/components/tournament-course-overview-wrapper'
@@ -27,7 +28,6 @@ import { TournamentSkillLeaderboards } from '@/features/tournaments/components/t
 import { TournamentDfsLeaderboards } from '@/features/tournaments/components/tournament-dfs-leaderboards'
 import { TournamentRoundsTable } from '@/features/tournaments/components/tournament-rounds-table'
 import { FieldFitBoard } from '@/features/tournaments/components/field-fit-board'
-import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
 import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
 import { TournamentHealthWrapper } from '@/features/tournaments/components/tournament-health-wrapper'
 import { TournamentElevationHub } from '@/features/tournaments/components/tournament-elevation/tournament-elevation-hub'
@@ -272,148 +272,89 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         insights={insights}
       />
 
-      {/* Verified intelligence engines, each collapsible */}
-      {hasField ? (
-        <CommandCenterWidget
-          id="dfs"
-          title="DFS Value"
-          icon={<LineChart className="size-4 text-primary" aria-hidden />}
-        >
-          <TournamentDfsLeaderboards field={dfsField} />
-        </CommandCenterWidget>
-      ) : null}
-
-      <CommandCenterWidget
-        id="round-scoring"
-        title="Round Scoring"
-        subtitle="Scoring results from completed tournament rounds"
-        icon={<TrendingUp className="size-4 text-primary" aria-hidden />}
-      >
-        <TournamentRoundsTable rounds={rounds} isAdmin={isAdmin} />
-      </CommandCenterWidget>
-
-      {courseRef ? (
-        <CommandCenterWidget
-          id="course-overview"
-          title="Course Overview"
-          icon={<Compass className="size-4 text-primary" aria-hidden />}
-        >
-          <TournamentCourseOverviewWrapper tournamentId={tournament.id} />
-        </CommandCenterWidget>
-      ) : null}
-
-      {courseRef ? (
-        <CommandCenterWidget
-          id="course-insights"
-          title="Course Insights"
-          icon={<Newspaper className="size-4 text-primary" aria-hidden />}
-        >
-          <TournamentCourseInsightsWrapper tournamentId={tournament.id} />
-        </CommandCenterWidget>
-      ) : null}
-
-      {courseRef ? (
-        <CommandCenterWidget
-          id="course-intelligence-engine"
-          title="Course Intelligence Engine"
-          icon={<Sparkles className="size-4 text-primary" aria-hidden />}
-        >
-          <TournamentCourseIntelligenceWrapper tournamentId={tournament.id} />
-        </CommandCenterWidget>
-      ) : null}
-
-      {/* Premium Course Intelligence widget disabled pending CourseDetails table migration */}
-      {/* TODO: Re-enable when CourseDetails table exists in database */}
-      {/* {courseRef && courseProfile ? (
-        <CommandCenterWidget
-          id="course-intelligence-premium"
-          title="Premium Course Intelligence"
-          subtitle="Deep-dive analytics: difficulty, skill importance, player archetypes"
-          icon={<Sparkles className="size-4 text-primary" aria-hidden />}
-        >
-          <CourseIntelligenceHub
-            courseId={courseRef.id}
-            courseName={courseRef.name}
-            profile={courseProfile}
-          />
-        </CommandCenterWidget>
-      ) : null} */}
-
-      {courseRef && courseProfile ? (
-        <CommandCenterWidget
-          id="course"
-          title="Course Intelligence"
-          icon={<Compass className="size-4 text-primary" aria-hidden />}
-        >
-          <TournamentCourseIntelligence
-            profile={courseProfile}
-            course={{ id: courseRef.id, name: courseRef.name }}
-          />
-        </CommandCenterWidget>
-      ) : null}
-
-      {courseRef && courseAnalytics ? (
-        <CommandCenterWidget
-          id="course-analytics"
-          title="Course Analytics"
-          icon={<BarChart3 className="size-4 text-primary" aria-hidden />}
-        >
-          <TournamentCourseAnalytics
-            analytics={courseAnalytics}
-            course={{ id: courseRef.id, name: courseRef.name }}
-          />
-        </CommandCenterWidget>
-      ) : null}
-
-      {weather ? (
-        <CommandCenterWidget
-          id="weather"
-          title="Weather Intelligence"
-          icon={<Cloud className="size-4 text-primary" aria-hidden />}
-        >
-          <TournamentWeatherIntelligence weather={weather} admin={weatherAdmin} />
-        </CommandCenterWidget>
-      ) : null}
-
-      <CommandCenterWidget
-        id="odds"
-        title="Odds Intelligence"
-        icon={<TrendingUp className="size-4 text-primary" aria-hidden />}
-      >
-        <TournamentOddsIntelligence odds={odds} />
-      </CommandCenterWidget>
-
-      {hasField ? (
-        <CommandCenterWidget
-          id="skill"
-          title="Skill Leaderboards"
-          icon={<Trophy className="size-4 text-primary" aria-hidden />}
-        >
-          <TournamentSkillLeaderboards leaderboards={skillLeaderboards} />
-        </CommandCenterWidget>
-      ) : null}
-
-      {hasField ? (
-        <CommandCenterWidget
-          id="fit"
-          title="Field Fit Board"
-          icon={<ListChecks className="size-4 text-primary" aria-hidden />}
-        >
-          <FieldFitBoard board={fitBoard} hasCourse={Boolean(courseRef)} />
-        </CommandCenterWidget>
-      ) : null}
-
+      {/* Compact Overview and Detail Tabs */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <TournamentDetailTabs
             overview={
+              <TournamentCompactOverview
+                tournament={tournament}
+                field={field}
+                fieldReport={fieldReport}
+                fitBoard={fitBoard}
+                weather={weather}
+                dfsField={dfsField}
+                courseProfile={courseProfile}
+              />
+            }
+            field={
               <div className="flex flex-col gap-6">
-                <TournamentOverview tournament={tournament} />
+                <TournamentField field={field} />
                 <FieldRankingLeaders leaders={field.rankingLeaders} />
               </div>
             }
-            field={<TournamentField field={field} />}
             fieldCount={field.size}
+            additionalTabs={[
+              ...(hasField
+                ? [
+                    {
+                      value: 'dfs',
+                      label: 'DFS',
+                      content: <TournamentDfsLeaderboards field={dfsField} />,
+                      count: dfsField?.players?.length ?? 0,
+                    },
+                  ]
+                : []),
+              {
+                value: 'weather',
+                label: 'Weather',
+                content: weather ? (
+                  <TournamentWeatherIntelligence weather={weather} admin={weatherAdmin} />
+                ) : (
+                  <div className="text-center text-sm text-muted-foreground py-8">
+                    Weather data unavailable
+                  </div>
+                ),
+                disabled: !weather,
+              },
+              ...(courseRef
+                ? [
+                    {
+                      value: 'course',
+                      label: 'Course',
+                      content: courseProfile ? (
+                        <TournamentCourseIntelligence
+                          profile={courseProfile}
+                          course={{ id: courseRef.id, name: courseRef.name }}
+                        />
+                      ) : (
+                        <div className="text-center text-sm text-muted-foreground py-8">
+                          Course data unavailable
+                        </div>
+                      ),
+                    },
+                  ]
+                : []),
+              {
+                value: 'betting',
+                label: 'Betting',
+                content: <TournamentOddsIntelligence odds={odds} />,
+              },
+              ...(hasField
+                ? [
+                    {
+                      value: 'analytics',
+                      label: 'Analytics',
+                      content: (
+                        <div className="flex flex-col gap-6">
+                          <FieldFitBoard board={fitBoard} hasCourse={Boolean(courseRef)} />
+                          <TournamentSkillLeaderboards leaderboards={skillLeaderboards} />
+                        </div>
+                      ),
+                    },
+                  ]
+                : []),
+            ]}
           />
         </div>
         <aside className="lg:col-span-1" aria-label="Tournament research">
