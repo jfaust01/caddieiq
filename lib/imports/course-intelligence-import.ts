@@ -212,25 +212,8 @@ export async function importCourseIntelligence(
         }
 
         // Fetch course details from GolfCourse API
-        console.log(`[v0] TRACE: About to fetch course intelligence for GolfCourse API ID: ${golfCourseApiId}`)
-        let courseDetail
-        try {
-          console.log(`[v0] TRACE: Calling apiClient.fetchCourse(${golfCourseApiId})`)
-          courseDetail = await apiClient.fetchCourse(golfCourseApiId)
-          console.log(`[v0] TRACE: fetchCourse returned:`, {
-            isNull: courseDetail === null,
-            isUndefined: courseDetail === undefined,
-            type: typeof courseDetail,
-            hasName: courseDetail?.name ? true : false,
-            name: courseDetail?.name,
-          })
-        } catch (apiError) {
-          console.log(`[v0] TRACE: fetchCourse threw error:`, {
-            errorType: apiError instanceof Error ? apiError.constructor.name : typeof apiError,
-            errorMessage: apiError instanceof Error ? apiError.message : String(apiError),
-          })
-          throw apiError
-        }
+        console.log(`[v0] Fetching course intelligence for GolfCourse API ID: ${golfCourseApiId}`)
+        const courseDetail = await apiClient.fetchCourse(golfCourseApiId)
 
         if (!courseDetail) {
           const err = `Course not found for GolfCourse API ID ${golfCourseApiId}`
@@ -240,11 +223,7 @@ export async function importCourseIntelligence(
         }
 
         // Validate course data
-        console.log(`[v0] TRACE: Validating course data for ${courseDetail.name}`)
         const validation = validateCourseData(courseDetail, warnings)
-        console.log(
-          `[v0] TRACE: Course ${courseDetail.name}: ${validation.holeCount} holes, ${validation.teeCount} tees`,
-        )
         console.log(
           `[v0] Course ${courseDetail.name}: ${validation.holeCount} holes, ${validation.teeCount} tees`,
         )
