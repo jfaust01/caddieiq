@@ -10,7 +10,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../node_modules/.prisma/client"
+  output   = "../lib/generated/prisma"
 }
 
 datasource db {
@@ -601,6 +601,7 @@ model Course {
   altitudeFt            Int?
   establishedYear       Int?
   website               String?
+  timezone              String?              // IANA timezone (e.g., "America/Mexico_City")
   active                Boolean              @default(true)
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
