@@ -111,12 +111,37 @@ export class GolfCourseAPIClient {
   async getCourseDetails(courseId: number): Promise<GolfCourseDetail | null> {
     const url = `${this.baseUrl}/courses/${courseId}`
 
-    const response = await this.fetchWithRetry(url, {
-      method: "GET",
-      headers: this.getHeaders(),
-    })
+    console.log(`[v0] TRACE: GolfCourseAPI.getCourseDetails starting for courseId=${courseId}`)
+    console.log(`[v0] TRACE: Request URL: ${url}`)
+    
+    let response
+    try {
+      response = await this.fetchWithRetry(url, {
+        method: "GET",
+        headers: this.getHeaders(),
+      })
+      console.log(`[v0] TRACE: fetchWithRetry returned status=${response.status}, data type=${typeof response.data}`)
+      console.log(`[v0] TRACE: response.data:`, {
+        isNull: response.data === null,
+        isUndefined: response.data === undefined,
+        type: typeof response.data,
+        keys: response.data && typeof response.data === "object" ? Object.keys(response.data).slice(0, 5) : "N/A",
+      })
+    } catch (error) {
+      console.log(`[v0] TRACE: fetchWithRetry threw error for courseId=${courseId}:`, {
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      })
+      throw error
+    }
 
-    return response.data || null
+    const result = response.data || null
+    console.log(`[v0] TRACE: getCourseDetails returning:`, {
+      isNull: result === null,
+      courseId: result?.id,
+      courseName: result?.name,
+    })
+    return result
   }
 
   /**
@@ -135,22 +160,35 @@ export class GolfCourseAPIClient {
     attempt = 0,
   ): Promise<{ data: any; status: number }> {
     try {
+      console.log(`[v0] TRACE: fetchWithRetry attempt=${attempt} URL=${url}`)
       const response = await fetch(url, init)
+
+      console.log(`[v0] TRACE: fetch returned status=${response.status}, ok=${response.ok}`)
 
       if (!response.ok) {
         const body = await response.text()
+        console.log(`[v0] TRACE: Response not OK, body length=${body.length}, first 200 chars:`, body.substring(0, 200))
         throw this.createProviderError(response.status, response.statusText, url, body)
       }
 
       const data = await response.json()
+      console.log(`[v0] TRACE: JSON parsed successfully, type=${typeof data}`)
+      if (typeof data === "object" && data) {
+        console.log(`[v0] TRACE: JSON keys:`, Object.keys(data).slice(0, 5))
+      }
       return { data, status: response.status }
     } catch (error) {
+      console.log(`[v0] TRACE: fetchWithRetry caught error on attempt=${attempt}:`, {
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      })
       // Retry on network errors or 5xx server errors
       if (
         error instanceof ProviderError ||
         (error instanceof TypeError && error.message.includes("fetch"))
       ) {
         if (attempt < this.maxRetries) {
+          console.log(`[v0] TRACE: Retrying attempt ${attempt + 1}/${this.maxRetries}`)
           await this.delay(this.retryDelayMs * Math.pow(2, attempt))
           return this.fetchWithRetry(url, init, attempt + 1)
         }
