@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect, beforeEach } from "vitest";
 import {
   DiscoveryCriteria,
   DiscoveryResult,
@@ -51,27 +51,37 @@ class MockImporter implements HistoricalImporter {
     ];
   }
 
-  async normalize(raw: RawRecord & { metadata: any }): Promise<NormalizedRecord> {
-    return {
+  normalize(raws: RawRecord[]): NormalizedRecord[] {
+    return raws.map((raw, idx) => ({
       canonicalId: `player_${raw.payload.id}`,
       provider: "test_provider",
       providerRecordId: raw.providerRecordId,
       sourceEffectiveTimestamp: raw.sourceEffectiveTimestamp,
       retrievedTimestamp: new Date(),
-      checksum: "", // Will be calculated by executor
+      checksum: "a".repeat(64),
       validFrom: new Date("2025-02-19"),
       validTo: null,
       fields: raw.payload as Record<string, unknown>,
-      metadata: raw.metadata,
-    };
+      metadata: {
+        datasetName: "TEST_DATASET",
+        rowIndex: idx,
+      },
+    }));
   }
 
-  async validate(result: ValidationResult): Promise<ValidationResult> {
+  async validate(normalized: NormalizedRecord[]): Promise<ValidationResult> {
     // All records are valid in mock
     return {
-      valid: result.valid,
-      invalid: [],
-      errors: [],
+      valid: normalized,
+      rejected: [],
+      isHealthy: true,
+      stats: {
+        totalProcessed: normalized.length,
+        passedCount: normalized.length,
+        rejectedCount: 0,
+        duplicateCount: 0,
+        temporalViolationCount: 0,
+      },
     };
   }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect, beforeEach } from "vitest";
 import { ChecksumUtil } from "@/lib/historical/validators/checksum-util";
 import { TemporalValidator } from "@/lib/historical/validators/temporal-validator";
 import { ProvenanceValidator } from "@/lib/historical/validators/provenance-validator";
