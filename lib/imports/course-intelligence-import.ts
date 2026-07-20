@@ -490,11 +490,17 @@ export async function importCourseIntelligence(
     const importRunResult = await importRunRepo.create({
       entity: "course-intelligence",
       provider: "golfcourseapi",
-      status: failures.length === 0 ? "success" : failures.length < coursesMatched ? "partial" : "failure",
-      recordsProcessed: coursesMatched,
-      recordsSucceeded: coursesMatched - failures.length,
-      recordsFailed: failures.length,
-      notes: [
+      status: failures.length === 0 ? "SUCCESS" : failures.length < coursesMatched ? "PARTIAL" : "FAILURE",
+      startedAt,
+      finishedAt,
+      durationMs,
+      processed: coursesConsidered,
+      inserted: coursesImported,
+      updated: coursesUpdated,
+      skipped: coursesSkipped,
+      failed: failures.length,
+      warnings: warnings.length,
+      summary: [
         `Job ID: ${jobId}`,
         `Courses considered: ${coursesConsidered}`,
         `Courses matched: ${coursesMatched}`,
@@ -502,14 +508,10 @@ export async function importCourseIntelligence(
         `Courses updated: ${coursesUpdated}`,
         `Courses skipped: ${coursesSkipped}`,
         `Holes imported: ${holesImported}`,
-        `Holes updated: ${holesUpdated}`,
-        `Holes skipped: ${holesSkipped}`,
         `Tee boxes imported: ${teeBoxesImported}`,
-        `Tee boxes updated: ${teeBoxesUpdated}`,
-        `Tee boxes skipped: ${teeBoxesSkipped}`,
         `Throughput: ${throughputPerSecond} courses/sec`,
-        ...warnings,
-      ].join("\n"),
+      ].join(", "),
+      error: failures.length > 0 ? failures[0] : null,
     })
 
     console.log(`[v0] Import ${jobId} completed: ${failures.length === 0 ? "success" : "partial failure"} (${throughputPerSecond} courses/sec)`)
