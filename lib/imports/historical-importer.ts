@@ -148,30 +148,23 @@ export interface PersistenceResult {
  * Result of verifying persisted records.
  */
 export interface VerificationResult {
-  /** Job ID that was verified */
-  jobId: string;
-  /** Verification passed */
-  passed: boolean;
-  /** Diagnostic details */
-  diagnostics: {
-    recordsCountedInDatabase: number;
-    expectedRecords: number;
-    checksumsMatch: boolean;
-    temporalBoundariesValid: boolean;
-    provenance CompleteOnAllRecords: boolean;
-  };
-  /** Any issues found */
-  issues?: string[];
+  /** Records verified count */
+  recordsVerified: number;
+  /** Integrity checks passed */
+  integrityChecksPassed: boolean;
+  /** Checksum verification passed */
+  checksumVerified: boolean;
 }
 
 /**
  * Main interface all historical importers must implement.
  */
 export interface HistoricalImporter<T extends NormalizedRecord = NormalizedRecord> {
-  /** Friendly name of this dataset */
-  readonly datasetName: string;
+  /** Get provider ID */
+  getProviderId(): string;
 
-  /** Primary data source provider */
+  /** Get dataset type */
+  getDatasetType(): string;
   readonly provider: string;
 
   /**
