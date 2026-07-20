@@ -204,74 +204,6 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
       </CommandCenterWidget>
       */}
 
-      {/* Decision-first summary row */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <CommandCenterWidget
-          id="morning-brief"
-          title="Morning Brief"
-          subtitle="The five things that matter most today"
-          icon={<Sparkles className="size-4 text-primary" aria-hidden />}
-        >
-          <MorningBrief brief={brief} />
-        </CommandCenterWidget>
-
-        <CommandCenterWidget
-          id="ai-coach"
-          title="AI Coach"
-          subtitle="Explainable plays from the value & fit engines"
-          icon={<Target className="size-4 text-primary" aria-hidden />}
-        >
-          <AiCoachWidget coach={coach} />
-        </CommandCenterWidget>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <CommandCenterWidget
-          id="trending"
-          title="Trending"
-          subtitle="Category leaders across the field"
-          icon={<TrendingUp className="size-4 text-primary" aria-hidden />}
-        >
-          <TrendingPlayers trending={trending} />
-        </CommandCenterWidget>
-
-        <CommandCenterWidget
-          id="personalization"
-          title="Your Players"
-          subtitle="Favorited & tracked players in this field"
-          icon={<Star className="size-4 text-primary" aria-hidden />}
-        >
-          <PersonalizationWidget field={fieldMembers} />
-        </CommandCenterWidget>
-      </div>
-
-      <CommandCenterWidget
-        id="story"
-        title="Tournament Story"
-        subtitle="The auto-generated narrative for this event"
-        icon={<Newspaper className="size-4 text-primary" aria-hidden />}
-      >
-        <TournamentStory story={story} />
-      </CommandCenterWidget>
-
-      <CommandCenterWidget
-        id="ask-caddie"
-        title="Ask the Caddie"
-        subtitle="Chat with every engine — grounded, cited answers"
-        icon={<Sparkles className="size-4 text-primary" aria-hidden />}
-      >
-        <CaddieChat tournamentId={tournament.id} compact />
-      </CommandCenterWidget>
-
-      {/* Tournament Elevation Analytics — Premium Strategy Hub */}
-      <TournamentElevationHub
-        fieldStrength={fieldStrength}
-        weatherImpact={weatherImpact}
-        strategy={dfsStrategy}
-        risks={risks}
-        insights={insights}
-      />
-
       {/* Compact Overview and Detail Tabs */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -295,6 +227,49 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
             }
             fieldCount={field.size}
             additionalTabs={[
+              {
+                value: 'intel',
+                label: 'Tournament Intel',
+                content: (
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <CommandCenterWidget
+                      id="morning-brief"
+                      title="Morning Brief"
+                      subtitle="The five things that matter most today"
+                      icon={<Sparkles className="size-4 text-primary" aria-hidden />}
+                    >
+                      <MorningBrief brief={brief} />
+                    </CommandCenterWidget>
+
+                    <CommandCenterWidget
+                      id="ai-coach"
+                      title="AI Coach"
+                      subtitle="Explainable plays from the value & fit engines"
+                      icon={<Target className="size-4 text-primary" aria-hidden />}
+                    >
+                      <AiCoachWidget coach={coach} />
+                    </CommandCenterWidget>
+
+                    <CommandCenterWidget
+                      id="trending"
+                      title="Trending"
+                      subtitle="Category leaders across the field"
+                      icon={<TrendingUp className="size-4 text-primary" aria-hidden />}
+                    >
+                      <TrendingPlayers trending={trending} />
+                    </CommandCenterWidget>
+
+                    <CommandCenterWidget
+                      id="personalization"
+                      title="Your Players"
+                      subtitle="Favorited & tracked players in this field"
+                      icon={<Star className="size-4 text-primary" aria-hidden />}
+                    >
+                      <PersonalizationWidget field={fieldMembers} />
+                    </CommandCenterWidget>
+                  </div>
+                ),
+              },
               ...(hasField
                 ? [
                     {
