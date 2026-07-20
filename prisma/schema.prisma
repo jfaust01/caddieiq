@@ -205,9 +205,53 @@ enum CutStatus {
 }
 
 enum WithdrawalStatus {
-  WITHDREW
-  NOT_WITHDRAWN
   UNKNOWN
+  WITHDRAWN_BEFORE_START
+  WITHDRAWN_AFTER_START
+  NOT_WITHDRAWN
+
+  @@map("withdrawal_status")
+}
+
+enum DatasetType {
+  TOURNAMENT_EDITIONS
+  COURSE_EDITIONS
+  PLAYER_VERSIONS
+  RANKINGS
+  STATISTICS
+  STROKES_GAINED
+  DRAFT_KINGS_SALARIES
+  BETTING_MARKETS
+  WEATHER
+  OWNERSHIP
+  TOURNAMENT_OUTCOMES
+  ENGINEERED_FEATURES
+  SNAPSHOTS
+
+  @@map("dataset_type")
+}
+
+enum ProviderHealthStatus {
+  HEALTHY
+  DEGRADED
+  UNAVAILABLE
+  MAINTENANCE
+
+  @@map("provider_health_status")
+}
+
+enum FeatureCategory {
+  SKILL_METRICS
+  FORM_METRICS
+  COURSE_HISTORY
+  COURSE_FIT
+  RANKINGS
+  OWNERSHIP
+  PLAYER_ATTRIBUTES
+  DERIVED
+  COMPOSITE
+
+  @@map("feature_category")
 }
 
 // ---------------------------------------------------------------------------
@@ -419,6 +463,7 @@ model Player {
   historicalRankings       HistoricalPlayerRanking[]
   historicalSalaryOdds     HistoricalSalaryOddsSnapshot[]
   historicalOutcomes       HistoricalTournamentOutcome[]
+  historicalFeatureSamples HistoricalFeatureSample[]
   matchScores              MatchScore[]
 
   @@index([slug])
@@ -793,6 +838,7 @@ model Tournament {
   historicalSnapshots  HistoricalSnapshot[]
   historicalSalaryOdds HistoricalSalaryOddsSnapshot[]
   historicalOutcomes   HistoricalTournamentOutcome[]
+  historicalFeatureSamples HistoricalFeatureSample[]
   matchScores          MatchScore[]
 
   @@index([slug])
@@ -2506,6 +2552,128 @@ model HistoricalImportJob {
   @@index([status])
   @@index([startedAt])
   @@map("historical_import_jobs")
+}
+
+/// Provider Registry - single source of truth for all data providers
+model HistoricalProvider {
+  id                    String                @id @default(cuid())
+  providerId            String                @unique
+  name                  String
+  version               String
+  priority              Int                   @default(0)
+  supportedDatasets     DatasetType[]
+  historicalDepthDays   Int?
+  coverage              Float?                // 0-100 percentage
+  licensingStatus       String                // INCLUDED, TRIAL, EVALUATION, PENDING
+  healthStatus          ProviderHealthStatus  @default(HEALTHY)
+  lastSuccessfulSync    DateTime?
+  rateLimitPerSecond    Int?
+  rateLimitPerDay       Int?
+  configuration         Json?                 // provider-specific config
+  isActive              Boolean               @default(true)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  importJobs HistoricalProviderImportJob[]
+
+  @@map("historical_providers")
+}
+
+/// Provider-specific import job details
+model HistoricalProviderImportJob {
+  id                String   @id @default(cuid())
+  providerId        String
+  jobId             String
+  datasetType       DatasetType
+  recordsRead       Int?
+  recordsInserted   Int?
+  recordsUpdated    Int?
+  recordsRejected   Int?
+  validationErrors  Int?
+  duration          Int?     // milliseconds
+  sourceChecksum    String?
+  startedAt         DateTime
+  completedAt       DateTime?
+  createdAt         DateTime @default(now())
+
+  // Relations
+  provider HistoricalProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([datasetType])
+  @@map("historical_provider_import_jobs")
+}
+
+/// Feature Registry - all engineered features must be registered
+model HistoricalFeature {
+  id                  String          @id @default(cuid())
+  featureName         String          @unique
+  description         String?
+  category            FeatureCategory
+  owner               String?
+  provider            String?
+  formula             String?         // mathematical or algorithmic formula
+  version             String          @default("1.0")
+  dependencies        String[]        // list of dependent features
+  validationRules     Json?           // validation rule definitions
+  usedBy              String[]        // systems/models that use this feature
+  deprecated          Boolean         @default(false)
+  deprecatedAt        DateTime?
+  explainable         Boolean         @default(true)
+  exportToClient      Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  // Relations
+  samples HistoricalFeatureSample[]
+
+  @@index([category])
+  @@index([deprecated])
+  @@map("historical_features")
+}
+
+/// Sample feature values (for validation and testing)
+model HistoricalFeatureSample {
+  id          String   @id @default(cuid())
+  featureId   String
+  playerId    String
+  tournamentId String
+  value       String
+  unitOfMeasure String?
+  validFrom   DateTime
+  validTo     DateTime?
+  source      String?
+  checksum    String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  feature HistoricalFeature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([featureId, playerId, tournamentId])
+  @@index([featureId])
+  @@index([validFrom, validTo])
+  @@map("historical_feature_samples")
+}
+
+/// Dataset Health Metrics (calculated view)
+model DatasetHealthSnapshot {
+  id              String    @id @default(cuid())
+  datasetType     DatasetType
+  provider        String
+  coveragePercent Float
+  lastUpdateTime  DateTime?
+  staleDays       Int?
+  missingPlayers  Int?
+  missingTournaments Int?
+  duplicateCount  Int?
+  validationFailures Int?
+  createdAt       DateTime  @default(now())
+
+  @@unique([datasetType, provider])
+  @@map("dataset_health_snapshots")
 }
 
 // NOTE: Relations to Player, Course, and Tournament are added via MatchScore model
