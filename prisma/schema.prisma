@@ -1904,3 +1904,243 @@ model PlayerIntelligenceFeature {
   @@map("player_intelligence_features")
 }
 */
+
+// ---------------------------------------------------------------------------
+// Matching Engine (Phase 16B.1)
+// ---------------------------------------------------------------------------
+// Core models for course-player matching engine.
+// Supports reproducibility, versioning, auditability, and historical immutability.
+// Reference: docs/ARCHITECTURE_MASTER_INDEX.md (Section 8)
+// Reference: docs/BUILD_REPRODUCIBILITY.md
+// Reference: docs/MODEL_GOVERNANCE.md
+
+/// Release type classification for model versions.
+enum MatchVersionReleaseType {
+  ALPHA      /// Early development, not production-ready
+  BETA       /// Feature complete, undergoing testing
+  RC         /// Release candidate, awaiting final approval
+  STABLE     /// Production-ready
+}
+
+/// Algorithm type indicating how the model was trained/calibrated.
+enum MatchAlgorithmType {
+  HAND_TUNED              /// v1.x: Hand-calibrated weights
+  GRADIENT_BOOSTED        /// v2.x: Optimized with gradient boosting
+  ENSEMBLE                /// v3.x: Multiple models combined
+  DEEP_LEARNING           /// v4.x: Neural network based
+  REINFORCEMENT_LEARNING  /// v5.x: RL-optimized
+  LLM_ENHANCED            /// v6.x: LLM-augmented reasoning
+}
+
+/// Build lifecycle status.
+enum MatchScoreBuildStatus {
+  DEVELOPMENT  /// Under development, not deployable
+  CANDIDATE    /// Ready for testing, pre-production
+  ACTIVE       /// Currently in production
+  RETIRED      /// No longer in use, kept for historical queries
+}
+
+/// Audit trail action classification.
+enum MatchScoreAction {
+  CREATED                    /// Score first computed
+  REQUESTED                  /// Score retrieved for user access
+  EXPLANATION_GENERATED      /// Explanation created
+  RECREATED_FROM_BUILD       /// Score recreated from historical build
+  ARCHIVED                   /// Logical archival (no production access)
+}
+
+/// Semantic version of the matching engine. Tracks algorithm type, calibration, and releases.
+/// Immutable: version string never changes after creation.
+model MatchVersion {
+  id                      String                    @id @default(cuid())
+  /// Semantic version: MAJOR.MINOR.PATCH (e.g., "1.0.0")
+  versionString           String                    @unique
+  /// Major version (breaking change increment)
+  major                   Int
+  /// Minor version (feature addition increment)
+  minor                   Int
+  /// Patch version (bug fix increment)
+  patch                   Int
+  /// Release type (alpha, beta, rc, stable)
+  releaseType             MatchVersionReleaseType   @default(STABLE)
+  /// Brief description of changes in this version
+  description             String?
+  /// Algorithm type indicates how this version was trained
+  algorithmType           MatchAlgorithmType        @default(HAND_TUNED)
+  /// When weights were last calibrated (reproducibility provenance)
+  calibrationDate         DateTime?
+  /// Audit timestamps (immutable)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  // Relations
+  builds                  MatchScoreBuild[]
+
+  // Enforce semantic versioning uniqueness and immutability
+  @@unique([major, minor, patch])
+  @@index([releaseType])
+  @@map("match_versions")
+}
+
+/// Build manifest capturing all versioned components for reproducibility.
+/// Every score is tied to a build; every build is reproducible from its manifest.
+/// Immutable: manifest never changes; only status evolves (dev → candidate → active → retired).
+model MatchScoreBuild {
+  id                      String                    @id @default(cuid())
+  /// Which model version this build implements
+  versionId               String
+  /// SHA256 hash of the build manifest (reproducibility proof)
+  buildHash               String                    @unique
+  /// Complete build manifest as JSON (feature versions, score formula, dataset, etc.)
+  /// Reference: docs/BUILD_REPRODUCIBILITY.md
+  buildManifestJson       Json
+  /// Current status in the build lifecycle (development → candidate → active → retired)
+  status                  MatchScoreBuildStatus     @default(DEVELOPMENT)
+  /// User/system that created this build (audit trail)
+  createdBy               String?
+  /// When this build was promoted to active (null if not yet active)
+  activatedAt             DateTime?
+  /// When this build was retired (null if still active)
+  retiredAt               DateTime?
+  /// Audit timestamps
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  // Relations
+  version                 MatchVersion              @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  matchScores             MatchScore[]
+  recreatedFromScores     MatchScore[]              @relation("recreatedFromBuild")
+
+  @@index([versionId])
+  @@index([buildHash])
+  @@index([status])
+  @@index([createdAt])
+  @@map("match_score_builds")
+}
+
+/// Match score: the core prediction record. Immutable except for metadata.
+/// Every score tied to: player, course, build (reproducibility), and tournament (context).
+/// Historical immutability: no deletion, no value updates, only metadata can change.
+model MatchScore {
+  id                      String                    @id @default(cuid())
+  /// Player being evaluated (immutable)
+  playerId                String
+  /// Course being evaluated on (immutable)
+  courseId                String
+  /// Build that generated this score (immutable, provides reproducibility)
+  buildId                 String
+  /// Tournament context (optional, null if used outside tournament)
+  tournamentId            String?
+  /// Semantic version of the matching engine (immutable)
+  version                 String
+  
+  // --- Five-component score (immutable) ---
+  /// Overall combined score (0-100) after all adjustments
+  overallScore            Float
+  /// Skill fit dimension (0-100): structural player-course alignment
+  skillFitScore           Float
+  /// Form bonus (-15 to +15): current trajectory vs. baseline
+  formBonus               Float
+  /// Venue history bonus (-10 to +10): venue-specific performance
+  venueHistoryBonus       Float
+  /// Confidence multiplier (0.3-1.0): data quality adjustment
+  confidenceMultiplier    Float
+  /// Confidence score (0-100): separate metric indicating data quality
+  confidenceScore         Float
+  /// Ceiling score: optimistic scenario (what if everything goes right?)
+  ceilingScore            Float
+  /// Floor score: pessimistic scenario (what if everything goes wrong?)
+  floorScore              Float
+  
+  // --- Explanation (immutable) ---
+  /// Textual explanation (500 chars max), null until generated
+  explanation             String?
+  /// Detailed component breakdown (JSON), null until generated
+  explanationComponents   Json?
+  
+  // --- Metadata (mutable: only part of the record that can be updated) ---
+  /// Additional context (weather, setup, field strength, etc.)
+  metadata                Json?
+  
+  // --- Historical reconstruction support ---
+  /// Whether this score was recreated from a historical build (vs. live prediction)
+  isHistorical            Boolean                   @default(false)
+  /// If historical, which build was it recreated from
+  recreatedFromBuildId    String?
+  
+  // --- Audit timestamps (immutable) ---
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  // Relations
+  player                  Player                    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  course                  Course                    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  build                   MatchScoreBuild           @relation(fields: [buildId], references: [id], onDelete: Cascade)
+  tournament              Tournament?               @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  recreatedFromBuild      MatchScoreBuild?          @relation("recreatedFromBuild", fields: [recreatedFromBuildId], references: [id], onDelete: SetNull)
+  components              MatchScoreComponent[]
+  auditTrail              MatchScoreAuditTrail[]
+
+  // Indices for common queries
+  @@unique([playerId, courseId, buildId, tournamentId])
+  @@index([playerId, courseId])
+  @@index([buildId])
+  @@index([tournamentId])
+  @@index([version])
+  @@index([createdAt])
+  @@map("match_scores")
+}
+
+/// Immutable record of each score component, for explainability.
+/// Created with score, never updated, never deleted.
+/// Reference: docs/MATCHING_ENGINE_COMPLETE_ARCHITECTURE.md (Step 6: Explainability)
+model MatchScoreComponent {
+  id                      String                    @id @default(cuid())
+  /// Parent score (immutable)
+  scoreId                 String
+  /// Component name (immutable): skillFit, formBonus, venueHistory, confidence, volatility
+  componentName           String
+  /// Value of this component (immutable)
+  componentValue          Float
+  /// Reasoning for this component's value (immutable, immutable snapshot)
+  componentReasoning      String?
+  /// Exact attributes/signals used (immutable snapshot for explainability)
+  dataUsed                Json?
+  /// Created timestamp (immutable)
+  createdAt               DateTime                  @default(now())
+
+  // Relations
+  matchScore              MatchScore                @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+
+  @@index([scoreId])
+  @@index([componentName])
+  @@map("match_score_components")
+}
+
+/// Immutable audit trail: append-only log of every prediction access and decision.
+/// Provides complete provenance for reproducibility and compliance.
+/// Reference: docs/AUDIT_TRAIL_SPECIFICATION.md
+model MatchScoreAuditTrail {
+  id                      String                    @id @default(cuid())
+  /// Which match score this audit entry refers to (immutable)
+  scoreId                 String
+  /// Action taken (immutable)
+  action                  MatchScoreAction
+  /// User or system that triggered action (immutable)
+  actor                   String?
+  /// Surrounding context (tournament, event type, etc.) (immutable)
+  context                 Json?
+  /// Timestamp (immutable)
+  createdAt               DateTime                  @default(now())
+
+  // Relations
+  matchScore              MatchScore                @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+
+  @@index([scoreId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("match_score_audit_trails")
+}
+
+// NOTE: Relations to Player, Course, and Tournament are added via MatchScore model
+// (one-to-many relationships). No schema changes to existing models required.
