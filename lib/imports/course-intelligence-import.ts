@@ -472,8 +472,42 @@ export async function importCourseIntelligence(
             console.log(`[v0] Mapping updated for ${courseDetail.name}`)
           }
         } else {
-          const err = courseResult.error?.message || "Unknown error"
-          failures.push(`Failed to upsert GolfCourse API ID ${golfCourseApiId}: ${err}`)
+          // Enhanced error diagnostics
+          console.log(`[v0] COURSE UPSERT FAILED - Full Result:`, JSON.stringify(courseResult, null, 2))
+          
+          const error = courseResult.error
+          let errorDetails = "Unknown error"
+          
+          if (error) {
+            // Extract Prisma error code if available
+            const prismaCode = (error.cause as any)?.code || "N/A"
+            const prismaMessage = (error.cause as any)?.message || ""
+            const stack = (error.cause as any)?.stack || ""
+            
+            errorDetails = `[${error.code}] ${error.message}`
+            if (prismaCode !== "N/A") {
+              errorDetails += ` | Prisma: ${prismaCode}`
+            }
+            if (prismaMessage) {
+              errorDetails += ` | ${prismaMessage}`
+            }
+            
+            // Log full diagnostics for this error
+            console.log(`[v0] UPSERT FAILURE DIAGNOSTICS`)
+            console.log(`[v0]   golfCourseApiId: ${golfCourseApiId}`)
+            console.log(`[v0]   errorCode: ${error.code}`)
+            console.log(`[v0]   errorMessage: ${error.message}`)
+            console.log(`[v0]   context: ${JSON.stringify(error.context)}`)
+            console.log(`[v0]   prismaCode: ${prismaCode}`)
+            console.log(`[v0]   prismaMessage: ${prismaMessage}`)
+            if (stack) {
+              console.log(`[v0]   stack: ${stack.split('\n').slice(0, 3).join(' | ')}`)
+            }
+          } else {
+            console.log(`[v0] ERROR IS FALSY - courseResult:`, courseResult)
+          }
+          
+          failures.push(`Failed to upsert GolfCourse API ID ${golfCourseApiId}: ${errorDetails}`)
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error)
