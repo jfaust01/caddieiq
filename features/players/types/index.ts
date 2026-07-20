@@ -196,6 +196,30 @@ export interface PlayerNewsItem {
   publishedAt: string | null
 }
 
+/** A single feature in the active player intelligence build. */
+export interface PlayerIntelligenceFeature {
+  featureName: string
+  featureCategory: string
+  featureValue: number | null
+  featureValueStr: string | null
+  confidence: number
+  source: string
+}
+
+/** Active player intelligence build — versioned snapshot system. */
+export interface ActivePlayerIntelligence {
+  buildId: string
+  playerId: string
+  buildStatus: string
+  activationStatus: string
+  dataCompleteness: number
+  featureCount: number
+  completedFeatureCount: number
+  calculatedAt: Date
+  activatedAt: Date | null
+  features: PlayerIntelligenceFeature[]
+}
+
 /** Full profile payload for the detail page. */
 export interface PlayerDetail extends Player {
   /** Headline career figures, or null when no historical data is ingested. */
@@ -242,6 +266,12 @@ export interface PlayerDetail extends Player {
    * from the same resolved course id — never fabricated.
    */
   courseAnalytics: CourseAnalytics | null
+  /**
+   * Active player intelligence build (versioned snapshot system).
+   * Null when no active build exists. Contains calculated features with
+   * confidence levels. Read-only — never triggers new builds.
+   */
+  playerIntelligence: ActivePlayerIntelligence | null
 }
 
 /**

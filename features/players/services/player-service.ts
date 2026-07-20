@@ -248,7 +248,7 @@ export const playerService = {
     // Analytics are the single source of derived intelligence; the Ranking
     // Engine orders those same analytics into the player's global placements.
     // News is live provider content linked to this player at import time.
-    const [analytics, rankingProfile, newsRows, context] = await Promise.all([
+    const [analytics, rankingProfile, newsRows, context, playerIntelligence] = await Promise.all([
       analyticsService.getPlayerAnalytics(id),
       rankingService.getPlayerRankingProfile(id),
       getNewsRepository().listByPlayer(id, PLAYER_NEWS_LIMIT),
@@ -256,6 +256,8 @@ export const playerService = {
       // player's forward-looking models run against; the profile never picks a
       // tournament on its own.
       tournamentContextService.getPlayerActiveContext(id),
+      // Load active player intelligence build (versioned snapshot system)
+      getPlayerRepository().getActivePlayerIntelligence(id),
     ])
     // Attach the event-specific Course Fit to the shared context. Resolved after
     // analytics so the verified skill profile is available; adds one course read
@@ -273,6 +275,7 @@ export const playerService = {
       news: newsRows.map(mapPlayerNews),
       upcoming,
       courseAnalytics,
+      playerIntelligence,
     }
   },
 
