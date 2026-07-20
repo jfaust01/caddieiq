@@ -43,3 +43,26 @@ export interface BuildResult {
     error: string
   }>
 }
+
+export type BuildStatus = 'PENDING' | 'CALCULATING' | 'SUCCESS' | 'PARTIAL' | 'FAILED'
+export type ActivationStatus = 'CANDIDATE' | 'ACTIVE' | 'SUPERSEDED' | 'REJECTED'
+
+export interface PlayerIntelligenceBuildRecord {
+  id: string
+  playerId: string
+  buildStatus: BuildStatus
+  activationStatus: ActivationStatus
+  dataCompleteness: number
+  featureCount: number
+  completedFeatureCount: number
+  activationReason?: string
+  rejectionReason?: string
+  builderVersion: string
+  featureSchemaVersion: string
+  confidencePolicyVersion: string
+  activationPolicyVersion: string
+  calculatedAt: Date
+  activatedAt?: Date
+  createdAt: Date
+  updatedAt: Date
+}

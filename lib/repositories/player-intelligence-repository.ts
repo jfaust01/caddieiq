@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import type { CalculatedFeature } from '@/lib/player-intelligence/types'
+import type { CalculatedFeature, BuildStatus, ActivationStatus, PlayerIntelligenceBuildRecord } from '@/lib/player-intelligence/types'
+import type { VersionSnapshot } from '@/lib/player-intelligence/version-registry'
 
 export interface PlayerIntelligenceRepository {
   findByPlayerId(playerId: string): Promise<any>
@@ -10,6 +11,14 @@ export interface PlayerIntelligenceRepository {
     dataCompleteness: number,
     features: CalculatedFeature[],
   ): Promise<any>
+  
+  // New versioned build methods
+  createBuild(playerId: string, versionSnapshot: VersionSnapshot): Promise<PlayerIntelligenceBuildRecord>
+  updateBuildStatus(buildId: string, buildStatus: BuildStatus): Promise<PlayerIntelligenceBuildRecord>
+  addFeaturesToBuild(buildId: string, features: CalculatedFeature[]): Promise<number>
+  getActiveBuild(playerId: string): Promise<PlayerIntelligenceBuildRecord | null>
+  promoteBuildToActive(buildId: string, playerId: string, previousActiveId: string | null, reason: string): Promise<{ build: PlayerIntelligenceBuildRecord; previousBuild: PlayerIntelligenceBuildRecord | null }>
+  rejectBuild(buildId: string, reason: string): Promise<PlayerIntelligenceBuildRecord>
 }
 
 export class PrismaPlayerIntelligenceRepository implements PlayerIntelligenceRepository {
@@ -138,6 +147,129 @@ export class PrismaPlayerIntelligenceRepository implements PlayerIntelligenceRep
         intelligence,
         featureCount: features.length,
       }
+    })
+  }
+
+  // NEW VERSIONED BUILD METHODS
+  
+  async createBuild(playerId: string, versionSnapshot: VersionSnapshot): Promise<PlayerIntelligenceBuildRecord> {
+    return await prisma.playerIntelligenceBuild.create({
+      data: {
+        playerId,
+        buildStatus: 'PENDING',
+        activationStatus: 'CANDIDATE',
+        dataCompleteness: 0,
+        featureCount: 0,
+        completedFeatureCount: 0,
+        builderVersion: versionSnapshot.builderVersion,
+        featureSchemaVersion: versionSnapshot.featureSchemaVersion,
+        confidencePolicyVersion: versionSnapshot.confidencePolicyVersion,
+        activationPolicyVersion: versionSnapshot.activationPolicyVersion,
+      },
+    })
+  }
+
+  async updateBuildStatus(buildId: string, buildStatus: BuildStatus): Promise<PlayerIntelligenceBuildRecord> {
+    return await prisma.playerIntelligenceBuild.update({
+      where: { id: buildId },
+      data: { buildStatus },
+    })
+  }
+
+  async addFeaturesToBuild(buildId: string, features: CalculatedFeature[]): Promise<number> {
+    for (const feature of features) {
+      await prisma.playerIntelligenceFeature.create({
+        data: {
+          playerIntelligenceBuildId: buildId,
+          featureName: feature.featureName,
+          featureCategory: feature.featureCategory,
+          featureValue: feature.featureValue,
+          featureValueStr: feature.featureValueStr,
+          confidence: feature.confidence,
+          source: feature.source,
+          explanation: feature.explanation,
+        },
+      })
+    }
+    return features.length
+  }
+
+  async getActiveBuild(playerId: string): Promise<PlayerIntelligenceBuildRecord | null> {
+    return await prisma.playerIntelligenceBuild.findFirst({
+      where: {
+        playerId,
+        activationStatus: 'ACTIVE',
+      },
+      orderBy: { activatedAt: 'desc' },
+    })
+  }
+
+  async promoteBuildToActive(
+    buildId: string,
+    playerId: string,
+    previousActiveId: string | null,
+    reason: string,
+  ): Promise<{ build: PlayerIntelligenceBuildRecord; previousBuild: PlayerIntelligenceBuildRecord | null }> {
+    return await prisma.$transaction(async (tx) => {
+      // 1. Verify build still exists and is CANDIDATE
+      const build = await tx.playerIntelligenceBuild.findUnique({
+        where: { id: buildId },
+      })
+
+      if (!build || build.activationStatus !== 'CANDIDATE') {
+        throw new Error(`Build ${buildId} not found or not CANDIDATE`)
+      }
+
+      // 2. Verify previousActiveId matches current active (optimistic locking)
+      const currentActive = await tx.playerIntelligenceBuild.findFirst({
+        where: {
+          playerId,
+          activationStatus: 'ACTIVE',
+        },
+      })
+
+      if (currentActive?.id !== previousActiveId) {
+        throw new Error('CONCURRENCY_CONFLICT: Active build changed since read')
+      }
+
+      // 3. Mark previous ACTIVE as SUPERSEDED
+      if (currentActive) {
+        await tx.playerIntelligenceBuild.update({
+          where: { id: currentActive.id },
+          data: { activationStatus: 'SUPERSEDED' },
+        })
+      }
+
+      // 4. Promote new build to ACTIVE
+      const promotedBuild = await tx.playerIntelligenceBuild.update({
+        where: { id: buildId },
+        data: {
+          activationStatus: 'ACTIVE',
+          activationReason: reason,
+          activatedAt: new Date(),
+        },
+      })
+
+      // 5. Update Player.activePlayerIntelligenceBuildId atomically
+      await tx.player.update({
+        where: { id: playerId },
+        data: { activePlayerIntelligenceBuildId: buildId },
+      })
+
+      return {
+        build: promotedBuild,
+        previousBuild: currentActive || null,
+      }
+    })
+  }
+
+  async rejectBuild(buildId: string, reason: string): Promise<PlayerIntelligenceBuildRecord> {
+    return await prisma.playerIntelligenceBuild.update({
+      where: { id: buildId },
+      data: {
+        activationStatus: 'REJECTED',
+        rejectionReason: reason,
+      },
     })
   }
 }

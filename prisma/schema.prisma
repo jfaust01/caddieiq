@@ -317,16 +317,19 @@ model Player {
   deletedAt     DateTime?
 
   // Relations
-  nationality        Nationality?            @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
-  tourHistory        PlayerTourHistory[]
-  tournamentFields   TournamentField[]
-  seasonStatistics   PlayerSeasonStatistic[]
-  newsArticles       NewsArticle[]
-  bettingOutcomes    BettingOutcome[]
-  fantasyProjections FantasyProjection[]
-  dfsSalaries        DfsSalary[]
-  oddsQuotes         OddsQuote[]
-  intelligence       PlayerIntelligence?
+  nationality              Nationality?                      @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
+  tourHistory              PlayerTourHistory[]
+  tournamentFields         TournamentField[]
+  seasonStatistics         PlayerSeasonStatistic[]
+  newsArticles             NewsArticle[]
+  bettingOutcomes          BettingOutcome[]
+  fantasyProjections       FantasyProjection[]
+  dfsSalaries              DfsSalary[]
+  oddsQuotes               OddsQuote[]
+  intelligence             PlayerIntelligence?
+  playerIntelligenceBuilds PlayerIntelligenceBuild[]
+  activePlayerIntelligenceBuildId String? @unique
+  activePlayerIntelligenceBuild   PlayerIntelligenceBuild? @relation(name: "activePlayerIntelligenceBuild", fields: [activePlayerIntelligenceBuildId], references: [id], onDelete: SetNull)
 
   @@index([slug])
   @@index([lastName])
@@ -1755,6 +1758,67 @@ model CourseInsight {
 /// PlayerIntelligence — Aggregated player skill and performance metrics
 /// Combines tournament history, fantasy data, and statistical analysis
 /// into traceable, normalized features for downstream systems
+/// PlayerIntelligenceBuild — Versioned, immutable snapshot of player intelligence
+/// Each build is a point-in-time calculation with explicit activation state
+/// Enables safe rollback, concurrent rebuild protection, and build history
+model PlayerIntelligenceBuild {
+  id                              String    @id @default(cuid())
+  
+  /// Player reference
+  playerId                        String
+  player                          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  /// Build lifecycle status
+  /// PENDING: Created, not yet calculated
+  /// CALCULATING: Currently computing features
+  /// SUCCESS: All features calculated, no failures
+  /// PARTIAL: Some features calculated, some failed
+  /// FAILED: All calculators failed
+  buildStatus                     String    @default("PENDING") @db.VarChar(20)
+  
+  /// Activation status (controls whether this build is visible to consumers)
+  /// CANDIDATE: Calculated but not yet activated (awaiting policy evaluation)
+  /// ACTIVE: Currently active, visible to consumers
+  /// SUPERSEDED: Was active, replaced by newer ACTIVE build
+  /// REJECTED: Policy evaluation failed, will not be activated
+  activationStatus                String    @default("CANDIDATE") @db.VarChar(20)
+  
+  /// Data Completeness (0-100): Percentage of available data used to calculate features
+  dataCompleteness                Int       @default(0)
+  
+  /// Feature count at build time
+  featureCount                    Int       @default(0)
+  completedFeatureCount           Int       @default(0)
+  
+  /// Activation metadata
+  activationReason                String?
+  rejectionReason                 String?
+  
+  /// Versioning
+  builderVersion                  String    @db.VarChar(50)
+  featureSchemaVersion            String    @db.VarChar(50)
+  confidencePolicyVersion         String    @db.VarChar(50)
+  activationPolicyVersion         String    @db.VarChar(50)
+  
+  /// Audit timestamps
+  calculatedAt                    DateTime  @default(now())
+  activatedAt                     DateTime?
+  createdAt                       DateTime  @default(now())
+  updatedAt                       DateTime  @updatedAt
+  
+  /// Relations
+  features                        PlayerIntelligenceFeature[]
+  asActiveBuild                   Player?   @relation(name: "activePlayerIntelligenceBuild")
+  
+  @@unique([playerId, activationStatus])
+  @@index([playerId])
+  @@index([buildStatus])
+  @@index([activationStatus])
+  @@index([calculatedAt])
+  @@index([activatedAt])
+  @@map("player_intelligence_builds")
+}
+
 model PlayerIntelligence {
   id                              String    @id @default(cuid())
   
@@ -1780,15 +1844,19 @@ model PlayerIntelligence {
   @@map("player_intelligence")
 }
 
-/// PlayerIntelligenceFeature — Normalized feature store for player attributes
-/// Each feature is traceable to source data with confidence and calculation metadata
-/// Designed for efficient querying by downstream systems (AI Caddie, predictions, etc.)
+/// PlayerIntelligenceFeature — Immutable feature snapshot
+/// Each feature belongs to a specific build (never mutated)
+/// Features are only queried via the active build
 model PlayerIntelligenceFeature {
   id                              String    @id @default(cuid())
   
-  /// Intelligence reference
-  playerIntelligenceId            String
-  playerIntelligence              PlayerIntelligence @relation(fields: [playerIntelligenceId], references: [id], onDelete: Cascade)
+  /// Build reference (immutable per build)
+  playerIntelligenceBuildId       String
+  playerIntelligenceBuild         PlayerIntelligenceBuild @relation(fields: [playerIntelligenceBuildId], references: [id], onDelete: Cascade)
+  
+  /// Legacy intelligence reference (for transition period)
+  playerIntelligenceId            String?
+  playerIntelligence              PlayerIntelligence? @relation(fields: [playerIntelligenceId], references: [id], onDelete: SetNull)
   
   /// Feature identifier (e.g., "tournament_count", "avg_finish", "driving_distance")
   /// Provides stable key for querying specific features
@@ -1810,9 +1878,8 @@ model PlayerIntelligenceFeature {
   /// Indicates where the underlying data originated
   source                          String    @db.VarChar(50) @default("sportsdataio")
   
-  /// Timestamp when this feature was last calculated
-  /// Useful for understanding staleness and driving recalculation schedules
-  lastCalculated                  DateTime  @default(now())
+  /// Timestamp when this feature was calculated
+  calculatedAt                    DateTime  @default(now())
   
   /// Explanation of how this feature was derived (optional)
   /// Human-readable notes about methodology, assumptions, or important caveats
@@ -1822,7 +1889,8 @@ model PlayerIntelligenceFeature {
   createdAt                       DateTime  @default(now())
   updatedAt                       DateTime  @updatedAt
   
-  @@unique([playerIntelligenceId, featureName])
+  @@unique([playerIntelligenceBuildId, featureName])
+  @@index([playerIntelligenceBuildId])
   @@index([playerIntelligenceId])
   @@index([featureName])
   @@index([featureCategory])
