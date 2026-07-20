@@ -32,19 +32,19 @@ export async function getCourseIntelligence(courseId: string): Promise<CourseInt
 
   // Fetch course details
   const courseResult = await courseDetailsRepo.findById(courseId)
-  if (courseResult.outcome !== "ok" || !courseResult.record) {
+  if (!courseResult.record) {
     return null
   }
 
   const course = courseResult.record
 
-  // Fetch holes
+  // Fetch holes (read operation, records array has no outcome semantics)
   const holesResult = await courseHoleRepo.findByCourseId(courseId)
-  const holes = holesResult.outcome === "ok" ? holesResult.records ?? [] : []
+  const holes = holesResult.records ?? []
 
-  // Fetch tees
+  // Fetch tees (read operation, records array has no outcome semantics)
   const teesResult = await courseTeeRepo.findByCourseId(courseId)
-  const tees = teesResult.outcome === "ok" ? teesResult.records ?? [] : []
+  const tees = teesResult.records ?? []
 
   // If no holes or tees, cannot generate intelligence
   if (holes.length === 0 || tees.length === 0) {

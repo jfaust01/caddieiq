@@ -129,7 +129,7 @@ export async function orchestrateTournamentCourseMapping(
         console.log(`[v0] START: mappingRepo.findByTournamentId(${tournament.id})`)
         const existingMappingResult = await mappingRepo.findByTournamentId(tournament.id)
         console.log(`[v0] END: mappingRepo.findByTournamentId(${tournament.id})`)
-        const existingMapping = existingMappingResult.outcome === "ok" ? existingMappingResult.record : null
+        const existingMapping = existingMappingResult.record ?? null
 
         if (existingMapping) {
           if (existingMapping.verified) {
@@ -221,14 +221,14 @@ export async function orchestrateTournamentCourseMapping(
           })
           console.log(`[v0] END: mappingRepo.update(${tournament.id}) - outcome: ${updateResult.outcome}`)
 
-          if (updateResult.outcome === "ok") {
+          if (updateResult.outcome !== "failed") {
             mappingsUpdated++
             console.log(
               `[v0] ✓ Updated mapping for ${tournament.name} (golfCourseApiId=${golfCourseApiCourseId || "null"})`,
             )
           } else {
             totalErrors++
-            console.log(`[v0] ✗ Failed to update mapping for ${tournament.name}: ${updateResult.error.message}`)
+            console.log(`[v0] ✗ Failed to update mapping for ${tournament.name}: ${updateResult.error?.message}`)
           }
         } else {
           // Create new mapping
@@ -251,14 +251,14 @@ export async function orchestrateTournamentCourseMapping(
           })
           console.log(`[v0] END: mappingRepo.create(${tournament.id}) - outcome: ${createResult.outcome}`)
 
-          if (createResult.outcome === "ok") {
+          if (createResult.outcome !== "failed") {
             mappingRowsCreated++
             console.log(
               `[v0] ✓ Created mapping for ${tournament.name} (golfCourseApiId=${golfCourseApiCourseId || "null"})`,
             )
           } else {
             totalErrors++
-            console.log(`[v0] ✗ Failed to create mapping for ${tournament.name}: ${createResult.error.message}`)
+            console.log(`[v0] ✗ Failed to create mapping for ${tournament.name}: ${createResult.error?.message}`)
           }
         }
 

@@ -284,7 +284,7 @@ async function processSingleTournamentMapping(tournamentCourse: any, index: numb
         verified: false,
       });
 
-      if (updateResult.outcome === "ok") {
+      if (updateResult.outcome !== "failed") {
         updated++;
       } else {
         errors++;
@@ -301,7 +301,7 @@ async function processSingleTournamentMapping(tournamentCourse: any, index: numb
         verified: false,
       });
 
-      if (createResult.outcome === "ok") {
+      if (createResult.outcome !== "failed") {
         created++;
       } else {
         errors++;
