@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import type { CalculatedFeature, FeatureCalculator } from './types'
+import { getPlayerIntelligenceRepository } from '@/lib/repositories/player-intelligence-repository'
 import {
   TournamentCountCalculator,
   AverageFinishCalculator,
@@ -10,6 +11,18 @@ import {
   SalaryValueCalculator,
 } from './calculators'
 
+/**
+ * PlayerIntelligenceBuilder orchestrates the feature calculation pipeline.
+ * 
+ * Responsibilities:
+ * - Load player data
+ * - Execute all feature calculators
+ * - Compute data completeness
+ * - Hand results to repository for persistence
+ * 
+ * NOTE: Builder DOES NOT perform any Prisma operations.
+ * All persistence is handled by repository.
+ */
 export class PlayerIntelligenceBuilder {
   private calculators: FeatureCalculator[] = [
     new TournamentCountCalculator(),
@@ -21,11 +34,13 @@ export class PlayerIntelligenceBuilder {
     new SalaryValueCalculator(),
   ]
 
+  private repository = getPlayerIntelligenceRepository()
+
   async buildForPlayer(playerId: string): Promise<void> {
     try {
       console.log(`[v0] Building Player Intelligence for ${playerId}`)
 
-      // Verify player exists
+      // Verify player exists (this is the only Prisma call in builder)
       const player = await prisma.player.findUnique({
         where: { id: playerId },
       })
@@ -41,7 +56,7 @@ export class PlayerIntelligenceBuilder {
           const feature = await calculator.calculate(playerId)
           if (feature) {
             features.push(feature)
-            console.log(`[v0] Calculated ${calculator.name}`)
+            console.log(`[v0] Calculated ${calculator.name}: confidence=${feature.confidence}`)
           }
         } catch (error) {
           console.error(`[v0] Error calculating ${calculator.name}:`, error)
@@ -55,48 +70,8 @@ export class PlayerIntelligenceBuilder {
       console.log(`[v0] Calculated ${completedFeatures} / ${features.length} features`)
       console.log(`[v0] Data completeness: ${dataCompleteness}%`)
 
-      // Upsert PlayerIntelligence record
-      const intelligence = await prisma.playerIntelligence.upsert({
-        where: { playerId },
-        create: {
-          playerId,
-          dataCompleteness,
-        },
-        update: {
-          dataCompleteness,
-          calculatedAt: new Date(),
-        },
-      })
-
-      // Upsert all features
-      for (const feature of features) {
-        await prisma.playerIntelligenceFeature.upsert({
-          where: {
-            playerIntelligenceId_featureName: {
-              playerIntelligenceId: intelligence.id,
-              featureName: feature.featureName,
-            },
-          },
-          create: {
-            playerIntelligenceId: intelligence.id,
-            featureName: feature.featureName,
-            featureCategory: feature.featureCategory,
-            featureValue: feature.featureValue,
-            featureValueStr: feature.featureValueStr,
-            confidence: feature.confidence,
-            source: feature.source,
-            explanation: feature.explanation,
-          },
-          update: {
-            featureValue: feature.featureValue,
-            featureValueStr: feature.featureValueStr,
-            confidence: feature.confidence,
-            source: feature.source,
-            explanation: feature.explanation,
-            lastCalculated: new Date(),
-          },
-        })
-      }
+      // Delegate all persistence to repository
+      await this.repository.upsert(playerId, dataCompleteness, features)
 
       console.log(`[v0] Player Intelligence built successfully for ${playerId}`)
     } catch (error) {

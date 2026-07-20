@@ -1,4 +1,5 @@
 /// Player Intelligence Feature Types and Interfaces
+import { FeatureSource } from './constants'
 
 export interface CalculatedFeature {
   featureName: string
@@ -6,7 +7,7 @@ export interface CalculatedFeature {
   featureValue: number | null
   featureValueStr: string | null
   confidence: number
-  source: 'sportsdataio' | 'calculated' | 'projected'
+  source: FeatureSource
   explanation?: string
 }
 

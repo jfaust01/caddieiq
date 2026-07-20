@@ -1799,8 +1799,8 @@ model PlayerIntelligenceFeature {
   
   /// Normalized feature value (number, percentage, or descriptive string)
   /// Type is context-dependent; category and documentation describe expected format
-  featureValue                    Float     @nullable
-  featureValueStr                 String    @nullable
+  featureValue                    Float?
+  featureValueStr                 String?
   
   /// Confidence level (0-100) indicating reliability of this feature
   /// Lower confidence may indicate sparse data or high variance in source
@@ -1816,7 +1816,7 @@ model PlayerIntelligenceFeature {
   
   /// Explanation of how this feature was derived (optional)
   /// Human-readable notes about methodology, assumptions, or important caveats
-  explanation                     String    @nullable
+  explanation                     String?
   
   /// Audit timestamps
   createdAt                       DateTime  @default(now())

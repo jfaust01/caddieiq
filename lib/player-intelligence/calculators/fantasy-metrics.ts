@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import type { CalculatedFeature, FeatureCalculator } from '../types'
+import { FeatureSource, calculateDataRatioConfidence } from '../constants'
 
 abstract class FantasyCalculator implements FeatureCalculator {
   abstract readonly name: string
@@ -25,7 +26,7 @@ export class AverageDKPointsCalculator extends FantasyCalculator {
         featureValue: null,
         featureValueStr: null,
         confidence: 0,
-        source: 'sportsdataio',
+        source: FeatureSource.SPORTSDATAIO,
         explanation: 'Insufficient data: no fantasy projections available',
       }
     }
@@ -41,21 +42,23 @@ export class AverageDKPointsCalculator extends FantasyCalculator {
         featureValue: null,
         featureValueStr: null,
         confidence: 0,
-        source: 'sportsdataio',
+        source: FeatureSource.SPORTSDATAIO,
         explanation: 'Insufficient data: no fantasy points recorded',
       }
     }
 
     const avgPoints = validPoints.reduce((a, b) => a + b, 0) / validPoints.length
+    // Confidence: ratio of valid points to projected tournaments (better data availability = higher confidence)
+    const confidence = calculateDataRatioConfidence(validPoints.length, projections.length)
 
     return {
       featureName: this.name,
       featureCategory: this.category,
       featureValue: parseFloat(avgPoints.toFixed(2)),
       featureValueStr: null,
-      confidence: Math.min(100, Math.floor((validPoints.length / 20) * 100)),
-      source: 'sportsdataio',
-      explanation: `Average DK points: ${avgPoints.toFixed(2)} across ${validPoints.length} tournaments`,
+      confidence,
+      source: FeatureSource.SPORTSDATAIO,
+      explanation: `Average DK points: ${avgPoints.toFixed(2)} across ${validPoints.length} tournaments (${projections.length} total projections available)`,
     }
   }
 }
@@ -78,7 +81,7 @@ export class AverageSalaryCalculator extends FantasyCalculator {
         featureValue: null,
         featureValueStr: null,
         confidence: 0,
-        source: 'sportsdataio',
+        source: FeatureSource.SPORTSDATAIO,
         explanation: 'Insufficient data: no salary information available',
       }
     }
@@ -94,21 +97,22 @@ export class AverageSalaryCalculator extends FantasyCalculator {
         featureValue: null,
         featureValueStr: null,
         confidence: 0,
-        source: 'sportsdataio',
+        source: FeatureSource.SPORTSDATAIO,
         explanation: 'Insufficient data: no valid salary values found',
       }
     }
 
     const avgSalary = validSalaries.reduce((a, b) => a + b, 0) / validSalaries.length
+    const confidence = calculateDataRatioConfidence(validSalaries.length, salaries.length)
 
     return {
       featureName: this.name,
       featureCategory: this.category,
       featureValue: avgSalary,
       featureValueStr: `$${avgSalary.toLocaleString()}`,
-      confidence: Math.min(100, Math.floor((validSalaries.length / 20) * 100)),
-      source: 'sportsdataio',
-      explanation: `Average DK salary: $${avgSalary.toLocaleString()} across ${validSalaries.length} tournaments`,
+      confidence,
+      source: FeatureSource.SPORTSDATAIO,
+      explanation: `Average DK salary: $${avgSalary.toLocaleString()} across ${validSalaries.length} tournaments (${salaries.length} total salary data points)`,
     }
   }
 }
@@ -130,21 +134,23 @@ export class SalaryValueCalculator extends FantasyCalculator {
         featureValue: null,
         featureValueStr: null,
         confidence: 0,
-        source: 'calculated',
+        source: FeatureSource.DERIVED,
         explanation: 'Cannot calculate salary value without avg points and avg salary',
       }
     }
 
     const salaryValue = avgPointsFeature.featureValue / (avgSalaryFeature.featureValue / 1000)
+    // Confidence is minimum of source confidence
+    const confidence = Math.min(avgPointsFeature.confidence, avgSalaryFeature.confidence)
 
     return {
       featureName: this.name,
       featureCategory: this.category,
       featureValue: parseFloat(salaryValue.toFixed(2)),
       featureValueStr: null,
-      confidence: Math.min(avgPointsFeature.confidence, avgSalaryFeature.confidence),
-      source: 'calculated',
-      explanation: `Salary value: ${salaryValue.toFixed(2)} points per $1000 salary`,
+      confidence,
+      source: FeatureSource.DERIVED,
+      explanation: `Salary value: ${salaryValue.toFixed(2)} points per $1000 salary (derived from avg DK points and salary)`,
     }
   }
 }

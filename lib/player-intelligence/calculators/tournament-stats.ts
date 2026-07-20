@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import type { CalculatedFeature, FeatureCalculator } from '../types'
+import { FeatureSource, calculateTournamentConfidence } from '../constants'
 
 abstract class TournamentStatCalculator implements FeatureCalculator {
   abstract readonly name: string
@@ -26,14 +27,17 @@ export class TournamentCountCalculator extends TournamentStatCalculator {
       where: { playerId },
     })
 
+    // Count is directly from database, so confidence is high if count > 0
+    const confidence = count === 0 ? 0 : 95
+
     return {
       featureName: this.name,
       featureCategory: this.category,
       featureValue: count,
       featureValueStr: null,
-      confidence: 100,
-      source: 'sportsdataio',
-      explanation: `Player has competed in ${count} tournaments`,
+      confidence,
+      source: FeatureSource.SPORTSDATAIO,
+      explanation: `Player has competed in ${count} tournaments (high confidence: direct data count)`,
     }
   }
 }
@@ -52,7 +56,7 @@ export class AverageFinishCalculator extends TournamentStatCalculator {
         featureValue: null,
         featureValueStr: null,
         confidence: 0,
-        source: 'calculated',
+        source: FeatureSource.DERIVED,
         explanation: 'Insufficient data: player has no tournament history',
       }
     }
@@ -67,12 +71,14 @@ export class AverageFinishCalculator extends TournamentStatCalculator {
         featureCategory: this.category,
         featureValue: null,
         featureValueStr: null,
-        confidence: 50,
-        source: 'calculated',
-        explanation: 'Limited data: player has competed but mostly missed cuts',
+        confidence: 20,
+        source: FeatureSource.DERIVED,
+        explanation: `Limited data: player competed in ${fields.length} tournaments but mostly missed cuts`,
       }
     }
 
+    // Confidence based on number of finishes: threshold is 13+ tournaments for HIGH
+    const finishConfidence = calculateTournamentConfidence(validPositions.length)
     const avgFinish = validPositions.reduce((a, b) => a + b, 0) / validPositions.length
 
     return {
@@ -80,9 +86,9 @@ export class AverageFinishCalculator extends TournamentStatCalculator {
       featureCategory: this.category,
       featureValue: parseFloat(avgFinish.toFixed(2)),
       featureValueStr: null,
-      confidence: Math.min(100, Math.floor((validPositions.length / fields.length) * 100)),
-      source: 'calculated',
-      explanation: `Average finish of ${avgFinish.toFixed(1)} across ${validPositions.length} completed tournaments`,
+      confidence: finishConfidence,
+      source: FeatureSource.DERIVED,
+      explanation: `Average finish of ${avgFinish.toFixed(1)} across ${validPositions.length} completed tournaments (${fields.length} total attempts)`,
     }
   }
 }
@@ -101,22 +107,23 @@ export class CutPercentageCalculator extends TournamentStatCalculator {
         featureValue: null,
         featureValueStr: null,
         confidence: 0,
-        source: 'calculated',
+        source: FeatureSource.DERIVED,
         explanation: 'Insufficient data: player has no tournament history',
       }
     }
 
     const cutsMade = fields.filter((f) => f.madeCut === true).length
     const percentage = (cutsMade / fields.length) * 100
+    const cutConfidence = calculateTournamentConfidence(fields.length)
 
     return {
       featureName: this.name,
       featureCategory: this.category,
       featureValue: parseFloat(percentage.toFixed(2)),
       featureValueStr: `${percentage.toFixed(1)}%`,
-      confidence: Math.min(100, Math.floor((fields.length / 20) * 100)),
-      source: 'calculated',
-      explanation: `Made cut ${cutsMade} out of ${fields.length} times (${percentage.toFixed(1)}%)`,
+      confidence: cutConfidence,
+      source: FeatureSource.DERIVED,
+      explanation: `Made cut ${cutsMade} out of ${fields.length} times (${percentage.toFixed(1)}%) - confidence based on ${fields.length} tournament sample`,
     }
   }
 }
@@ -135,22 +142,23 @@ export class Top10PercentageCalculator extends TournamentStatCalculator {
         featureValue: null,
         featureValueStr: null,
         confidence: 0,
-        source: 'calculated',
+        source: FeatureSource.DERIVED,
         explanation: 'Insufficient data: player has no tournament history',
       }
     }
 
     const top10 = fields.filter((f) => f.finalPosition && f.finalPosition <= 10).length
     const percentage = (top10 / fields.length) * 100
+    const top10Confidence = calculateTournamentConfidence(fields.length)
 
     return {
       featureName: this.name,
       featureCategory: this.category,
       featureValue: parseFloat(percentage.toFixed(2)),
       featureValueStr: `${percentage.toFixed(1)}%`,
-      confidence: Math.min(100, Math.floor((fields.length / 20) * 100)),
-      source: 'calculated',
-      explanation: `Finished top 10 in ${top10} out of ${fields.length} tournaments (${percentage.toFixed(1)}%)`,
+      confidence: top10Confidence,
+      source: FeatureSource.DERIVED,
+      explanation: `Finished Top 10 in ${top10} out of ${fields.length} tournaments (${percentage.toFixed(1)}%) - confidence based on ${fields.length} tournament sample`,
     }
   }
 }
