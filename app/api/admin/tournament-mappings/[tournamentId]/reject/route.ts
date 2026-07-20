@@ -10,10 +10,10 @@ import { prisma } from "@/lib/prisma"
  */
 export async function POST(
   request: Request,
-  { params }: { params: { tournamentId: string } }
+  { params }: { params: Promise<{ tournamentId: string }> }
 ) {
   try {
-    const { tournamentId } = params
+    const { tournamentId } = await params
     const repo = getTournamentCourseMappingRepository(prisma)
 
     // Update mapping to indicate it was rejected

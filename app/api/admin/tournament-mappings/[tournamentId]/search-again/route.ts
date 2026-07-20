@@ -4,10 +4,10 @@ import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { tournamentId: string } }
+  { params }: { params: Promise<{ tournamentId: string }> }
 ) {
   try {
-    const { tournamentId } = params
+    const { tournamentId } = await params
 
     const repo = getTournamentCourseMappingRepository(prisma)
     const result = await repo.markForReSearch(tournamentId)
