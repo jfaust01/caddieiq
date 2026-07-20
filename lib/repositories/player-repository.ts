@@ -421,33 +421,14 @@ export class PlayerRepository extends BaseRepository {
     completedFeatureCount: number
     calculatedAt: Date
     activatedAt: Date | null
-    features: Array<{
-      featureName: string
-      featureCategory: string
-      featureValue: number | null
-      featureValueStr: string | null
-      confidence: number
-      source: string
-    }>
   } | null> {
     // Query the active build for this player
+    // NOTE: Features are not included - player_intelligence_features table will be created in Phase 15.3B
     const build = await this.prisma.playerIntelligenceBuild.findFirst({
       where: {
         playerId,
         activationStatus: "ACTIVE",
         buildStatus: "SUCCESS",
-      },
-      include: {
-        features: {
-          select: {
-            featureName: true,
-            featureCategory: true,
-            featureValue: true,
-            featureValueStr: true,
-            confidence: true,
-            source: true,
-          },
-        },
       },
     })
 
@@ -465,7 +446,6 @@ export class PlayerRepository extends BaseRepository {
       completedFeatureCount: build.completedFeatureCount,
       calculatedAt: build.calculatedAt,
       activatedAt: build.activatedAt,
-      features: build.features,
     }
   }
 }

@@ -1807,7 +1807,9 @@ model PlayerIntelligenceBuild {
   updatedAt                       DateTime  @updatedAt
   
   /// Relations
-  features                        PlayerIntelligenceFeature[]
+  /// NOTE: PlayerIntelligenceFeature relation will be added in Phase 15.3B
+  /// once player_intelligence_features table is created
+  /// (features relation commented out - see Phase 15.3B plan)
   asActiveBuild                   Player?   @relation(name: "activePlayerIntelligenceBuild")
   
   @@unique([playerId, activationStatus])
@@ -1835,8 +1837,8 @@ model PlayerIntelligence {
   createdAt                       DateTime  @default(now())
   updatedAt                       DateTime  @updatedAt
   
-  /// Relations
-  features                        PlayerIntelligenceFeature[]
+  /// NOTE: features relation removed - PlayerIntelligenceFeature table
+  /// is part of Phase 15.3B and not yet created
   
   @@unique([playerId])
   @@index([playerId])
@@ -1847,12 +1849,16 @@ model PlayerIntelligence {
 /// PlayerIntelligenceFeature — Immutable feature snapshot
 /// Each feature belongs to a specific build (never mutated)
 /// Features are only queried via the active build
+// NOTE: PlayerIntelligenceFeature model and player_intelligence_features table
+// will be created in Phase 15.3B. Commented out for now to avoid validation errors.
+// This table is not yet deployed to production databases.
+/*
 model PlayerIntelligenceFeature {
   id                              String    @id @default(cuid())
   
   /// Build reference (immutable per build)
   playerIntelligenceBuildId       String
-  playerIntelligenceBuild         PlayerIntelligenceBuild @relation(fields: [playerIntelligenceBuildId], references: [id], onDelete: Cascade)
+  playerIntelligenceBuild         PlayerIntelligenceBuild @relation(name: "features", fields: [playerIntelligenceBuildId], references: [id], onDelete: Cascade)
   
   /// Legacy intelligence reference (for transition period)
   playerIntelligenceId            String?
@@ -1897,3 +1903,4 @@ model PlayerIntelligenceFeature {
   @@index([source])
   @@map("player_intelligence_features")
 }
+*/
