@@ -764,12 +764,12 @@ model Tournament {
   externalId         String?
 
   // Historical data fields (Phase 17.3A)
-  lockDatetime            DateTime?
-  lockDatetimeSetAt       DateTime?
-  editionSequence         Int?
-  tournamentSeriesId      String?
-  providerEditionId       String?   @unique
-  lockDatetimeIsImmutable Boolean   @default(false)
+  lockDatetime            DateTime?         @map("lock_datetime")
+  lockDatetimeSetAt       DateTime?         @map("lock_datetime_set_at")
+  editionSequence         Int?              @map("edition_sequence")
+  tournamentSeriesId      String?           @map("tournament_series_id")
+  providerEditionId       String?   @unique @map("provider_edition_id")
+  lockDatetimeIsImmutable Boolean   @default(false) @map("lock_datetime_is_immutable")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -849,16 +849,16 @@ model TournamentField {
   earnings      Decimal?
 
   // Historical data fields (Phase 17.3A)
-  entryConfirmedAt         DateTime?
-  withdrawalTimestamp      DateTime?
-  withdrawalKnownTimestamp DateTime?
-  entryStatusChangedAt     DateTime         @default(now())
-  sourceEffectiveTimestamp DateTime?
-  alternateStatus          AlternateStatus?
-  alternateCallTimestamp   DateTime?
-  sourceProvider           String           @default("sportsdataio")
-  sourceRecordId           String?
-  retrievedTimestamp       DateTime?
+  entryConfirmedAt         DateTime?        @map("entry_confirmed_at")
+  withdrawalTimestamp      DateTime?        @map("withdrawal_timestamp")
+  withdrawalKnownTimestamp DateTime?        @map("withdrawal_known_timestamp")
+  entryStatusChangedAt     DateTime         @default(now()) @map("entry_status_changed_at")
+  sourceEffectiveTimestamp DateTime?        @map("source_effective_timestamp")
+  alternateStatus          AlternateStatus? @map("alternate_status")
+  alternateCallTimestamp   DateTime?        @map("alternate_call_timestamp")
+  sourceProvider           String           @default("sportsdataio") @map("source_provider")
+  sourceRecordId           String?          @map("source_record_id")
+  retrievedTimestamp       DateTime?        @map("retrieved_timestamp")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
