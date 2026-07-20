@@ -172,10 +172,30 @@ When writing prompts or PRs that extend the project:
 
 ## Documentation Index
 
+### 🏗️ Architecture Documentation (Phase 15.3A - NEW)
+
+Comprehensive platform architecture documentation created during Phase 15.3A audit:
+
+| Document | Purpose | Read Time |
+| --- | --- | --- |
+| [**ARCHITECTURE_AUDIT_SUMMARY.md**](./ARCHITECTURE_AUDIT_SUMMARY.md) | 📌 **START HERE** — Executive summary of the architecture audit, key findings, and next steps | 10 min |
+| [Platform_Architecture.md](./Platform_Architecture.md) | High-level system overview, 7-layer architecture, technology stack, feature modules | 15 min |
+| [Folder_Ownership.md](./Folder_Ownership.md) | Responsibility and dependency guide for every folder; what belongs where | 20 min |
+| [Architecture_Rules.md](./Architecture_Rules.md) | Layer responsibilities, database rules, business logic patterns, error handling, code review checklist | 30 min |
+| [Domain_Inventory.md](./Domain_Inventory.md) | Catalog of 14 business domains with maturity, dependencies, roadmap | 30 min |
+| [External_Integrations.md](./External_Integrations.md) | Complete reference for 6 external data providers, failure handling, monitoring | 30 min |
+| [Architecture_Findings.md](./Architecture_Findings.md) | Audit results: 18 issues identified by severity, remediation roadmap | 30 min |
+| [Architecture_Diagram.md](./Architecture_Diagram.md) | 13 visual diagrams (Mermaid + ASCII) of system, flows, dependencies | 15 min |
+
+**Quick Start:** New to CaddieIQ? Read ARCHITECTURE_AUDIT_SUMMARY.md (10 min) → Platform_Architecture.md (15 min) → Folder_Ownership.md (20 min).
+
+---
+
+### 📚 Original Documentation
+
 | Document | Purpose |
 | --- | --- |
 | [PRD.md](./PRD.md) | Product vision, users, and requirements. |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System design, layers, and principles. |
 | [ROADMAP.md](./ROADMAP.md) | Phased delivery plan and status. |
 | [DATABASE.md](./DATABASE.md) | Planned data model and tables. |
 | [FEATURES.md](./FEATURES.md) | Planned features by module. |
