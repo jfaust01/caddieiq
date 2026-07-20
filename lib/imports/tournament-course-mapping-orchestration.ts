@@ -205,13 +205,19 @@ export async function orchestrateTournamentCourseMapping(
         if (existingMapping) {
           // Update existing unverified mapping
           console.log(`[v0] START: mappingRepo.update(${tournament.id})`)
+          
+          // Auto-verify if confidence >= 95% (for updates that weren't previously verified)
+          const shouldAutoVerify = !existingMapping.verified && confidence >= 95
+          console.log(`[v0] Confidence: ${confidence}% - Auto-verify: ${shouldAutoVerify ? "YES" : "NO"}`)
+          
           const updateResult = await mappingRepo.update(tournament.id, {
             golfCourseApiCourseId: golfCourseApiCourseId || undefined,
             tournamentCourseName: course.name,
             golfCourseCourseName: course.name,
             matchConfidence: confidence,
             matchedBy,
-            verified: false,
+            verified: shouldAutoVerify ? true : false,
+            autoVerified: shouldAutoVerify,
           })
           console.log(`[v0] END: mappingRepo.update(${tournament.id}) - outcome: ${updateResult.outcome}`)
 
@@ -227,6 +233,11 @@ export async function orchestrateTournamentCourseMapping(
         } else {
           // Create new mapping
           console.log(`[v0] START: mappingRepo.create(${tournament.id})`)
+          
+          // Auto-verify if confidence >= 95%
+          const shouldAutoVerify = confidence >= 95
+          console.log(`[v0] Confidence: ${confidence}% - Auto-verify: ${shouldAutoVerify ? "YES" : "NO"}`)
+          
           const createResult = await mappingRepo.create({
             tournamentId: tournament.id,
             sportsDataIoCourseId: undefined,
@@ -235,7 +246,8 @@ export async function orchestrateTournamentCourseMapping(
             golfCourseCourseName: course.name,
             matchConfidence: confidence,
             matchedBy,
-            verified: false,
+            verified: shouldAutoVerify,
+            autoVerified: shouldAutoVerify,
           })
           console.log(`[v0] END: mappingRepo.create(${tournament.id}) - outcome: ${createResult.outcome}`)
 
