@@ -4,6 +4,7 @@ import { Trophy, MapPin } from 'lucide-react'
 import type { TournamentSummary } from '@/features/tournaments/types'
 import type { CourseIntelligence } from '@/features/courses/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { formatLocation } from '@/features/tournaments/utils/format'
 
 interface CompactCourseHistoryRowProps {
   tournament: TournamentSummary
@@ -19,6 +20,7 @@ export function CompactCourseHistoryRow({
 }: CompactCourseHistoryRowProps) {
   const par = tournament.courseRef?.par ?? null
   const yardage = tournament.courseRef?.yardage ?? null
+  const location = tournament.location ? formatLocation(tournament.location) : null
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -71,12 +73,12 @@ export function CompactCourseHistoryRow({
                 </div>
               </div>
             )}
-            {tournament.location && (
+            {location && (
               <div className="flex items-start gap-2">
                 <MapPin className="size-4 text-muted-foreground shrink-0 mt-0.5" />
                 <div>
                   <div className="text-xs text-muted-foreground">Location</div>
-                  <div className="font-semibold">{tournament.location}</div>
+                  <div className="font-semibold">{location}</div>
                 </div>
               </div>
             )}

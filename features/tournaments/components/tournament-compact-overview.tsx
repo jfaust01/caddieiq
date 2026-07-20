@@ -1,7 +1,6 @@
 'use client'
 
-import type { TournamentSummary } from '@/features/tournaments/types'
-import type { TournamentField, FieldReport, FieldFitBoard, DfsValueField } from '@/features/tournaments/services/tournament-service'
+import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
 import type { WeatherIntelligence } from '@/lib/weather-intelligence'
 import type { CourseIntelligence } from '@/features/courses/types'
 import { CompactKpiRow } from './compact-kpi-row'
@@ -15,10 +14,10 @@ import { TournamentOverview } from './tournament-overview'
 interface TournamentCompactOverviewProps {
   tournament: TournamentSummary
   field: TournamentField
-  fieldReport: FieldReport | null
-  fitBoard: FieldFitBoard | null
+  fieldReport?: { cutLine?: string; averageScore?: number } | null
+  fitBoard?: Record<string, unknown> | null
   weather: WeatherIntelligence | null
-  dfsField: DfsValueField | null
+  dfsField?: Record<string, unknown> | null
   courseProfile: CourseIntelligence | null
 }
 
