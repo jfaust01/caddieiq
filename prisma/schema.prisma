@@ -326,6 +326,7 @@ model Player {
   fantasyProjections FantasyProjection[]
   dfsSalaries        DfsSalary[]
   oddsQuotes         OddsQuote[]
+  intelligence       PlayerIntelligence?
 
   @@index([slug])
   @@index([lastName])
@@ -1749,4 +1750,82 @@ model CourseInsight {
   @@index([courseIntelligenceId])
   @@index([category])
   @@map("course_insights")
+}
+
+/// PlayerIntelligence — Aggregated player skill and performance metrics
+/// Combines tournament history, fantasy data, and statistical analysis
+/// into traceable, normalized features for downstream systems
+model PlayerIntelligence {
+  id                              String    @id @default(cuid())
+  
+  /// Player reference
+  playerId                        String
+  player                          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  /// Data Completeness (0-100): Percentage of available data used to calculate features
+  /// Lower = confidence penalties may apply to some metrics
+  dataCompleteness                Int       @default(0)
+  
+  /// Audit timestamps
+  calculatedAt                    DateTime  @default(now())
+  createdAt                       DateTime  @default(now())
+  updatedAt                       DateTime  @updatedAt
+  
+  /// Relations
+  features                        PlayerIntelligenceFeature[]
+  
+  @@unique([playerId])
+  @@index([playerId])
+  @@index([calculatedAt])
+  @@map("player_intelligence")
+}
+
+/// PlayerIntelligenceFeature — Normalized feature store for player attributes
+/// Each feature is traceable to source data with confidence and calculation metadata
+/// Designed for efficient querying by downstream systems (AI Caddie, predictions, etc.)
+model PlayerIntelligenceFeature {
+  id                              String    @id @default(cuid())
+  
+  /// Intelligence reference
+  playerIntelligenceId            String
+  playerIntelligence              PlayerIntelligence @relation(fields: [playerIntelligenceId], references: [id], onDelete: Cascade)
+  
+  /// Feature identifier (e.g., "tournament_count", "avg_finish", "driving_distance")
+  /// Provides stable key for querying specific features
+  featureName                     String    @db.VarChar(100)
+  
+  /// Feature category for grouping (e.g., "tournament_stats", "fantasy", "sg_metrics", "calculated")
+  featureCategory                 String    @db.VarChar(50)
+  
+  /// Normalized feature value (number, percentage, or descriptive string)
+  /// Type is context-dependent; category and documentation describe expected format
+  featureValue                    Float     @nullable
+  featureValueStr                 String    @nullable
+  
+  /// Confidence level (0-100) indicating reliability of this feature
+  /// Lower confidence may indicate sparse data or high variance in source
+  confidence                      Int       @default(100)
+  
+  /// Source of this feature (e.g., "sportsdataio", "calculated", "projected")
+  /// Indicates where the underlying data originated
+  source                          String    @db.VarChar(50) @default("sportsdataio")
+  
+  /// Timestamp when this feature was last calculated
+  /// Useful for understanding staleness and driving recalculation schedules
+  lastCalculated                  DateTime  @default(now())
+  
+  /// Explanation of how this feature was derived (optional)
+  /// Human-readable notes about methodology, assumptions, or important caveats
+  explanation                     String    @nullable
+  
+  /// Audit timestamps
+  createdAt                       DateTime  @default(now())
+  updatedAt                       DateTime  @updatedAt
+  
+  @@unique([playerIntelligenceId, featureName])
+  @@index([playerIntelligenceId])
+  @@index([featureName])
+  @@index([featureCategory])
+  @@index([source])
+  @@map("player_intelligence_features")
 }
