@@ -228,6 +228,14 @@ export async function importCourseIntelligence(
           `[v0] Course ${courseDetail.name}: ${validation.holeCount} holes, ${validation.teeCount} tees`,
         )
 
+        // Log normalized course ready for import
+        console.log(`[v0] NORMALIZED COURSE READY`)
+        console.log(`[v0]   id: ${courseDetail.id}`)
+        console.log(`[v0]   name: ${courseDetail.name}`)
+        console.log(`[v0]   clubName: ${courseDetail.clubName}`)
+        console.log(`[v0]   holes.length: ${courseDetail.holes?.length ?? 0}`)
+        console.log(`[v0]   tees.length: ${courseDetail.tees?.length ?? 0}`)
+
         // Phase 13.1: Prepare normalized course details (only basic info)
         const courseDetailsInput: CourseDetailsInput = {
           externalCourseId: String(courseDetail.id),
