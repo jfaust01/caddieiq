@@ -43,9 +43,9 @@ export function CommandCenterHeader({
   actions,
 }: CommandCenterHeaderProps) {
   return (
-    <header className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-col gap-2">
+    <header className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/85 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6">
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <TournamentStatusBadge status={tournament.status} />
             {dataConfidence ? (
@@ -54,7 +54,7 @@ export function CommandCenterHeader({
               </span>
             ) : null}
           </div>
-          <h1 className="truncate text-xl font-semibold tracking-tight text-balance">
+          <h1 className="truncate text-lg font-semibold tracking-tight text-balance">
             {tournament.name}
           </h1>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">

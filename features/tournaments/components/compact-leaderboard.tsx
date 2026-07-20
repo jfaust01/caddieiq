@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Users2 } from 'lucide-react'
 import type { TournamentField } from '@/features/tournaments/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,8 +35,15 @@ export function CompactLeaderboard({
   if (!topPlayers || topPlayers.length === 0) {
     return (
       <Card>
-        <CardContent className="p-6 text-center text-sm text-muted-foreground">
-          No ranking data available for field
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Top Ranked</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center gap-2 py-8">
+          <Users2 className="size-5 text-muted-foreground/50" aria-hidden />
+          <div className="text-center">
+            <p className="text-sm font-medium text-muted-foreground">No ranking data</p>
+            <p className="text-xs text-muted-foreground/70">Available after field commitment</p>
+          </div>
         </CardContent>
       </Card>
     )

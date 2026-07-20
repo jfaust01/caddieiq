@@ -32,10 +32,9 @@ export function CompactKpiRow({
       {/* Field Size */}
       <Card>
         <CardContent className="p-3">
-          <div className="text-xs text-muted-foreground">Field</div>
-          <div className="mt-1 flex items-center gap-1 font-semibold">
-            <Users className="size-4" />
-            {fieldSize}
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-tight">Field</div>
+          <div className="mt-2 flex items-center gap-1">
+            <span className="text-2xl font-bold text-foreground">{fieldSize}</span>
           </div>
           <div className="mt-1 text-xs text-muted-foreground">players</div>
         </CardContent>
@@ -44,8 +43,8 @@ export function CompactKpiRow({
       {/* Top Ranked Player */}
       <Card>
         <CardContent className="p-3">
-          <div className="text-xs text-muted-foreground">Top Ranked</div>
-          <div className="mt-1 font-semibold text-sm truncate">{topPlayer?.playerName ?? '—'}</div>
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-tight">Top Ranked</div>
+          <div className="mt-2 font-semibold text-sm text-foreground truncate leading-tight">{topPlayer?.playerName ?? '—'}</div>
           <div className="mt-1 text-xs text-muted-foreground">in field</div>
         </CardContent>
       </Card>
@@ -53,8 +52,8 @@ export function CompactKpiRow({
       {/* Rating of Top Player */}
       <Card>
         <CardContent className="p-3">
-          <div className="text-xs text-muted-foreground">Their Score</div>
-          <div className="mt-1 font-semibold text-primary">{topPlayerScore !== null ? topPlayerScore : '—'}</div>
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-tight">Score</div>
+          <div className="mt-2 text-2xl font-bold text-primary">{topPlayerScore !== null ? topPlayerScore : '—'}</div>
           <div className="mt-1 text-xs text-muted-foreground">rating</div>
         </CardContent>
       </Card>
@@ -62,10 +61,9 @@ export function CompactKpiRow({
       {/* Rated Players */}
       <Card>
         <CardContent className="p-3">
-          <div className="text-xs text-muted-foreground">Rated</div>
-          <div className="mt-1 flex items-center gap-1 font-semibold">
-            <TrendingUp className="size-4" />
-            {ratedPlayers}
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-tight">Rated</div>
+          <div className="mt-2">
+            <span className="text-2xl font-bold text-foreground">{ratedPlayers}</span>
           </div>
           <div className="mt-1 text-xs text-muted-foreground">players</div>
         </CardContent>
@@ -74,8 +72,8 @@ export function CompactKpiRow({
       {/* Tournament Status */}
       <Card>
         <CardContent className="p-3">
-          <div className="text-xs text-muted-foreground">Tour</div>
-          <div className="mt-1 font-semibold text-sm">{tourName}</div>
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-tight">Tour</div>
+          <div className="mt-2 font-bold text-sm text-foreground">{tourName}</div>
           <div className="mt-1 text-xs text-muted-foreground">{tournament?.status ?? '—'}</div>
         </CardContent>
       </Card>

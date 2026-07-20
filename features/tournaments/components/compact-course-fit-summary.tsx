@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronRight, Zap } from 'lucide-react'
+import { ChevronRight, Zap, TrendingUp } from 'lucide-react'
 import type { FieldFitBoard } from '@/features/tournaments/services/tournament-service'
 import type { CourseRef } from '@/features/tournaments/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,24 +22,20 @@ export function CompactCourseFitSummary({
   hasCourse,
   courseRef,
 }: CompactCourseFitSummaryProps) {
-  if (!fitBoard || !hasCourse) {
+  const traits = fitBoard?.traits?.slice(0, 4) ?? []
+  
+  if (!fitBoard || !hasCourse || traits.length === 0) {
     return (
       <Card>
-        <CardContent className="p-6 text-center text-sm text-muted-foreground">
-          Course fit data not available
-        </CardContent>
-      </Card>
-    )
-  }
-
-  // Extract top traits from fit board
-  const traits = fitBoard.traits?.slice(0, 4) ?? []
-
-  if (traits.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center text-sm text-muted-foreground">
-          No course traits available
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Course Fit</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center gap-2 py-8">
+          <TrendingUp className="size-5 text-muted-foreground/50" aria-hidden />
+          <div className="text-center">
+            <p className="text-sm font-medium text-muted-foreground">No course traits</p>
+            <p className="text-xs text-muted-foreground/70">Analysis in progress</p>
+          </div>
         </CardContent>
       </Card>
     )

@@ -231,7 +231,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
                 value: 'intel',
                 label: 'Tournament Intel',
                 content: (
-                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <CommandCenterWidget
                       id="morning-brief"
                       title="Morning Brief"
