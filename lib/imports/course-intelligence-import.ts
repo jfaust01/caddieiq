@@ -245,12 +245,15 @@ export async function importCourseIntelligence(
 
         // Upsert course details
         const courseResult = await courseDetailsRepo.upsert(courseDetailsInput)
-        if (courseResult.outcome === "ok") {
-          const isNew = courseResult.message === "inserted"
-          if (isNew) {
+        if (courseResult.outcome === "failed") {
+          const err = courseResult.error?.message || "Unknown error"
+          failures.push(`Failed to upsert GolfCourse API ID ${golfCourseApiId}: ${err}`)
+        } else {
+          // outcome is "inserted", "updated", or "skipped"
+          if (courseResult.outcome === "inserted") {
             coursesImported++
             console.log(`[v0] Course imported: ${courseDetail.name}`)
-          } else {
+          } else if (courseResult.outcome === "updated") {
             coursesUpdated++
             console.log(`[v0] Course updated: ${courseDetail.name}`)
           }
@@ -273,9 +276,9 @@ export async function importCourseIntelligence(
               phone: courseDetail.contact?.phone,
             }
             const addressResult = await courseAddressRepo.upsert(addressInput)
-            if (addressResult.outcome === "ok") {
-              if (addressResult.message === "inserted") addressesImported++
-              else addressesUpdated++
+            if (addressResult.outcome !== "failed") {
+              if (addressResult.outcome === "inserted") addressesImported++
+              else if (addressResult.outcome === "updated") addressesUpdated++
             } else {
               warnings.push(`Failed to import address for ${courseDetail.name}`)
             }
@@ -290,9 +293,9 @@ export async function importCourseIntelligence(
               elevation: courseDetail.playingConditions?.elevation,
             }
             const coordResult = await courseCoordinatesRepo.upsert(coordinatesInput)
-            if (coordResult.outcome === "ok") {
-              if (coordResult.message === "inserted") coordinatesImported++
-              else coordinatesUpdated++
+            if (coordResult.outcome !== "failed") {
+              if (coordResult.outcome === "inserted") coordinatesImported++
+              else if (coordResult.outcome === "updated") coordinatesUpdated++
             } else {
               warnings.push(`Failed to import coordinates for ${courseDetail.name}`)
             }
@@ -308,9 +311,9 @@ export async function importCourseIntelligence(
               slopeRating: courseDetail.specifications.slopeRating,
             }
             const specsResult = await courseSpecificationsRepo.upsert(specsInput)
-            if (specsResult.outcome === "ok") {
-              if (specsResult.message === "inserted") specificationsImported++
-              else specificationsUpdated++
+            if (specsResult.outcome !== "failed") {
+              if (specsResult.outcome === "inserted") specificationsImported++
+              else if (specsResult.outcome === "updated") specificationsUpdated++
             } else {
               warnings.push(`Failed to import specifications for ${courseDetail.name}`)
             }
@@ -328,9 +331,9 @@ export async function importCourseIntelligence(
               shortGameArea: courseDetail.facilities?.shortGameArea,
             }
             const metaResult = await courseMetadataRepo.upsert(metaInput)
-            if (metaResult.outcome === "ok") {
-              if (metaResult.message === "inserted") metadataImported++
-              else metadataUpdated++
+            if (metaResult.outcome !== "failed") {
+              if (metaResult.outcome === "inserted") metadataImported++
+              else if (metaResult.outcome === "updated") metadataUpdated++
             } else {
               warnings.push(`Failed to import metadata for ${courseDetail.name}`)
             }
@@ -346,8 +349,8 @@ export async function importCourseIntelligence(
               greenSpeed: courseDetail.playingConditions.greenSpeed,
             }
             const playingResult = await playingConditionsRepo.create(playingInput)
-            if (playingResult.outcome === "ok") {
-              playingConditionsImported++
+            if (playingResult.outcome !== "failed") {
+              if (playingResult.outcome === "inserted") playingConditionsImported++
             } else {
               warnings.push(`Failed to import playing conditions for ${courseDetail.name}`)
             }
@@ -368,7 +371,7 @@ export async function importCourseIntelligence(
             }))
 
             const holesResult = await courseHoleRepo.bulkUpsert(holes)
-            if (holesResult.outcome === "ok") {
+            if (holesResult.failed === 0) {
               holesImported += holesResult.inserted
               holesUpdated += holesResult.updated
             } else {
@@ -389,7 +392,7 @@ export async function importCourseIntelligence(
             }))
 
             const teesResult = await courseTeeRepo.bulkUpsert(tees)
-            if (teesResult.outcome === "ok") {
+            if (teesResult.failed === 0) {
               teeBoxesImported += teesResult.inserted
               teeBoxesUpdated += teesResult.updated
 
@@ -415,7 +418,7 @@ export async function importCourseIntelligence(
                   }))
 
                   const yardageResult = await teeHoleYardageRepo.bulkUpsert(yardagesWithHoleIds)
-                  if (yardageResult.outcome === "ok") {
+                  if (yardageResult.failed === 0) {
                     teeHoleYardagesImported += yardageResult.inserted
                   }
                 }
@@ -468,12 +471,9 @@ export async function importCourseIntelligence(
           const updateResult = await mappingRepo.update(mapping.tournamentId, {
             lastSyncedAt: new Date(),
           })
-          if (updateResult.outcome === "ok") {
+          if (updateResult.outcome !== "failed") {
             console.log(`[v0] Mapping updated for ${courseDetail.name}`)
           }
-        } else {
-          const err = courseResult.error?.message || "Unknown error"
-          failures.push(`Failed to upsert GolfCourse API ID ${golfCourseApiId}: ${err}`)
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error)
