@@ -101,13 +101,20 @@ CREATE INDEX idx_historical_player_features_temporal ON historical_player_featur
 CREATE INDEX idx_historical_player_features_validity ON historical_player_features(player_id, feature_key, valid_to) WHERE valid_to IS NULL;
 
 -- Immutability constraint: cannot update sealed features
+CREATE OR REPLACE FUNCTION prevent_update_sealed_features_fn()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.sealed = true THEN
+    RAISE EXCEPTION 'Cannot update sealed historical feature';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TRIGGER prevent_update_sealed_features
   BEFORE UPDATE ON historical_player_features
   FOR EACH ROW
-  WHEN (OLD.sealed = true)
-  BEGIN
-    RAISE EXCEPTION 'Cannot update sealed historical feature';
-  END;
+  EXECUTE FUNCTION prevent_update_sealed_features_fn();
 
 -- ============================================================================
 -- 5. HISTORICAL SNAPSHOTS (IMMUTABLE PREDICTION INPUTS)
@@ -150,13 +157,20 @@ CREATE INDEX idx_historical_snapshots_tournament ON historical_snapshots(tournam
 CREATE INDEX idx_historical_snapshots_sealed ON historical_snapshots(sealed);
 
 -- Immutability constraint: sealed snapshots cannot be updated
+CREATE OR REPLACE FUNCTION prevent_update_sealed_snapshots_fn()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.sealed = true THEN
+    RAISE EXCEPTION 'Cannot update sealed historical snapshot';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TRIGGER prevent_update_sealed_snapshots
   BEFORE UPDATE ON historical_snapshots
   FOR EACH ROW
-  WHEN (OLD.sealed = true)
-  BEGIN
-    RAISE EXCEPTION 'Cannot update sealed historical snapshot';
-  END;
+  EXECUTE FUNCTION prevent_update_sealed_snapshots_fn();
 
 -- ============================================================================
 -- 6. DATA AUDIT LOG (APPEND-ONLY)
