@@ -116,7 +116,9 @@ export class GolfCourseAPIClient {
       headers: this.getHeaders(),
     })
 
-    return response.data || null
+    // API returns { course: {...} }, extract the nested course object
+    const data = response.data as { course?: GolfCourseDetail }
+    return data?.course || null
   }
 
   /**
