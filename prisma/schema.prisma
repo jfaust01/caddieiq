@@ -1588,6 +1588,77 @@ model CourseIntelligence {
   scoringVolatilityScore          Int       @default(0)
   scoringVolatilityStars          Int       @default(1)
   
+  /// Additional Difficulty Metrics
+  /// Scoring Difficulty - difficulty of scoring well
+  scoringDifficultyScore          Int       @default(0)
+  scoringDifficultyStars          Int       @default(1)
+  
+  /// Bogey Risk - likelihood of scoring bogey or worse
+  bogeyRiskScore                  Int       @default(0)
+  bogeyRiskStars                  Int       @default(1)
+  
+  /// Difficulty Variance - hole-to-hole consistency
+  varianceScore                   Int       @default(0)
+  varianceStars                   Int       @default(1)
+  
+  /// Fairway & Short Game Metrics
+  /// Fairway Width - estimated fairway width difficulty
+  fairwayWidthScore               Int       @default(0)
+  fairwayWidthStars               Int       @default(1)
+  
+  /// Iron Difficulty - approach shot precision difficulty
+  ironDifficultyScore             Int       @default(0)
+  ironDifficultyStars             Int       @default(1)
+  
+  /// Putting Difficulty - green complexity
+  puttingDifficultyScore          Int       @default(0)
+  puttingDifficultyStars          Int       @default(1)
+  
+  /// Hazard Metrics
+  /// Water Hazard Risk
+  waterHazardRiskScore            Int       @default(0)
+  waterHazardRiskStars            Int       @default(1)
+  
+  /// Sand Hazard Risk (bunkers)
+  sandHazardRiskScore             Int       @default(0)
+  sandHazardRiskStars             Int       @default(1)
+  
+  /// Tree/Vegetation Risk
+  treeRiskScore                   Int       @default(0)
+  treeRiskStars                   Int       @default(1)
+  
+  /// Out of Bounds Risk
+  outOfBoundsRiskScore            Int       @default(0)
+  outOfBoundsRiskStars            Int       @default(1)
+  
+  /// Overall Hazard Impact
+  hazardImpactScore               Int       @default(0)
+  hazardImpactStars               Int       @default(1)
+  
+  /// Course Characteristics
+  /// Elevation Impact
+  elevationImpactScore            Int       @default(0)
+  elevationImpactStars            Int       @default(1)
+  
+  /// Weather/Climate Factor
+  weatherFactorScore              Int       @default(0)
+  weatherFactorStars              Int       @default(1)
+  
+  /// Overall Playability
+  playabilityScore                Int       @default(0)
+  playabilityStars                Int       @default(1)
+  
+  /// Course Uniqueness
+  uniquenessScore                 Int       @default(0)
+  uniquenessStars                 Int       @default(1)
+  
+  /// Data Completeness & Course Tags
+  /// How much source data was available (affects confidence levels)
+  dataCompleteness                Int       @default(0)
+  
+  /// Course style tags (multiple tags, stored as JSON array)
+  courseTags                      Json      @default("[]")
+  
   /// Algorithm version for future recalculation support
   calculationVersion              String    @default("v1")
   
