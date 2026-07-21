@@ -64,16 +64,18 @@ export function CommandCenterHeader({
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <TournamentStatusBadge status={tournament.status} />
-            {dataConfidence ? (
-              <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
-                {dataConfidence} data
-              </span>
-            ) : null}
+            <h1 className="truncate text-lg font-semibold tracking-tight text-balance">
+              {tournament.name}
+            </h1>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <TournamentStatusBadge status={tournament.status} />
+              {dataConfidence ? (
+                <span className="rounded-full border border-border bg-muted/60 px-1.5 py-0.5 text-[0.5rem] font-medium uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                  {dataConfidence} data
+                </span>
+              ) : null}
+            </div>
           </div>
-          <h1 className="truncate text-lg font-semibold tracking-tight text-balance">
-            {tournament.name}
-          </h1>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <MetaChip icon={<CalendarDays aria-hidden />}>
               {formatDateRange(tournament.startDate, tournament.endDate)}
