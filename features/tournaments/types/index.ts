@@ -129,9 +129,7 @@ export type FieldEntryStatus =
 
 /**
  * One player in a tournament's field, as shown in the UI. `playerId` links to
- * the player profile. Finishing position is intentionally absent: the provider
- * tier obfuscates it, so the field is presented as a roster with reliable
- * participation status rather than fabricated standings.
+ * the player profile. Includes live tournament scoring data when available.
  */
 export interface FieldEntrant {
   playerId: string
@@ -167,6 +165,32 @@ export interface FieldEntrant {
    * ranking is built from.
    */
   fantasyScore: number | null
+
+  // Tournament Scoring Data
+  /** Current tournament position (rank), or null when not yet available. */
+  position: number | null
+  /** Total tournament score relative to par (e.g., -12, 0, +3), or null when not played. */
+  total: number | null
+  /** Current hole number completed in current round, or null. "F" indicates finished. */
+  thruHole: string | null
+  /** Current round score relative to par (e.g., -4, E, +2), or null. */
+  roundScore: number | null
+  /** Round 1 score in strokes, or null if not played. */
+  round1: number | null
+  /** Round 2 score in strokes, or null if not played. */
+  round2: number | null
+  /** Round 3 score in strokes, or null if not played. */
+  round3: number | null
+  /** Round 4 score in strokes, or null if not played. */
+  round4: number | null
+  /** Total strokes for the tournament, or null when not applicable. */
+  totalStrokes: number | null
+  /** Projected finishing position or score, or null when not available. */
+  projection: string | null
+  /** Scheduled tee time for the player, or null when not applicable. */
+  startingTime: string | null
+  /** Current betting odds to win (e.g., "+1800", "+6500"), or null when unavailable. */
+  oddsToWin: string | null
 }
 
 /**

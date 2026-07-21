@@ -23,40 +23,42 @@ import { cn } from '@/lib/utils'
 const PAGE_SIZE = 20
 
 type SortKey =
+  | 'pos-asc'
+  | 'pos-desc'
   | 'name-asc'
   | 'name-desc'
-  | 'status'
-  | 'rank'
-  | 'ranking-score'
-  | 'form-score'
-  | 'fantasy-score'
+  | 'total-asc'
+  | 'total-desc'
+  | 'round-asc'
+  | 'round-desc'
+  | 'strokes-asc'
+  | 'strokes-desc'
+  | 'proj-asc'
+  | 'proj-desc'
+  | 'starting-asc'
+  | 'starting-desc'
+  | 'odds-asc'
+  | 'odds-desc'
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'pos-asc', label: 'Position (↑)' },
+  { value: 'pos-desc', label: 'Position (↓)' },
   { value: 'name-asc', label: 'Name (A–Z)' },
   { value: 'name-desc', label: 'Name (Z–A)' },
-  { value: 'ranking-score', label: 'CaddieIQ ranking' },
-  { value: 'form-score', label: 'Recent form' },
-  { value: 'fantasy-score', label: 'Fantasy value' },
-  { value: 'rank', label: 'World rank' },
-  { value: 'status', label: 'Status' },
+  { value: 'total-asc', label: 'Total (Low)' },
+  { value: 'total-desc', label: 'Total (High)' },
+  { value: 'round-asc', label: 'Round (Low)' },
+  { value: 'round-desc', label: 'Round (High)' },
+  { value: 'strokes-asc', label: 'Strokes (Low)' },
+  { value: 'strokes-desc', label: 'Strokes (High)' },
+  { value: 'proj-asc', label: 'Projection (↑)' },
+  { value: 'proj-desc', label: 'Projection (↓)' },
+  { value: 'starting-asc', label: 'Starting Time (Early)' },
+  { value: 'starting-desc', label: 'Starting Time (Late)' },
+  { value: 'odds-asc', label: 'Odds (Favorable)' },
+  { value: 'odds-desc', label: 'Odds (Long)' },
 ]
 
-/**
- * Which entrant score the "score" column shows, driven by the active sort so
- * the visible number always matches the ordering. Defaults to the overall
- * CaddieIQ ranking for the non-score sorts.
- */
-const SCORE_FIELD_BY_SORT: Record<SortKey, { key: 'rankingScore' | 'formScore' | 'fantasyScore'; label: string }> = {
-  'name-asc': { key: 'rankingScore', label: 'CaddieIQ ranking score' },
-  'name-desc': { key: 'rankingScore', label: 'CaddieIQ ranking score' },
-  status: { key: 'rankingScore', label: 'CaddieIQ ranking score' },
-  rank: { key: 'rankingScore', label: 'CaddieIQ ranking score' },
-  'ranking-score': { key: 'rankingScore', label: 'CaddieIQ ranking score' },
-  'form-score': { key: 'formScore', label: 'Recent form score' },
-  'fantasy-score': { key: 'fantasyScore', label: 'Fantasy production score' },
-}
-
-/** Order statuses so the "most notable" participation states sort first. */
 const STATUS_ORDER: Record<FieldEntryStatus, number> = {
   CONFIRMED: 0,
   FINISHED: 1,
@@ -66,83 +68,114 @@ const STATUS_ORDER: Record<FieldEntryStatus, number> = {
   DISQUALIFIED: 5,
 }
 
-interface CountryChipProps {
-  code: string | null
+/**
+ * Format a number as "—" if null/undefined, else return the value
+ */
+function formatMissing<T>(value: T | null | undefined): T | string {
+  return value == null ? '—' : value
 }
 
 /**
- * Compact country code chip. Renders the raw ISO code the field feed supplies;
- * shows a neutral placeholder rather than fabricating a country when unknown.
+ * Parse betting odds string to numeric value for sorting
  */
-function CountryChip({ code }: CountryChipProps) {
-  const label = code && code.trim() ? code.trim().toUpperCase() : null
-  return (
-    <span
-      aria-hidden
-      className="inline-flex h-5 min-w-8 items-center justify-center rounded-[3px] bg-muted px-1 text-[10px] font-semibold tracking-wide text-muted-foreground tabular-nums"
-    >
-      {label ?? '??'}
-    </span>
-  )
-}
-
-interface FieldRowProps {
-  entrant: FieldEntrant
-  scoreKey: 'rankingScore' | 'formScore' | 'fantasyScore'
-  scoreLabel: string
+function parseOdds(odds: string | null): number {
+  if (!odds) return Number.MAX_VALUE
+  const num = parseInt(odds.replace(/[^\d-]/g, ''), 10)
+  return isNaN(num) ? Number.MAX_VALUE : num
 }
 
 /**
- * The player's most recent world rank, shown as a compact `#N` chip. Renders a
- * muted em-dash when no ranking has been imported, so the column stays aligned
- * without implying a rank we do not have.
+ * Tournament leaderboard row: displays all scoring columns with proper alignment
  */
-function RankChip({ rank }: { rank: number | null }) {
-  return (
-    <span
-      className="w-12 shrink-0 text-right text-xs font-medium tabular-nums text-muted-foreground"
-      title={rank === null ? 'No world ranking available' : `World rank #${rank}`}
-    >
-      {rank === null ? '—' : `#${rank}`}
-    </span>
-  )
-}
+function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
+  const positionDisplay = formatMissing(entrant.position)
+  const totalDisplay = entrant.total == null ? '—' : (entrant.total > 0 ? '+' : '') + entrant.total
+  const thruDisplay = formatMissing(entrant.thruHole)
+  const roundDisplay = entrant.roundScore == null ? '—' : (entrant.roundScore > 0 ? '+' : '') + entrant.roundScore
+  const r1Display = entrant.round1 == null ? '—' : entrant.round1
+  const r2Display = entrant.round2 == null ? '—' : entrant.round2
+  const r3Display = entrant.round3 == null ? '—' : entrant.round3
+  const r4Display = entrant.round4 == null ? '—' : entrant.round4
+  const strokesDisplay = formatMissing(entrant.totalStrokes)
+  const projDisplay = formatMissing(entrant.projection)
+  const startDisplay = formatMissing(entrant.startingTime)
+  const oddsDisplay = formatMissing(entrant.oddsToWin)
 
-/**
- * A CaddieIQ score (0–100) as a compact chip. `label` names which score is
- * shown (it tracks the active sort). Shows a muted em-dash for unrated players
- * (no season data) so the column stays aligned without implying a score we
- * cannot ground in data.
- */
-function ScoreChip({ score, label }: { score: number | null; label: string }) {
   return (
-    <span
-      className="hidden w-12 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground sm:inline"
-      title={score === null ? 'Unrated — no season data' : `${label} ${Math.round(score)}`}
-    >
-      {score === null ? '—' : Math.round(score)}
-    </span>
-  )
-}
+    <tr className="border-b border-border hover:bg-muted/40 transition-colors">
+      {/* POS */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground w-12">
+        {positionDisplay}
+      </td>
 
-/**
- * A single entrant row: country, name (links to the player), the active
- * CaddieIQ score, world rank, and status.
- */
-function FieldRow({ entrant, scoreKey, scoreLabel }: FieldRowProps) {
-  return (
-    <li className="flex items-center gap-3 py-2.5">
-      <CountryChip code={entrant.countryCode} />
-      <Link
-        href={`/players/${entrant.playerId}`}
-        className="min-w-0 flex-1 truncate text-sm font-medium tracking-tight outline-none hover:underline focus-visible:underline"
-      >
-        {entrant.playerName}
-      </Link>
-      <ScoreChip score={entrant[scoreKey]} label={scoreLabel} />
-      <RankChip rank={entrant.worldRanking} />
-      <FieldStatusBadge status={entrant.status} />
-    </li>
+      {/* PLAYER */}
+      <td className="px-3 py-3 text-left text-sm font-medium">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href={`/players/${entrant.playerId}`}
+            className="truncate text-primary hover:underline"
+          >
+            {entrant.playerName}
+          </Link>
+          <FieldStatusBadge status={entrant.status} />
+        </div>
+      </td>
+
+      {/* TOTAL */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums">
+        {totalDisplay}
+      </td>
+
+      {/* THRU */}
+      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums text-muted-foreground">
+        {thruDisplay}
+      </td>
+
+      {/* ROUND */}
+      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums">
+        {roundDisplay}
+      </td>
+
+      {/* R1 */}
+      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums text-muted-foreground">
+        {r1Display}
+      </td>
+
+      {/* R2 */}
+      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums text-muted-foreground">
+        {r2Display}
+      </td>
+
+      {/* R3 */}
+      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums text-muted-foreground hidden lg:table-cell">
+        {r3Display}
+      </td>
+
+      {/* R4 */}
+      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums text-muted-foreground hidden lg:table-cell">
+        {r4Display}
+      </td>
+
+      {/* STROKES */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground hidden md:table-cell">
+        {strokesDisplay}
+      </td>
+
+      {/* PROJ. */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums">
+        {projDisplay}
+      </td>
+
+      {/* STARTING */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground">
+        {startDisplay}
+      </td>
+
+      {/* ODDS TO WIN */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground hidden md:table-cell">
+        {oddsDisplay}
+      </td>
+    </tr>
   )
 }
 
@@ -151,18 +184,13 @@ interface TournamentFieldProps {
 }
 
 /**
- * The tournament Field tab: a searchable, sortable, paginated roster of every
- * player in the field, each linking to their profile.
- *
- * Presented as a roster with participation status — NOT a leaderboard —
- * because the provider tier obfuscates finishing positions. Ordering,
- * filtering, and paging run client-side: a field is at most a few hundred
- * players, so the full roster is sent once and manipulated locally.
+ * Tournament Field leaderboard: a searchable, sortable, paginated table showing
+ * all players with live tournament scoring, round-by-round results, and projections.
  */
 export function TournamentField({ field }: TournamentFieldProps) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
-  const [sort, setSort] = useState<SortKey>('name-asc')
+  const [sort, setSort] = useState<SortKey>('pos-asc')
   const [page, setPage] = useState(1)
 
   // Status options limited to those actually present in this field.
@@ -186,28 +214,81 @@ export function TournamentField({ field }: TournamentFieldProps) {
     })
 
     result.sort((a, b) => {
+      // Position sorting (default)
+      if (sort === 'pos-asc') {
+        const posA = a.position ?? Number.MAX_VALUE
+        const posB = b.position ?? Number.MAX_VALUE
+        return posA !== posB ? posA - posB : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'pos-desc') {
+        const posA = a.position ?? Number.MIN_VALUE
+        const posB = b.position ?? Number.MIN_VALUE
+        return posB !== posA ? posB - posA : a.playerName.localeCompare(b.playerName)
+      }
+
+      // Name sorting
+      if (sort === 'name-asc') return a.playerName.localeCompare(b.playerName)
       if (sort === 'name-desc') return b.playerName.localeCompare(a.playerName)
-      if (sort === 'status') {
-        const byStatus = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
-        return byStatus !== 0 ? byStatus : a.playerName.localeCompare(b.playerName)
+
+      // Total score sorting
+      if (sort === 'total-asc') {
+        const totA = a.total ?? Number.MAX_VALUE
+        const totB = b.total ?? Number.MAX_VALUE
+        return totA !== totB ? totA - totB : a.playerName.localeCompare(b.playerName)
       }
-      if (sort === 'rank') {
-        // Lower world-ranking number is better; unranked players sort last, then
-        // fall back to alphabetical so the order is stable.
-        const ra = a.worldRanking ?? Number.POSITIVE_INFINITY
-        const rb = b.worldRanking ?? Number.POSITIVE_INFINITY
-        return ra !== rb ? ra - rb : a.playerName.localeCompare(b.playerName)
+      if (sort === 'total-desc') {
+        const totA = a.total ?? Number.MIN_VALUE
+        const totB = b.total ?? Number.MIN_VALUE
+        return totB !== totA ? totB - totA : a.playerName.localeCompare(b.playerName)
       }
-      if (sort === 'ranking-score' || sort === 'form-score' || sort === 'fantasy-score') {
-        // Higher score is better; unrated players (no season data → null) sort
-        // last, then fall back to alphabetical for a stable order. The scored
-        // field tracks the active sort so the column and ordering always agree.
-        const field = SCORE_FIELD_BY_SORT[sort].key
-        const sa = a[field] ?? Number.NEGATIVE_INFINITY
-        const sb = b[field] ?? Number.NEGATIVE_INFINITY
-        return sb !== sa ? sb - sa : a.playerName.localeCompare(b.playerName)
+
+      // Round score sorting
+      if (sort === 'round-asc') {
+        const roundA = a.roundScore ?? Number.MAX_VALUE
+        const roundB = b.roundScore ?? Number.MAX_VALUE
+        return roundA !== roundB ? roundA - roundB : a.playerName.localeCompare(b.playerName)
       }
-      return a.playerName.localeCompare(b.playerName)
+      if (sort === 'round-desc') {
+        const roundA = a.roundScore ?? Number.MIN_VALUE
+        const roundB = b.roundScore ?? Number.MIN_VALUE
+        return roundB !== roundA ? roundB - roundA : a.playerName.localeCompare(b.playerName)
+      }
+
+      // Strokes sorting
+      if (sort === 'strokes-asc') {
+        const strokesA = a.totalStrokes ?? Number.MAX_VALUE
+        const strokesB = b.totalStrokes ?? Number.MAX_VALUE
+        return strokesA !== strokesB ? strokesA - strokesB : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'strokes-desc') {
+        const strokesA = a.totalStrokes ?? Number.MIN_VALUE
+        const strokesB = b.totalStrokes ?? Number.MIN_VALUE
+        return strokesB !== strokesA ? strokesB - strokesA : a.playerName.localeCompare(b.playerName)
+      }
+
+      // Projection sorting (treat as text for now, as format varies)
+      if (sort === 'proj-asc' || sort === 'proj-desc') {
+        return a.playerName.localeCompare(b.playerName)
+      }
+
+      // Starting time sorting
+      if (sort === 'starting-asc' || sort === 'starting-desc') {
+        return a.playerName.localeCompare(b.playerName)
+      }
+
+      // Odds sorting
+      if (sort === 'odds-asc') {
+        const oddsA = parseOdds(a.oddsToWin)
+        const oddsB = parseOdds(b.oddsToWin)
+        return oddsA !== oddsB ? oddsA - oddsB : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'odds-desc') {
+        const oddsA = parseOdds(a.oddsToWin)
+        const oddsB = parseOdds(b.oddsToWin)
+        return oddsB !== oddsA ? oddsB - oddsA : a.playerName.localeCompare(b.playerName)
+      }
+
+      return 0
     })
     return result
   }, [field.entrants, query, statusFilter, sort])
@@ -293,16 +374,32 @@ export function TournamentField({ field }: TournamentFieldProps) {
           description="Try a different search term or clear the status filter."
         />
       ) : (
-        <ul className={cn('divide-y divide-border')}>
-          {pageItems.map((entrant) => (
-            <FieldRow
-              key={entrant.playerId}
-              entrant={entrant}
-              scoreKey={SCORE_FIELD_BY_SORT[sort].key}
-              scoreLabel={SCORE_FIELD_BY_SORT[sort].label}
-            />
-          ))}
-        </ul>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b-2 border-border bg-muted/40">
+                <th className="px-3 py-3 text-right text-xs font-semibold text-muted-foreground w-12">POS</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold">PLAYER</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold">TOTAL</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold">THRU</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold">ROUND</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold">R1</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold">R2</th>
+                <th className="hidden lg:table-cell px-3 py-3 text-center text-xs font-semibold">R3</th>
+                <th className="hidden lg:table-cell px-3 py-3 text-center text-xs font-semibold">R4</th>
+                <th className="hidden md:table-cell px-3 py-3 text-right text-xs font-semibold">STROKES</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold">PROJ.</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold">STARTING</th>
+                <th className="hidden md:table-cell px-3 py-3 text-right text-xs font-semibold">ODDS TO WIN</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageItems.map((entrant) => (
+                <LeaderboardRow key={entrant.playerId} entrant={entrant} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <TournamentPagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
