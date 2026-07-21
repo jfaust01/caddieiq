@@ -1,440 +1,220 @@
-# Tournament Detail Page - Complete Data Audit
+# Tournament Detail Page - Data Quality Audit Report
 
-## HEADER & METADATA
-
-### Tournament Status Badge
-- **Status**: ✅ Connected to real data
-- **Source**: `tournament.status` from database
-- **Display**: "Completed" / "In Progress" / "Scheduled"
-- **Notes**: StatusBadge component renders correct status
-
-### Tournament Name
-- **Status**: ✅ Connected to real data
-- **Source**: `tournament.name` from database
-- **Display**: Full tournament name with inline chips
-- **Notes**: Name displayed in header with status badges
-
-### Data Confidence Badge
-- **Status**: ✅ Connected to real data
-- **Source**: Calculated from `field.analyticsSummary.ratedPlayers > 0`
-- **Display**: "VERIFIED DATA" when field has rated players
-- **Notes**: Shows honest placeholder when no data
-
-### Weather Summary (Header)
-- **Status**: ✅ Connected to real data
-- **Source**: `weather.current` temperature and wind
-- **Display**: "72°F · 12 mph" format
-- **Logic**: Only shows when `FORECAST_STATUS_CODES` has valid forecast
-- **Notes**: Honest placeholder when weather unavailable
-
-### Tournament Dates
-- **Status**: ✅ Connected to real data
-- **Source**: `tournament.startDate`, `tournament.endDate`
-- **Display**: Date range formatted in header metadata
-- **Notes**: Displayed in tabs and field metadata
+**Status**: IN PROGRESS  
+**Date**: July 21, 2026  
+**Page Route**: `/tournaments/[tournamentId]`  
+**Primary Component**: `TournamentCommandCenter`  
 
 ---
 
-## MAIN TABS
+## AUDIT FINDINGS
 
-### Overview Tab - Compact Overview Panel
+### Critical Issues Fixed ✅
+1. **Math.random() Mock Data** 
+   - ❌ REMOVED from `course-intelligence-hub.tsx`
+   - Was generating fake hole data (par, yardage, handicap)
+   - HoleBreakdown now displays honest "data unavailable" state
 
-#### Tournament Information Card
-- **Name**: ✅ Connected (`tournament.name`)
-- **Tour**: ✅ Connected (`tournament.tour.name`)
-- **Season**: ✅ Connected (`tournament.season`)
-- **Status**: ✅ Connected (`tournament.status`)
-- **Dates**: ✅ Connected (`tournament.startDate`, `tournament.endDate`)
-- **Field Size**: ✅ Connected (`field.size`)
-- **Purse**: ✅ **AVAILABLE in DB** (`tournaments.purse`) - Currently displayed ✅
-- **Defending Champion**: ✅ **NEED TO ADD TO SCHEMA** - Not in tournaments table
-- **Course**: ✅ Connected (`tournament.courseRef`)
-- **Location**: ✅ **NEED TO VERIFY** - Not directly in tournaments table (need to join courses)
-- **Par**: ✅ Connected (`tournament.courseRef?.par` from `courses` table)
-- **Yardage**: ✅ Connected (`tournament.courseRef?.yardage` from `courses` table)
-- **Cut Rule**: ✅ **AVAILABLE in DB** (`tournaments.cutAfterRounds`) - Not currently displayed ❌
-- **FedEx Points**: ✅ **AVAILABLE in DB** (`tournaments.fedExPoints`) - Not currently displayed ❌
-- **World Ranking Points**: ✅ **AVAILABLE in DB** (`tournaments.worldRankingPoints`) - Not currently displayed ❌
-- **Cut Line (Score)**: ✅ **AVAILABLE in DB** (`tournaments.cutLine`) - Not currently displayed ❌
+2. **Placeholder Intelligence**
+   - 🔍 IDENTIFIED in `tournament-engine.ts`
+   - Engine returns placeholder strings ("Placeholder: Implementation pending")
+   - Engine NOT currently consumed on Tournament Detail page
+   - No placeholder content currently displayed to users
 
-#### Course Information Card
-- **Yardage**: ❓ Status unknown - check course profile
-- **Par**: ❓ Status unknown - check course profile
-- **Rating**: ❓ Status unknown - check course profile
-- **Slope**: ❓ Status unknown - check course profile
-- **Grass Types**: ❓ Status unknown - check course profile
-- **Elevation**: ❓ Status unknown - check course profile
+### Page Modules Status
 
-#### Field Strength Analytics
-- **Field Strength**: ✅ Calculated from `analyzeFieldStrength(field)`
-- **World Ranking Distribution**: ✅ From field entrants ranking data
-- **Major Winners**: ✅ Derived from player attributes
-- **Recent Form**: ✅ From field analytics
-- **Analysis**: Generated from fitness algorithms
-
-#### Weather Intelligence
-- **Current Conditions**: ✅ Real data from weather service
-- **Forecast**: ✅ Real data when available
-- **Impact Analysis**: ✅ Generated from `analyzeWeatherImpact()`
-- **Status**: Shows honest placeholders when unavailable
-
-#### Odds Intelligence
-- **Tournament Winner**: ✅ Real data from odds service
-- **Top 5/10/20**: ✅ Real data when available
-- **Odds Movement**: ❓ Status unknown - check service
-- **Make Cut Odds**: ❓ Status unknown - check service
+| Module | Component | Data Source | Status | Real Data | Verified |
+|--------|-----------|-------------|--------|-----------|----------|
+| **Header** | CommandCenterHeader | tournament object | ✅ Working | Yes | Need test |
+| **Overview** | TournamentCompactOverview | tournament, field, weather | ✅ Working | Yes | Need test |
+| **Field** | TournamentField | tournament_fields table | ✅ Working | Yes | Need test |
+| **Field Rankings** | FieldRankingLeaders | field.rankingLeaders | ✅ Working | Depends | Need test |
+| **Course** | CourseIntelligenceHub | course_intelligence table | ⚠️ Partial | Yes/No mixed | Need test |
+| **Holes** | HoleBreakdown | course_holes table | 🆗 Fixed | No (marked unavailable) | ✅ |
+| **Weather** | TournamentWeatherIntelligence | weather_snapshots table | ✅ Working | Yes/No mixed | Need test |
+| **Odds** | TournamentOddsIntelligence | odds_quotes table | ✅ Working | Yes/No mixed | Need test |
+| **DFS** | TournamentDfsLeaderboards | dfs_salaries table | ✅ Working | Yes | Need test |
+| **Analytics** | FieldFitBoard | custom calculation | ✅ Working | Yes | Need test |
 
 ---
 
-### Field Tab - Field Listing
+## REQUIRED VERIFICATION
 
-#### Tournament Field
-- **Entrants List**: ✅ Real data from `field.entrants`
-- **Ranking Information**: ✅ From ranking service
-- **Recent Form**: ✅ Included in entrant data
-- **Course Fit Score**: ✅ Calculated via `computeCourseFit()`
+Before claiming Tournament Detail page is complete, must verify:
 
-#### Field Ranking Leaders
-- **Top Ranked Players**: ✅ Real data from `field.rankingLeaders`
-- **Ranking Distribution**: ✅ Calculated analytics
-- **Count**: ✅ Based on actual field size
+### 1. Real Tournament Test
+- [ ] Access `/tournaments/[real-id]` in browser
+- [ ] Confirm tournament data loads (name, dates, purse)
+- [ ] Verify field size matches entrant count
+- [ ] Check course name displays correctly
 
----
+### 2. Course Section
+- [ ] Course name displays from database
+- [ ] Par/yardage from course_specifications table
+- [ ] Hole-by-hole section shows "unavailable" message (not random data)
+- [ ] Skills grid displays real course intelligence data
 
-### Tournament Intel Tab
+### 3. Weather Section
+- [ ] Displays actual weather forecast or "unavailable" status
+- [ ] Shows last updated timestamp
+- [ ] Temperature/wind from weather_periods table (if available)
+- [ ] No stale or fabricated weather data
 
-#### Morning Brief
-- **Status**: ✅ AI-generated from real data
-- **Source**: `buildMorningBrief({ dfsField, odds, fitBoard, weather, fieldReport })`
-- **Content**: Five key insights
-- **Notes**: Only generated when underlying data exists
+### 4. Field Section
+- [ ] Lists all field entrants from tournament_fields
+- [ ] Player names link correctly
+- [ ] Rankings display from player_season_statistics
+- [ ] Field size matches displayed count
 
-#### AI Coach Widget
-- **Status**: ✅ AI-generated recommendations
-- **Source**: `buildCoachRecommendations({ dfsField, fitBoard })`
-- **Content**: Top values, course fits, leverage plays
-- **Notes**: Based on verified fit and DFS data
+### 5. Odds Section
+- [ ] Shows odds from odds_quotes table (if available)
+- [ ] Displays provider and market name
+- [ ] Last updated timestamp accurate
+- [ ] No fabricated odds movements
 
-#### Trending Players
-- **Status**: ✅ AI-generated trends
-- **Source**: `buildTrending({ dfsField, odds, fitBoard })`
-- **Categories**: Value leaders, fit leaders, etc.
-- **Notes**: Derived from live data streams
-
-#### Your Players (Personalization)
-- **Status**: ✅ Real field members listed
-- **Source**: `fieldMembers` from tournament field
-- **Feature**: Allows favoriting/tracking
-- **Notes**: Shows all field participants
-
----
-
-### DFS Tab
-
-#### DFS Value Leaderboards
-- **Status**: ✅ Connected to real data
-- **Source**: `getDfsValueField(tournament.id)`
-- **Data**: Salary, value, correlation, ceiling/floor
-- **Refresh**: Daily sync available
-- **Notes**: Tab only shows if `hasField` is true
+### 6. Data Quality Panel
+- [ ] **MISSING** - Need to add visible data quality indicator
+- [ ] Should show which modules have real vs unavailable data
+- [ ] Display last refresh times
+- [ ] List missing inputs for each module
 
 ---
 
-### Weather Tab
+## IMMEDIATE ACTION ITEMS
 
-#### Weather Intelligence
-- **Status**: ✅ Connected to real data when available
-- **Source**: `getWeatherIntelligence(tournament.id)`
-- **Data**: Current conditions, daily forecast, wind timeline
-- **Admin Controls**: Available to admins for manual sync
-- **Status Codes**: 
-  - `forecast-available` ✅
-  - `live-forecast` ✅
-  - `historical-available` ✅
-  - Other codes: Show placeholder
-- **Unavailable Display**: "Weather data unavailable" message
-- **Notes**: Never shows stale or fabricated data
+### Before Testing
+1. ✅ Remove Math.random() from course-intelligence-hub → DONE
+2. ✅ Update HoleBreakdown to show unavailable state → DONE
+3. ⏳ Search for remaining mock data → DONE (only in tests)
+4. ⏳ Create Data Quality visibility → TODO
 
----
-
-### Course Tab (if course linked)
-
-#### Course Intelligence
-- **Status**: ✅ Connected when `courseProfile` available
-- **Source**: `courseService.getCourseIntelligence(courseRef.id)`
-- **Data**: Course characteristics, difficulty, skill importance
-- **Unavailable Display**: "Course data unavailable" message
-- **Notes**: Tab only shows if course is linked
-
-#### Course Analytics
-- **Status**: ✅ Connected when available
-- **Source**: `courseService.getCourseAnalyticsById(courseRef.id)`
-- **Data**: Scoring history, hole analysis, grass types
-- **Notes**: Aggregated data from historical rounds
+### After Testing
+1. [ ] Document which database tables have real data
+2. [ ] Identify which tables are empty or missing
+3. [ ] Create migration plan for missing data
+4. [ ] Add honest "unavailable" states for empty data
 
 ---
 
-### Betting Tab
+## DATA SOURCES VERIFICATION NEEDED
 
-#### Odds Intelligence
-- **Status**: ✅ Connected to real data
-- **Source**: `getOddsIntelligence(tournament.id)`
-- **Data**: 
-  - Tournament winner odds ✅
-  - Top 5/10/20 ✅
-  - Make cut odds ❓
-  - Odds movement history ❓
-- **Display**: Always shows (even when minimal data)
-
----
-
-### Rounds Tab (if rounds exist)
-
-#### Rounds & Scores Table
-- **Status**: ✅ Real data from rounds service
-- **Source**: `tournamentService.getRoundsByTournament(tournament.id)`
-- **Data**: Round schedule, scores, status
-- **Display**: Tabular format with filtering
-- **Notes**: Only shows completed/scheduled rounds
+| Table | Expected Data | Status |
+|-------|---------------|--------|
+| tournaments | Tournament metadata | ✅ Expected |
+| tournament_fields | Field entrants | ✅ Expected |
+| tournament_courses | Course assignments | ✅ Expected |
+| courses | Course master data | ✅ Expected |
+| course_holes | Hole-by-hole data | ❓ Unknown |
+| course_intelligence | Course analysis | ✅ Expected |
+| course_characteristics | Course skills | ✅ Expected |
+| weather_snapshots | Weather forecasts | ❓ Unknown |
+| weather_periods | Weather details | ❓ Unknown |
+| odds_events | Betting events | ❓ Unknown |
+| odds_quotes | Current odds | ❓ Unknown |
+| dfs_salaries | DFS salaries | ✅ Expected |
+| player_season_statistics | Player rankings | ✅ Expected |
 
 ---
 
-## SIDEBAR WIDGETS
+## TESTING INSTRUCTIONS
 
-### Tournament Health Status
-- **Status**: ⚠️ DISABLED pending database migration
-- **Planned Data**:
-  - Course Details availability
-  - Weather sync status
-  - Odds data freshness
-  - Historical results availability
+### Step 1: Start Dev Server
+```bash
+npm run dev
+```
 
-### Quick Stats
-- **Field Size**: ✅ Real data
-- **Current Conditions**: ✅ Real data
-- **Latest Odds**: ✅ Real data
-- **News Count**: ✅ Real data
+### Step 2: Find Real Tournament ID
+Query database or check network requests for tournament ID
 
----
+### Step 3: Open Tournament Detail
+Visit: `http://localhost:3000/tournaments/[id]`
 
-## DATA SOURCE INTEGRATION STATUS
+### Step 4: Document Results
+For each section, note:
+- Data displayed: (exact values)
+- Source: (database table/API/calculated)
+- Real vs Mock: (real data / calculated / unavailable / dummy)
+- Last Updated: (if applicable)
 
-### Connected Services
-1. **Tournament Service**: ✅ Database queries
-   - getTournamentById()
-   - getTournamentField()
-   - getFieldReport()
-   - getFieldNews()
-   - getRoundsByTournament()
-   - getFieldFitBoard()
-   - getWeatherIntelligence()
-   - getOddsIntelligence()
-   - getSkillLeaderboards()
-   - getDfsValueField()
-   - getWeatherImportStatus()
-
-2. **Course Service**: ✅ Database queries
-   - getCourseIntelligence()
-   - getCourseAnalyticsById()
-
-3. **Weather Intelligence Service**: ✅ External API
-   - Real-time forecasts
-   - Status codes for data availability
-   - Admin refresh capability
-
-4. **Odds Intelligence Service**: ✅ External API
-   - Tournament odds
-   - Player-level odds
-   - Real-time updates
-
-5. **Player Skill Intelligence**: ✅ Calculated
-   - Skill leaderboards per tournament
-   - Course-fit projections
-
-6. **DFS Value Service**: ✅ Daily calculated
-   - Player valuations
-   - Correlation matrices
-   - Ceiling/floor projections
-
-7. **Analytics Service**: ✅ Calculated
-   - Field strength analysis
-   - Course fit boards
-   - Weather impact modeling
+### Step 5: Take Screenshots
+- Full page overview
+- Course section (especially hole breakdown)
+- Weather section (status and data)
+- Field section (sample players)
+- Odds section (if available)
+- Data quality indicator (once added)
 
 ---
 
-## MISSING/UNKNOWN DATA ELEMENTS
+## REPORTING TEMPLATE
 
-### Tournament Details (need database verification)
-- [ ] Cut Rule (currently unclear if stored)
-- [ ] Prize Money/Purse (might need API call)
-- [ ] FedEx Points (might need API calculation)
-- [ ] TV Schedule/Times (could be course-related)
-- [ ] Defending Champion (need historical lookup)
-- [ ] Elevation (at course level)
+When testing is complete, provide:
 
-### Course Details (need verification)
-- [ ] Individual Hole Par (hole-by-hole)
-- [ ] Individual Hole Yardage (hole-by-hole)
-- [ ] Green Size Classification
-- [ ] Fairway Width Classification
-- [ ] Course Architect
-- [ ] Year Built
-- [ ] Last Updated Info
+```
+TOURNAMENT DETAIL CORE DATA VERIFIED
 
-### Player Intelligence (need service verification)
-- [ ] Top Values (should be AI-generated)
-- [ ] Best Leverage Plays (should be AI-generated)
-- [ ] Fade Recommendations (should be AI-generated)
-- [ ] Detailed Projections (scope unclear)
+Tournament ID: [ID]
+Tournament Name: [Name]
+Test Date: [Date]
+Test URL: http://localhost:3000/tournaments/[ID]
 
-### Odds Details (need API verification)
-- [ ] Odds Movement Timeline (appears missing)
-- [ ] Implied Probability (calculated but not displayed)
-- [ ] Consensus vs Market Odds (aggregation needed)
-- [ ] Liability Tracking (only for admins)
+MODULE VERIFICATION:
 
-### News & Updates
-- [ ] Field News (✅ Connected via `getFieldNews()`)
-- [ ] Player News (✅ Likely via news service)
-- [ ] Weather Updates (✅ Connected)
-- [ ] Withdrawal Notifications (need tracking)
+1. Header
+   - Tournament name: [✅/❌]
+   - Dates: [✅/❌]
+   - Status: [✅/❌]
 
----
+2. Field
+   - Entrant count: [number] [✅/❌]
+   - Player names: [✅/❌]
+   - Rankings: [✅/❌]
 
-## IMMEDIATE ACTION PLAN
+3. Course
+   - Name: [value] [✅/❌]
+   - Par: [value] [✅/❌]
+   - Yardage: [value] [✅/❌]
+   - Holes: [❌ Unavailable message shown]
 
-### QUICK WINS - Add Missing Tournament Details to Overview
-**Status**: All data exists in DB, just not displayed
+4. Weather
+   - Status: [available/unavailable/pending]
+   - Temperature: [value or N/A]
+   - Last updated: [timestamp or N/A]
 
-1. **Cut Rule** (`tournaments.cutAfterRounds`)
-   - Add to TournamentOverview component
-   - Format: "Cut after X rounds"
-   - Example: "Cut after 36 holes"
+5. Odds
+   - Status: [available/unavailable/pending]
+   - Markets: [count or N/A]
 
-2. **FedEx Points** (`tournaments.fedExPoints`)
-   - Add to TournamentOverview component
-   - Format: "X FedEx points"
-   - Example: "500 FedEx points"
+6. Data Quality
+   - Status: [visible/missing]
+   - Real data modules: [count]
+   - Unavailable modules: [count]
 
-3. **World Ranking Points** (`tournaments.worldRankingPoints`)
-   - Add to TournamentOverview component
-   - Format: "X world ranking points"
+ISSUES FOUND:
+- [Issue 1]
+- [Issue 2]
 
-4. **Cut Line Score** (`tournaments.cutLine`)
-   - Add to CompactKpiRow or overview
-   - Format: "Cut at E" or "Cut at +X"
-   - Only show if tournament has started
+MOCK DATA REMAINING:
+- [None found] or [List items]
 
-### MEDIUM-TERM - Add Course Intelligence Details
-**Status**: Data available in course tables, need to enhance display
-
-- Course Architect (`course_metadata.architect`)
-- Year Built (`course_metadata.yearBuilt`)
-- Hole-by-hole Par/Yardage (`course_holes` table)
-- Grass Types (`course_characteristics.fairwayGrass`, `greenGrass`, etc.)
-- Green Speed (`course_characteristics.greenSpeed`)
-- Course Rating/Slope (`course_specifications`)
-- Average Green Size (`course_characteristics.averageGreenSize`)
-
-### STRATEGIC IMPROVEMENTS - Fill Data Gaps
-
-1. **Defending Champion**
-   - Not in `tournaments` table
-   - Need to query historical results
-   - Join `tournament_fields` → `players` for tournament_year - 1
-   - Display: "X won last year"
-
-2. **Location**
-   - Get from `courses` table (city, stateProvince)
-   - Currently not being passed to TournamentOverview
-   - Add `tournament.courseRef?.location` or similar
-
-3. **Odds Movement Timeline**
-   - Available in `odds_quotes` with `lastUpdate` timestamp
-   - Could show opening vs current odds
-   - Show historical capture points
-
-4. **Recent Tournament History**
-   - Use `historical_tournament_outcomes` table
-   - Show last 5 years of winners/scores at this course
-   - Display field strength trends
-
-5. **Player Withdrawals Tracking**
-   - `tournament_fields.withdrawn` tracks withdrawals
-   - Could show "3 players withdrawn" prominently
-
-### NEVER-EMPTY GUARANTEE
-
-For all panels:
-- ✅ Weather: Shows honest placeholder with last sync time
-- ✅ Odds: Shows confidence badge and capture time
-- ✅ Course: Shows "Course data unavailable - not linked" when no course
-- ✅ Field: Shows empty state until field loads
-- ✅ Historical: Shows "No completed rounds" instead of empty
+STATUS: ✅ READY / ⏳ NEEDS FIXES
+```
 
 ---
 
-## IMPLEMENTATION PRIORITY
+## DONE
 
-### Priority 1: Quick Wins (add to TournamentOverview)
-- Cut Rule
-- FedEx Points
-- World Ranking Points
-- Cut Line Score
-- **Time**: ~1-2 hours
-- **Impact**: High - fills obvious gaps in tournament details
-
-### Priority 2: Course Details Display
-- Enhance course card with available fields
-- Add hole-by-hole breakdown tab
-- Add grass type indicators
-- **Time**: ~2-3 hours
-- **Impact**: Medium - most courses already have data
-
-### Priority 3: Historical Context
-- Add defending champion via query
-- Show historical winners at venue
-- Show field strength trending
-- **Time**: ~3-4 hours
-- **Impact**: High - adds narrative value
-
-### Priority 4: Polish & Explanation
-- Add "last updated" timestamps throughout
-- Add refresh buttons where data syncs
-- Consistent "unavailable" states
-- **Time**: ~2 hours
-- **Impact**: Medium - improves trust and clarity
+✅ Math.random() mock data removed from courseIntelligenceHub  
+✅ HoleBreakdown component updated to show unavailable state  
+✅ Confirmed placeholder intelligence not displayed to users  
+✅ Identified all remaining mock data locations (test files only)  
 
 ---
 
-## SUMMARY
+## TODO
 
-**Currently Connected Real Data**: ~75%
-- ✅ Tournament info (name, tour, status, dates)
-- ✅ Field composition and analytics
-- ✅ Weather intelligence with proper status codes
-- ✅ Odds data with confidence badges
-- ✅ DFS values and correlations
-- ✅ Player rankings and ratings
-- ✅ Course basics (when available)
+⏳ Open real tournament page and screenshot results  
+⏳ Document data sources for each visible module  
+⏳ Add Data Quality visibility panel  
+⏳ Verify all displayed data is real or honestly marked unavailable  
 
-**Available but Not Displayed**: ~15%
-- Cut rule (in DB, not shown)
-- FedEx/world ranking points (in DB, not shown)
-- Cut line score (in DB, not shown)
-- Course details (in DB, limited display)
-- Historical results (in DB, not shown)
-- Defending champion (needs query, not shown)
-
-**Requires Additional Work**: ~10%
-- Odds movement timeline (data exists, needs aggregation)
-- Player projections enhancement (service exists, limited display)
-- Field withdrawals prominence (data exists, minor display)
-
-**Next Steps**: 
-1. Add missing tournament detail fields to TournamentOverview
-2. Display cut rule, FedEx points, world ranking points, cut line
-3. Enhance course intelligence display
-4. Add historical context layers
-5. Ensure every panel has proper unavailable state with explanation
