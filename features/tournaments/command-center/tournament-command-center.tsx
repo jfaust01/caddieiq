@@ -96,8 +96,6 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         overview={
           <TournamentCompactOverview
             tournament={tournament}
-            field={field}
-            fieldReport={fieldReport}
           />
         }
         additionalTabs={[
