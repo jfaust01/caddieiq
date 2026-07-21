@@ -7,10 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 interface TournamentDetailTabsProps {
   /** Compact overview panel content (redesigned for 2-3 viewport heights). */
   overview: ReactNode
-  /** Live Field panel content, rendered on the server and passed in. */
-  field: ReactNode
-  /** Field size, shown as a badge on the Field tab; 0 disables the tab. */
-  fieldCount: number
   /** Optional additional tabs with full content. */
   additionalTabs?: Array<{
     value: string
@@ -39,12 +35,8 @@ const RESERVED_TABS = [
  */
 export function TournamentDetailTabs({
   overview,
-  field,
-  fieldCount,
   additionalTabs = [],
 }: TournamentDetailTabsProps) {
-  const hasField = fieldCount > 0
-  
   // Merge additional tabs with reserved tabs, prioritizing additional
   const tabsToShow = [
     ...additionalTabs.filter((t) => !RESERVED_TABS.some((r) => r.value === t.value)),
@@ -56,14 +48,6 @@ export function TournamentDetailTabs({
       <div>
         <TabsList variant="line" className="h-9 gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="field" disabled={!hasField}>
-            Field
-            {hasField ? (
-              <span className="ml-1.5 rounded bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">
-                {fieldCount}
-              </span>
-            ) : null}
-          </TabsTrigger>
           {tabsToShow.map((tab) => (
             <TabsTrigger
               key={tab.value}
@@ -83,10 +67,6 @@ export function TournamentDetailTabs({
 
       <TabsContent value="overview" className="flex flex-col gap-4">
         {overview}
-      </TabsContent>
-
-      <TabsContent value="field" className="flex flex-col gap-4">
-        {field}
       </TabsContent>
 
       {additionalTabs.map((tab) => (

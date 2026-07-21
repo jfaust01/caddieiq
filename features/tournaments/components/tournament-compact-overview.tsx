@@ -9,6 +9,7 @@ import { CompactWeatherSummary } from './compact-weather-summary'
 import { CompactDfsSummary } from './compact-dfs-summary'
 import { CompactCourseHistoryRow } from './compact-course-history-row'
 import { TournamentOverview } from './tournament-overview'
+import { TournamentField } from './tournament-field'
 
 interface TournamentCompactOverviewProps {
   tournament: TournamentSummary
@@ -78,6 +79,17 @@ export function TournamentCompactOverview({
         <h3 className="text-sm font-semibold mb-4">Event Details</h3>
         <TournamentOverview tournament={tournament} />
       </div>
+
+      {/* Field Section */}
+      {hasField && (
+        <div className="pt-8 border-t border-border">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold">Field</h3>
+            <p className="text-sm text-muted-foreground">Browse every golfer in this tournament.</p>
+          </div>
+          <TournamentField field={field} />
+        </div>
+      )}
     </div>
   )
 }

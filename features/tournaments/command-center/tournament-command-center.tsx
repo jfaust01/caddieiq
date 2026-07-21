@@ -14,8 +14,6 @@ import { TrendingPlayers } from '@/features/tournaments/command-center/trending-
 import { AiCoachWidget } from '@/features/tournaments/command-center/ai-coach-widget'
 import { CaddieChat } from '@/features/caddie/components/caddie-chat'
 import { TournamentDetailTabs } from '@/features/tournaments/components/tournament-detail-tabs'
-import { TournamentField } from '@/features/tournaments/components/tournament-field'
-import { FieldRankingLeaders } from '@/features/tournaments/components/field-ranking-leaders'
 import { TournamentCompactOverview } from '@/features/tournaments/components/tournament-compact-overview'
 import { TournamentCourseIntelligence } from '@/features/tournaments/components/tournament-course-intelligence'
 import { TournamentCourseAnalytics } from '@/features/tournaments/components/tournament-course-analytics'
@@ -188,13 +186,6 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
             courseProfile={courseProfile}
           />
         }
-        field={
-          <div className="flex flex-col gap-6">
-            <TournamentField field={field} />
-            <FieldRankingLeaders leaders={field.rankingLeaders} />
-          </div>
-        }
-        fieldCount={field.size}
         additionalTabs={[
           {
             value: 'intel',
