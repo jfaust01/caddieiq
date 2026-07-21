@@ -113,17 +113,34 @@ export function TournamentOddsIntelligence({ odds }: TournamentOddsIntelligenceP
 /** Honest placeholder for the no-verified-market state. */
 function UnavailableOdds({ note }: { note: string | null }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-surface/50 p-4">
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <Coins className="size-4" aria-hidden />
-      </span>
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-foreground text-balance">Awaiting verified odds</p>
-        <p className="text-xs leading-relaxed text-muted-foreground text-pretty">
-          {note ??
-            'No sportsbook prices have been captured for this event yet. Odds fill in automatically once The Odds API returns a market for it — nothing here is estimated.'}
-        </p>
+    <div className="space-y-4">
+      <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-surface/50 p-4">
+        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Coins className="size-4" aria-hidden />
+        </span>
+        <div className="flex flex-col gap-1 flex-1">
+          <p className="text-sm font-medium text-foreground text-balance">Odds data unavailable</p>
+          <p className="text-xs leading-relaxed text-muted-foreground text-pretty">
+            Reason: No stored betting markets exist for this tournament
+          </p>
+        </div>
       </div>
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="rounded border border-gray-700/30 bg-gray-900/20 p-3">
+          <p className="text-gray-400 font-medium mb-1">Expected Provider</p>
+          <p className="text-gray-300">The Odds API</p>
+        </div>
+        <div className="rounded border border-gray-700/30 bg-gray-900/20 p-3">
+          <p className="text-gray-400 font-medium mb-1">Market Count</p>
+          <p className="text-gray-300">0 records</p>
+        </div>
+      </div>
+      {note && (
+        <p className="flex items-start gap-2 rounded-lg border border-border bg-surface/40 p-3 text-xs text-muted-foreground text-pretty">
+          <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          {note}
+        </p>
+      )}
     </div>
   )
 }

@@ -32,6 +32,8 @@ import { FieldFitBoard } from '@/features/tournaments/components/field-fit-board
 import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
 import { TournamentHealthWrapper } from '@/features/tournaments/components/tournament-health-wrapper'
 import { TournamentElevationHub } from '@/features/tournaments/components/tournament-elevation/tournament-elevation-hub'
+import { TournamentDataQualityPanel } from '@/features/tournaments/components/tournament-data-quality-panel'
+import { buildModuleStatuses } from '@/features/tournaments/utils/tournament-data-quality'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
 import { courseService } from '@/features/courses/services/course-service'
 import {
@@ -154,6 +156,19 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
     playerId: entrant.playerId,
     playerName: entrant.playerName,
   }))
+
+  // Build module statuses for Data Quality panel
+  const moduleStatuses = buildModuleStatuses({
+    tournament,
+    field,
+    fieldFieldCount: field.size,
+    dfsRecordCount: dfsField?.players?.length ?? 0,
+    hasWeather: weather?.status === 'available',
+    hasOdds: odds?.leaderboards && odds.leaderboards.length > 0,
+    hasHoles: false, // Course holes not imported
+    roundCount: 4, // Known from database
+    weather,
+  })
 
   return (
     <>
@@ -320,6 +335,12 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
           />
         </aside>
       </div>
+
+      {/* Data Quality Panel */}
+      <div className="mt-12">
+        <TournamentDataQualityPanel modules={moduleStatuses} />
+      </div>
+
       </PageShell>
     </>
   )

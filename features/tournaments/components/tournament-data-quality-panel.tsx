@@ -1,13 +1,13 @@
 'use client'
 
-import { AlertCircle, CheckCircle, Clock, Eye, EyeOff, MoreVertical, TrendingUp } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, Eye, EyeOff, MoreVertical, Sparkles, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useState } from 'react'
 
 export interface ModuleStatus {
   name: string
-  status: 'VERIFIED' | 'CALCULATED' | 'PARTIAL' | 'UNAVAILABLE' | 'STALE' | 'PLACEHOLDER' | 'ERROR'
+  status: 'VERIFIED' | 'CALCULATED' | 'AI_GENERATED' | 'PARTIAL' | 'UNAVAILABLE' | 'STALE' | 'PLACEHOLDER' | 'ERROR'
   source: string
   recordCount: number
   lastUpdated: string | null
@@ -22,6 +22,7 @@ interface TournamentDataQualityPanelProps {
 const statusColors = {
   VERIFIED: { bg: 'bg-green-900/20', border: 'border-green-700', text: 'text-green-400', icon: CheckCircle },
   CALCULATED: { bg: 'bg-blue-900/20', border: 'border-blue-700', text: 'text-blue-400', icon: TrendingUp },
+  AI_GENERATED: { bg: 'bg-purple-900/20', border: 'border-purple-700', text: 'text-purple-400', icon: Sparkles },
   PARTIAL: { bg: 'bg-yellow-900/20', border: 'border-yellow-700', text: 'text-yellow-400', icon: AlertCircle },
   UNAVAILABLE: { bg: 'bg-gray-900/20', border: 'border-gray-700', text: 'text-gray-400', icon: Eye },
   STALE: { bg: 'bg-orange-900/20', border: 'border-orange-700', text: 'text-orange-400', icon: Clock },
@@ -37,6 +38,7 @@ export function TournamentDataQualityPanel({ modules }: TournamentDataQualityPan
   const summary = {
     verified: modules.filter(m => m.status === 'VERIFIED').length,
     calculated: modules.filter(m => m.status === 'CALCULATED').length,
+    aiGenerated: modules.filter(m => m.status === 'AI_GENERATED').length,
     partial: modules.filter(m => m.status === 'PARTIAL').length,
     unavailable: modules.filter(m => m.status === 'UNAVAILABLE').length,
     stale: modules.filter(m => m.status === 'STALE').length,
@@ -67,7 +69,7 @@ export function TournamentDataQualityPanel({ modules }: TournamentDataQualityPan
         </div>
 
         {/* Summary Statistics */}
-        <div className="grid grid-cols-4 gap-2 text-sm">
+        <div className="grid grid-cols-5 gap-2 text-sm">
           <div className="bg-green-900/10 border border-green-700/30 rounded px-3 py-2">
             <div className="text-xs text-gray-400">Verified</div>
             <div className="text-lg font-semibold text-green-400">{summary.verified}</div>
@@ -75,6 +77,10 @@ export function TournamentDataQualityPanel({ modules }: TournamentDataQualityPan
           <div className="bg-blue-900/10 border border-blue-700/30 rounded px-3 py-2">
             <div className="text-xs text-gray-400">Calculated</div>
             <div className="text-lg font-semibold text-blue-400">{summary.calculated}</div>
+          </div>
+          <div className="bg-purple-900/10 border border-purple-700/30 rounded px-3 py-2">
+            <div className="text-xs text-gray-400">AI-Generated</div>
+            <div className="text-lg font-semibold text-purple-400">{summary.aiGenerated}</div>
           </div>
           <div className="bg-yellow-900/10 border border-yellow-700/30 rounded px-3 py-2">
             <div className="text-xs text-gray-400">Partial/Other</div>

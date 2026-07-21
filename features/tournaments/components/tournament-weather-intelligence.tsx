@@ -400,13 +400,25 @@ function StatusPlaceholder({ weather }: { weather: WeatherIntelligence }) {
   // Gracefully handle missing status report
   if (!status) {
     return (
-      <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-surface/50 p-4">
-        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full">
-          <Info className="size-4 aria-hidden" />
-        </span>
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-medium text-foreground text-balance">Weather data unavailable</p>
-          <p className="text-xs leading-relaxed text-muted-foreground text-pretty">Status report could not be loaded</p>
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-surface/50 p-4">
+          <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full">
+            <Info className="size-4 aria-hidden" />
+          </span>
+          <div className="flex flex-col gap-1 flex-1">
+            <p className="text-sm font-medium text-foreground text-balance">Weather data unavailable</p>
+            <p className="text-xs leading-relaxed text-muted-foreground text-pretty">Reason: No stored weather snapshots exist for this tournament</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="rounded border border-gray-700/30 bg-gray-900/20 p-3">
+            <p className="text-gray-400 font-medium mb-1">Expected Provider</p>
+            <p className="text-gray-300">Weather API (OpenWeather/NOAA)</p>
+          </div>
+          <div className="rounded border border-gray-700/30 bg-gray-900/20 p-3">
+            <p className="text-gray-400 font-medium mb-1">Record Count</p>
+            <p className="text-gray-300">0 snapshots</p>
+          </div>
         </div>
       </div>
     )
