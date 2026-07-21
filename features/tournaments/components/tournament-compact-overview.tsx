@@ -21,20 +21,22 @@ export function TournamentCompactOverview({
   const hasField = field.size > 0
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 min-w-0">
       {/* Event Details Pills */}
-      <div>
+      <div className="min-w-0">
         <EventDetailsPills tournament={tournament} />
       </div>
 
       {/* Field Section */}
       {hasField && (
-        <div className="pt-8 border-t border-border">
+        <div className="pt-8 border-t border-border min-w-0">
           <div className="mb-4">
             <h3 className="text-lg font-semibold">Field</h3>
             <p className="text-sm text-muted-foreground">Browse every golfer in this tournament.</p>
           </div>
-          <TournamentField field={field} />
+          <div className="min-w-0">
+            <TournamentField field={field} />
+          </div>
         </div>
       )}
     </div>

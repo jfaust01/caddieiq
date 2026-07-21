@@ -33,7 +33,7 @@ export function TournamentDetailTabs({
   const tabsToShow = additionalTabs
 
   return (
-    <Tabs defaultValue="overview" className="gap-4">
+    <Tabs defaultValue="overview" className="gap-4 min-w-0">
       <div>
         <TabsList variant="line" className="h-9 gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -54,12 +54,12 @@ export function TournamentDetailTabs({
         </TabsList>
       </div>
 
-      <TabsContent value="overview" className="flex flex-col gap-4">
+      <TabsContent value="overview" className="flex flex-col gap-4 min-w-0">
         {overview}
       </TabsContent>
 
       {additionalTabs.map((tab) => (
-        <TabsContent key={tab.value} value={tab.value} className="flex flex-col gap-4">
+        <TabsContent key={tab.value} value={tab.value} className="flex flex-col gap-4 min-w-0">
           {tab.content}
         </TabsContent>
       ))}

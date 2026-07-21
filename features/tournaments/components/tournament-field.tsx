@@ -375,12 +375,12 @@ export function TournamentField({ field }: TournamentFieldProps) {
           description="Try a different search term or clear the status filter."
         />
       ) : (
-        <div>
+        <div className="w-full min-w-0">
           <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1">
             <span>Scroll for more →</span>
           </div>
-          <div className="overflow-x-auto border rounded-md">
-            <table className="w-full text-sm border-collapse">
+          <div className="w-full min-w-0 overflow-x-auto border rounded-md">
+            <table className="w-full min-w-max text-sm border-collapse">
             <thead>
               <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
                 <th className="sticky left-0 z-20 px-2 sm:px-3 py-3 text-right text-xs font-semibold text-muted-foreground w-12 sm:w-16 bg-muted/40">POS</th>
