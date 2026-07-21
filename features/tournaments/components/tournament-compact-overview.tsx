@@ -2,8 +2,6 @@
 
 import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
 import { CompactKpiRow } from './compact-kpi-row'
-import { CompactLeaderboard } from './compact-leaderboard'
-import { CompactDfsSummary } from './compact-dfs-summary'
 import { TournamentOverview } from './tournament-overview'
 import { TournamentField } from './tournament-field'
 
@@ -11,21 +9,18 @@ interface TournamentCompactOverviewProps {
   tournament: TournamentSummary
   field: TournamentField
   fieldReport?: { cutLine?: string; averageScore?: number } | null
-  dfsField?: Record<string, unknown> | null
 }
 
 /**
  * Compact tournament overview dashboard (target: 2-3 viewport heights).
- * Combines KPIs, top-5 leaderboard, course fit, weather, DFS summary,
- * and course/history facts into a single scrollable overview.
+ * Combines KPIs, tournament details, and field information.
  *
- * Full content is available in dedicated tabs (via TournamentDetailTabs).
+ * Fantasy-focused content (Top Ranked, Value Plays) moved to DFS tab.
  */
 export function TournamentCompactOverview({
   tournament,
   field,
   fieldReport,
-  dfsField,
 }: TournamentCompactOverviewProps) {
   const hasField = field.size > 0
   const courseRef = tournament.courseRef
@@ -40,24 +35,6 @@ export function TournamentCompactOverview({
           fieldReport={fieldReport}
         />
       </div>
-
-      {/* Top Ranked Players */}
-      <div>
-        <CompactLeaderboard
-          field={field}
-          tournamentId={tournament.id}
-        />
-      </div>
-
-      {/* DFS Summary */}
-      {hasField && (
-        <div>
-          <CompactDfsSummary
-            dfsField={dfsField}
-            tournamentId={tournament.id}
-          />
-        </div>
-      )}
 
       {/* Full Tournament Overview Card (event metadata) */}
       <div className="pt-2 border-t border-border">

@@ -3,7 +3,7 @@ import { CommandCenterHeader } from '@/features/tournaments/command-center/comma
 import { AiCoachWidget } from '@/features/tournaments/command-center/ai-coach-widget'
 import { TournamentDetailTabs } from '@/features/tournaments/components/tournament-detail-tabs'
 import { TournamentCompactOverview } from '@/features/tournaments/components/tournament-compact-overview'
-import { TournamentDfsLeaderboards } from '@/features/tournaments/components/tournament-dfs-leaderboards'
+import { TournamentDfsHub } from '@/features/tournaments/components/tournament-dfs-hub'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
 import { courseService } from '@/features/courses/services/course-service'
 import {
@@ -98,7 +98,6 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
             tournament={tournament}
             field={field}
             fieldReport={fieldReport}
-            dfsField={dfsField}
           />
         }
         additionalTabs={[
@@ -107,7 +106,13 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
                 {
                   value: 'dfs',
                   label: 'DFS',
-                  content: <TournamentDfsLeaderboards field={dfsField} />,
+                  content: (
+                    <TournamentDfsHub
+                      tournament={tournament}
+                      field={field}
+                      dfsField={dfsField}
+                    />
+                  ),
                   count: dfsField?.players?.length ?? 0,
                 },
               ]
