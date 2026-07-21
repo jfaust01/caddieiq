@@ -61,7 +61,7 @@ export function CommandCenterHeader({
     <header 
       ref={headerRef}
       className="sticky z-40 w-full border-b border-border bg-background/95 px-4 py-2 backdrop-blur-md sm:px-6"
-      style={{ top: 'var(--sticky-top, 0px)' } as React.CSSProperties & { '--sticky-top': string }}
+      style={{ top: 'var(--sticky-top, 0px)', display: 'inline' } as React.CSSProperties & { '--sticky-top': string }}
     >
       <div className="mx-auto max-w-7xl flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-col gap-1.5">
