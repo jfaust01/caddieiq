@@ -1,13 +1,9 @@
 'use client'
 
 import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
-import type { WeatherIntelligence } from '@/lib/weather-intelligence'
-import type { CourseIntelligence } from '@/features/courses/types'
 import { CompactKpiRow } from './compact-kpi-row'
 import { CompactLeaderboard } from './compact-leaderboard'
-import { CompactWeatherSummary } from './compact-weather-summary'
 import { CompactDfsSummary } from './compact-dfs-summary'
-import { CompactCourseHistoryRow } from './compact-course-history-row'
 import { TournamentOverview } from './tournament-overview'
 import { TournamentField } from './tournament-field'
 
@@ -15,9 +11,7 @@ interface TournamentCompactOverviewProps {
   tournament: TournamentSummary
   field: TournamentField
   fieldReport?: { cutLine?: string; averageScore?: number } | null
-  weather: WeatherIntelligence | null
   dfsField?: Record<string, unknown> | null
-  courseProfile: CourseIntelligence | null
 }
 
 /**
@@ -31,9 +25,7 @@ export function TournamentCompactOverview({
   tournament,
   field,
   fieldReport,
-  weather,
   dfsField,
-  courseProfile,
 }: TournamentCompactOverviewProps) {
   const hasField = field.size > 0
   const courseRef = tournament.courseRef
@@ -57,22 +49,15 @@ export function TournamentCompactOverview({
         />
       </div>
 
-      {/* Two-column grid: Weather + DFS Summary */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <CompactWeatherSummary weather={weather} />
-        {hasField && (
+      {/* DFS Summary */}
+      {hasField && (
+        <div>
           <CompactDfsSummary
             dfsField={dfsField}
             tournamentId={tournament.id}
           />
-        )}
-      </div>
-
-      {/* Course & History Facts */}
-      <CompactCourseHistoryRow
-        tournament={tournament}
-        courseProfile={courseProfile}
-      />
+        </div>
+      )}
 
       {/* Full Tournament Overview Card (event metadata) */}
       <div className="pt-2 border-t border-border">
