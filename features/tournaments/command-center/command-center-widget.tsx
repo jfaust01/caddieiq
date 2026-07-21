@@ -67,7 +67,7 @@ export function CommandCenterWidget({
   return (
     <section
       className={cn(
-        "flex flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground",
+        "flex flex-col overflow-hidden rounded-lg border border-foreground/10 bg-card/50 text-card-foreground",
         className,
       )}
     >
@@ -76,10 +76,10 @@ export function CommandCenterWidget({
         onClick={toggle}
         aria-expanded={!collapsed}
         aria-controls={regionId}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
       >
         {icon ? (
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground [&_svg]:size-4">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground [&_svg]:size-4">
             {icon}
           </span>
         ) : null}
@@ -90,7 +90,7 @@ export function CommandCenterWidget({
           ) : null}
         </span>
         {chip ? (
-          <span className="hidden shrink-0 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[0.625rem] font-medium text-muted-foreground sm:inline">
+          <span className="hidden shrink-0 rounded-full border border-foreground/10 bg-muted/40 px-2 py-0.5 text-[0.625rem] font-medium text-muted-foreground sm:inline">
             {chip}
           </span>
         ) : null}
@@ -106,7 +106,7 @@ export function CommandCenterWidget({
       <div
         id={regionId}
         hidden={hydrated && collapsed}
-        className="border-t border-border px-4 py-4"
+        className="border-t border-foreground/5 px-4 py-4"
       >
         {children}
       </div>

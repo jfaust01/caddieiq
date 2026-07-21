@@ -14,7 +14,7 @@ interface WeatherRefreshControlProps {
   importStatus: WeatherImportStatus
 }
 
-/** Absolute → "just now / 3 min ago / 2 hr ago / Jul 12" relative label. */
+/** Absolute → "just now / 3 min ago / 2 hr ago / Jul 12" relative label. Uses UTC to avoid hydration mismatch. */
 function relativeTime(iso: string | null): string | null {
   if (!iso) return null
   const then = new Date(iso).getTime()
@@ -25,7 +25,11 @@ function relativeTime(iso: string | null): string | null {
   if (min < 60) return `${min} min ago`
   const hr = Math.round(min / 60)
   if (hr < 24) return `${hr} hr ago`
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  
+  // Format as "Jul 12" using UTC to avoid locale-dependent mismatch
+  const date = new Date(iso)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${months[date.getUTCMonth()]} ${date.getUTCDate()}`
 }
 
 const RESULT_LABEL: Record<NonNullable<WeatherImportStatus['lastResult']>, string> = {

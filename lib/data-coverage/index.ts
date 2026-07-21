@@ -7,4 +7,5 @@
  */
 export * from "./ratings"
 export * from "./inventory"
+export * from "./provider-config"
 export type * from "./types"

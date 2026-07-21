@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import type { TableHealthReport, TableStatus } from "@/lib/system-health/database-health"
+import { ProviderBadge } from "./provider-badge"
+import { SyncStateBadge } from "./sync-state-badge"
 
 /**
  * Searchable and filterable table health status panel.
@@ -117,6 +119,8 @@ export function TableHealthPanel({ tables }: { tables: TableHealthReport[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Table Name</TableHead>
+              <TableHead>Provider</TableHead>
+              <TableHead>Sync State</TableHead>
               <TableHead className="text-right">Rows</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Purpose</TableHead>
@@ -128,7 +132,7 @@ export function TableHealthPanel({ tables }: { tables: TableHealthReport[] }) {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
                   No tables match your search criteria
                 </TableCell>
               </TableRow>
@@ -136,6 +140,12 @@ export function TableHealthPanel({ tables }: { tables: TableHealthReport[] }) {
               filtered.map((table) => (
                 <TableRow key={table.tableName} className="hover:bg-muted/50">
                   <TableCell className="font-mono text-sm font-medium">{table.tableName}</TableCell>
+                  <TableCell>
+                    <ProviderBadge provider={table.provider} />
+                  </TableCell>
+                  <TableCell>
+                    <SyncStateBadge syncState={table.syncState} />
+                  </TableCell>
                   <TableCell className="text-right font-mono text-sm">{table.rowCount.toLocaleString()}</TableCell>
                   <TableCell>
                     <Badge className={cn("", getStatusColor(table.status))}>{table.status}</Badge>

@@ -129,6 +129,137 @@ enum RoundStatus {
 }
 
 // ---------------------------------------------------------------------------
+// Historical Data Enums (Phase 17.3A)
+// ---------------------------------------------------------------------------
+
+enum EntityType {
+  PLAYER
+  TOURNAMENT
+  COURSE
+}
+
+enum MappingStatus {
+  VERIFIED
+  PENDING
+  DISPUTED
+  REJECTED
+}
+
+enum DataQualityStatus {
+  VERIFIED
+  ESTIMATED
+  PARTIAL
+  ERROR
+}
+
+enum AuditEventType {
+  FEATURE_ADDED
+  FEATURE_UPDATED
+  SNAPSHOT_SEALED
+  LOCK_DATETIME_SET
+  FIELD_ENTRY_CONFIRMED
+  FIELD_WITHDRAWAL
+  HISTORICAL_RECORD_IMPORTED
+  HISTORICAL_RECORD_UPDATED
+  IMPORT_JOB_STARTED
+  IMPORT_JOB_COMPLETED
+  IMPORT_JOB_FAILED
+}
+
+enum QualityReportStatus {
+  EXCELLENT
+  GOOD
+  ACCEPTABLE
+  DEGRADED
+  FAILED
+}
+
+enum RankingSystem {
+  WORLD_GOLF_RANKING
+  FEDEX_CUP
+  OTHER
+}
+
+enum ImportJobType {
+  TOURNAMENT_EDITION
+  TOURNAMENT_FIELD
+  PLAYER_FEATURES
+  RANKINGS
+  SALARIES_ODDS
+  OUTCOMES
+}
+
+enum ImportJobStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+enum AlternateStatus {
+  PRIMARY
+  ALTERNATE
+  ALTERNATE_CALLED
+}
+
+enum CutStatus {
+  MADE
+  MISSED
+  UNKNOWN
+}
+
+enum WithdrawalStatus {
+  UNKNOWN
+  WITHDRAWN_BEFORE_START
+  WITHDRAWN_AFTER_START
+  NOT_WITHDRAWN
+
+  @@map("withdrawal_status")
+}
+
+enum DatasetType {
+  TOURNAMENT_EDITIONS
+  COURSE_EDITIONS
+  PLAYER_VERSIONS
+  RANKINGS
+  STATISTICS
+  STROKES_GAINED
+  DRAFT_KINGS_SALARIES
+  BETTING_MARKETS
+  WEATHER
+  OWNERSHIP
+  TOURNAMENT_OUTCOMES
+  ENGINEERED_FEATURES
+  SNAPSHOTS
+
+  @@map("dataset_type")
+}
+
+enum ProviderHealthStatus {
+  HEALTHY
+  DEGRADED
+  UNAVAILABLE
+  MAINTENANCE
+
+  @@map("provider_health_status")
+}
+
+enum FeatureCategory {
+  SKILL_METRICS
+  FORM_METRICS
+  COURSE_HISTORY
+  COURSE_FIT
+  RANKINGS
+  OWNERSHIP
+  PLAYER_ATTRIBUTES
+  DERIVED
+  COMPOSITE
+
+  @@map("feature_category")
+}
+
+// ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
 
@@ -317,15 +448,32 @@ model Player {
   deletedAt     DateTime?
 
   // Relations
-  nationality        Nationality?            @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
-  tourHistory        PlayerTourHistory[]
-  tournamentFields   TournamentField[]
-  seasonStatistics   PlayerSeasonStatistic[]
-  newsArticles       NewsArticle[]
-  bettingOutcomes    BettingOutcome[]
-  fantasyProjections FantasyProjection[]
-  dfsSalaries        DfsSalary[]
-  oddsQuotes         OddsQuote[]
+  nationality                     Nationality?              @relation(fields: [nationalityId], references: [id], onDelete: SetNull)
+  tourHistory                     PlayerTourHistory[]
+  tournamentFields                TournamentField[]
+  seasonStatistics                PlayerSeasonStatistic[]
+  newsArticles                    NewsArticle[]
+  bettingOutcomes                 BettingOutcome[]
+  fantasyProjections              FantasyProjection[]
+  dfsSalaries                     DfsSalary[]
+  oddsQuotes                      OddsQuote[]
+  intelligence                    PlayerIntelligence?
+  playerIntelligenceBuilds        PlayerIntelligenceBuild[]
+  activePlayerIntelligenceBuildId String?                   @unique
+  activePlayerIntelligenceBuild   PlayerIntelligenceBuild?  @relation(name: "activePlayerIntelligenceBuild", fields: [activePlayerIntelligenceBuildId], references: [id], onDelete: SetNull)
+
+  // Historical data relations (Phase 17.3A)
+  historicalPlayerFeatures HistoricalPlayerFeature[]
+  historicalSnapshots      HistoricalSnapshot[]
+  historicalRankings       HistoricalPlayerRanking[]
+  historicalSalaryOdds     HistoricalSalaryOddsSnapshot[]
+  historicalOutcomes       HistoricalTournamentOutcome[]
+  historicalFeatureSamples HistoricalFeatureSample[]
+  matchScores              MatchScore[]
+
+  // DFS context relations (Phase 18.3)
+  dfsContestEntries       DfsContestEntry[]
+  dfsPlayerOwnership      DfsPlayerOwnership[]
 
   @@index([slug])
   @@index([lastName])
@@ -483,14 +631,14 @@ model NewsArticle {
 
 /// A professional golf course. Supports soft deletion via `deletedAt`.
 model Course {
-  id              String    @id @default(cuid())
-  name            String
-  slug            String    @unique
-  city            String?
-  stateProvince   String?
-  country         String?
-  latitude        Float?
-  longitude       Float?
+  id                    String               @id @default(cuid())
+  name                  String
+  slug                  String               @unique
+  city                  String?
+  stateProvince         String?
+  country               String?
+  latitude              Float?
+  longitude             Float?
   // Coordinate provenance (Course Geolocation Engine, Sprint 3.9).
   // `coordinateConfidence` is the source of truth for how far lat/lng may be
   // trusted: VERIFIED = course-precise (Maps + Weather); APPROXIMATE =
@@ -499,23 +647,25 @@ model Course {
   // automatically. `coordinateSource` records which provider resolved them
   // (e.g. "osm-nominatim" or "openweather-geocoding"); `coordinatesVerifiedAt`
   // stamps when.
-  coordinateConfidence CoordinateConfidence @default(UNKNOWN)
-  coordinateSource     String?
+  coordinateConfidence  CoordinateConfidence @default(UNKNOWN)
+  coordinateSource      String?
   coordinatesVerifiedAt DateTime?
-  par             Int?
-  yardage         Int?
-  altitudeFt      Int?
-  establishedYear Int?
-  website         String?
-  active          Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  par                   Int?
+  yardage               Int?
+  altitudeFt            Int?
+  establishedYear       Int?
+  website               String?
+  timezone              String?              // IANA timezone (e.g., "America/Mexico_City")
+  active                Boolean              @default(true)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  deletedAt             DateTime?
 
   // Relations
   characteristic    CourseCharacteristic?
   analytics         CourseAnalytics?
   tournamentCourses TournamentCourse[]
+  matchScores       MatchScore[]
 
   @@index([slug])
   @@index([country])
@@ -549,21 +699,21 @@ enum CoordinateConfidence {
 /// time the Rebuild Course Analytics action runs. Confidence increases as more
 /// seasons of data are imported — the engine never fabricates values.
 model CourseAnalytics {
-  id                  String   @id @default(cuid())
-  courseId            String   @unique
+  id       String @id @default(cuid())
+  courseId String @unique
 
   /// 1–10 normalized difficulty (higher = harder). Derived from avg score to par,
   /// winning score, cut line, and missed-cut rate across all historical events.
-  difficultyRating    Float?
+  difficultyRating Float?
   /// 1–10 normalized birdie opportunity (higher = more birdies). From historical birdie %.
-  birdieRating        Float?
+  birdieRating     Float?
   /// 1–10 normalized bogey risk (higher = more bogeys). From historical bogey %.
-  bogeyRating         Float?
+  bogeyRating      Float?
   /// 1–10 normalized scoring variance across the field (higher = more volatile).
-  volatilityRating    Float?
+  volatilityRating Float?
   /// Estimated DraftKings scoring potential (1–10). Composite of birdies, eagles,
   /// bogeys, and volatility, calibrated to DK point values.
-  dfsScoringRating    Float?
+  dfsScoringRating Float?
 
   /// Average winning score (total strokes) across all historical tournaments.
   averageWinningScore Float?
@@ -573,11 +723,11 @@ model CourseAnalytics {
   averageScoreToPar   Float?
 
   /// Par-3 difficulty rating (1–10). Null until hole-level data is available.
-  par3Difficulty      Float?
+  par3Difficulty Float?
   /// Par-4 difficulty rating (1–10). Null until hole-level data is available.
-  par4Difficulty      Float?
+  par4Difficulty Float?
   /// Par-5 difficulty rating (1–10). Null until hole-level data is available.
-  par5Difficulty      Float?
+  par5Difficulty Float?
 
   /// Birdie rate as a decimal fraction (0–1) across all historical rounds.
   historicalBirdieRate Float?
@@ -587,16 +737,16 @@ model CourseAnalytics {
   historicalEagleRate  Float?
 
   /// Machine-derived classification (e.g. "Birdie Fest", "Major Championship Test").
-  courseArchetype     String?
+  courseArchetype String?
 
   /// 0–1 confidence score. Increases with sample size. Never fabricated.
-  confidenceScore     Float?
+  confidenceScore Float?
   /// Number of tournament rounds used in this calculation.
-  sampleSize          Int      @default(0)
+  sampleSize      Int    @default(0)
 
-  lastCalculated      DateTime?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  lastCalculated DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -667,9 +817,18 @@ model Tournament {
   active             Boolean          @default(true)
   /// SportsDataIO tournament ID for leaderboard/results fetching
   externalId         String?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  deletedAt          DateTime?
+
+  // Historical data fields (Phase 17.3A)
+  lockDatetime            DateTime?         @map("lock_datetime")
+  lockDatetimeSetAt       DateTime?         @map("lock_datetime_set_at")
+  editionSequence         Int?              @map("edition_sequence")
+  tournamentSeriesId      String?           @map("tournament_series_id")
+  providerEditionId       String?   @unique @map("provider_edition_id")
+  lockDatetimeIsImmutable Boolean   @default(false) @map("lock_datetime_is_immutable")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   // Relations
   tour               Tour                @relation(fields: [tourId], references: [id], onDelete: Cascade)
@@ -684,10 +843,23 @@ model Tournament {
   weatherImportLogs  WeatherImportLog[]
   oddsEvents         OddsEvent[]
 
+  // Historical data relations (Phase 17.3A)
+  historicalSnapshots  HistoricalSnapshot[]
+  historicalSalaryOdds HistoricalSalaryOddsSnapshot[]
+  historicalOutcomes   HistoricalTournamentOutcome[]
+  historicalFeatureSamples HistoricalFeatureSample[]
+  matchScores          MatchScore[]
+
+  // DFS context relations (Phase 18.3)
+  dfsContests        DfsContest[]
+  dfsPlayerOwnership DfsPlayerOwnership[]
+
   @@index([slug])
   @@index([tourId])
   @@index([seasonId])
   @@index([status])
+  @@index([lockDatetime])
+  @@index([providerEditionId])
   @@map("tournaments")
 }
 
@@ -735,8 +907,21 @@ model TournamentField {
   cutMade       Boolean?
   finalPosition Int?
   earnings      Decimal?
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
+
+  // Historical data fields (Phase 17.3A)
+  entryConfirmedAt         DateTime?        @map("entry_confirmed_at")
+  withdrawalTimestamp      DateTime?        @map("withdrawal_timestamp")
+  withdrawalKnownTimestamp DateTime?        @map("withdrawal_known_timestamp")
+  entryStatusChangedAt     DateTime         @default(now()) @map("entry_status_changed_at")
+  sourceEffectiveTimestamp DateTime?        @map("source_effective_timestamp")
+  alternateStatus          AlternateStatus? @map("alternate_status")
+  alternateCallTimestamp   DateTime?        @map("alternate_call_timestamp")
+  sourceProvider           String           @default("sportsdataio") @map("source_provider")
+  sourceRecordId           String?          @map("source_record_id")
+  retrievedTimestamp       DateTime?        @map("retrieved_timestamp")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   tournament   Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
@@ -749,6 +934,8 @@ model TournamentField {
   @@index([playerId])
   @@index([status])
   @@index([teeTime])
+  @@index([sourceProvider, sourceRecordId])
+  @@index([entryConfirmedAt, withdrawalTimestamp])
   @@map("tournament_fields")
 }
 
@@ -1032,9 +1219,9 @@ enum OddsMarketType {
 /// `capturedAt` records when this event's book of quotes was last refreshed and
 /// drives the freshness component of market confidence.
 model OddsEvent {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   /// The Odds API event id (idempotency key).
-  providerEventId String   @unique
+  providerEventId String    @unique
   /// The Odds API sport key, e.g. "golf_the_open_championship_winner".
   sportKey        String
   sportTitle      String?
@@ -1043,11 +1230,11 @@ model OddsEvent {
   /// Scheduled tee-off per the provider, when supplied.
   commenceTime    DateTime?
   /// Data source; always a real feed. Never fabricated.
-  source          String   @default("the-odds-api")
+  source          String    @default("the-odds-api")
   /// When this event's quotes were last captured from the provider.
   capturedAt      DateTime
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
   quotes     OddsQuote[]
@@ -1064,29 +1251,29 @@ model OddsEvent {
 /// (event, market, bookmaker, selection) makes refresh idempotent; the importer
 /// only overwrites a quote when the incoming `lastUpdate` is newer.
 model OddsQuote {
-  id             String         @id @default(cuid())
-  oddsEventId    String
-  market         OddsMarketType
+  id                 String         @id @default(cuid())
+  oddsEventId        String
+  market             OddsMarketType
   /// Bookmaker key, e.g. "draftkings".
-  bookmakerKey   String
+  bookmakerKey       String
   /// Human-friendly bookmaker label, e.g. "DraftKings".
-  bookmakerTitle String
+  bookmakerTitle     String
   /// Raw selection label from the provider (player name).
-  selection      String
+  selection          String
   /// Deterministic slug derived from the selection, used to resolve to a Player.
-  selectionSlug  String
+  selectionSlug      String
   /// Resolved CaddieIQ player, or null when unmatched / non-player selection.
-  playerId       String?
+  playerId           String?
   /// Decimal odds exactly as provided (source of truth).
-  decimalOdds    Decimal
+  decimalOdds        Decimal
   /// American odds derived from the decimal price.
-  americanOdds   Int
+  americanOdds       Int
   /// Raw implied probability (0..1) derived from the decimal price (includes vig).
   impliedProbability Decimal
   /// The provider's `last_update` for this bookmaker's market; the freshness key.
-  lastUpdate     DateTime
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  lastUpdate         DateTime
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   event  OddsEvent @relation(fields: [oddsEventId], references: [id], onDelete: Cascade)
   player Player?   @relation(fields: [playerId], references: [id], onDelete: SetNull)
@@ -1109,27 +1296,27 @@ model OddsQuote {
 /// fabricated data: if the provider returns nothing usable, no snapshot is
 /// written and the engine reports weather as unavailable.
 model WeatherSnapshot {
-  id               String   @id @default(cuid())
-  tournamentId     String   @unique
+  id               String    @id @default(cuid())
+  tournamentId     String    @unique
   /// Host course this forecast was fetched for (venue coordinates), when linked.
   courseId         String?
   /// Data source, e.g. "openweather". Never a fabricated feed.
-  source           String   @default("openweather")
+  source           String    @default("openweather")
   /// Venue coordinates the forecast was requested for.
   latitude         Float
   longitude        Float
   /// Seconds offset from UTC at the venue — used to bucket periods into local
   /// days and morning/afternoon waves.
-  utcOffsetSeconds Int      @default(0)
+  utcOffsetSeconds Int       @default(0)
   /// When this forecast was captured from the provider (drives forecast age).
-  capturedAt       DateTime @default(now())
+  capturedAt       DateTime  @default(now())
   /// Earliest / latest forecast validity times covered by this snapshot.
   forecastStart    DateTime?
   forecastEnd      DateTime?
   /// Number of stored forecast periods (coverage signal).
-  periodCount      Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  periodCount      Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   tournament Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   periods    WeatherPeriod[]
@@ -1297,17 +1484,17 @@ model ImportRun {
 /// Course details from GolfCourse API.
 /// Stores rich course information for reuse throughout the application.
 model CourseDetails {
-  id                String              @id @default(cuid())
+  id               String @id @default(cuid())
   /// External course ID from GolfCourse API
-  externalCourseId  String              @unique
-  
+  externalCourseId String @unique
+
   // Basic
-  courseName        String
-  clubName          String?
-  
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  
+  courseName String
+  clubName   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   /// Relations (normalized components)
   address           CourseAddress?
   coordinates       CourseCoordinates?
@@ -1325,42 +1512,42 @@ model CourseDetails {
 
 /// Course address information (normalized 1:1).
 model CourseAddress {
-  id              String      @id @default(cuid())
-  courseId        String      @unique
-  
-  city            String?
-  state           String?
-  country         String?
-  postalCode      String?
-  
-  website         String?
-  phone           String?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  id       String @id @default(cuid())
+  courseId String @unique
+
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+
+  website String?
+  phone   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   /// Relations
-  course          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
+  course CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   @@index([courseId])
   @@map("course_addresses")
 }
 
 /// Course GPS coordinates (normalized 1:1).
 model CourseCoordinates {
-  id              String      @id @default(cuid())
-  courseId        String      @unique
-  
-  latitude        Float?
-  longitude       Float?
-  elevation       Int?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  id       String @id @default(cuid())
+  courseId String @unique
+
+  latitude  Float?
+  longitude Float?
+  elevation Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   /// Relations
-  course          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
+  course CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   @@index([courseId])
   @@index([latitude, longitude])
   @@map("course_coordinates")
@@ -1368,67 +1555,67 @@ model CourseCoordinates {
 
 /// Course specifications (normalized 1:1) - par, yardage, USGA ratings.
 model CourseSpecifications {
-  id              String      @id @default(cuid())
-  courseId        String      @unique
-  
-  par             Int?
-  totalYardage    Int?
-  courseRating    Float?
-  slopeRating     Int?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  id       String @id @default(cuid())
+  courseId String @unique
+
+  par          Int?
+  totalYardage Int?
+  courseRating Float?
+  slopeRating  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   /// Relations
-  course          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
+  course CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   @@index([courseId])
   @@map("course_specifications")
 }
 
 /// Course metadata (normalized 1:1) - architect, style, facilities.
 model CourseMetadata {
-  id              String      @id @default(cuid())
-  courseId        String      @unique
-  
-  architect       String?
-  yearBuilt       Int?
-  courseStyle     String?
-  
+  id       String @id @default(cuid())
+  courseId String @unique
+
+  architect   String?
+  yearBuilt   Int?
+  courseStyle String?
+
   // Facilities
-  drivingRange    Boolean?
-  puttingGreen    Boolean?
-  shortGameArea   Boolean?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  drivingRange  Boolean?
+  puttingGreen  Boolean?
+  shortGameArea Boolean?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   /// Relations
-  course          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
+  course CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   @@index([courseId])
   @@map("course_metadata")
 }
 
 /// Playing conditions (normalized 1:M) - grass types, green conditions, temporal tracking.
 model PlayingConditions {
-  id              String      @id @default(cuid())
-  courseId        String
-  
+  id       String @id @default(cuid())
+  courseId String
+
   grassTypeFairway String?
-  grassTypeGreen  String?
-  greenSize       String?
-  greenSpeed      String?
-  
+  grassTypeGreen   String?
+  greenSize        String?
+  greenSpeed       String?
+
   /// When these conditions were observed (allows historical tracking)
-  observedAt      DateTime    @default(now())
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  observedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   /// Relations
-  course          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
+  course CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   @@index([courseId])
   @@index([courseId, observedAt])
   @@map("playing_conditions")
@@ -1436,18 +1623,18 @@ model PlayingConditions {
 
 /// Individual holes for a course.
 model CourseHole {
-  id               String              @id @default(cuid())
-  courseId         String
-  holeNumber       Int
-  par              Int?
-  yardage          Int?
-  handicap         Int?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  
+  id         String   @id @default(cuid())
+  courseId   String
+  holeNumber Int
+  par        Int?
+  yardage    Int?
+  handicap   Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   /// Relations
-  course           CourseDetails       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  teeYardages      TeeHoleYardage[]
+  course      CourseDetails    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teeYardages TeeHoleYardage[]
 
   @@unique([courseId, holeNumber])
   @@index([courseId])
@@ -1456,20 +1643,20 @@ model CourseHole {
 
 /// Tee information for a course (different sets for different players).
 model CourseTee {
-  id               String              @id @default(cuid())
-  courseId         String
-  teeName          String
-  teeColor         String?
-  gender           String?
-  yardage          Int?
-  rating           Float?
-  slope            Int?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  
+  id        String   @id @default(cuid())
+  courseId  String
+  teeName   String
+  teeColor  String?
+  gender    String?
+  yardage   Int?
+  rating    Float?
+  slope     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   /// Relations
-  course           CourseDetails       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  holeYardages     TeeHoleYardage[]
+  course       CourseDetails    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  holeYardages TeeHoleYardage[]
 
   @@unique([courseId, teeName])
   @@index([courseId])
@@ -1478,20 +1665,20 @@ model CourseTee {
 
 /// Per-hole yardage for each tee (many-to-many through holes).
 model TeeHoleYardage {
-  id               String         @id @default(cuid())
-  teeId            String
-  holeId           String
-  courseId         String         // Denormalized for query efficiency
-  
-  yardage          Int?
-  handicap         Int?           // May vary by tee
-  
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  
+  id       String @id @default(cuid())
+  teeId    String
+  holeId   String
+  courseId String // Denormalized for query efficiency
+
+  yardage  Int?
+  handicap Int? // May vary by tee
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   /// Relations
-  tee              CourseTee      @relation(fields: [teeId], references: [id], onDelete: Cascade)
-  hole             CourseHole     @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  tee  CourseTee  @relation(fields: [teeId], references: [id], onDelete: Cascade)
+  hole CourseHole @relation(fields: [holeId], references: [id], onDelete: Cascade)
 
   @@unique([teeId, holeId])
   @@index([teeId])
@@ -1504,39 +1691,39 @@ model TeeHoleYardage {
 /// Stores the persistent relationship between SportsDataIO tournaments and GolfCourse API courses.
 /// This mapping becomes the single source of truth for course enrichment and prevents duplicate searches.
 model TournamentCourseMapping {
-  id                      String    @id @default(cuid())
+  id                    String  @id @default(cuid())
   /// Reference to tournament (SportsDataIO tournament ID)
-  tournamentId            String    @unique
+  tournamentId          String  @unique
   /// Course ID from SportsDataIO tournament data
-  sportsDataIoCourseId    String?
+  sportsDataIoCourseId  String?
   /// Course ID from GolfCourse API - the authoritative source
-  golfCourseApiCourseId   Int?
-  
+  golfCourseApiCourseId Int?
+
   /// Display names for reference
-  tournamentCourseName    String?
-  golfCourseCourseName    String?
-  
+  tournamentCourseName String?
+  golfCourseCourseName String?
+
   /// Matching metadata
   /// Confidence score 0-100 from the matching algorithm
-  matchConfidence         Int?      @default(0)
+  matchConfidence    Int?                      @default(0)
   /// Reasons why the confidence score was assigned (e.g., "Exact name match + City/State match")
-  confidenceReason        String?
+  confidenceReason   String?
   /// How the match was determined (e.g., "manual", "auto-matched", "search")
-  matchedBy               String?   @default("auto-matched")
+  matchedBy          String?                   @default("auto-matched")
   /// Verification status: PENDING_REVIEW → needs manual verification, VERIFIED → ready for import, REJECTED → should not be imported
-  verificationStatus      MappingVerificationStatus @default(PENDING_REVIEW)
+  verificationStatus MappingVerificationStatus @default(PENDING_REVIEW)
   /// Legacy field for importer compatibility - maps verificationStatus to boolean
-  verified                Boolean   @default(false)
+  verified           Boolean                   @default(false)
   /// Auto-verified when confidence >= 95%, set by migration or confidence algorithm
-  autoVerified            Boolean   @default(false)
+  autoVerified       Boolean                   @default(false)
   /// Notes for why mapping was rejected
-  rejectionReason         String?
-  
+  rejectionReason    String?
+
   /// Audit timestamps
-  lastSyncedAt            DateTime?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-  
+  lastSyncedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
   @@index([tournamentId])
   @@index([golfCourseApiCourseId])
   @@index([sportsDataIoCourseId])
@@ -1547,62 +1734,133 @@ model TournamentCourseMapping {
 /// Generated by the Course Intelligence Engine and stored for efficient lookups.
 /// Read by Tournament pages, AI features, DFS tools, and analytics.
 model CourseIntelligence {
-  id                              String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   /// Reference to course
-  courseId                        String    @unique
-  
+  courseId String @unique
+
   /// Overall Difficulty Metric (0-100 score, 1-5 stars)
-  overallDifficultyScore          Int       @default(0)
-  overallDifficultyStars          Int       @default(1)
-  
+  overallDifficultyScore Int @default(0)
+  overallDifficultyStars Int @default(1)
+
   /// Driving Importance (0-100 score, 1-5 stars)
-  drivingImportanceScore          Int       @default(0)
-  drivingImportanceStars          Int       @default(1)
-  
+  drivingImportanceScore Int @default(0)
+  drivingImportanceStars Int @default(1)
+
   /// Approach Shot Importance (0-100 score, 1-5 stars)
-  approachImportanceScore         Int       @default(0)
-  approachImportanceStars         Int       @default(1)
-  
+  approachImportanceScore Int @default(0)
+  approachImportanceStars Int @default(1)
+
   /// Short Game Importance (0-100 score, 1-5 stars)
-  shortGameImportanceScore        Int       @default(0)
-  shortGameImportanceStars        Int       @default(1)
-  
+  shortGameImportanceScore Int @default(0)
+  shortGameImportanceStars Int @default(1)
+
   /// Putting Importance (0-100 score, 1-5 stars)
-  puttingImportanceScore          Int       @default(0)
-  puttingImportanceStars          Int       @default(1)
-  
+  puttingImportanceScore Int @default(0)
+  puttingImportanceStars Int @default(1)
+
   /// Wind Sensitivity (0-100 score, 1-5 stars)
-  windSensitivityScore            Int       @default(0)
-  windSensitivityStars            Int       @default(1)
-  
+  windSensitivityScore Int @default(0)
+  windSensitivityStars Int @default(1)
+
   /// Penalty Severity (0-100 score, 1-5 stars)
-  penaltySeverityScore            Int       @default(0)
-  penaltySeverityStars            Int       @default(1)
-  
+  penaltySeverityScore Int @default(0)
+  penaltySeverityStars Int @default(1)
+
   /// Birdie Potential (0-100 score, 1-5 stars)
-  birdiePotentialScore            Int       @default(0)
-  birdiePotentialStars            Int       @default(1)
-  
+  birdiePotentialScore Int @default(0)
+  birdiePotentialStars Int @default(1)
+
   /// Scoring Volatility (0-100 score, 1-5 stars)
-  scoringVolatilityScore          Int       @default(0)
-  scoringVolatilityStars          Int       @default(1)
-  
+  scoringVolatilityScore Int @default(0)
+  scoringVolatilityStars Int @default(1)
+
+  /// Additional Difficulty Metrics
+  /// Scoring Difficulty - difficulty of scoring well
+  scoringDifficultyScore Int @default(0)
+  scoringDifficultyStars Int @default(1)
+
+  /// Bogey Risk - likelihood of scoring bogey or worse
+  bogeyRiskScore Int @default(0)
+  bogeyRiskStars Int @default(1)
+
+  /// Difficulty Variance - hole-to-hole consistency
+  varianceScore Int @default(0)
+  varianceStars Int @default(1)
+
+  /// Fairway & Short Game Metrics
+  /// Fairway Width - estimated fairway width difficulty
+  fairwayWidthScore Int @default(0)
+  fairwayWidthStars Int @default(1)
+
+  /// Iron Difficulty - approach shot precision difficulty
+  ironDifficultyScore Int @default(0)
+  ironDifficultyStars Int @default(1)
+
+  /// Putting Difficulty - green complexity
+  puttingDifficultyScore Int @default(0)
+  puttingDifficultyStars Int @default(1)
+
+  /// Hazard Metrics
+  /// Water Hazard Risk
+  waterHazardRiskScore Int @default(0)
+  waterHazardRiskStars Int @default(1)
+
+  /// Sand Hazard Risk (bunkers)
+  sandHazardRiskScore Int @default(0)
+  sandHazardRiskStars Int @default(1)
+
+  /// Tree/Vegetation Risk
+  treeRiskScore Int @default(0)
+  treeRiskStars Int @default(1)
+
+  /// Out of Bounds Risk
+  outOfBoundsRiskScore Int @default(0)
+  outOfBoundsRiskStars Int @default(1)
+
+  /// Overall Hazard Impact
+  hazardImpactScore Int @default(0)
+  hazardImpactStars Int @default(1)
+
+  /// Course Characteristics
+  /// Elevation Impact
+  elevationImpactScore Int @default(0)
+  elevationImpactStars Int @default(1)
+
+  /// Weather/Climate Factor
+  weatherFactorScore Int @default(0)
+  weatherFactorStars Int @default(1)
+
+  /// Overall Playability
+  playabilityScore Int @default(0)
+  playabilityStars Int @default(1)
+
+  /// Course Uniqueness
+  uniquenessScore Int @default(0)
+  uniquenessStars Int @default(1)
+
+  /// Data Completeness & Course Tags
+  /// How much source data was available (affects confidence levels)
+  dataCompleteness Int @default(0)
+
+  /// Course style tags (multiple tags, stored as JSON array)
+  courseTags Json @default("[]")
+
   /// Algorithm version for future recalculation support
-  calculationVersion              String    @default("v1")
-  
+  calculationVersion String @default("v1")
+
   /// Timestamp when calculations were performed
-  calculatedAt                    DateTime  @default(now())
-  
+  calculatedAt DateTime @default(now())
+
   /// Audit timestamps
-  createdAt                       DateTime  @default(now())
-  updatedAt                       DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   /// Relations
-  course                          CourseDetails @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  insights                        CourseInsight[]
-  explanations                    CourseMetricExplanation[]
-  
+  course       CourseDetails             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  insights     CourseInsight[]
+  explanations CourseMetricExplanation[]
+
   @@unique([courseId, calculationVersion])
   @@index([courseId])
   @@index([calculatedAt])
@@ -1613,31 +1871,31 @@ model CourseIntelligence {
 /// Generated deterministically from CourseIntelligence and source course data.
 /// Explains why each metric received its score through contributing factors.
 model CourseMetricExplanation {
-  id                              String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   /// Reference to course intelligence
-  courseIntelligenceId            String
-  courseIntelligence              CourseIntelligence @relation(fields: [courseIntelligenceId], references: [id], onDelete: Cascade)
-  
+  courseIntelligenceId String
+  courseIntelligence   CourseIntelligence @relation(fields: [courseIntelligenceId], references: [id], onDelete: Cascade)
+
   /// Metric identifier (e.g., "drivingImportance", "puttingImportance")
-  metric                          String    @db.VarChar(50)
-  
+  metric String @db.VarChar(50)
+
   /// Human-readable title
-  title                           String
-  
+  title String
+
   /// Summary explanation of why this metric scored as it did
-  summary                         String    @db.Text
-  
+  summary String @db.Text
+
   /// Contributing factors formatted as bullet list
-  contributingFactors             String    @db.Text
-  
+  contributingFactors String @db.Text
+
   /// Algorithm version for future updates
-  calculationVersion              String    @default("v1")
-  
+  calculationVersion String @default("v1")
+
   /// Audit timestamps
-  createdAt                       DateTime  @default(now())
-  updatedAt                       DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([courseIntelligenceId, metric, calculationVersion])
   @@index([courseIntelligenceId])
   @@index([metric])
@@ -1648,34 +1906,885 @@ model CourseMetricExplanation {
 /// Generated deterministically from CourseIntelligence metrics.
 /// Displayed on Tournament Hub, DFS pages, and premium reports.
 model CourseInsight {
-  id                              String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   /// Reference to course intelligence
-  courseIntelligenceId            String
-  courseIntelligence              CourseIntelligence @relation(fields: [courseIntelligenceId], references: [id], onDelete: Cascade)
-  
+  courseIntelligenceId String
+  courseIntelligence   CourseIntelligence @relation(fields: [courseIntelligenceId], references: [id], onDelete: Cascade)
+
   /// Insight category
-  category                        String    @db.VarChar(50)
-  
+  category String @db.VarChar(50)
+
   /// Insight content
-  title                           String
-  summary                         String    @db.Text
-  
+  title   String
+  summary String @db.Text
+
   /// Importance for display ordering (1-5)
-  importance                      Int       @default(3)
-  
+  importance Int @default(3)
+
   /// Icon identifier for UI rendering
-  icon                            String    @db.VarChar(50)
-  
+  icon String @db.VarChar(50)
+
   /// Display order within category
-  displayOrder                    Int       @default(0)
-  
+  displayOrder Int @default(0)
+
   /// Audit timestamps
-  createdAt                       DateTime  @default(now())
-  updatedAt                       DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([courseIntelligenceId, category])
   @@index([courseIntelligenceId])
   @@index([category])
   @@map("course_insights")
 }
+
+/// PlayerIntelligence — Aggregated player skill and performance metrics
+/// Combines tournament history, fantasy data, and statistical analysis
+/// into traceable, normalized features for downstream systems
+/// PlayerIntelligenceBuild — Versioned, immutable snapshot of player intelligence
+/// Each build is a point-in-time calculation with explicit activation state
+/// Enables safe rollback, concurrent rebuild protection, and build history
+model PlayerIntelligenceBuild {
+  id String @id @default(cuid())
+
+  /// Player reference
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  /// Build lifecycle status
+  /// PENDING: Created, not yet calculated
+  /// CALCULATING: Currently computing features
+  /// SUCCESS: All features calculated, no failures
+  /// PARTIAL: Some features calculated, some failed
+  /// FAILED: All calculators failed
+  buildStatus String @default("PENDING") @db.VarChar(20)
+
+  /// Activation status (controls whether this build is visible to consumers)
+  /// CANDIDATE: Calculated but not yet activated (awaiting policy evaluation)
+  /// ACTIVE: Currently active, visible to consumers
+  /// SUPERSEDED: Was active, replaced by newer ACTIVE build
+  /// REJECTED: Policy evaluation failed, will not be activated
+  activationStatus String @default("CANDIDATE") @db.VarChar(20)
+
+  /// Data Completeness (0-100): Percentage of available data used to calculate features
+  dataCompleteness Int @default(0)
+
+  /// Feature count at build time
+  featureCount          Int @default(0)
+  completedFeatureCount Int @default(0)
+
+  /// Activation metadata
+  activationReason String?
+  rejectionReason  String?
+
+  /// Versioning
+  builderVersion          String @db.VarChar(50)
+  featureSchemaVersion    String @db.VarChar(50)
+  confidencePolicyVersion String @db.VarChar(50)
+  activationPolicyVersion String @db.VarChar(50)
+
+  /// Audit timestamps
+  calculatedAt DateTime  @default(now())
+  activatedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  /// Relations
+  /// NOTE: PlayerIntelligenceFeature relation will be added in Phase 15.3B
+  /// once player_intelligence_features table is created
+  /// (features relation commented out - see Phase 15.3B plan)
+  asActiveBuild Player? @relation(name: "activePlayerIntelligenceBuild")
+
+  @@unique([playerId, activationStatus])
+  @@index([playerId])
+  @@index([buildStatus])
+  @@index([activationStatus])
+  @@index([calculatedAt])
+  @@index([activatedAt])
+  @@map("player_intelligence_builds")
+}
+
+model PlayerIntelligence {
+  id String @id @default(cuid())
+
+  /// Player reference
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  /// Data Completeness (0-100): Percentage of available data used to calculate features
+  /// Lower = confidence penalties may apply to some metrics
+  dataCompleteness Int @default(0)
+
+  /// Audit timestamps
+  calculatedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  /// NOTE: features relation removed - PlayerIntelligenceFeature table
+  /// is part of Phase 15.3B and not yet created
+
+  @@unique([playerId])
+  @@index([playerId])
+  @@index([calculatedAt])
+  @@map("player_intelligence")
+}
+
+/// PlayerIntelligenceFeature — Immutable feature snapshot
+/// Each feature belongs to a specific build (never mutated)
+/// Features are only queried via the active build
+// NOTE: PlayerIntelligenceFeature model and player_intelligence_features table
+// will be created in Phase 15.3B. Commented out for now to avoid validation errors.
+// This table is not yet deployed to production databases.
+/**
+ * model PlayerIntelligenceFeature {
+ * id                              String    @id @default(cuid())
+ * /// Build reference (immutable per build)
+ * playerIntelligenceBuildId       String
+ * playerIntelligenceBuild         PlayerIntelligenceBuild @relation(name: "features", fields: [playerIntelligenceBuildId], references: [id], onDelete: Cascade)
+ * /// Legacy intelligence reference (for transition period)
+ * playerIntelligenceId            String?
+ * playerIntelligence              PlayerIntelligence? @relation(fields: [playerIntelligenceId], references: [id], onDelete: SetNull)
+ * /// Feature identifier (e.g., "tournament_count", "avg_finish", "driving_distance")
+ * /// Provides stable key for querying specific features
+ * featureName                     String    @db.VarChar(100)
+ * /// Feature category for grouping (e.g., "tournament_stats", "fantasy", "sg_metrics", "calculated")
+ * featureCategory                 String    @db.VarChar(50)
+ * /// Normalized feature value (number, percentage, or descriptive string)
+ * /// Type is context-dependent; category and documentation describe expected format
+ * featureValue                    Float?
+ * featureValueStr                 String?
+ * /// Confidence level (0-100) indicating reliability of this feature
+ * /// Lower confidence may indicate sparse data or high variance in source
+ * confidence                      Int       @default(100)
+ * /// Source of this feature (e.g., "sportsdataio", "calculated", "projected")
+ * /// Indicates where the underlying data originated
+ * source                          String    @db.VarChar(50) @default("sportsdataio")
+ * /// Timestamp when this feature was calculated
+ * calculatedAt                    DateTime  @default(now())
+ * /// Explanation of how this feature was derived (optional)
+ * /// Human-readable notes about methodology, assumptions, or important caveats
+ * explanation                     String?
+ * /// Audit timestamps
+ * createdAt                       DateTime  @default(now())
+ * updatedAt                       DateTime  @updatedAt
+ * @@unique([playerIntelligenceBuildId, featureName])
+ * @@index([playerIntelligenceBuildId])
+ * @@index([playerIntelligenceId])
+ * @@index([featureName])
+ * @@index([featureCategory])
+ * @@index([source])
+ * @@map("player_intelligence_features")
+ * }
+ */
+
+// ---------------------------------------------------------------------------
+// Matching Engine (Phase 16B.1)
+// ---------------------------------------------------------------------------
+// Core models for course-player matching engine.
+// Supports reproducibility, versioning, auditability, and historical immutability.
+// Reference: docs/ARCHITECTURE_MASTER_INDEX.md (Section 8)
+// Reference: docs/BUILD_REPRODUCIBILITY.md
+// Reference: docs/MODEL_GOVERNANCE.md
+
+/// Release type classification for model versions.
+enum MatchVersionReleaseType {
+  ALPHA /// Early development, not production-ready
+  BETA /// Feature complete, undergoing testing
+  RC /// Release candidate, awaiting final approval
+  STABLE /// Production-ready
+}
+
+/// Algorithm type indicating how the model was trained/calibrated.
+enum MatchAlgorithmType {
+  HAND_TUNED /// v1.x: Hand-calibrated weights
+  GRADIENT_BOOSTED /// v2.x: Optimized with gradient boosting
+  ENSEMBLE /// v3.x: Multiple models combined
+  DEEP_LEARNING /// v4.x: Neural network based
+  REINFORCEMENT_LEARNING /// v5.x: RL-optimized
+  LLM_ENHANCED /// v6.x: LLM-augmented reasoning
+}
+
+/// Build lifecycle status.
+enum MatchScoreBuildStatus {
+  DEVELOPMENT /// Under development, not deployable
+  CANDIDATE /// Ready for testing, pre-production
+  ACTIVE /// Currently in production
+  RETIRED /// No longer in use, kept for historical queries
+}
+
+/// Audit trail action classification.
+enum MatchScoreAction {
+  CREATED /// Score first computed
+  REQUESTED /// Score retrieved for user access
+  EXPLANATION_GENERATED /// Explanation created
+  RECREATED_FROM_BUILD /// Score recreated from historical build
+  ARCHIVED /// Logical archival (no production access)
+}
+
+/// Semantic version of the matching engine. Tracks algorithm type, calibration, and releases.
+/// Immutable: version string never changes after creation.
+model MatchVersion {
+  id              String                  @id @default(cuid())
+  /// Semantic version: MAJOR.MINOR.PATCH (e.g., "1.0.0")
+  versionString   String                  @unique
+  /// Major version (breaking change increment)
+  major           Int
+  /// Minor version (feature addition increment)
+  minor           Int
+  /// Patch version (bug fix increment)
+  patch           Int
+  /// Release type (alpha, beta, rc, stable)
+  releaseType     MatchVersionReleaseType @default(STABLE)
+  /// Brief description of changes in this version
+  description     String?
+  /// Algorithm type indicates how this version was trained
+  algorithmType   MatchAlgorithmType      @default(HAND_TUNED)
+  /// When weights were last calibrated (reproducibility provenance)
+  calibrationDate DateTime?
+  /// Audit timestamps (immutable)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  // Relations
+  builds MatchScoreBuild[]
+
+  // Enforce semantic versioning uniqueness and immutability
+  @@unique([major, minor, patch])
+  @@index([releaseType])
+  @@map("match_versions")
+}
+
+/// Build manifest capturing all versioned components for reproducibility.
+/// Every score is tied to a build; every build is reproducible from its manifest.
+/// Immutable: manifest never changes; only status evolves (dev → candidate → active → retired).
+model MatchScoreBuild {
+  id                String                @id @default(cuid())
+  /// Which model version this build implements
+  versionId         String
+  /// SHA256 hash of the build manifest (reproducibility proof)
+  buildHash         String                @unique
+  /// Complete build manifest as JSON (feature versions, score formula, dataset, etc.)
+  /// Reference: docs/BUILD_REPRODUCIBILITY.md
+  buildManifestJson Json
+  /// Current status in the build lifecycle (development → candidate → active → retired)
+  status            MatchScoreBuildStatus @default(DEVELOPMENT)
+  /// User/system that created this build (audit trail)
+  createdBy         String?
+  /// When this build was promoted to active (null if not yet active)
+  activatedAt       DateTime?
+  /// When this build was retired (null if still active)
+  retiredAt         DateTime?
+  /// Audit timestamps
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  // Relations
+  version             MatchVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  matchScores         MatchScore[]
+  recreatedFromScores MatchScore[] @relation("recreatedFromBuild")
+
+  @@index([versionId])
+  @@index([buildHash])
+  @@index([status])
+  @@index([createdAt])
+  @@map("match_score_builds")
+}
+
+/// Match score: the core prediction record. Immutable except for metadata.
+/// Every score tied to: player, course, build (reproducibility), and tournament (context).
+/// Historical immutability: no deletion, no value updates, only metadata can change.
+model MatchScore {
+  id           String  @id @default(cuid())
+  /// Player being evaluated (immutable)
+  playerId     String
+  /// Course being evaluated on (immutable)
+  courseId     String
+  /// Build that generated this score (immutable, provides reproducibility)
+  buildId      String
+  /// Tournament context (optional, null if used outside tournament)
+  tournamentId String?
+  /// Semantic version of the matching engine (immutable)
+  version      String
+
+  // --- Five-component score (immutable) ---
+  /// Overall combined score (0-100) after all adjustments
+  overallScore         Float
+  /// Skill fit dimension (0-100): structural player-course alignment
+  skillFitScore        Float
+  /// Form bonus (-15 to +15): current trajectory vs. baseline
+  formBonus            Float
+  /// Venue history bonus (-10 to +10): venue-specific performance
+  venueHistoryBonus    Float
+  /// Confidence multiplier (0.3-1.0): data quality adjustment
+  confidenceMultiplier Float
+  /// Confidence score (0-100): separate metric indicating data quality
+  confidenceScore      Float
+  /// Ceiling score: optimistic scenario (what if everything goes right?)
+  ceilingScore         Float
+  /// Floor score: pessimistic scenario (what if everything goes wrong?)
+  floorScore           Float
+
+  // --- Explanation (immutable) ---
+  /// Textual explanation (500 chars max), null until generated
+  explanation           String?
+  /// Detailed component breakdown (JSON), null until generated
+  explanationComponents Json?
+
+  // --- Metadata (mutable: only part of the record that can be updated) ---
+  /// Additional context (weather, setup, field strength, etc.)
+  metadata Json?
+
+  // --- Historical reconstruction support ---
+  /// Whether this score was recreated from a historical build (vs. live prediction)
+  isHistorical         Boolean @default(false)
+  /// If historical, which build was it recreated from
+  recreatedFromBuildId String?
+
+  // --- Audit timestamps (immutable) ---
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  player             Player                 @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  course             Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  build              MatchScoreBuild        @relation(fields: [buildId], references: [id], onDelete: Cascade)
+  tournament         Tournament?            @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  recreatedFromBuild MatchScoreBuild?       @relation("recreatedFromBuild", fields: [recreatedFromBuildId], references: [id], onDelete: SetNull)
+  components         MatchScoreComponent[]
+  auditTrail         MatchScoreAuditTrail[]
+
+  // Indices for common queries
+  @@unique([playerId, courseId, buildId, tournamentId])
+  @@index([playerId, courseId])
+  @@index([buildId])
+  @@index([tournamentId])
+  @@index([version])
+  @@index([createdAt])
+  @@map("match_scores")
+}
+
+/// Immutable record of each score component, for explainability.
+/// Created with score, never updated, never deleted.
+/// Reference: docs/MATCHING_ENGINE_COMPLETE_ARCHITECTURE.md (Step 6: Explainability)
+model MatchScoreComponent {
+  id                 String   @id @default(cuid())
+  /// Parent score (immutable)
+  scoreId            String
+  /// Component name (immutable): skillFit, formBonus, venueHistory, confidence, volatility
+  componentName      String
+  /// Value of this component (immutable)
+  componentValue     Float
+  /// Reasoning for this component's value (immutable, immutable snapshot)
+  componentReasoning String?
+  /// Exact attributes/signals used (immutable snapshot for explainability)
+  dataUsed           Json?
+  /// Created timestamp (immutable)
+  createdAt          DateTime @default(now())
+
+  // Relations
+  matchScore MatchScore @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+
+  @@index([scoreId])
+  @@index([componentName])
+  @@map("match_score_components")
+}
+
+/// Immutable audit trail: append-only log of every prediction access and decision.
+/// Provides complete provenance for reproducibility and compliance.
+/// Reference: docs/AUDIT_TRAIL_SPECIFICATION.md
+model MatchScoreAuditTrail {
+  id        String           @id @default(cuid())
+  /// Which match score this audit entry refers to (immutable)
+  scoreId   String
+  /// Action taken (immutable)
+  action    MatchScoreAction
+  /// User or system that triggered action (immutable)
+  actor     String?
+  /// Surrounding context (tournament, event type, etc.) (immutable)
+  context   Json?
+  /// Timestamp (immutable)
+  createdAt DateTime         @default(now())
+
+  // Relations
+  matchScore MatchScore @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+
+  @@index([scoreId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("match_score_audit_trails")
+}
+
+// ---------------------------------------------------------------------------
+// Historical Data Models (Phase 17.3A)
+// ---------------------------------------------------------------------------
+
+/// Canonical entity identifier mapping across providers
+model ProviderIdMapping {
+  id                    String        @id @default(cuid())
+  entityType            EntityType    @default(PLAYER)
+  internalId            String
+  providerId            String
+  provider              String
+  providerRecordId      String
+  mappingStatus         MappingStatus @default(PENDING)
+  verificationSource    String?
+  verificationTimestamp DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@unique([provider, providerId, entityType])
+  @@index([internalId])
+  @@index([mappingStatus])
+  @@map("provider_id_mappings")
+}
+
+/// Bitemporal historical player features for temporal query support
+model HistoricalPlayerFeature {
+  id             String  @id @default(cuid())
+  playerId       String
+  featureKey     String
+  featureVersion String
+  featureValue   String?
+  unit           String?
+
+  // Bitemporal timestamps
+  validFrom        DateTime
+  validTo          DateTime?
+  systemRecordedAt DateTime
+
+  // Provenance
+  sourceProvider     String
+  sourceRecordId     String?
+  retrievalTimestamp DateTime
+  rawPayloadChecksum String?
+
+  // Quality
+  dataQualityStatus DataQualityStatus @default(VERIFIED)
+  missingDataReason String?
+
+  // Transformation
+  transformationVersion String?
+
+  // Immutability
+  sealed   Boolean   @default(false)
+  sealedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([featureKey])
+  @@index([validFrom, validTo])
+  @@index([playerId, featureKey], name: "idx_historical_player_features_validity") // WHERE validTo IS NULL
+  @@map("historical_player_features")
+}
+
+/// Immutable prediction input snapshots for historical validation
+model HistoricalSnapshot {
+  id                   String   @id @default(cuid())
+  snapshotHash         String   @unique
+  tournamentId         String
+  playerId             String
+  lockTimestamp        DateTime
+  modelVersion         String
+  featureSetVersion    String
+  features             Json
+  featuresIncluded     Json
+  featuresExcluded     Json
+  lateArrivalsExcluded Json?
+  completenessScore    Float?
+
+  // Immutability
+  sealed   Boolean   @default(false)
+  sealedAt DateTime?
+
+  // Audit
+  generatedAt DateTime @default(now())
+  generatedBy String   @default("snapshot_service")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, playerId, modelVersion, featureSetVersion])
+  @@index([playerId])
+  @@index([tournamentId])
+  @@index([sealed])
+  @@map("historical_snapshots")
+}
+
+/// Append-only audit log for data changes
+model HistoricalDataAuditEvent {
+  id                        String         @id @default(cuid())
+  eventType                 AuditEventType
+  entityType                String
+  entityId                  String
+  previousValue             String?
+  newValue                  String?
+  reason                    String?
+  performedBy               String         @default("system")
+  performedAt               DateTime
+  createdAt                 DateTime       @default(now())
+  
+  // Provenance fields for historical imports
+  providerName              String?        // e.g., "sportsdataio"
+  providerRecordId          String?        // External provider ID
+  sourceEndpoint            String?        // e.g., "/json/Leaderboard/692"
+  sourceVersion             String?        // Provider API version
+  dataChecksum              String?        // SHA256 checksum of record
+  retrievalTimestamp        DateTime?      // When data was fetched
+  effectiveTimestamp        DateTime?      // When data is effective from
+  importJobId               String?        // Link to HistoricalImportJob
+
+  @@index([entityType, entityId])
+  @@index([performedAt])
+  @@index([eventType])
+  @@index([importJobId])
+  @@index([providerName])
+  @@map("historical_data_audit_events")
+}
+
+/// Data quality assessment report
+model DataQualityReport {
+  id                 String              @id @default(cuid())
+  importJobId        String
+  generatedAt        DateTime            @default(now())
+  totalChecksRun     Int
+  checksPassedCount  Int
+  checksFailedCount  Int
+  details            Json
+  qualityStatus      QualityReportStatus
+  blockingIssues     Json?
+  warningIssues      Json?
+  recommendedActions Json?
+  createdAt          DateTime            @default(now())
+
+  // Relations
+  importJobs HistoricalImportJob[]
+
+  @@index([importJobId])
+  @@index([qualityStatus])
+  @@map("data_quality_reports")
+}
+
+/// Time-versioned player rankings
+model HistoricalPlayerRanking {
+  id                       String        @id @default(cuid())
+  playerId                 String
+  rankingSystem            RankingSystem
+  playerRank               Int
+  rankingPoints            Int?
+  publishedDate            DateTime
+  effectiveDate            DateTime
+  validFrom                DateTime
+  validTo                  DateTime?
+  source                   String
+  retrievedTimestamp       DateTime
+  originalRecordIdentifier String?
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([validFrom, validTo])
+  @@index([rankingSystem])
+  @@map("historical_player_rankings")
+}
+
+/// Historical salary and odds snapshots
+model HistoricalSalaryOddsSnapshot {
+  id                     String    @id @default(cuid())
+  tournamentId           String
+  playerId               String
+  dkSalary               Int?
+  dkRetrievedAt          DateTime?
+  fdSalary               Int?
+  fdRetrievedAt          DateTime?
+  openingOdds            Float?
+  closingOdds            Float?
+  oddsMarketTimestamp    DateTime?
+  provider               String
+  contestSlateIdentifier String?
+  createdAt              DateTime  @default(now())
+
+  // Relations
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, playerId, provider])
+  @@map("historical_salary_odds_snapshots")
+}
+
+/// Tournament outcomes (separate from inputs to prevent look-ahead bias)
+model HistoricalTournamentOutcome {
+  id                    String            @id @default(cuid())
+  tournamentId          String
+  playerId              String
+  finishPosition        Int?
+  officialFinishText    String?
+  tieStatus             String?
+  cutStatus             CutStatus?
+  withdrawalStatus      WithdrawalStatus?
+  disqualified          Boolean           @default(false)
+  roundScores           Json?
+  totalStrokes          Int?
+  scoreToPar            Int?
+  dkFantasyPoints       Float?
+  fdFantasyPoints       Float?
+  resultSource          String
+  resultSourceTimestamp DateTime?
+  retrievedTimestamp    DateTime
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  // Relations
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, playerId])
+  @@index([tournamentId])
+  @@index([finishPosition])
+  @@map("historical_tournament_outcomes")
+}
+
+/// Historical import job tracking and status
+model HistoricalImportJob {
+  id                 String          @id @default(cuid())
+  importType         ImportJobType
+  sourceProvider     String
+  sourceEndpoint     String?
+  sourceFileChecksum String?
+  startedAt          DateTime
+  completedAt        DateTime?
+  status             ImportJobStatus @default(PENDING)
+  recordsAttempted   Int?
+  recordsSucceeded   Int?
+  recordsFailed      Int?
+  qualityReportId    String?
+  errorLog           String?
+  createdAt          DateTime        @default(now())
+
+  // Relations
+  qualityReport DataQualityReport? @relation(fields: [qualityReportId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([startedAt])
+  @@map("historical_import_jobs")
+}
+
+/// Provider Registry - single source of truth for all data providers
+model HistoricalProvider {
+  id                    String                @id @default(cuid())
+  providerId            String                @unique
+  name                  String
+  version               String
+  priority              Int                   @default(0)
+  supportedDatasets     DatasetType[]
+  historicalDepthDays   Int?
+  coverage              Float?                // 0-100 percentage
+  licensingStatus       String                // INCLUDED, TRIAL, EVALUATION, PENDING
+  healthStatus          ProviderHealthStatus  @default(HEALTHY)
+  lastSuccessfulSync    DateTime?
+  rateLimitPerSecond    Int?
+  rateLimitPerDay       Int?
+  configuration         Json?                 // provider-specific config
+  isActive              Boolean               @default(true)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  importJobs HistoricalProviderImportJob[]
+
+  @@map("historical_providers")
+}
+
+/// Provider-specific import job details
+model HistoricalProviderImportJob {
+  id                String   @id @default(cuid())
+  providerId        String
+  jobId             String
+  datasetType       DatasetType
+  recordsRead       Int?
+  recordsInserted   Int?
+  recordsUpdated    Int?
+  recordsRejected   Int?
+  validationErrors  Int?
+  duration          Int?     // milliseconds
+  sourceChecksum    String?
+  startedAt         DateTime
+  completedAt       DateTime?
+  createdAt         DateTime @default(now())
+
+  // Relations
+  provider HistoricalProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([datasetType])
+  @@map("historical_provider_import_jobs")
+}
+
+/// Feature Registry - all engineered features must be registered
+model HistoricalFeature {
+  id                  String          @id @default(cuid())
+  featureName         String          @unique
+  description         String?
+  category            FeatureCategory
+  owner               String?
+  provider            String?
+  formula             String?         // mathematical or algorithmic formula
+  version             String          @default("1.0")
+  dependencies        String[]        // list of dependent features
+  validationRules     Json?           // validation rule definitions
+  usedBy              String[]        // systems/models that use this feature
+  deprecated          Boolean         @default(false)
+  deprecatedAt        DateTime?
+  explainable         Boolean         @default(true)
+  exportToClient      Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  // Relations
+  samples HistoricalFeatureSample[]
+
+  @@index([category])
+  @@index([deprecated])
+  @@map("historical_features")
+}
+
+/// Sample feature values (for validation and testing)
+model HistoricalFeatureSample {
+  id          String   @id @default(cuid())
+  featureId   String
+  playerId    String
+  tournamentId String
+  value       String
+  unitOfMeasure String?
+  validFrom   DateTime
+  validTo     DateTime?
+  source      String?
+  checksum    String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  feature HistoricalFeature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([featureId, playerId, tournamentId])
+  @@index([featureId])
+  @@index([validFrom, validTo])
+  @@map("historical_feature_samples")
+}
+
+/// Dataset Health Metrics (calculated view)
+model DatasetHealthSnapshot {
+  id              String    @id @default(cuid())
+  datasetType     DatasetType
+  provider        String
+  coveragePercent Float
+  lastUpdateTime  DateTime?
+  staleDays       Int?
+  missingPlayers  Int?
+  missingTournaments Int?
+  duplicateCount  Int?
+  validationFailures Int?
+  createdAt       DateTime  @default(now())
+
+  @@unique([datasetType, provider])
+  @@map("dataset_health_snapshots")
+}
+
+// ---------------------------------------------------------------------------
+// DFS Historical Context Models (Sprint 18.3)
+// 
+// Complete replay dataset for Daily Fantasy Sports (DFS) contests with 
+// historical ownership, contest details, and salary correlation.
+// ---------------------------------------------------------------------------
+
+/// DFS Contest metadata linked to tournament
+model DfsContest {
+  id              String   @id @default(cuid())
+  externalId      String   @unique  // Provider contest ID for idempotency
+  tournamentId    String
+  slateId         String?
+  operator        String   // "DraftKings", "FanDuel", etc.
+  contestType     String   // "Classic", "Showdown", "Tournament", etc.
+  contestName     String?
+  entryFee        Int?     // In cents
+  salaryCap       Int?     // In cents
+  fieldSize       Int?
+  maxEntries      Int?
+  contenders      Int?
+  source          String   @default("draftkings")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  entries    DfsContestEntry[]
+  ownership  DfsPlayerOwnership[]
+
+  @@index([tournamentId])
+  @@index([slateId])
+  @@map("dfs_contests")
+}
+
+/// Individual entry in a DFS contest
+model DfsContestEntry {
+  id              String   @id @default(cuid())
+  contestId       String
+  playerId        String?
+  entryName       String?
+  projectedPoints Float?
+  actualPoints    Float?
+  rank            Int?
+  finished        Boolean? @default(false)
+  source          String   @default("draftkings")
+  createdAt       DateTime @default(now())
+
+  contest DfsContest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  player  Player?    @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([contestId])
+  @@index([playerId])
+  @@map("dfs_contest_entries")
+}
+
+/// Historical player ownership and projected/actual fantasy points
+model DfsPlayerOwnership {
+  id                  String   @id @default(cuid())
+  externalId          String   @unique  // Composite key: contestId:playerId
+  contestId           String
+  playerId            String
+  tournamentId        String
+  salary              Int?     // In cents
+  projectedOwnership  Float?   // 0..1
+  actualOwnership     Float?   // 0..1
+  leverage            Float?   // Leverage metric
+  rosterPercentage    Float?   // For public contests
+  projectedPoints     Float?
+  actualFantasyPoints Float?
+  valueRating         Float?   // Projected points / salary
+  finished            Boolean  @default(false)
+  source              String   @default("draftkings")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  contest    DfsContest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, playerId])
+  @@index([playerId])
+  @@index([tournamentId])
+  @@map("dfs_player_ownership")
+}
+
+// NOTE: Relations to Player, Course, and Tournament are added via MatchScore model
+// (one-to-many relationships). No schema changes to existing models required.

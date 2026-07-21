@@ -8,17 +8,18 @@ interface TournamentFieldNewsProps {
   news: TournamentNewsItem[]
 }
 
-const DATE_FMT = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-})
-
-/** Format an ISO timestamp for display, or null when unavailable. */
+/** Format an ISO timestamp for display using UTC, or null when unavailable. Avoids hydration mismatch from locale-dependent formatting. */
 function formatDate(iso: string | null): string | null {
   if (!iso) return null
   const date = new Date(iso)
-  return Number.isNaN(date.getTime()) ? null : DATE_FMT.format(date)
+  if (Number.isNaN(date.getTime())) return null
+  
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const month = months[date.getUTCMonth()]
+  const day = date.getUTCDate()
+  const year = date.getUTCFullYear()
+  
+  return `${month} ${day}, ${year}`
 }
 
 /** Outlet + date line, omitting whatever the source didn't provide. */

@@ -129,7 +129,7 @@ export async function orchestrateTournamentCourseMapping(
         console.log(`[v0] START: mappingRepo.findByTournamentId(${tournament.id})`)
         const existingMappingResult = await mappingRepo.findByTournamentId(tournament.id)
         console.log(`[v0] END: mappingRepo.findByTournamentId(${tournament.id})`)
-        const existingMapping = existingMappingResult.outcome === "ok" ? existingMappingResult.record : null
+        const existingMapping = existingMappingResult.record ?? null
 
         if (existingMapping) {
           if (existingMapping.verified) {
@@ -205,28 +205,39 @@ export async function orchestrateTournamentCourseMapping(
         if (existingMapping) {
           // Update existing unverified mapping
           console.log(`[v0] START: mappingRepo.update(${tournament.id})`)
+          
+          // Auto-verify if confidence >= 95% (for updates that weren't previously verified)
+          const shouldAutoVerify = !existingMapping.verified && confidence >= 95
+          console.log(`[v0] Confidence: ${confidence}% - Auto-verify: ${shouldAutoVerify ? "YES" : "NO"}`)
+          
           const updateResult = await mappingRepo.update(tournament.id, {
             golfCourseApiCourseId: golfCourseApiCourseId || undefined,
             tournamentCourseName: course.name,
             golfCourseCourseName: course.name,
             matchConfidence: confidence,
             matchedBy,
-            verified: false,
+            verified: shouldAutoVerify ? true : false,
+            autoVerified: shouldAutoVerify,
           })
           console.log(`[v0] END: mappingRepo.update(${tournament.id}) - outcome: ${updateResult.outcome}`)
 
-          if (updateResult.outcome === "ok") {
+          if (updateResult.outcome !== "failed") {
             mappingsUpdated++
             console.log(
               `[v0] ✓ Updated mapping for ${tournament.name} (golfCourseApiId=${golfCourseApiCourseId || "null"})`,
             )
           } else {
             totalErrors++
-            console.log(`[v0] ✗ Failed to update mapping for ${tournament.name}: ${updateResult.error.message}`)
+            console.log(`[v0] ✗ Failed to update mapping for ${tournament.name}: ${updateResult.error?.message}`)
           }
         } else {
           // Create new mapping
           console.log(`[v0] START: mappingRepo.create(${tournament.id})`)
+          
+          // Auto-verify if confidence >= 95%
+          const shouldAutoVerify = confidence >= 95
+          console.log(`[v0] Confidence: ${confidence}% - Auto-verify: ${shouldAutoVerify ? "YES" : "NO"}`)
+          
           const createResult = await mappingRepo.create({
             tournamentId: tournament.id,
             sportsDataIoCourseId: undefined,
@@ -235,18 +246,19 @@ export async function orchestrateTournamentCourseMapping(
             golfCourseCourseName: course.name,
             matchConfidence: confidence,
             matchedBy,
-            verified: false,
+            verified: shouldAutoVerify,
+            autoVerified: shouldAutoVerify,
           })
           console.log(`[v0] END: mappingRepo.create(${tournament.id}) - outcome: ${createResult.outcome}`)
 
-          if (createResult.outcome === "ok") {
+          if (createResult.outcome !== "failed") {
             mappingRowsCreated++
             console.log(
               `[v0] ✓ Created mapping for ${tournament.name} (golfCourseApiId=${golfCourseApiCourseId || "null"})`,
             )
           } else {
             totalErrors++
-            console.log(`[v0] ✗ Failed to create mapping for ${tournament.name}: ${createResult.error.message}`)
+            console.log(`[v0] ✗ Failed to create mapping for ${tournament.name}: ${createResult.error?.message}`)
           }
         }
 

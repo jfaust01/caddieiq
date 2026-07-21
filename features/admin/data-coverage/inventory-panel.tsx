@@ -16,6 +16,7 @@ import type {
 } from "@/lib/data-coverage/types"
 
 import { TableHealthBadge } from "./indicators"
+import { ProviderBadge } from "./provider-badge"
 
 /**
  * The six inventory buckets, in the order the sprint brief lists them. Each maps
@@ -84,6 +85,9 @@ function InventoryRow({ entry }: { entry: PlatformInventoryEntry }) {
           <code className="text-xs text-muted-foreground">{entry.table}</code>
         </div>
       </TableCell>
+      <TableCell className="align-top">
+        <ProviderBadge provider={entry.provider} />
+      </TableCell>
       <TableCell className="align-top text-sm text-muted-foreground">{entry.owner}</TableCell>
       <TableCell className="align-top text-right tabular-nums">
         {entry.rowCount.toLocaleString("en-US")}
@@ -139,6 +143,7 @@ export function InventoryPanel({ inventory }: { inventory: PlatformInventory }) 
             <TableHeader>
               <TableRow>
                 <TableHead>Table</TableHead>
+                <TableHead>Provider</TableHead>
                 <TableHead>Owner</TableHead>
                 <TableHead className="text-right">Rows</TableHead>
                 <TableHead>Health</TableHead>

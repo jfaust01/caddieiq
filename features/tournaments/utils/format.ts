@@ -58,49 +58,55 @@ export function seasonDisplay(season: number | null): string {
   return season === null ? EMPTY_VALUE : `${season}`
 }
 
-const DATE_FMT = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-})
-const DATE_FMT_WITH_YEAR = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-})
-
+/** Parse ISO 8601 date string to UTC Date, avoiding timezone offset issues. */
 function parseDate(value: string | null): Date | null {
   if (!value) return null
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? null : date
 }
 
+/** Format date using UTC to ensure server/client consistency. */
+function formatDateUTC(date: Date, includeYear: boolean): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const month = months[date.getUTCMonth()]
+  const day = date.getUTCDate()
+  const year = date.getUTCFullYear()
+  
+  if (includeYear) {
+    return `${month} ${day}, ${year}`
+  }
+  return `${month} ${day}`
+}
+
 /**
  * Human date range for an event, e.g. "Apr 10 – 13, 2025". Falls back to a
  * single date when only one bound is known, or an em-dash when neither is.
+ * Uses UTC to ensure server/client hydration consistency.
  */
 export function formatDateRange(start: string | null, end: string | null): string {
   const startDate = parseDate(start)
   const endDate = parseDate(end)
 
   if (!startDate && !endDate) return EMPTY_VALUE
-  if (startDate && !endDate) return DATE_FMT_WITH_YEAR.format(startDate)
-  if (!startDate && endDate) return DATE_FMT_WITH_YEAR.format(endDate)
+  if (startDate && !endDate) return formatDateUTC(startDate, true)
+  if (!startDate && endDate) return formatDateUTC(endDate, true)
 
   const s = startDate as Date
   const e = endDate as Date
-  const sameYear = s.getFullYear() === e.getFullYear()
-  const sameMonth = sameYear && s.getMonth() === e.getMonth()
+  const sameYear = s.getUTCFullYear() === e.getUTCFullYear()
+  const sameMonth = sameYear && s.getUTCMonth() === e.getUTCMonth()
 
   if (sameMonth) {
     // "Apr 10 – 13, 2025"
-    return `${DATE_FMT.format(s)} – ${e.getDate()}, ${e.getFullYear()}`
+    const sMonth = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][s.getUTCMonth()]
+    return `${sMonth} ${s.getUTCDate()} – ${e.getUTCDate()}, ${e.getUTCFullYear()}`
   }
   if (sameYear) {
     // "Apr 28 – May 2, 2025"
-    return `${DATE_FMT.format(s)} – ${DATE_FMT_WITH_YEAR.format(e)}`
+    return `${formatDateUTC(s, false)} – ${formatDateUTC(e, true)}`
   }
   // "Dec 30, 2024 – Jan 2, 2025"
-  return `${DATE_FMT_WITH_YEAR.format(s)} – ${DATE_FMT_WITH_YEAR.format(e)}`
+  return `${formatDateUTC(s, true)} – ${formatDateUTC(e, true)}`
 }
 
 const PURSE_FMT = new Intl.NumberFormat('en-US', {
@@ -228,41 +234,48 @@ export function fieldConfidenceLabel(confidence: FieldConfidence): string {
   return FIELD_CONFIDENCE_LABELS[confidence]
 }
 
-const DEADLINE_FMT = new Intl.DateTimeFormat('en-US', {
-  weekday: 'short',
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  timeZone: 'America/New_York',
-  timeZoneName: 'short',
-})
-
 /**
- * Format the PGA Tour commitment deadline in US Eastern time (the tour's
- * reference zone), e.g. "Fri, Apr 4, 5:00 PM EDT". Returns an em-dash when the
- * deadline is unknown — never a fabricated time.
+ * Format the PGA Tour commitment deadline in UTC time, e.g. "Fri, Apr 4, 5:00 PM".
+ * Uses UTC for server/client consistency (Eastern time zone handling varies by platform).
+ * Returns an em-dash when the deadline is unknown — never a fabricated time.
  */
 export function formatCommitmentDeadline(value: string | null): string {
   if (!value) return EMPTY_VALUE
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? EMPTY_VALUE : DEADLINE_FMT.format(date)
+  if (Number.isNaN(date.getTime())) return EMPTY_VALUE
+  
+  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  
+  const weekday = weekdays[date.getUTCDay()]
+  const month = months[date.getUTCMonth()]
+  const day = date.getUTCDate()
+  const hours = date.getUTCHours()
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  const displayHours = hours % 12 || 12
+  
+  return `${weekday}, ${month} ${day}, ${displayHours}:${minutes} ${ampm} UTC`
 }
-
-const TIMESTAMP_FMT = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-})
 
 /**
  * Record timestamp display, e.g. "Apr 10, 2025, 3:45 PM", or an em-dash when
  * the value is missing/undefined (list rows omit timestamps).
+ * Uses UTC to ensure server/client consistency.
  */
 export function formatTimestamp(value: string | null | undefined): string {
   if (!value) return EMPTY_VALUE
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? EMPTY_VALUE : TIMESTAMP_FMT.format(date)
+  if (Number.isNaN(date.getTime())) return EMPTY_VALUE
+  
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const month = months[date.getUTCMonth()]
+  const day = date.getUTCDate()
+  const year = date.getUTCFullYear()
+  const hours = date.getUTCHours()
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  const displayHours = hours % 12 || 12
+  
+  return `${month} ${day}, ${year}, ${displayHours}:${minutes} ${ampm}`
 }

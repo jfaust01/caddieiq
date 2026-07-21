@@ -5,12 +5,20 @@ import type { ReactNode } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface TournamentDetailTabsProps {
-  /** Live Overview panel content, rendered on the server and passed in. */
+  /** Compact overview panel content (redesigned for 2-3 viewport heights). */
   overview: ReactNode
   /** Live Field panel content, rendered on the server and passed in. */
   field: ReactNode
   /** Field size, shown as a badge on the Field tab; 0 disables the tab. */
   fieldCount: number
+  /** Optional additional tabs with full content. */
+  additionalTabs?: Array<{
+    value: string
+    label: string
+    content: ReactNode
+    disabled?: boolean
+    count?: number
+  }>
 }
 
 /** Tabs still awaiting their data source. */
@@ -24,16 +32,28 @@ const RESERVED_TABS = [
 ] as const
 
 /**
- * Segmented quick-navigation for the tournament research hub. Overview and
- * Field are fully functional (Field is enabled once a field is imported); the
- * remaining destinations exist as disabled tabs so the information architecture
- * is visible and stable before their data lands.
+ * Segmented quick-navigation for the tournament research hub. Overview tab now
+ * shows a compact 2-3 viewport height dashboard with KPIs, top 5 leaderboard,
+ * course fit summary, and key insights. Full content is available in dedicated tabs.
+ * Field is enabled once a field is imported.
  */
-export function TournamentDetailTabs({ overview, field, fieldCount }: TournamentDetailTabsProps) {
+export function TournamentDetailTabs({
+  overview,
+  field,
+  fieldCount,
+  additionalTabs = [],
+}: TournamentDetailTabsProps) {
   const hasField = fieldCount > 0
+  
+  // Merge additional tabs with reserved tabs, prioritizing additional
+  const tabsToShow = [
+    ...additionalTabs.filter((t) => !RESERVED_TABS.some((r) => r.value === t.value)),
+    ...RESERVED_TABS.filter((t) => !additionalTabs.some((a) => a.value === t.value)),
+  ]
+
   return (
     <Tabs defaultValue="overview" className="gap-4">
-      <div className="overflow-x-auto">
+      <div>
         <TabsList variant="line" className="h-9 gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="field" disabled={!hasField}>
@@ -44,9 +64,18 @@ export function TournamentDetailTabs({ overview, field, fieldCount }: Tournament
               </span>
             ) : null}
           </TabsTrigger>
-          {RESERVED_TABS.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value} disabled>
+          {tabsToShow.map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              disabled={tab.disabled ?? false}
+            >
               {tab.label}
+              {tab.count !== undefined && (
+                <span className="ml-1.5 rounded bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">
+                  {tab.count}
+                </span>
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -59,6 +88,12 @@ export function TournamentDetailTabs({ overview, field, fieldCount }: Tournament
       <TabsContent value="field" className="flex flex-col gap-4">
         {field}
       </TabsContent>
+
+      {additionalTabs.map((tab) => (
+        <TabsContent key={tab.value} value={tab.value} className="flex flex-col gap-4">
+          {tab.content}
+        </TabsContent>
+      ))}
     </Tabs>
   )
 }

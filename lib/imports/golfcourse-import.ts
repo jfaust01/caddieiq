@@ -63,7 +63,7 @@ export async function importTournamentCourse(
   try {
     // Step 1: Check for existing mapping
     const existingMappingResult = await mappingRepo.findByTournamentId(tournamentId)
-    if (existingMappingResult.outcome === "ok" && existingMappingResult.record) {
+    if (existingMappingResult.record) {
       const mapping = existingMappingResult.record
       console.log(
         `[v0] Mapping reused for tournament ${tournamentId}: GolfCourse ID ${mapping.golfCourseApiCourseId} (confidence: ${mapping.matchConfidence}%)`,

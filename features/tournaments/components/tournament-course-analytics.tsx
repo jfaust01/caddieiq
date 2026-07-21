@@ -11,6 +11,19 @@ interface TournamentCourseAnalyticsProps {
   course: { id: string; name: string }
 }
 
+/** Format a date using UTC to avoid hydration mismatch from locale-dependent formatting. */
+function formatAnalyticsDate(dateOrString: Date | string): string {
+  const date = typeof dateOrString === 'string' ? new Date(dateOrString) : dateOrString
+  if (Number.isNaN(date.getTime())) return '—'
+  
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const month = months[date.getUTCMonth()]
+  const day = date.getUTCDate()
+  const year = date.getUTCFullYear()
+  
+  return `${month} ${day}, ${year}`
+}
+
 /** Display a 0–10 rating as a colored bar with the numeric value. */
 function RatingBar({ value, label }: { value: number | null; label: string }) {
   if (value === null) {
@@ -109,12 +122,12 @@ export function TournamentCourseAnalytics({
         <Badge variant={confidenceVariant(confidence)}>
           {confidenceLabel(confidence)} confidence
           {analytics.sampleSize > 0
-            ? ` · ${analytics.sampleSize.toLocaleString()} rounds`
+            ? ` · ${analytics.sampleSize} rounds`
             : ''}
         </Badge>
         {analytics.lastCalculated ? (
           <span className="text-xs text-muted-foreground">
-            Updated {new Date(analytics.lastCalculated).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            Updated {formatAnalyticsDate(analytics.lastCalculated)}
           </span>
         ) : null}
       </div>

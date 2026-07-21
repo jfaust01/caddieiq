@@ -116,7 +116,92 @@ export class GolfCourseAPIClient {
       headers: this.getHeaders(),
     })
 
-    return response.data || null
+    // API returns { course: {...} }, extract and normalize the nested course object
+    const data = response.data as { course?: any }
+    const rawCourse = data?.course
+    
+    if (!rawCourse) {
+      return null
+    }
+
+    // Normalize the raw API payload to GolfCourseDetail shape
+    return this.normalizeCoursePayload(rawCourse)
+  }
+
+  /**
+   * Normalize raw GolfCourseAPI payload to internal GolfCourseDetail shape.
+   * 
+   * Handles field name mappings and structure conversions:
+   * - snake_case to camelCase
+   * - Nested location to flat address/coordinates
+   * - Tees object with gender keys to array
+   * - Hole extraction from tee definitions
+   */
+  private normalizeCoursePayload(raw: any): GolfCourseDetail {
+    // Extract all holes from all tee boxes (combine male and female)
+    const allHoles: Array<{
+      number: number
+      par?: number
+      yardage?: number
+      handicap?: number
+    }> = []
+
+    const teesArray: GolfCourseDetail["tees"] = []
+
+    // Process tees object which has gender keys (male, female, etc.)
+    if (raw.tees && typeof raw.tees === "object") {
+      Object.entries(raw.tees).forEach(([gender, teeList]: [string, any]) => {
+        if (Array.isArray(teeList)) {
+          teeList.forEach((tee: any) => {
+            // Add to tees array
+            teesArray.push({
+              name: tee.tee_name || tee.name || "",
+              color: tee.color,
+              gender: gender,
+              yardage: tee.total_yards,
+              rating: tee.course_rating,
+              slope: tee.slope_rating,
+            })
+
+            // Extract holes from tee (only from first tee to avoid duplicates)
+            if (allHoles.length === 0 && Array.isArray(tee.holes)) {
+              tee.holes.forEach((hole: any, idx: number) => {
+                allHoles.push({
+                  number: idx + 1,
+                  par: hole.par,
+                  yardage: hole.yardage,
+                  handicap: hole.handicap,
+                })
+              })
+            }
+          })
+        }
+      })
+    }
+
+    // Build normalized course detail
+    const normalized: GolfCourseDetail = {
+      id: raw.id,
+      name: raw.course_name || raw.name || "",
+      clubName: raw.club_name || raw.clubName,
+      address: raw.location
+        ? {
+            city: raw.location.city,
+            state: raw.location.state,
+            country: raw.location.country,
+          }
+        : undefined,
+      coordinates: raw.location && (raw.location.latitude || raw.location.longitude)
+        ? {
+            latitude: raw.location.latitude,
+            longitude: raw.location.longitude,
+          }
+        : undefined,
+      holes: allHoles.length > 0 ? allHoles : undefined,
+      tees: teesArray.length > 0 ? teesArray : undefined,
+    }
+
+    return normalized
   }
 
   /**

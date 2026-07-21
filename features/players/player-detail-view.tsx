@@ -30,6 +30,7 @@ import { PlayerNews } from '@/features/players/components/player-news'
 import { PlayerDetailSkeleton } from '@/features/players/components/player-detail-skeleton'
 import { DecisionWorkspace } from '@/features/players/components/decision-workspace'
 import { PlayerProfileV2View } from '@/features/players/components/profile-v2'
+import { PlayerIntelligencePanel } from '@/features/players/components/player-intelligence-panel'
 import { toOverallRatingExplanation } from '@/lib/explainability'
 
 interface PlayerDetailViewProps {
@@ -132,6 +133,7 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
             <PlayerRankingPanel rankings={player.rankings} />
           </div>
           <CareerSummary summary={player.careerSummary} />
+          <PlayerIntelligencePanel intelligence={player.playerIntelligence} />
         </TabsContent>
 
         <TabsContent value="analytics" className="flex flex-col gap-6">

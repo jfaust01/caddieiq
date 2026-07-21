@@ -209,6 +209,9 @@ export type TableOwner =
   | "Analytics"
   | "Application"
 
+/** The data provider source for a table. */
+export type DataProvider = "sportsdataio" | "golfcourseapi" | "internal" | "multiple"
+
 /**
  * One row of the Platform Inventory: the complete, unambiguous record of why a
  * table exists, who owns it, what feeds it, and whether its current row count is
@@ -222,6 +225,8 @@ export interface PlatformInventoryEntry {
   /** Why the table exists. */
   purpose: string
   owner: TableOwner
+  /** Data provider source for this table. */
+  provider: DataProvider
   /** How rows are created (provider import, model output, app write, seed…). */
   populationMethod: string
   /** Upstream tables/pipelines this table depends on, in order. */

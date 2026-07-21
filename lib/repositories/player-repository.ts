@@ -405,6 +405,49 @@ export class PlayerRepository extends BaseRepository {
       return { outcome: "failed", error: repoError }
     }
   }
+
+  /**
+   * Get active player intelligence for a player.
+   * Returns the currently active build with all features, or null if no active build exists.
+   * Only returns builds with buildStatus='SUCCESS' and activationStatus='ACTIVE'.
+   */
+  async getActivePlayerIntelligence(playerId: string): Promise<{
+    buildId: string
+    playerId: string
+    buildStatus: string
+    activationStatus: string
+    dataCompleteness: number
+    featureCount: number
+    completedFeatureCount: number
+    calculatedAt: Date
+    activatedAt: Date | null
+  } | null> {
+    // Query the active build for this player
+    // NOTE: Features are not included - player_intelligence_features table will be created in Phase 15.3B
+    const build = await this.prisma.playerIntelligenceBuild.findFirst({
+      where: {
+        playerId,
+        activationStatus: "ACTIVE",
+        buildStatus: "SUCCESS",
+      },
+    })
+
+    if (!build) {
+      return null
+    }
+
+    return {
+      buildId: build.id,
+      playerId: build.playerId,
+      buildStatus: build.buildStatus,
+      activationStatus: build.activationStatus,
+      dataCompleteness: build.dataCompleteness,
+      featureCount: build.featureCount,
+      completedFeatureCount: build.completedFeatureCount,
+      calculatedAt: build.calculatedAt,
+      activatedAt: build.activatedAt,
+    }
+  }
 }
 
 /** Translate a validated `Player` into a Prisma upsert plan keyed by slug. */

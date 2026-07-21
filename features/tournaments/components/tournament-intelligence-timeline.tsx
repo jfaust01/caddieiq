@@ -9,6 +9,19 @@ interface TournamentIntelligenceTimelineProps {
   tournament: Tournament
 }
 
+/** Format a date using UTC to avoid hydration mismatch from locale-dependent formatting. */
+function formatDateHeader(date: Date): string {
+  const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  
+  const weekday = weekdays[date.getUTCDay()]
+  const month = months[date.getUTCMonth()]
+  const day = date.getUTCDate()
+  const year = date.getUTCFullYear()
+  
+  return `${weekday}, ${month} ${day}, ${year}`
+}
+
 export function TournamentIntelligenceTimeline({ tournament }: TournamentIntelligenceTimelineProps) {
   const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -59,12 +72,7 @@ export function TournamentIntelligenceTimeline({ tournament }: TournamentIntelli
             <div key={group.date.toISOString()}>
               {/* Date header */}
               <h3 className="text-sm font-semibold text-muted-foreground mb-4 sticky top-0 bg-background/95 py-2">
-                {group.date.toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                {formatDateHeader(group.date)}
               </h3>
 
               {/* Events for this date */}
