@@ -42,7 +42,7 @@ export function TournamentCompactOverview({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* KPI Row: 5 metric cards */}
+      {/* KPI Row: 12+ metric cards */}
       <div>
         <CompactKpiRow
           tournament={tournament}
@@ -51,7 +51,7 @@ export function TournamentCompactOverview({
         />
       </div>
 
-      {/* Two-column grid: Leaderboard + Course Fit */}
+      {/* Two-column grid: Leaderboard + Top Course Fits */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <CompactLeaderboard
           field={field}
@@ -64,7 +64,7 @@ export function TournamentCompactOverview({
         />
       </div>
 
-      {/* Two-column grid: Weather + DFS */}
+      {/* Two-column grid: Weather + DFS Summary */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <CompactWeatherSummary weather={weather} />
         {hasField && (

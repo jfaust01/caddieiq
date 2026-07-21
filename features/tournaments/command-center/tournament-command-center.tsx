@@ -33,6 +33,7 @@ import { TournamentSidebar } from '@/features/tournaments/components/tournament-
 import { TournamentHealthWrapper } from '@/features/tournaments/components/tournament-health-wrapper'
 import { TournamentElevationHub } from '@/features/tournaments/components/tournament-elevation/tournament-elevation-hub'
 import { TournamentDataQualityPanel } from '@/features/tournaments/components/tournament-data-quality-panel'
+import { TournamentV2IntelligenceHub } from '@/features/tournaments/components/tournament-v2-intelligence-hub'
 import { buildModuleStatuses } from '@/features/tournaments/utils/tournament-data-quality'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
 import { courseService } from '@/features/courses/services/course-service'
@@ -335,6 +336,24 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
                     },
                   ]
                 : []),
+              {
+                value: 'v2-intelligence',
+                label: 'Advanced Intel',
+                content: hasField ? (
+                  <TournamentV2IntelligenceHub
+                    tournament={tournament}
+                    field={field}
+                    dfsField={dfsField}
+                    courseProfile={courseProfile}
+                    weather={weather}
+                    fieldReport={fieldReport}
+                  />
+                ) : (
+                  <div className="text-center text-sm text-muted-foreground py-8">
+                    Advanced intelligence unavailable without field data
+                  </div>
+                ),
+              },
             ]}
           />
         </div>
