@@ -36,11 +36,12 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light dark',
+  colorScheme: 'dark light',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#111413' },
+    { media: '(prefers-color-scheme: dark)', color: '#0F1419' },
   ],
+  userScalable: true,
 }
 
 export default function RootLayout({
@@ -51,7 +52,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} bg-background`}
+      className={`${geistSans.variable} ${geistMono.variable} dark bg-slate-950`}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased">
