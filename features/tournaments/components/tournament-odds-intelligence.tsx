@@ -119,22 +119,41 @@ function UnavailableOdds({ note }: { note: string | null }) {
           <Coins className="size-4" aria-hidden />
         </span>
         <div className="flex flex-col gap-1 flex-1">
-          <p className="text-sm font-medium text-foreground text-balance">Odds data unavailable</p>
+          <p className="text-sm font-medium text-foreground text-balance">Betting Odds Not Yet Available</p>
           <p className="text-xs leading-relaxed text-muted-foreground text-pretty">
-            Reason: No stored betting markets exist for this tournament
+            Sportsbooks typically open odds 7-10 days before tournament. Markets will be available once betting opens.
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 text-xs">
-        <div className="rounded border border-gray-700/30 bg-gray-900/20 p-3">
-          <p className="text-gray-400 font-medium mb-1">Expected Provider</p>
-          <p className="text-gray-300">The Odds API</p>
-        </div>
-        <div className="rounded border border-gray-700/30 bg-gray-900/20 p-3">
-          <p className="text-gray-400 font-medium mb-1">Market Count</p>
-          <p className="text-gray-300">0 records</p>
+      
+      {/* Sportsbook Availability Timeline */}
+      <div className="space-y-3">
+        <div className="text-xs font-semibold text-muted-foreground">Typical Sportsbook Timeline</div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="size-8 flex items-center justify-center rounded-full bg-chart-1/20 text-chart-1 text-xs font-bold">10</div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">Week of Tournament</p>
+              <p className="text-xs text-muted-foreground">Tournament outrights open</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="size-8 flex items-center justify-center rounded-full bg-chart-2/20 text-chart-2 text-xs font-bold">3</div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">Days Before Tournament</p>
+              <p className="text-xs text-muted-foreground">Match betting and round bets go live</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="size-8 flex items-center justify-center rounded-full bg-chart-3/20 text-chart-3 text-xs font-bold">1</div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">Day Before Tournament</p>
+              <p className="text-xs text-muted-foreground">Closing bets and tournament positions open</p>
+            </div>
+          </div>
         </div>
       </div>
+      
       {note && (
         <p className="flex items-start gap-2 rounded-lg border border-border bg-surface/40 p-3 text-xs text-muted-foreground text-pretty">
           <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />

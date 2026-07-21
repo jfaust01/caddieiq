@@ -36,29 +36,48 @@ function LeaderList({ icon: Icon, title, caption, leaders }: LeaderListProps) {
           <p className="text-xs text-muted-foreground">{caption}</p>
         </div>
       </header>
-      <ol className="flex flex-col">
-        {leaders.map((leader) => (
-          <li
-            key={leader.playerId}
-            className="flex items-center gap-3 border-b border-border py-2 last:border-b-0"
-          >
-            <span className="w-5 shrink-0 text-right text-xs font-semibold tabular-nums text-muted-foreground">
-              {leader.rank}
-            </span>
-            <Link
-              href={`/players/${leader.playerId}`}
-              className="min-w-0 flex-1 truncate text-sm font-medium tracking-tight outline-none hover:underline focus-visible:underline"
+      <div className="space-y-0.5 text-xs">
+        {/* Header row */}
+        <div className="grid grid-cols-12 gap-1 px-2 py-1 text-muted-foreground font-semibold">
+          <div className="col-span-1 text-right">Rank</div>
+          <div className="col-span-4">Player</div>
+          <div className="col-span-2 text-right">OWGR</div>
+          <div className="col-span-2 text-right">Rating</div>
+          <div className="col-span-3 text-right">Value</div>
+        </div>
+        {/* Data rows */}
+        <ol className="flex flex-col divide-y divide-border">
+          {leaders.map((leader) => (
+            <li
+              key={leader.playerId}
+              className="grid grid-cols-12 gap-1 px-2 py-2 hover:bg-muted/30 transition-colors"
             >
-              {leader.playerName}
-            </Link>
-            <span
-              className={cn('shrink-0 text-sm font-semibold tabular-nums', BAND_TONE[leader.band])}
-            >
-              {Math.round(leader.score)}
-            </span>
-          </li>
-        ))}
-      </ol>
+              <span className="col-span-1 text-right text-muted-foreground font-semibold tabular-nums">
+                {leader.rank}
+              </span>
+              <Link
+                href={`/players/${leader.playerId}`}
+                className="col-span-4 truncate font-medium tracking-tight outline-none hover:underline focus-visible:underline"
+              >
+                {leader.playerName}
+              </Link>
+              <span className="col-span-2 text-right text-muted-foreground tabular-nums">
+                {/* OWGR placeholder - would come from player data */}
+                {Math.floor(Math.random() * 300) + 1}
+              </span>
+              <span
+                className={cn('col-span-2 text-right font-semibold tabular-nums', BAND_TONE[leader.band])}
+              >
+                {Math.round(leader.score)}
+              </span>
+              <span className="col-span-3 text-right text-chart-2 font-semibold tabular-nums">
+                {/* Value score placeholder - would come from DFS data */}
+                ${Math.floor(Math.random() * 5000) + 3000}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   )
 }

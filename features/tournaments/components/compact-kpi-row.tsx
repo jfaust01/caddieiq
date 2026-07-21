@@ -11,10 +11,11 @@ interface CompactKpiRowProps {
 }
 
 /**
- * Compact KPI row (5 metrics) for the tournament overview.
- * Shows: Field Size, FedEx Points, Field Strength, Cut Line, Status
+ * Expanded KPI row (12+ metrics) for the tournament overview.
+ * Shows: Field Size, Purse, Winner Share, Strength Rating, Cut Rule, Par, Yardage,
+ * Course Type, Designer, Dates, Weather Status, Research Status
  * 
- * Uses MetricGrid + MetricItem for clean spacing without individual cards.
+ * Uses MetricGrid + MetricItem for clean information density.
  */
 export function CompactKpiRow({
   tournament,
@@ -32,6 +33,26 @@ export function CompactKpiRow({
   // Calculate field strength as % of field with world ranking
   const worldRankedCount = field?.rankingLeaders?.ratedPlayers ?? 0
   const fieldStrengthPercent = fieldSize > 0 ? Math.round((worldRankedCount / fieldSize) * 100) : 0
+  
+  // Format purse amount
+  const purseAmount = tournament?.purse
+  const purseFormatted = purseAmount ? `$${(purseAmount / 1_000_000).toFixed(1)}M` : '—'
+  
+  // Winner share
+  const winnerShare = tournament?.winnerShare
+  const winnerShareFormatted = winnerShare ? `$${(winnerShare / 1_000).toFixed(0)}K` : '—'
+  
+  // Course info
+  const coursePar = tournament?.course?.par ?? null
+  const courseYardage = tournament?.course?.yardage ?? null
+  const courseYardageFormatted = courseYardage ? `${(courseYardage / 1000).toFixed(1)}K` : '—'
+  
+  // Tournament dates
+  const startDate = tournament?.startDate ? new Date(tournament.startDate) : null
+  const endDate = tournament?.endDate ? new Date(tournament.endDate) : null
+  const datesFormatted = startDate && endDate 
+    ? `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    : '—'
 
   return (
     <MetricGrid columns="auto">
@@ -42,11 +63,18 @@ export function CompactKpiRow({
         hint="players"
       />
 
-      {/* FedEx Points */}
+      {/* Purse */}
       <MetricItem
-        label="FedEx Points"
-        value={fedExPoints ?? '—'}
-        hint="available"
+        label="Purse"
+        value={purseFormatted}
+        hint="total"
+      />
+
+      {/* Winner Share */}
+      <MetricItem
+        label="Win Prize"
+        value={winnerShareFormatted}
+        hint="1st place"
       />
 
       {/* Field Strength */}
@@ -61,6 +89,41 @@ export function CompactKpiRow({
         label={cutLine !== null ? 'Cut Line' : 'Cut Rule'}
         value={cutLine !== null ? (cutLine >= 0 ? `+${cutLine}` : `${cutLine}`) : (cutAfter ? `${cutAfter}R` : '—')}
         hint={cutLine !== null ? 'score' : 'rounds'}
+      />
+
+      {/* Par */}
+      <MetricItem
+        label="Par"
+        value={coursePar ?? '—'}
+        hint="total"
+      />
+
+      {/* Yardage */}
+      <MetricItem
+        label="Yardage"
+        value={courseYardageFormatted}
+        hint="blue tees"
+      />
+
+      {/* Course Type/Designer */}
+      <MetricItem
+        label="Designer"
+        value={tournament?.course?.architect ?? '—'}
+        hint={tournament?.course?.courseType ?? 'course'}
+      />
+
+      {/* Tournament Dates */}
+      <MetricItem
+        label="Dates"
+        value={datesFormatted}
+        hint="tournament"
+      />
+
+      {/* FedEx Points */}
+      <MetricItem
+        label="FedEx Points"
+        value={fedExPoints ?? '—'}
+        hint="available"
       />
 
       {/* Tournament Status */}
