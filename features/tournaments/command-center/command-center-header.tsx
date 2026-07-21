@@ -1,4 +1,6 @@
-import type { ReactNode } from "react"
+'use client'
+
+import { useEffect, useRef, type ReactNode } from "react"
 import { CalendarDays, CloudSun, MapPin, Users } from "lucide-react"
 
 import { TournamentStatusBadge } from "@/features/tournaments/components/tournament-status-badge"
@@ -42,8 +44,25 @@ export function CommandCenterHeader({
   dataConfidence,
   actions,
 }: CommandCenterHeaderProps) {
+  const headerRef = useRef<HTMLElement>(null)
+  
+  useEffect(() => {
+    // Measure TopNav height and set CommandCenterHeader offset to appear below it
+    const topNav = document.querySelector('header[class*="sticky"][class*="top-0"][class*="z-50"]')
+    if (!topNav) return
+    
+    const topNavHeight = topNav.getBoundingClientRect().height
+    if (headerRef.current) {
+      headerRef.current.style.setProperty('--sticky-top', `${topNavHeight}px`)
+    }
+  }, [])
+
   return (
-    <header className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/85 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6">
+    <header 
+      ref={headerRef}
+      className="sticky z-40 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6"
+      style={{ top: 'var(--sticky-top, 0px)' } as React.CSSProperties & { '--sticky-top': string }}
+    >
       <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex items-center gap-2">
