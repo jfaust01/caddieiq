@@ -40,55 +40,6 @@ export function AnalyticsView() {
         title="Analytics"
         description="Explore performance trends and insights across your models and data."
       />
-      
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-foreground/60 uppercase font-semibold">Win Rate</p>
-                <p className="text-2xl font-bold mt-1">68%</p>
-              </div>
-              <LineChart className="h-8 w-8 text-emerald-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-foreground/60 uppercase font-semibold">ROI</p>
-                <p className="text-2xl font-bold mt-1">+12.4%</p>
-              </div>
-              <BarChart3 className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-foreground/60 uppercase font-semibold">Plays</p>
-                <p className="text-2xl font-bold mt-1">247</p>
-              </div>
-              <PieChart className="h-8 w-8 text-amber-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-foreground/60 uppercase font-semibold">Confidence</p>
-                <p className="text-2xl font-bold mt-1">78%</p>
-              </div>
-              <BarChart3 className="h-8 w-8 text-slate-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {PANELS.map((panel) => (
           <Card key={panel.title}>
