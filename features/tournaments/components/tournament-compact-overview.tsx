@@ -1,7 +1,7 @@
 'use client'
 
 import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
-import { TournamentOverview } from './tournament-overview'
+import { EventDetailsPills } from './event-details-pills'
 import { TournamentField } from './tournament-field'
 
 interface TournamentCompactOverviewProps {
@@ -22,9 +22,9 @@ export function TournamentCompactOverview({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Tournament Overview Card (event metadata) */}
+      {/* Event Details Pills */}
       <div>
-        <TournamentOverview tournament={tournament} />
+        <EventDetailsPills tournament={tournament} />
       </div>
 
       {/* Field Section */}
