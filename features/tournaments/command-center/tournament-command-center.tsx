@@ -156,37 +156,12 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
 
   return (
     <>
-      <PageShell>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-fit text-muted-foreground"
-          nativeButton={false}
-          render={
-            <Link href="/tournaments">
-              <ChevronLeft data-icon="inline-start" />
-              All tournaments
-            </Link>
-          }
-        />
-      </PageShell>
-
       <CommandCenterHeader
         tournament={tournament}
         fieldSize={field.size}
         weatherSummary={weatherSummary(weather)}
         weatherPlaceholder={weather.statusReport.label}
         dataConfidence={dataConfidence}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <CommandCenterSearch
-              tournamentId={tournament.id}
-              players={searchPlayers}
-              news={searchNews}
-            />
-            <QuickActions tournamentId={tournament.id} />
-          </div>
-        }
       />
 
       <PageShell>

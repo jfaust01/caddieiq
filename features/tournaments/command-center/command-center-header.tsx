@@ -16,8 +16,6 @@ interface CommandCenterHeaderProps {
   weatherPlaceholder: string
   /** One-word data-confidence label for the whole hub (e.g. "verified"). */
   dataConfidence: string | null
-  /** Quick actions row (client component) rendered on the right. */
-  actions?: ReactNode
 }
 
 /** A compact fact chip in the header meta row. */
@@ -42,7 +40,6 @@ export function CommandCenterHeader({
   weatherSummary,
   weatherPlaceholder,
   dataConfidence,
-  actions,
 }: CommandCenterHeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   
@@ -92,7 +89,6 @@ export function CommandCenterHeader({
             </MetaChip>
           </div>
         </div>
-        {actions ? <div className="shrink-0">{actions}</div> : null}
         </div>
       </div>
     </header>

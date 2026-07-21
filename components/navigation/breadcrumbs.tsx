@@ -13,6 +13,8 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { allNavItems } from '@/constants/navigation'
+import { BreadcrumbContext } from '@/contexts/breadcrumb-context'
+import { useContext } from 'react'
 
 function titleCase(segment: string): string {
   return segment
@@ -52,6 +54,7 @@ function labelForSegment(segment: string, parentSegment?: string): string {
 export function Breadcrumbs() {
   const pathname = usePathname()
   const segments = pathname.split('/').filter(Boolean)
+  const breadcrumbContext = useContext(BreadcrumbContext)
 
   return (
     <Breadcrumb>
@@ -67,7 +70,11 @@ export function Breadcrumbs() {
         {segments.map((segment, index) => {
           const href = `/${segments.slice(0, index + 1).join('/')}`
           const isLast = index === segments.length - 1
-          const label = labelForSegment(segment, segments[index - 1])
+          // Use tournament name from context if this is a tournament detail page
+          let label = labelForSegment(segment, segments[index - 1])
+          if (isLast && segments[index - 1] === 'tournaments' && breadcrumbContext.tournamentName) {
+            label = breadcrumbContext.tournamentName
+          }
           return (
             <Fragment key={href}>
               <BreadcrumbSeparator />
