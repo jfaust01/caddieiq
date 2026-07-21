@@ -2,8 +2,6 @@
 
 import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
 import { CompactKpiRow } from './compact-kpi-row'
-import { CompactLeaderboard } from './compact-leaderboard'
-import { CompactDfsSummary } from './compact-dfs-summary'
 import { TournamentOverview } from './tournament-overview'
 import { TournamentField } from './tournament-field'
 
@@ -40,24 +38,6 @@ export function TournamentCompactOverview({
           fieldReport={fieldReport}
         />
       </div>
-
-      {/* Top Ranked Players */}
-      <div>
-        <CompactLeaderboard
-          field={field}
-          tournamentId={tournament.id}
-        />
-      </div>
-
-      {/* DFS Summary */}
-      {hasField && (
-        <div>
-          <CompactDfsSummary
-            dfsField={dfsField}
-            tournamentId={tournament.id}
-          />
-        </div>
-      )}
 
       {/* Full Tournament Overview Card (event metadata) */}
       <div className="pt-2 border-t border-border">
