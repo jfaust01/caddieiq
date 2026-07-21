@@ -93,37 +93,23 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
     <PageShell>
       {backButton}
 
-      <PlayerHeader player={player} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content */}
+        <div className="lg:col-span-2 space-y-6">
+          <PlayerHeader player={player} />
 
-      <AiSummaryCard analytics={player.analytics} playerName={player.fullName} />
-
-      <Tabs defaultValue="profile-v2">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 w-full">
-          <TabsTrigger value="profile-v2" className="text-xs sm:text-sm">Profile</TabsTrigger>
-          <TabsTrigger value="workspace" className="text-xs sm:text-sm">Workspace</TabsTrigger>
-          <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs sm:text-sm">Analytics</TabsTrigger>
-          <TabsTrigger value="statistics" className="text-xs sm:text-sm">Stats</TabsTrigger>
-          <TabsTrigger value="history" className="text-xs sm:text-sm">History</TabsTrigger>
-          <TabsTrigger value="news" className="text-xs sm:text-sm">News</TabsTrigger>
-          <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
-        </TabsList>
+          <Tabs defaultValue="profile-v2">
+            <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 w-full">
+              <TabsTrigger value="profile-v2" className="text-xs sm:text-sm">Profile</TabsTrigger>
+              <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+              <TabsTrigger value="analytics" className="text-xs sm:text-sm">Analytics</TabsTrigger>
+              <TabsTrigger value="statistics" className="text-xs sm:text-sm">Stats</TabsTrigger>
+              <TabsTrigger value="history" className="text-xs sm:text-sm">History</TabsTrigger>
+              <TabsTrigger value="news" className="text-xs sm:text-sm">News</TabsTrigger>
+            </TabsList>
 
         <TabsContent value="profile-v2" className="flex flex-col gap-6">
           <PlayerProfileV2View player={player} />
-        </TabsContent>
-
-        <TabsContent value="workspace" className="flex flex-col gap-6">
-          <DecisionWorkspace
-            playerId={player.id}
-            playerName={player.fullName}
-            analytics={player.analytics}
-            explanation={toOverallRatingExplanation(player.analytics, {
-              kind: 'player',
-              id: player.id,
-              label: player.fullName,
-            })}
-          />
         </TabsContent>
 
         <TabsContent value="overview" className="flex flex-col gap-6">
@@ -172,6 +158,30 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
           <RecentActivity activity={player.activity} />
         </TabsContent>
       </Tabs>
+        </div>
+
+        {/* Decision Panel - Sticky on Right */}
+        <div className="hidden lg:block">
+          <div className="sticky top-20 space-y-4">
+            <AiSummaryCard analytics={player.analytics} playerName={player.fullName} />
+            <DecisionWorkspace
+              playerId={player.id}
+              playerName={player.fullName}
+              analytics={player.analytics}
+              explanation={toOverallRatingExplanation(player.analytics, {
+                kind: 'player',
+                id: player.id,
+                label: player.fullName,
+              })}
+            />
+          </div>
+        </div>
+
+        {/* Mobile Decision Panel */}
+        <div className="lg:hidden col-span-1">
+          <AiSummaryCard analytics={player.analytics} playerName={player.fullName} />
+        </div>
+      </div>
     </PageShell>
   )
 }

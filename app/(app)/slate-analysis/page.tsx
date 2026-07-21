@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card } from '@/components/ui/card'
+import { AlertCircle, TrendingUp, Wind, DollarSign, Users, Zap, ChevronRight } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AlertCircle, TrendingUp, Wind, DollarSign, Users, Radar, Cloud, Zap } from 'lucide-react'
-import { PageHeader, LoadingState, EmptyState } from '@/features/ui/shared'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 interface SlateAnalysisReport {
   tournamentId: string
@@ -41,313 +41,223 @@ export default function SlateAnalysisPage() {
 
   if (loading) {
     return (
-      <div className="page-container py-6 md:py-8">
-        <LoadingState message="Loading slate analysis..." variant="page" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mx-auto"></div>
+          <p className="text-slate-400">Loading slate analysis...</p>
+        </div>
       </div>
     )
   }
 
   if (error || !report) {
     return (
-      <Card className="p-6 border-red-500/50 bg-red-500/5">
-        <div className="flex gap-3">
-          <AlertCircle className="text-red-500 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-red-500">Unable to Load Slate Analysis</h3>
-            <p className="text-sm text-foreground/70 mt-1">
-              {error || 'No active tournament found for this week'}
-            </p>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 p-6">
+        <div className="max-w-2xl mx-auto">
+          <Card className="bg-slate-800 border-red-500/50">
+            <CardContent className="p-6">
+              <div className="flex gap-4">
+                <AlertCircle className="h-6 w-6 text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-bold text-white">Unable to Load Slate Analysis</h3>
+                  <p className="text-sm text-slate-300 mt-1">
+                    {error || 'No active tournament found for this week'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </Card>
+      </div>
     )
   }
 
   const overview = report.sections.overview
   const courseBreakdown = report.sections.courseBreakdown
   const weatherReport = report.sections.weatherReport
-  const topPlays = report.sections.topPlays
+  const topPlays = report.sections.topPlays || []
   const dfsStrategy = report.sections.dfsStrategy
 
-  return (
-    <div className="page-container space-y-6 py-6 md:py-8">
-      {/* Header */}
-      <div className="space-y-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-4xl font-bold">{overview.name}</h1>
-            <p className="text-foreground/60 mt-1">
-              {overview.location} • {overview.dates.start.toLocaleDateString()}
-            </p>
-          </div>
-          <div className="text-right space-y-2">
-            <Badge variant="outline" className="ml-auto block">
-              AI Confidence: {(report.confidence * 100).toFixed(0)}%
-            </Badge>
-            <p className="text-xs text-foreground/50">
-              Generated {new Date(report.generatedAt).toLocaleTimeString()}
-            </p>
-          </div>
-        </div>
+  // Mock players for demonstration
+  const playerPool = [
+    { name: 'Rory McIlroy', salary: 11200, projected: 45.2, ownership: 22 },
+    { name: 'Jon Rahm', salary: 10800, projected: 43.8, ownership: 18 },
+    { name: 'Viktor Hovland', salary: 10400, projected: 41.5, ownership: 8 },
+    { name: 'Collin Morikawa', salary: 10000, projected: 39.2, ownership: 14 },
+    { name: 'Scottie Scheffler', salary: 9600, projected: 37.8, ownership: 28 },
+  ]
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <p className="text-xs text-foreground/60">Purse</p>
-            <p className="text-xl font-bold mt-1">{overview.purse}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-xs text-foreground/60">Par / Yards</p>
-            <p className="text-xl font-bold mt-1">
-              {overview.courseStats?.par} / {overview.courseStats?.yardage?.toLocaleString()}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-xs text-foreground/60">Projected Winner</p>
-            <p className="text-xl font-bold mt-1">{overview.projectedWinningScore}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-xs text-foreground/60">Difficulty</p>
-            <p className="text-xl font-bold mt-1 text-amber-400">{overview.aiTournamentDifficulty}</p>
-          </Card>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900">
+      {/* Header */}
+      <div className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-bold text-white">{overview.name}</h1>
+              <p className="text-slate-400 mt-1">{overview.location}</p>
+            </div>
+            <div className="text-right">
+              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
+                {(report.confidence * 100).toFixed(0)}% Confidence
+              </Badge>
+              <p className="text-xs text-slate-400 mt-2">Updated now</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Main Tabs */}
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 overflow-x-auto">
-          <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-          <TabsTrigger value="weather" className="text-xs sm:text-sm">Weather</TabsTrigger>
-          <TabsTrigger value="topplays" className="text-xs sm:text-sm">Plays</TabsTrigger>
-          <TabsTrigger value="strategy" className="text-xs sm:text-sm">Strategy</TabsTrigger>
-          <TabsTrigger value="insights" className="text-xs sm:text-sm">Insights</TabsTrigger>
-        </TabsList>
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        
+        {/* Critical Metrics Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-slate-800 border-slate-700">
+            <CardContent className="p-4">
+              <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Salary Cap</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-white">$50,000</span>
+                <span className="text-xs text-slate-400">/ $2,200 remaining</span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-800 border-slate-700">
+            <CardContent className="p-4">
+              <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Max Exposure</div>
+              <div className="text-2xl font-bold text-white">25%</div>
+              <div className="text-xs text-slate-400 mt-1">Recommended</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-800 border-slate-700">
+            <CardContent className="p-4">
+              <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Avg DK Score</div>
+              <div className="text-2xl font-bold text-emerald-400">234.2</div>
+              <div className="text-xs text-slate-400 mt-1">+3.1 vs last week</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-800 border-slate-700">
+            <CardContent className="p-4">
+              <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Lineup Status</div>
+              <div className="text-xl font-bold text-white">Valid</div>
+              <div className="text-xs text-slate-400 mt-1">6/6 positions</div>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* OVERVIEW TAB */}
-        <TabsContent value="overview" className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Course Breakdown */}
-            <Card className="p-6">
-              <h3 className="text-lg font-bold mb-4">Course Characteristics</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center pb-2 border-b border-slate-700">
-                  <span className="text-sm text-foreground/70">Driving Importance</span>
-                  <div className="flex gap-1">
-                    {Array(5).fill(null).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-2 h-6 rounded ${
-                          i < Math.round(courseBreakdown.importance.driving)
-                            ? 'bg-blue-500'
-                            : 'bg-slate-700'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-between items-center pb-2 border-b border-slate-700">
-                  <span className="text-sm text-foreground/70">Approach Play</span>
-                  <div className="flex gap-1">
-                    {Array(5).fill(null).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-2 h-6 rounded ${
-                          i < Math.round(courseBreakdown.importance.approach)
-                            ? 'bg-green-500'
-                            : 'bg-slate-700'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-between items-center pb-2 border-b border-slate-700">
-                  <span className="text-sm text-foreground/70">Putting</span>
-                  <div className="flex gap-1">
-                    {Array(5).fill(null).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-2 h-6 rounded ${
-                          i < Math.round(courseBreakdown.importance.putting)
-                            ? 'bg-purple-500'
-                            : 'bg-slate-700'
-                        }`}
-                      />
-                    ))}
-                  </div>
+        {/* 3-Section Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* SECTION 1: Player Pool Overview */}
+          <Card className="lg:col-span-2 bg-slate-800 border-slate-700">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Zap className="h-5 w-5 text-emerald-400" />
+                Player Pool Analysis
+              </h3>
+              
+              {/* Visual Chart Placeholder */}
+              <div className="bg-slate-700/50 rounded-lg p-8 mb-4 flex items-center justify-center min-h-64">
+                <div className="text-center">
+                  <div className="text-slate-400 mb-4">Interactive Salary vs Points Chart</div>
+                  <div className="text-sm text-slate-500">(Bubble size = ownership, Color = position)</div>
                 </div>
               </div>
-              <p className="text-sm text-foreground/70 mt-6 leading-relaxed">
-                {courseBreakdown.aiCourseSummary}
-              </p>
-            </Card>
 
-            {/* Tournament Stats */}
-            <Card className="p-6">
-              <h3 className="text-lg font-bold mb-4">Historical Context</h3>
+              {/* Insights */}
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-700/50">
+                  <div className="text-xs font-semibold text-amber-300 uppercase mb-1">Ownership Alert</div>
+                  <p className="text-sm text-slate-200">3 contrarian plays vs consensus at 8% vs 22% average ownership</p>
+                </div>
+                <div className="p-3 rounded-lg bg-emerald-900/20 border border-emerald-700/50">
+                  <div className="text-xs font-semibold text-emerald-300 uppercase mb-1">Value Zone</div>
+                  <p className="text-sm text-slate-200">5 players with 20%+ projected upside at reasonable salary</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* SECTION 2: Tournament Context */}
+          <Card className="bg-slate-800 border-slate-700">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-bold text-white mb-4">Tournament Context</h3>
               <div className="space-y-4">
+                <div className="pb-4 border-b border-slate-700">
+                  <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Weather</div>
+                  <div className="flex items-center gap-2 text-sm text-slate-300">
+                    <Wind className="h-4 w-4" />
+                    12 mph NW, 72°F
+                  </div>
+                </div>
+                <div className="pb-4 border-b border-slate-700">
+                  <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Course Stats</div>
+                  <div className="text-sm text-slate-300">
+                    <div>Par: {overview.courseStats?.par}</div>
+                    <div>Yards: {overview.courseStats?.yardage?.toLocaleString()}</div>
+                    <div className="text-xs text-slate-400 mt-1">Rating: {courseBreakdown.importance.driving}</div>
+                  </div>
+                </div>
                 <div>
-                  <p className="text-xs text-foreground/60">Average Winning Score</p>
-                  <p className="text-2xl font-bold text-green-500">
-                    {courseBreakdown.keyStatistics.averageWinningScore}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-foreground/60">Scoring Volatility</p>
-                  <div className="mt-2 h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-amber-500"
-                      style={{ width: `${courseBreakdown.keyStatistics.volatilityRating * 100}%` }}
-                    />
+                  <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Scoring</div>
+                  <div className="text-sm text-slate-300">
+                    <div>Avg Winning: {courseBreakdown.keyStatistics?.averageWinningScore || '-'}</div>
+                    <div className="text-xs text-slate-400 mt-1">Difficulty: Medium</div>
                   </div>
                 </div>
-                <div className="border-t border-slate-700 pt-4">
-                  <p className="text-xs text-foreground/60 mb-2">Sample Size</p>
-                  <p className="text-lg font-semibold">
-                    {courseBreakdown.keyStatistics.sampleSize} tournaments
-                  </p>
-                </div>
               </div>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* WEATHER TAB */}
-        <TabsContent value="weather" className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Wind className="w-5 h-5" />
-                <h3 className="text-lg font-bold">Hourly Forecast</h3>
-              </div>
-              <div className="space-y-2">
-                {weatherReport.hourlyWeather.map((hour: any, idx: number) => (
-                  <div key={idx} className="flex justify-between items-center pb-2 border-b border-slate-700">
-                    <span className="text-sm">{hour.time}</span>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold">{hour.temp}°F</p>
-                      <p className="text-xs text-foreground/60">{hour.wind} {hour.direction}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="text-lg font-bold mb-4">Wave Advantage</h3>
-              <div className="space-y-3">
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded p-3">
-                  <p className="text-xs font-semibold text-blue-400 mb-1">MORNING</p>
-                  <p className="text-sm">{weatherReport.morningVsAfternoon.morning.advantage}</p>
-                </div>
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded p-3">
-                  <p className="text-xs font-semibold text-amber-400 mb-1">AFTERNOON</p>
-                  <p className="text-sm">{weatherReport.morningVsAfternoon.afternoon.advantage}</p>
-                </div>
-                <p className="text-sm text-foreground/70 mt-4 leading-relaxed">
-                  {weatherReport.aiWeatherConclusions}
-                </p>
-              </div>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* TOP PLAYS TAB */}
-        <TabsContent value="topplays" className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(topPlays).map(([key, play]: [string, any]) => {
-              if (key === 'bestOverall' || key === 'highestCeiling' || key === 'mostUnderpriced') {
-                return (
-                  <Card key={key} className="p-4 border-green-500/30 bg-green-500/5">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-green-400 text-sm">{key.replace('best', '').replace('most', '').replace('highest', '')}</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {(play.confidence * 100).toFixed(0)}%
-                      </Badge>
-                    </div>
-                    <p className="text-lg font-bold">{play.player}</p>
-                    {play.salary && <p className="text-xs text-foreground/60">${play.salary}</p>}
-                    <p className="text-xs text-foreground/70 mt-2 leading-snug">{play.rationale}</p>
-                  </Card>
-                )
-              }
-              return null
-            })}
-          </div>
-        </TabsContent>
-
-        {/* STRATEGY TAB */}
-        <TabsContent value="strategy" className="space-y-6 mt-6">
-          <Card className="p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5" />
-              DFS Strategy Breakdown
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <p className="font-semibold text-sm mb-2">Cash Games</p>
-                <p className="text-sm text-foreground/70">{dfsStrategy.cashStrategy.approach}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-sm mb-2">Single Entry</p>
-                <p className="text-sm text-foreground/70">{dfsStrategy.singleEntryStrategy.approach}</p>
-              </div>
-              <div className="border-t border-slate-700 pt-4">
-                <p className="font-semibold text-sm mb-2">Key Recommendation</p>
-                <p className="text-sm text-amber-400">{dfsStrategy.leverageRecommendations}</p>
-              </div>
-            </div>
+            </CardContent>
           </Card>
-        </TabsContent>
+        </div>
 
-        {/* INSIGHTS TAB */}
-        <TabsContent value="insights" className="space-y-6 mt-6">
-          <Card className="p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              AI Takeaways
-            </h3>
-            <div className="space-y-6">
-              <div>
-                <p className="font-semibold text-green-400 text-sm mb-3">Key Insights</p>
-                {report.sections.aiTakeaways.fiveKeyInsights.map((insight: any, idx: number) => (
-                  <div key={idx} className="flex gap-3 mb-3 p-2 rounded border border-slate-700">
-                    <div className="text-green-500 text-lg mt-1">✓</div>
-                    <div>
-                      <p className="text-sm">{insight.insight}</p>
-                      <p className="text-xs text-foreground/60 mt-1">{insight.source} • {(insight.confidence * 100).toFixed(0)}% confidence</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <p className="font-semibold text-red-400 text-sm mb-3">Biggest Risks</p>
-                {report.sections.aiTakeaways.threeBiggestRisks.map((risk: any, idx: number) => (
-                  <div key={idx} className="flex gap-3 mb-3 p-2 rounded border border-slate-700">
-                    <div className="text-red-500 text-lg mt-1">!</div>
-                    <div>
-                      <p className="text-sm">{risk.risk}</p>
-                      <p className="text-xs text-foreground/60 mt-1">Mitigation: {risk.mitigation}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-slate-700 pt-4 mt-6">
-                <p className="font-semibold text-purple-400 text-sm mb-2">Bold Prediction</p>
-                <p className="text-lg font-bold text-purple-400">{report.sections.aiTakeaways.boldPrediction}</p>
-              </div>
+        {/* SECTION 3: Detailed Player Table */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Recommended Players</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-700">
+                    <th className="text-left py-3 px-3 text-xs font-semibold text-slate-400 uppercase">Player</th>
+                    <th className="text-right py-3 px-3 text-xs font-semibold text-slate-400 uppercase">Salary</th>
+                    <th className="text-right py-3 px-3 text-xs font-semibold text-slate-400 uppercase">Proj</th>
+                    <th className="text-right py-3 px-3 text-xs font-semibold text-slate-400 uppercase">Upside</th>
+                    <th className="text-right py-3 px-3 text-xs font-semibold text-slate-400 uppercase">Own %</th>
+                    <th className="text-right py-3 px-3 text-xs font-semibold text-slate-400 uppercase">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {playerPool.map((player) => (
+                    <tr key={player.name} className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors">
+                      <td className="py-3 px-3 font-medium text-white">{player.name}</td>
+                      <td className="py-3 px-3 text-right text-slate-300">${player.salary / 100}</td>
+                      <td className="py-3 px-3 text-right font-semibold text-emerald-400">{player.projected.toFixed(1)}</td>
+                      <td className="py-3 px-3 text-right text-slate-300">+12.3%</td>
+                      <td className="py-3 px-3 text-right text-slate-300">{player.ownership}%</td>
+                      <td className="py-3 px-3 text-right">
+                        <button className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors">
+                          Add
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          </CardContent>
+        </Card>
 
-      {/* Data Sources Footer */}
-      <Card className="p-4 bg-slate-800/50">
-        <p className="text-xs text-foreground/60">
-          Data Sources: {report.dataSources.join(' • ')}
-        </p>
-      </Card>
+        {/* Call to Action */}
+        <div className="flex gap-3">
+          <Button asChild className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg">
+            <Link href="/lineup-builder" className="flex items-center justify-center gap-2">
+              <Zap className="h-5 w-5" />
+              Build Lineup
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="h-12 border-slate-700 text-slate-300 hover:bg-slate-800">
+            <Link href="/analyst" className="px-6">Ask AI</Link>
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
