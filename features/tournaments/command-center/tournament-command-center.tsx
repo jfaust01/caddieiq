@@ -158,11 +158,14 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
   }))
 
   // Build module statuses for Data Quality panel
+  // Use pricedPlayers: entrants with actual DraftKings salary (excludes players missing salary)
+  const dfsCount = dfsField?.pricedPlayers ?? 0
+  
   const moduleStatuses = buildModuleStatuses({
     tournament,
     field,
     fieldFieldCount: field.size,
-    dfsRecordCount: dfsField?.players?.length ?? 0,
+    dfsRecordCount: dfsCount,
     hasWeather: weather?.status === 'available',
     hasOdds: odds?.leaderboards && odds.leaderboards.length > 0,
     hasHoles: false, // Course holes not imported
