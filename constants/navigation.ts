@@ -9,6 +9,7 @@ import {
   History,
   LayoutDashboard,
   MapPinned,
+  Radar,
   Settings,
   ShieldCheck,
   SlidersHorizontal,
@@ -41,6 +42,12 @@ export const primaryNavigation: NavSection[] = [
         href: '/dashboard',
         icon: LayoutDashboard,
         description: 'Your command center for models and picks.',
+      },
+      {
+        title: 'Slate Analysis',
+        href: '/slate-analysis',
+        icon: Radar,
+        description: 'Weekly AI-powered DFS slate analysis with top plays and strategies.',
       },
       {
         title: 'AI Golf Analyst',
