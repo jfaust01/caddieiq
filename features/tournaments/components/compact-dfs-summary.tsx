@@ -40,12 +40,12 @@ export function CompactDfsSummary({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1"
+            className="gap-1 inline-flex"
             nativeButton={false}
             render={
               <Link href={`/tournaments/${tournamentId}?tab=draftkings`}>
-                View all DFS
-                <ChevronRight className="size-4" />
+                <span>View all DFS</span>
+                <ChevronRight className="size-4 ml-auto" />
               </Link>
             }
           />

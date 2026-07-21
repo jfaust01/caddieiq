@@ -57,12 +57,12 @@ export function CompactLeaderboard({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1"
+            className="gap-1 inline-flex"
             asChild
           >
             <Link href={`/tournaments/${tournamentId}?tab=field`}>
-              View all
-              <ChevronRight className="size-4" />
+              <span>View all</span>
+              <ChevronRight className="size-4 ml-auto" />
             </Link>
           </Button>
         </div>
