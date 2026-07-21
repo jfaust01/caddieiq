@@ -159,6 +159,11 @@ enum AuditEventType {
   LOCK_DATETIME_SET
   FIELD_ENTRY_CONFIRMED
   FIELD_WITHDRAWAL
+  HISTORICAL_RECORD_IMPORTED
+  HISTORICAL_RECORD_UPDATED
+  IMPORT_JOB_STARTED
+  IMPORT_JOB_COMPLETED
+  IMPORT_JOB_FAILED
 }
 
 enum QualityReportStatus {
@@ -2407,20 +2412,32 @@ model HistoricalSnapshot {
 
 /// Append-only audit log for data changes
 model HistoricalDataAuditEvent {
-  id            String         @id @default(cuid())
-  eventType     AuditEventType
-  entityType    String
-  entityId      String
-  previousValue String?
-  newValue      String?
-  reason        String?
-  performedBy   String         @default("system")
-  performedAt   DateTime
-  createdAt     DateTime       @default(now())
+  id                        String         @id @default(cuid())
+  eventType                 AuditEventType
+  entityType                String
+  entityId                  String
+  previousValue             String?
+  newValue                  String?
+  reason                    String?
+  performedBy               String         @default("system")
+  performedAt               DateTime
+  createdAt                 DateTime       @default(now())
+  
+  // Provenance fields for historical imports
+  providerName              String?        // e.g., "sportsdataio"
+  providerRecordId          String?        // External provider ID
+  sourceEndpoint            String?        // e.g., "/json/Leaderboard/692"
+  sourceVersion             String?        // Provider API version
+  dataChecksum              String?        // SHA256 checksum of record
+  retrievalTimestamp        DateTime?      // When data was fetched
+  effectiveTimestamp        DateTime?      // When data is effective from
+  importJobId               String?        // Link to HistoricalImportJob
 
   @@index([entityType, entityId])
   @@index([performedAt])
   @@index([eventType])
+  @@index([importJobId])
+  @@index([providerName])
   @@map("historical_data_audit_events")
 }
 
