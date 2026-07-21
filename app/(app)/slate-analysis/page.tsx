@@ -74,7 +74,7 @@ export default function SlateAnalysisPage() {
   const dfsStrategy = report.sections.dfsStrategy
 
   return (
-    <div className="space-y-8">
+    <div className="page-container space-y-6 py-6 md:py-8">
       {/* Header */}
       <div className="space-y-3">
         <div className="flex items-start justify-between">
