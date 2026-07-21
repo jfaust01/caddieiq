@@ -1,17 +1,21 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { TrendingUp } from 'lucide-react'
 
 interface CourseFitTrait {
   name: string
   stars: number // 1-5
   importance: 'Critical' | 'Very Important' | 'Important' | 'Moderate' | 'Minor'
   explanation: string
+  historicalEvidence?: string
   icon?: string
 }
 
 interface TournamentCourseFitProps {
+  headline?: string
   traits: CourseFitTrait[]
+  summary?: string
 }
 
 /**

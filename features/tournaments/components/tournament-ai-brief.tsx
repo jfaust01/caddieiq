@@ -1,9 +1,10 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertCircle, Lightbulb, Sparkles } from 'lucide-react'
+import { AlertCircle, Lightbulb, Sparkles, TrendingUp } from 'lucide-react'
 
 interface TournamentAiBriefProps {
+  headline?: string
   tournamentName: string
   brief: string
   keyTakeaway: string
@@ -18,6 +19,7 @@ interface TournamentAiBriefProps {
  * This is the headline section that answers: "How should I attack this tournament?"
  */
 export function TournamentAiBrief({
+  headline,
   tournamentName,
   brief,
   keyTakeaway,
@@ -28,9 +30,16 @@ export function TournamentAiBrief({
   return (
     <Card className="border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <Sparkles className="size-5 text-blue-600 dark:text-blue-400" />
-          <CardTitle className="text-lg">Tournament Brief: {tournamentName}</CardTitle>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-5 text-blue-600 dark:text-blue-400" />
+            <CardTitle className="text-lg">{headline || `Tournament Brief: ${tournamentName}`}</CardTitle>
+          </div>
+          {headline && (
+            <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+              Professional analyst perspective on how to approach this event
+            </p>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
