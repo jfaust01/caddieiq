@@ -1,4 +1,6 @@
 import { Metadata } from 'next'
+import { PageHeader, EmptyState } from '@/features/ui/shared'
+import { Users } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Historical Players',
@@ -7,18 +9,18 @@ export const metadata: Metadata = {
 
 export default function HistoricalPlayersPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Historical Players</h1>
-        <p className="text-muted-foreground mt-2">
-          Browse historical player statistics, salary history, and performance trends.
-        </p>
-      </div>
+    <div className="page-container space-y-6 py-6 md:py-8">
+      <PageHeader
+        title="Historical Players"
+        description="Browse historical player statistics, salary history, and performance trends."
+        icon={<Users className="h-6 w-6" />}
+      />
 
-      <div className="p-8 border border-dashed border-border rounded-lg text-center text-muted-foreground">
-        <p>Historical player profiles with complete statistical records coming soon.</p>
-        <p className="mt-2 text-sm">Features include: career statistics, salary trends, ownership history, odds history, and weather impact analysis.</p>
-      </div>
+      <EmptyState
+        title="Historical player profiles coming soon"
+        description="Career statistics, salary trends, ownership history, odds history, and weather impact analysis will be available soon."
+        icon={<Users className="h-12 w-12" />}
+      />
     </div>
   )
 }

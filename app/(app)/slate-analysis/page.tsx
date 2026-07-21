@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AlertCircle, TrendingUp, Wind, DollarSign, Users } from 'lucide-react'
+import { AlertCircle, TrendingUp, Wind, DollarSign, Users, Radar, Cloud, Zap } from 'lucide-react'
+import { PageHeader, LoadingState, EmptyState } from '@/features/ui/shared'
 
 interface SlateAnalysisReport {
   tournamentId: string
@@ -40,13 +41,8 @@ export default function SlateAnalysisPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-32 bg-gradient-to-r from-slate-800 to-slate-900 rounded-lg animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Array(4).fill(null).map((_, i) => (
-            <div key={i} className="h-48 bg-slate-800 rounded-lg animate-pulse" />
-          ))}
-        </div>
+      <div className="page-container py-6 md:py-8">
+        <LoadingState message="Loading slate analysis..." variant="page" />
       </div>
     )
   }
@@ -119,12 +115,12 @@ export default function SlateAnalysisPage() {
 
       {/* Main Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="weather">Weather</TabsTrigger>
-          <TabsTrigger value="topplays">Top Plays</TabsTrigger>
-          <TabsTrigger value="strategy">Strategy</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 overflow-x-auto">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+          <TabsTrigger value="weather" className="text-xs sm:text-sm">Weather</TabsTrigger>
+          <TabsTrigger value="topplays" className="text-xs sm:text-sm">Plays</TabsTrigger>
+          <TabsTrigger value="strategy" className="text-xs sm:text-sm">Strategy</TabsTrigger>
+          <TabsTrigger value="insights" className="text-xs sm:text-sm">Insights</TabsTrigger>
         </TabsList>
 
         {/* OVERVIEW TAB */}

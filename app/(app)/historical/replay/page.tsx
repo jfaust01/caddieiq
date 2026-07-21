@@ -1,4 +1,6 @@
 import { Metadata } from 'next'
+import { PageHeader } from '@/features/ui/shared'
+import { Flag } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Tournament Replay',
@@ -7,13 +9,12 @@ export const metadata: Metadata = {
 
 export default function HistoricalReplayPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Tournament Replay</h1>
-        <p className="text-muted-foreground mt-2">
-          Reconstruct tournaments exactly as they existed before lock with complete historical context.
-        </p>
-      </div>
+    <div className="page-container space-y-6 py-6 md:py-8">
+      <PageHeader
+        title="Tournament Replay"
+        description="Reconstruct tournaments exactly as they existed before lock with complete historical context."
+        icon={<Flag className="h-6 w-6" />}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-6 border border-border rounded-lg space-y-3">

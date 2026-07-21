@@ -1,4 +1,6 @@
 import { Metadata } from 'next'
+import { PageHeader } from '@/features/ui/shared'
+import { TrendingUp } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Historical Trends',
@@ -7,13 +9,12 @@ export const metadata: Metadata = {
 
 export default function HistoricalTrendsPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Historical Trends</h1>
-        <p className="text-muted-foreground mt-2">
-          Analyze historical patterns and correlations across tournaments and players.
-        </p>
-      </div>
+    <div className="page-container space-y-6 py-6 md:py-8">
+      <PageHeader
+        title="Historical Trends"
+        description="Analyze historical patterns and correlations across tournaments and players."
+        icon={<TrendingUp className="h-6 w-6" />}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="p-6 border border-border rounded-lg space-y-3">

@@ -1,5 +1,7 @@
 import { Metadata } from 'next'
 import { HistoricalTournamentsView } from '@/features/historical/components/tournaments-explorer'
+import { PageHeader } from '@/features/ui/shared'
+import { History } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Historical Tournaments',
@@ -8,13 +10,12 @@ export const metadata: Metadata = {
 
 export default function HistoricalTournamentsPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Historical Tournaments</h1>
-        <p className="text-muted-foreground mt-2">
-          Browse complete historical tournament data with weather, odds, and DFS context.
-        </p>
-      </div>
+    <div className="page-container space-y-6 py-6 md:py-8">
+      <PageHeader
+        title="Historical Tournaments"
+        description="Browse and replay complete tournament data with weather, odds, and DFS context."
+        icon={<History className="h-6 w-6" />}
+      />
       <HistoricalTournamentsView />
     </div>
   )
