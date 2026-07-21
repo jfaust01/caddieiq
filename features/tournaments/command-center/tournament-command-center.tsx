@@ -158,14 +158,22 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
   }))
 
   // Build module statuses for Data Quality panel
-  // Use pricedPlayers: entrants with actual DraftKings salary (excludes players missing salary)
-  const dfsCount = dfsField?.pricedPlayers ?? 0
+  // Use pricedPlayers: count of field entrants with DFS salary records
+  const dfsSalaryCount = dfsField?.pricedPlayers ?? 0
+  const dfsUnmatchedCount = field.size - dfsSalaryCount
+  
+  // For now, we don't have individual unmatched player names easily available
+  // This will be improved in cleanup phase 2
+  const dfsUnmatchedPlayers: Array<{ playerId: string; playerName: string }> = []
   
   const moduleStatuses = buildModuleStatuses({
     tournament,
     field,
     fieldFieldCount: field.size,
-    dfsRecordCount: dfsCount,
+    dfsRecordCount: dfsSalaryCount,
+    dfsMatchedCount: dfsSalaryCount,
+    dfsUnmatchedPlayers,
+    dfsStatus: dfsSalaryCount === field.size ? 'VERIFIED' : (dfsSalaryCount > 0 ? 'PARTIAL' : 'UNAVAILABLE'),
     hasWeather: weather?.status === 'available',
     hasOdds: odds?.leaderboards && odds.leaderboards.length > 0,
     hasHoles: false, // Course holes not imported

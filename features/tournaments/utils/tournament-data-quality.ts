@@ -8,6 +8,9 @@ interface DataQualityInput {
   field: TournamentField | null
   fieldFieldCount: number
   dfsRecordCount: number
+  dfsMatchedCount?: number
+  dfsUnmatchedPlayers?: Array<{ playerId: string; playerName: string }>
+  dfsStatus?: 'VERIFIED' | 'PARTIAL' | 'UNAVAILABLE'
   hasWeather: boolean
   hasOdds: boolean
   hasHoles: boolean
@@ -63,13 +66,22 @@ export function buildModuleStatuses(input: DataQualityInput): ModuleStatus[] {
   })
 
   // 5. DFS Salaries
+  const dfsUnmatchedCount = input.fieldFieldCount - (input.dfsMatchedCount ?? input.dfsRecordCount)
+  const dfsUnmatchedList = (input.dfsUnmatchedPlayers ?? []).map(p => p.playerName).join(', ')
+  const dfsMissingInputs: string[] = []
+  if (dfsUnmatchedCount > 0) {
+    dfsMissingInputs.push(
+      `${dfsUnmatchedCount} entrant${dfsUnmatchedCount !== 1 ? 's' : ''} missing salary: ${dfsUnmatchedList || '(see details)'}`
+    )
+  }
+
   modules.push({
     name: 'DFS Salaries',
-    status: input.dfsRecordCount > 0 ? 'PARTIAL' : 'UNAVAILABLE',
-    source: 'dfs_salaries table',
+    status: input.dfsStatus ?? (input.dfsRecordCount > 0 ? 'PARTIAL' : 'UNAVAILABLE'),
+    source: 'dfs_salaries table (database)',
     recordCount: input.dfsRecordCount,
     lastUpdated: null,
-    missingInputs: input.dfsRecordCount < input.fieldFieldCount ? [`${input.fieldFieldCount - input.dfsRecordCount} entrants missing salary`] : [],
+    missingInputs: dfsMissingInputs,
     productionSafe: input.dfsRecordCount > 0,
   })
 
