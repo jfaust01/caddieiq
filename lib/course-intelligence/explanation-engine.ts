@@ -26,6 +26,18 @@ export class ExplanationEngine {
     explanations.push(this.explainBogeyRisk(metrics.bogeyRisk))
     explanations.push(this.explainVariance(metrics.variance))
 
+    // Strategy Metrics
+    explanations.push(this.explainDrivingImportance(metrics.drivingImportance))
+    explanations.push(this.explainApproachImportance(metrics.approachImportance))
+    explanations.push(this.explainShortGameImportance(metrics.shortGameImportance))
+    explanations.push(this.explainPuttingImportance(metrics.puttingImportance))
+
+    // Environmental & Scoring
+    explanations.push(this.explainWindSensitivity(metrics.windSensitivity))
+    explanations.push(this.explainPenaltySeverity(metrics.penaltySeverity))
+    explanations.push(this.explainBirdiePotential(metrics.birdiePotential))
+    explanations.push(this.explainScoringVolatility(metrics.scoringVolatility))
+
     // Fairway & Approach Metrics
     explanations.push(this.explainFairwayWidth(metrics.fairwayWidth))
     explanations.push(this.explainIronDifficulty(metrics.ironDifficulty))
@@ -132,7 +144,7 @@ export class ExplanationEngine {
     return {
       metric: "treeRisk",
       title: "Tree/Vegetation Risk",
-      summary: `Trees and vegetation create {{minimal", "light", "moderate", "heavy", "very heavy"][Math.ceil((metric.score / 100) * 5) - 1]} difficulty. Dense tree lines punish off-line shots more severely.`,
+      summary: `Trees and vegetation create ${ ["minimal", "light", "moderate", "heavy", "very heavy"][Math.ceil((metric.score / 100) * 5) - 1]} difficulty. Dense tree lines punish off-line shots more severely.`,
       contributingFactors: metric.dataPoints.join("\n"),
     }
   }
@@ -141,7 +153,7 @@ export class ExplanationEngine {
     return {
       metric: "outOfBoundsRisk",
       title: "Out of Bounds Risk",
-      summary: `Out of bounds hazards create {{minimal", "low", "moderate", "high", "very high"][Math.ceil((metric.score / 100) * 5) - 1]} risk. OOB results in 2-stroke penalties and is more severe than water or sand.`,
+      summary: `Out of bounds hazards create ${ ["minimal", "low", "moderate", "high", "very high"][Math.ceil((metric.score / 100) * 5) - 1]} risk. OOB results in 2-stroke penalties and is more severe than water or sand.`,
       contributingFactors: metric.dataPoints.join("\n"),
     }
   }
@@ -150,7 +162,7 @@ export class ExplanationEngine {
     return {
       metric: "hazardImpact",
       title: "Overall Hazard Impact",
-      summary: `Combined hazard challenges create {{minimal", "low", "moderate", "significant", "severe"][Math.ceil((metric.score / 100) * 5) - 1]} impact on scoring. Multiple hazard types increase course difficulty substantially.`,
+      summary: `Combined hazard challenges create ${ ["minimal", "low", "moderate", "significant", "severe"][Math.ceil((metric.score / 100) * 5) - 1]} impact on scoring. Multiple hazard types increase course difficulty substantially.`,
       contributingFactors: metric.dataPoints.join("\n"),
     }
   }
@@ -159,7 +171,7 @@ export class ExplanationEngine {
     return {
       metric: "elevationImpact",
       title: "Elevation Impact",
-      summary: `Elevation changes have {{negligible", "low", "moderate", "significant", "very significant"][Math.ceil((metric.score / 100) * 5) - 1]} impact. High-altitude courses have thinner air affecting shot distance and ball behavior.`,
+      summary: `Elevation changes have ${ ["negligible", "low", "moderate", "significant", "very significant"][Math.ceil((metric.score / 100) * 5) - 1]} impact. High-altitude courses have thinner air affecting shot distance and ball behavior.`,
       contributingFactors: metric.dataPoints.join("\n"),
     }
   }
@@ -168,7 +180,7 @@ export class ExplanationEngine {
     return {
       metric: "weatherFactor",
       title: "Weather/Climate Factor",
-      summary: `Weather and climate create {{minimal", "low", "moderate", "significant", "extreme"][Math.ceil((metric.score / 100) * 5) - 1]} difficulty variance. Courses in windy or extreme weather regions see more variability in scoring.`,
+      summary: `Weather and climate create ${ ["minimal", "low", "moderate", "significant", "extreme"][Math.ceil((metric.score / 100) * 5) - 1]} difficulty variance. Courses in windy or extreme weather regions see more variability in scoring.`,
       contributingFactors: metric.dataPoints.join("\n"),
     }
   }
@@ -177,7 +189,7 @@ export class ExplanationEngine {
     return {
       metric: "playability",
       title: "Overall Playability",
-      summary: `Overall playability is {{poor", "fair", "good", "very good", "excellent"][Math.ceil((metric.score / 100) * 5) - 1]}. Balanced par distribution and consistent nine-hole structure improve playability and flow.`,
+      summary: `Overall playability is ${ ["poor", "fair", "good", "very good", "excellent"][Math.ceil((metric.score / 100) * 5) - 1]}. Balanced par distribution and consistent nine-hole structure improve playability and flow.`,
       contributingFactors: metric.dataPoints.join("\n"),
     }
   }
@@ -186,7 +198,79 @@ export class ExplanationEngine {
     return {
       metric: "uniqueness",
       title: "Course Uniqueness",
-      summary: `This course is {{generic", "fairly typical", "somewhat unique", "quite unique", "very distinctive"][Math.ceil((metric.score / 100) * 5) - 1]}. Wide yardage ranges and unusual par distributions contribute to memorable design.`,
+      summary: `This course is ${ ["generic", "fairly typical", "somewhat unique", "quite unique", "very distinctive"][Math.ceil((metric.score / 100) * 5) - 1]}. Wide yardage ranges and unusual par distributions contribute to memorable design.`,
+      contributingFactors: metric.dataPoints.join("\n"),
+    }
+  }
+
+  private static explainDrivingImportance(metric: { score: number; dataPoints: string[] }): ExplanationRecord {
+    return {
+      metric: "drivingImportance",
+      title: "Driving Importance",
+      summary: `Driving is ${ ["not emphasized", "minimally important", "moderately important", "very important", "critical"][Math.ceil((metric.score / 100) * 5) - 1]} at this course. Higher emphasis courses have more Par 4s/5s and reward long, accurate drives.`,
+      contributingFactors: metric.dataPoints.join("\n"),
+    }
+  }
+
+  private static explainApproachImportance(metric: { score: number; dataPoints: string[] }): ExplanationRecord {
+    return {
+      metric: "approachImportance",
+      title: "Approach Shot Importance",
+      summary: `Approach shots are ${ ["not emphasized", "minimally important", "moderately important", "very important", "critical"][Math.ceil((metric.score / 100) * 5) - 1]} at this course. Difficult approaches stem from small greens, guarding hazards, and challenging green complexes.`,
+      contributingFactors: metric.dataPoints.join("\n"),
+    }
+  }
+
+  private static explainShortGameImportance(metric: { score: number; dataPoints: string[] }): ExplanationRecord {
+    return {
+      metric: "shortGameImportance",
+      title: "Short Game Importance",
+      summary: `Short game skills are ${ ["not emphasized", "minimally important", "moderately important", "very important", "critical"][Math.ceil((metric.score / 100) * 5) - 1]} at this course. More Par 3s and challenging greens make up-and-down recovery shots crucial.`,
+      contributingFactors: metric.dataPoints.join("\n"),
+    }
+  }
+
+  private static explainPuttingImportance(metric: { score: number; dataPoints: string[] }): ExplanationRecord {
+    return {
+      metric: "puttingImportance",
+      title: "Putting Importance",
+      summary: `Putting is ${ ["not emphasized", "minimally important", "moderately important", "very important", "critical"][Math.ceil((metric.score / 100) * 5) - 1]} at this course. Large greens, fast surfaces, and many short holes increase putting's impact on scores.`,
+      contributingFactors: metric.dataPoints.join("\n"),
+    }
+  }
+
+  private static explainWindSensitivity(metric: { score: number; dataPoints: string[] }): ExplanationRecord {
+    return {
+      metric: "windSensitivity",
+      title: "Wind Sensitivity",
+      summary: `Wind has ${ ["minimal", "light", "moderate", "significant", "major"][Math.ceil((metric.score / 100) * 5) - 1]} impact on play. High-elevation and exposed courses see more scoring variability from wind.`,
+      contributingFactors: metric.dataPoints.join("\n"),
+    }
+  }
+
+  private static explainPenaltySeverity(metric: { score: number; dataPoints: string[] }): ExplanationRecord {
+    return {
+      metric: "penaltySeverity",
+      title: "Penalty Severity",
+      summary: `Missed shots are ${ ["lightly", "mildly", "moderately", "severely", "very severely"][Math.ceil((metric.score / 100) * 5) - 1]} penalized. More hazards and narrow fairways increase the cost of errant shots.`,
+      contributingFactors: metric.dataPoints.join("\n"),
+    }
+  }
+
+  private static explainBirdiePotential(metric: { score: number; dataPoints: string[] }): ExplanationRecord {
+    return {
+      metric: "birdiePotential",
+      title: "Birdie Potential",
+      summary: `Birdie opportunities are ${ ["very rare", "limited", "moderate", "abundant", "very abundant"][Math.ceil((metric.score / 100) * 5) - 1]}. Reachable Par 5s and short Par 4s provide birdie chances for skilled players.`,
+      contributingFactors: metric.dataPoints.join("\n"),
+    }
+  }
+
+  private static explainScoringVolatility(metric: { score: number; dataPoints: string[] }): ExplanationRecord {
+    return {
+      metric: "scoringVolatility",
+      title: "Scoring Volatility",
+      summary: `Scoring volatility is ${ ["very consistent", "consistent", "moderate", "volatile", "very volatile"][Math.ceil((metric.score / 100) * 5) - 1]}. High variance in hole difficulty and environmental factors increase day-to-day scoring variance.`,
       contributingFactors: metric.dataPoints.join("\n"),
     }
   }

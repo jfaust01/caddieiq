@@ -74,103 +74,80 @@ export class CourseIntelligenceService {
     explanations: ExplanationRecord[],
     tags: CourseInsightTag[],
   ): Promise<void> {
+    // Build metric persistence object
+    const metricData = {
+      // Core difficulty metrics
+      overallDifficultyScore: metrics.difficulty.score,
+      overallDifficultyStars: metrics.difficulty.stars,
+      scoringDifficultyScore: metrics.scoringDifficulty.score,
+      scoringDifficultyStars: metrics.scoringDifficulty.stars,
+      bogeyRiskScore: metrics.bogeyRisk.score,
+      bogeyRiskStars: metrics.bogeyRisk.stars,
+      varianceScore: metrics.variance.score,
+      varianceStars: metrics.variance.stars,
+
+      // Strategy metrics
+      drivingImportanceScore: metrics.drivingImportance.score,
+      drivingImportanceStars: metrics.drivingImportance.stars,
+      approachImportanceScore: metrics.approachImportance.score,
+      approachImportanceStars: metrics.approachImportance.stars,
+      shortGameImportanceScore: metrics.shortGameImportance.score,
+      shortGameImportanceStars: metrics.shortGameImportance.stars,
+      puttingImportanceScore: metrics.puttingImportance.score,
+      puttingImportanceStars: metrics.puttingImportance.stars,
+
+      // Environmental & scoring
+      windSensitivityScore: metrics.windSensitivity.score,
+      windSensitivityStars: metrics.windSensitivity.stars,
+      penaltySeverityScore: metrics.penaltySeverity.score,
+      penaltySeverityStars: metrics.penaltySeverity.stars,
+      birdiePotentialScore: metrics.birdiePotential.score,
+      birdiePotentialStars: metrics.birdiePotential.stars,
+      scoringVolatilityScore: metrics.scoringVolatility.score,
+      scoringVolatilityStars: metrics.scoringVolatility.stars,
+
+      // Fairway & approach
+      fairwayWidthScore: metrics.fairwayWidth.score,
+      fairwayWidthStars: metrics.fairwayWidth.stars,
+      ironDifficultyScore: metrics.ironDifficulty.score,
+      ironDifficultyStars: metrics.ironDifficulty.stars,
+      puttingDifficultyScore: metrics.puttingDifficulty.score,
+      puttingDifficultyStars: metrics.puttingDifficulty.stars,
+
+      // Hazard metrics
+      waterHazardRiskScore: metrics.waterHazardRisk.score,
+      waterHazardRiskStars: metrics.waterHazardRisk.stars,
+      sandHazardRiskScore: metrics.sandHazardRisk.score,
+      sandHazardRiskStars: metrics.sandHazardRisk.stars,
+      treeRiskScore: metrics.treeRisk.score,
+      treeRiskStars: metrics.treeRisk.stars,
+      outOfBoundsRiskScore: metrics.outOfBoundsRisk.score,
+      outOfBoundsRiskStars: metrics.outOfBoundsRisk.stars,
+      hazardImpactScore: metrics.hazardImpact.score,
+      hazardImpactStars: metrics.hazardImpact.stars,
+
+      // Characteristics
+      elevationImpactScore: metrics.elevationImpact.score,
+      elevationImpactStars: metrics.elevationImpact.stars,
+      weatherFactorScore: metrics.weatherFactor.score,
+      weatherFactorStars: metrics.weatherFactor.stars,
+      playabilityScore: metrics.playability.score,
+      playabilityStars: metrics.playability.stars,
+      uniquenessScore: metrics.uniqueness.score,
+      uniquenessStars: metrics.uniqueness.stars,
+
+      // Metadata
+      dataCompleteness: metrics.dataCompleteness,
+      courseTags: tags,
+      calculationVersion: "v1",
+      calculatedAt: new Date(),
+    }
+
     // Upsert course intelligence record
     const intelligence = await prisma.courseIntelligence.upsert({
       where: { courseId },
-      create: {
-        courseId,
-        // Difficulty metrics
-        overallDifficultyScore: metrics.difficulty.score,
-        overallDifficultyStars: metrics.difficulty.stars,
-        scoringDifficultyScore: metrics.scoringDifficulty.score,
-        scoringDifficultyStars: metrics.scoringDifficulty.stars,
-        bogeyRiskScore: metrics.bogeyRisk.score,
-        bogeyRiskStars: metrics.bogeyRisk.stars,
-        varianceScore: metrics.variance.score,
-        varianceStars: metrics.variance.stars,
-
-        // Fairway & approach metrics
-        fairwayWidthScore: metrics.fairwayWidth.score,
-        fairwayWidthStars: metrics.fairwayWidth.stars,
-        ironDifficultyScore: metrics.ironDifficulty.score,
-        ironDifficultyStars: metrics.ironDifficulty.stars,
-        puttingDifficultyScore: metrics.puttingDifficulty.score,
-        puttingDifficultyStars: metrics.puttingDifficulty.stars,
-
-        // Hazard metrics
-        waterHazardRiskScore: metrics.waterHazardRisk.score,
-        waterHazardRiskStars: metrics.waterHazardRisk.stars,
-        sandHazardRiskScore: metrics.sandHazardRisk.score,
-        sandHazardRiskStars: metrics.sandHazardRisk.stars,
-        treeRiskScore: metrics.treeRisk.score,
-        treeRiskStars: metrics.treeRisk.stars,
-        outOfBoundsRiskScore: metrics.outOfBoundsRisk.score,
-        outOfBoundsRiskStars: metrics.outOfBoundsRisk.stars,
-        hazardImpactScore: metrics.hazardImpact.score,
-        hazardImpactStars: metrics.hazardImpact.stars,
-
-        // Characteristics
-        elevationImpactScore: metrics.elevationImpact.score,
-        elevationImpactStars: metrics.elevationImpact.stars,
-        weatherFactorScore: metrics.weatherFactor.score,
-        weatherFactorStars: metrics.weatherFactor.stars,
-        playabilityScore: metrics.playability.score,
-        playabilityStars: metrics.playability.stars,
-        uniquenessScore: metrics.uniqueness.score,
-        uniquenessStars: metrics.uniqueness.stars,
-
-        // Metadata
-        dataCompleteness: metrics.dataCompleteness,
-        courseTags: tags,
-        calculationVersion: "v1",
-        calculatedAt: new Date(),
-      },
-      update: {
-        // Difficulty metrics
-        overallDifficultyScore: metrics.difficulty.score,
-        overallDifficultyStars: metrics.difficulty.stars,
-        scoringDifficultyScore: metrics.scoringDifficulty.score,
-        scoringDifficultyStars: metrics.scoringDifficulty.stars,
-        bogeyRiskScore: metrics.bogeyRisk.score,
-        bogeyRiskStars: metrics.bogeyRisk.stars,
-        varianceScore: metrics.variance.score,
-        varianceStars: metrics.variance.stars,
-
-        // Fairway & approach metrics
-        fairwayWidthScore: metrics.fairwayWidth.score,
-        fairwayWidthStars: metrics.fairwayWidth.stars,
-        ironDifficultyScore: metrics.ironDifficulty.score,
-        ironDifficultyStars: metrics.ironDifficulty.stars,
-        puttingDifficultyScore: metrics.puttingDifficulty.score,
-        puttingDifficultyStars: metrics.puttingDifficulty.stars,
-
-        // Hazard metrics
-        waterHazardRiskScore: metrics.waterHazardRisk.score,
-        waterHazardRiskStars: metrics.waterHazardRisk.stars,
-        sandHazardRiskScore: metrics.sandHazardRisk.score,
-        sandHazardRiskStars: metrics.sandHazardRisk.stars,
-        treeRiskScore: metrics.treeRisk.score,
-        treeRiskStars: metrics.treeRisk.stars,
-        outOfBoundsRiskScore: metrics.outOfBoundsRisk.score,
-        outOfBoundsRiskStars: metrics.outOfBoundsRisk.stars,
-        hazardImpactScore: metrics.hazardImpact.score,
-        hazardImpactStars: metrics.hazardImpact.stars,
-
-        // Characteristics
-        elevationImpactScore: metrics.elevationImpact.score,
-        elevationImpactStars: metrics.elevationImpact.stars,
-        weatherFactorScore: metrics.weatherFactor.score,
-        weatherFactorStars: metrics.weatherFactor.stars,
-        playabilityScore: metrics.playability.score,
-        playabilityStars: metrics.playability.stars,
-        uniquenessScore: metrics.uniqueness.score,
-        uniquenessStars: metrics.uniqueness.stars,
-
-        // Metadata
-        dataCompleteness: metrics.dataCompleteness,
-        courseTags: tags,
-        calculatedAt: new Date(),
-      },
+      create: { courseId, ...metricData },
+      update: metricData,
     })
 
     // Upsert explanations (delete old and create new)
