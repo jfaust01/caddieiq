@@ -6,11 +6,24 @@ interface HoleBreakdownProps {
     par: number
     yardage: number
     handicap: number
-  }>
+  }> | null
 }
 
 export function HoleBreakdown({ holes }: HoleBreakdownProps) {
-  if (!holes || holes.length === 0) return null
+  if (!holes || holes.length === 0) {
+    return (
+      <Card className="p-6">
+        <h3 className="text-sm font-semibold mb-2">Hole-by-Hole Breakdown</h3>
+        <p className="text-xs text-muted-foreground">
+          Hole-by-hole course data has not been imported.
+        </p>
+        <p className="text-xs text-muted-foreground mt-2">
+          <strong>Expected source:</strong> GolfCourseAPI / course_holes table<br/>
+          <strong>Status:</strong> Awaiting data import
+        </p>
+      </Card>
+    )
+  }
 
   const frontNine = holes.filter((h) => h.number <= 9)
   const backNine = holes.filter((h) => h.number > 9)
