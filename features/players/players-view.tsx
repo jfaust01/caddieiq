@@ -1,15 +1,14 @@
-import { PageHeader } from '@/features/ui/shared'
+import { PageHeader } from '@/components/shared/page-header'
 import { PageShell } from '@/components/shared/page-shell'
 import { PlayerDirectory } from '@/features/players/components/player-directory'
-import { Users } from 'lucide-react'
 
 export function PlayersView() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="Data"
         title="Players"
-        description="Browse the player universe. Search, filter, and explore form, rankings, and statistics."
-        icon={<Users className="h-6 w-6" />}
+        description="Browse the player universe that powers your models and rankings. Search, filter, and open a profile to explore form, rankings, and statistics."
       />
       <PlayerDirectory />
     </PageShell>
