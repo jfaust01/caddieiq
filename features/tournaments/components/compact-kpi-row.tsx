@@ -12,7 +12,7 @@ interface CompactKpiRowProps {
 
 /**
  * Compact KPI row (5 metrics) for the tournament overview.
- * Shows: Field Size, Top Player by Rank, Field Strength, Rated Players, Status
+ * Shows: Field Size, FedEx Points, Field Strength, Cut Line, Status
  * 
  * Uses MetricGrid + MetricItem for clean spacing without individual cards.
  */
@@ -21,12 +21,15 @@ export function CompactKpiRow({
   field,
   fieldReport,
 }: CompactKpiRowProps) {
-  // Get top-ranked player from field analytics
-  const topPlayer = field?.rankingLeaders?.topRanked?.[0]
-  const topPlayerScore = topPlayer ? Math.round(topPlayer.score) : null
   const fieldSize = field?.size ?? 0
-  const ratedPlayers = field?.rankingLeaders?.ratedPlayers ?? 0
+  const fedExPoints = tournament?.fedExPoints ?? null
+  const cutLine = tournament?.cutLine !== null ? tournament.cutLine : null
+  const cutAfter = tournament?.cutAfterRounds ?? null
   const tourName = tournament?.tour?.code ?? 'Event'
+  
+  // Calculate field strength as % of field with world ranking
+  const worldRankedCount = field?.rankingLeaders?.ratedPlayers ?? 0
+  const fieldStrengthPercent = fieldSize > 0 ? Math.round((worldRankedCount / fieldSize) * 100) : 0
 
   return (
     <MetricGrid columns="auto">
@@ -37,25 +40,25 @@ export function CompactKpiRow({
         hint="players"
       />
 
-      {/* Top Ranked Player */}
+      {/* FedEx Points */}
       <MetricItem
-        label="Top Ranked"
-        value={topPlayer?.playerName ?? '—'}
-        hint="in field"
+        label="FedEx Points"
+        value={fedExPoints ?? '—'}
+        hint="available"
       />
 
-      {/* Rating of Top Player */}
+      {/* Field Strength */}
       <MetricItem
-        label="Score"
-        value={topPlayerScore !== null ? topPlayerScore : '—'}
-        hint="rating"
+        label="Strength"
+        value={`${fieldStrengthPercent}%`}
+        hint="ranked"
       />
 
-      {/* Rated Players */}
+      {/* Cut Line or Cut Rule */}
       <MetricItem
-        label="Rated"
-        value={ratedPlayers}
-        hint="players"
+        label={cutLine !== null ? 'Cut Line' : 'Cut Rule'}
+        value={cutLine !== null ? (cutLine >= 0 ? `+${cutLine}` : `${cutLine}`) : (cutAfter ? `${cutAfter}R` : '—')}
+        hint={cutLine !== null ? 'score' : 'rounds'}
       />
 
       {/* Tournament Status */}
