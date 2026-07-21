@@ -17,15 +17,7 @@ interface TournamentDetailTabsProps {
   }>
 }
 
-/** Tabs still awaiting their data source. */
-const RESERVED_TABS = [
-  { value: 'course', label: 'Course' },
-  { value: 'weather', label: 'Weather' },
-  { value: 'analytics', label: 'Analytics' },
-  { value: 'draftkings', label: 'DraftKings' },
-  { value: 'betting', label: 'Betting' },
-  { value: 'history', label: 'History' },
-] as const
+/** No reserved tabs — all tabs are passed via additionalTabs. */
 
 /**
  * Segmented quick-navigation for the tournament research hub. Overview tab now
@@ -37,11 +29,8 @@ export function TournamentDetailTabs({
   overview,
   additionalTabs = [],
 }: TournamentDetailTabsProps) {
-  // Merge additional tabs with reserved tabs, prioritizing additional
-  const tabsToShow = [
-    ...additionalTabs.filter((t) => !RESERVED_TABS.some((r) => r.value === t.value)),
-    ...RESERVED_TABS.filter((t) => !additionalTabs.some((a) => a.value === t.value)),
-  ]
+  // Use only the provided additional tabs
+  const tabsToShow = additionalTabs
 
   return (
     <Tabs defaultValue="overview" className="gap-4">
