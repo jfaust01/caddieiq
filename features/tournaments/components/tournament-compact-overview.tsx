@@ -1,7 +1,6 @@
 'use client'
 
 import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
-import { CompactKpiRow } from './compact-kpi-row'
 import { TournamentOverview } from './tournament-overview'
 import { TournamentField } from './tournament-field'
 
@@ -12,10 +11,7 @@ interface TournamentCompactOverviewProps {
 }
 
 /**
- * Compact tournament overview dashboard (target: 2-3 viewport heights).
- * Combines KPIs, tournament details, and field information.
- *
- * Fantasy-focused content (Top Ranked, Value Plays) moved to DFS tab.
+ * Tournament overview displaying event metadata and field information.
  */
 export function TournamentCompactOverview({
   tournament,
@@ -23,22 +19,11 @@ export function TournamentCompactOverview({
   fieldReport,
 }: TournamentCompactOverviewProps) {
   const hasField = field.size > 0
-  const courseRef = tournament.courseRef
 
   return (
     <div className="flex flex-col gap-6">
-      {/* KPI Row: 12+ metric cards */}
+      {/* Tournament Overview Card (event metadata) */}
       <div>
-        <CompactKpiRow
-          tournament={tournament}
-          field={field}
-          fieldReport={fieldReport}
-        />
-      </div>
-
-      {/* Full Tournament Overview Card (event metadata) */}
-      <div className="pt-2 border-t border-border">
-        <h3 className="text-sm font-semibold mb-4">Event Details</h3>
         <TournamentOverview tournament={tournament} />
       </div>
 
