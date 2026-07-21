@@ -103,13 +103,13 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
 
   return (
     <tr className="border-b border-border hover:bg-muted/40 transition-colors">
-      {/* POS */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground w-12">
+      {/* POS - STICKY */}
+      <td className="sticky left-0 z-10 px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground w-16 bg-background hover:bg-muted/40">
         {positionDisplay}
       </td>
 
-      {/* PLAYER */}
-      <td className="px-3 py-3 text-left text-sm font-medium">
+      {/* PLAYER - STICKY */}
+      <td className="sticky left-16 z-10 px-3 py-3 text-left text-sm font-medium w-48 bg-background hover:bg-muted/40">
         <div className="flex items-center gap-2 min-w-0">
           <Link
             href={`/players/${entrant.playerId}`}
@@ -121,8 +121,8 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
         </div>
       </td>
 
-      {/* TOTAL */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums">
+      {/* TOTAL - STICKY */}
+      <td className="sticky left-64 z-10 px-3 py-3 text-right text-sm font-mono tabular-nums w-20 bg-background hover:bg-muted/40 border-r border-border/50">
         {totalDisplay}
       </td>
 
@@ -374,13 +374,13 @@ export function TournamentField({ field }: TournamentFieldProps) {
           description="Try a different search term or clear the status filter."
         />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto border rounded-md">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="border-b-2 border-border bg-muted/40">
-                <th className="px-3 py-3 text-right text-xs font-semibold text-muted-foreground w-12">POS</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold">PLAYER</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold">TOTAL</th>
+              <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
+                <th className="sticky left-0 z-20 px-3 py-3 text-right text-xs font-semibold text-muted-foreground w-16 bg-muted/40">POS</th>
+                <th className="sticky left-16 z-20 px-3 py-3 text-left text-xs font-semibold w-48 bg-muted/40">PLAYER</th>
+                <th className="sticky left-64 z-20 px-3 py-3 text-right text-xs font-semibold w-20 bg-muted/40 border-r border-border/50">TOTAL</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">THRU</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">ROUND</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R1</th>
