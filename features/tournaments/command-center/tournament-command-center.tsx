@@ -254,12 +254,12 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
             content: <TournamentDfsLeaderboards field={dfsField} />,
           },
           {
-            value: 'ai-coach',
-            label: 'AI Coach',
+            value: 'caddieiq',
+            label: 'CaddieIQ',
             content: (
               <CommandCenterWidget
-                id="ai-coach-full"
-                title="AI Coach"
+                id="caddieiq"
+                title="CaddieIQ"
                 subtitle="Explainable plays from the value & fit engines"
                 icon={<Target className="size-4 text-primary" aria-hidden />}
               >
