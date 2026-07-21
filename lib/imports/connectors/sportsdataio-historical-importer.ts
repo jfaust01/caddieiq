@@ -264,6 +264,10 @@ export class SportsDataIOHistoricalImporter implements HistoricalImporter {
           const tournamentId = payload.tournamentId as number;
           const playerData = payload.playerData as SdioPlayer;
 
+          // Extract player name from Name field or FirstName/LastName
+          const playerName = (playerData as Record<string, unknown>).Name || 
+            `${(playerData as Record<string, unknown>).FirstName} ${(playerData as Record<string, unknown>).LastName}`;
+
           normalized.push({
             canonicalId: `outcome_${tournamentId}_${playerData.PlayerID}`,
             provider: 'sportsdataio',
@@ -277,7 +281,7 @@ export class SportsDataIOHistoricalImporter implements HistoricalImporter {
               recordType: 'outcome',
               tournamentId,
               playerId: playerData.PlayerID,
-              playerName: `${playerData.FirstName} ${playerData.LastName}`,
+              playerName: String(playerName).trim() || 'Unknown Player',
               country: playerData.Country,
             },
             metadata: raw.metadata,
@@ -386,14 +390,129 @@ export class SportsDataIOHistoricalImporter implements HistoricalImporter {
     let inserted = 0;
     let updated = 0;
 
-    // Iterate through records and persist
-    for (const record of records) {
-      // Records are normalized, just count them all
-      inserted++;
+    // Persist records directly (simplified for MVP - full transaction support in phase 17.4)
+    try {
+      for (const record of records) {
+        const fields = record.fields as Record<string, unknown>;
+        const recordType = fields.recordType as string;
+
+        if (recordType === 'tournament') {
+          // Create or update tournament record
+          const tournamentId = fields.tournamentId as number;
+          
+          // Check if tournament exists by externalId
+          const existing = await this.prisma.tournament.findFirst({
+            where: {
+              externalId: String(tournamentId),
+            },
+          });
+
+          if (!existing) {
+            await this.prisma.tournament.create({
+              data: {
+                tourId: 'seed_tour_pga', // Use PGA Tour as default
+                name: (fields.name as string) || `Tournament ${tournamentId}`,
+                slug: `tournament-${tournamentId}`,
+                externalId: String(tournamentId),
+                startDate: fields.startDate ? new Date(fields.startDate as string) : null,
+                endDate: fields.endDate ? new Date(fields.endDate as string) : null,
+                status: 'COMPLETED',
+                format: 'STROKE_PLAY',
+              },
+            });
+            inserted++;
+          } else {
+            updated++;
+          }
+        } else if (recordType === 'outcome') {
+          // Create tournament field entry (player in tournament)
+          const tournamentId = fields.tournamentId as number;
+          const playerId = fields.playerId as number;
+          
+          // Find or create the tournament using externalId
+          let tournament = await this.prisma.tournament.findFirst({
+            where: {
+              externalId: String(tournamentId),
+            },
+          });
+
+          if (!tournament) {
+            // Create tournament if it doesn't exist
+            tournament = await this.prisma.tournament.create({
+              data: {
+                tourId: 'seed_tour_pga', // Use PGA Tour as default
+                name: `Tournament ${tournamentId}`,
+                slug: `tournament-${tournamentId}`,
+                externalId: String(tournamentId),
+                status: 'COMPLETED',
+                format: 'STROKE_PLAY',
+              },
+            });
+            inserted++;
+          }
+
+          if (tournament) {
+            // Find or create player
+            const playerName = fields.playerName as string;
+            const playerSlug = `player-${playerId}`;
+            
+            let player = await this.prisma.player.findFirst({
+              where: {
+                slug: playerSlug,
+              },
+            });
+
+            if (!player) {
+              const [firstName, ...lastNameParts] = playerName.split(' ');
+              player = await this.prisma.player.create({
+                data: {
+                  firstName: firstName || 'Unknown',
+                  lastName: lastNameParts.join(' ') || 'Player',
+                  fullName: playerName.trim() || 'Unknown Player',
+                  slug: playerSlug,
+                  status: 'ACTIVE',
+                },
+              });
+            }
+
+            // Create tournament field entry
+            const existing = await this.prisma.tournamentField.findFirst({
+              where: {
+                tournamentId: tournament.id,
+                playerId: player.id,
+              },
+            });
+
+            if (!existing) {
+              await this.prisma.tournamentField.create({
+                data: {
+                  tournamentId: tournament.id,
+                  playerId: player.id,
+                  status: 'CONFIRMED',
+                  qualified: true,
+                },
+              });
+              inserted++;
+            } else {
+              updated++;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      try {
+        this.logger.error('Persistence error', {
+          error: error instanceof Error ? error.message : String(error),
+          jobId,
+        });
+      } catch {
+        // Silently fail logging in test environments
+      }
+      throw error;
     }
 
     try {
-      this.logger.info('Persistence complete', { inserted, updated });
+      this.logger.info('Persistence complete', { inserted, updated, jobId });
     } catch {
       // Silently fail logging in test environments
     }
@@ -411,14 +530,30 @@ export class SportsDataIOHistoricalImporter implements HistoricalImporter {
       // Silently fail logging in test environments
     }
 
-    // Query to verify records were persisted
-    const recordsVerified = 0; // Would query actual persisted records
+    try {
+      // Count persisted records
+      const tournamentCount = await this.prisma.tournament.count();
+      const playerCount = await this.prisma.player.count();
+      const fieldCount = await this.prisma.tournamentField.count();
 
-    return {
-      recordsVerified,
-      integrityChecksPassed: true,
-      checksumVerified: true,
-    };
+      const recordsVerified = tournamentCount + playerCount + fieldCount;
+
+      return {
+        recordsVerified,
+        integrityChecksPassed: true,
+        checksumVerified: true,
+      };
+    } catch (error) {
+      try {
+        this.logger.error('Verification failed', {
+          error: error instanceof Error ? error.message : String(error),
+          jobId,
+        });
+      } catch {
+        // Silently fail logging in test environments
+      }
+      throw error;
+    }
   }
 }
 

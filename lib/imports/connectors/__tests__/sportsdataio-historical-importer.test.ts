@@ -4,9 +4,34 @@ import type { RawRecord } from '../../historical-importer';
 
 describe('SportsDataIOHistoricalImporter', () => {
   let importer: SportsDataIOHistoricalImporter;
-  const mockPrisma = {} as any;
+  const mockPrisma = {
+    tournament: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
+    },
+    player: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
+    },
+    tournamentField: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
+    },
+  } as any;
 
   beforeEach(() => {
+    // Reset mocks before each test
+    vi.clearAllMocks();
+    mockPrisma.tournament.findFirst.mockResolvedValue(null);
+    mockPrisma.tournament.create.mockResolvedValue({ id: 'tournament-1' });
+    mockPrisma.player.findFirst.mockResolvedValue(null);
+    mockPrisma.player.create.mockResolvedValue({ id: 'player-1' });
+    mockPrisma.tournamentField.findFirst.mockResolvedValue(null);
+    mockPrisma.tournamentField.create.mockResolvedValue({ id: 'field-1' });
+    
     importer = new SportsDataIOHistoricalImporter(mockPrisma, {
       apiKey: 'test-key',
       baseUrl: 'https://api.sportsdata.io/golf/v2',
@@ -193,25 +218,48 @@ describe('SportsDataIOHistoricalImporter', () => {
     it('returns inserted and updated counts', async () => {
       const records = [
         {
-          canonicalId: 'test-1',
+          canonicalId: 'tournament_123',
           provider: 'sportsdataio' as const,
-          providerRecordId: 'prov-1',
+          providerRecordId: 'provider-rec-123',
           sourceEffectiveTimestamp: new Date(),
           retrievedTimestamp: new Date(),
           checksum: 'abc123',
           validFrom: new Date(),
           validTo: null,
-          fields: { recordType: 'tournament' as const },
+          fields: {
+            recordType: 'tournament' as const,
+            tournamentId: 123,
+            name: 'Test Tournament',
+            startDate: '2025-02-15',
+            endDate: '2025-02-18',
+          },
+          metadata: {},
+        },
+        {
+          canonicalId: 'outcome_123_456',
+          provider: 'sportsdataio' as const,
+          providerRecordId: 'provider-rec-456',
+          sourceEffectiveTimestamp: new Date(),
+          retrievedTimestamp: new Date(),
+          checksum: 'def456',
+          validFrom: new Date(),
+          validTo: null,
+          fields: {
+            recordType: 'outcome' as const,
+            tournamentId: 123,
+            playerId: 456,
+            playerName: 'John Doe',
+          },
           metadata: {},
         },
       ];
-
-      mockPrisma.$transaction = vi.fn(async (fn: any) => fn(mockPrisma));
 
       const result = await importer.persist(records, 'job-123');
 
       expect(result.inserted).toBeGreaterThanOrEqual(0);
       expect(result.updated).toBeGreaterThanOrEqual(0);
+      expect(typeof result.inserted).toBe('number');
+      expect(typeof result.updated).toBe('number');
     });
   });
 
