@@ -24,6 +24,7 @@ const RESERVED_TABS = [
   { value: 'analytics', label: 'Analytics' },
   { value: 'draftkings', label: 'DraftKings' },
   { value: 'betting', label: 'Betting' },
+  { value: 'history', label: 'History' },
 ] as const
 
 /**
