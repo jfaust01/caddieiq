@@ -5,7 +5,6 @@ import type { WeatherIntelligence } from '@/lib/weather-intelligence'
 import type { CourseIntelligence } from '@/features/courses/types'
 import { CompactKpiRow } from './compact-kpi-row'
 import { CompactLeaderboard } from './compact-leaderboard'
-import { CompactCourseFitSummary } from './compact-course-fit-summary'
 import { CompactWeatherSummary } from './compact-weather-summary'
 import { CompactDfsSummary } from './compact-dfs-summary'
 import { CompactCourseHistoryRow } from './compact-course-history-row'
@@ -37,7 +36,6 @@ export function TournamentCompactOverview({
 }: TournamentCompactOverviewProps) {
   const hasField = field.size > 0
   const courseRef = tournament.courseRef
-  const topRankedLeaders = field.rankingLeaders?.topRanked
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,13 +48,12 @@ export function TournamentCompactOverview({
         />
       </div>
 
-      {/* Two-column grid: Leaderboard + Top Course Fits */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* Top Ranked Players */}
+      <div>
         <CompactLeaderboard
           field={field}
           tournamentId={tournament.id}
         />
-        <CompactCourseFitSummary leaders={topRankedLeaders} />
       </div>
 
       {/* Two-column grid: Weather + DFS Summary */}
