@@ -2,8 +2,9 @@
 
 import { Trophy } from 'lucide-react'
 
-import { EmptyState, PageHeader } from '@/features/ui/shared'
+import { EmptyState } from '@/components/shared/empty-state'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/shared/page-header'
 import { PageShell } from '@/components/shared/page-shell'
 import { TournamentPagination } from '@/features/tournaments/components/tournament-pagination'
 
@@ -39,8 +40,7 @@ export function RankingsView({ view }: RankingsViewProps) {
     <PageShell>
       <PageHeader
         title="Rankings"
-        description="Leaderboards ordered by the same analytics shown across the platform."
-        icon={<Trophy className="h-6 w-6" />}
+        description="CaddieIQ's leaderboards — every player ordered by the same season-normalized analytics shown across the platform."
       />
 
       <RankingTabs activeSlug={view.slug} />
