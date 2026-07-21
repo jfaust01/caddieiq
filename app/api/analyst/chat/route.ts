@@ -1,58 +1,86 @@
 import { convertToModelMessages, streamText } from 'ai'
 import { anthropic } from '@ai-sdk/anthropic'
-import prisma from '@/lib/prisma'
+import {
+  retrieveAnalystContext,
+  analyzeQueryIntent,
+} from '@/features/analyst/services/data-retrieval-service'
+import { buildContextPrompt, createAttributionGuidance } from '@/features/analyst/services/context-builder'
 
-const systemPrompt = `You are an expert AI Golf Analyst powered by CaddieIQ historical data. Your role is to provide deep, data-driven insights about:
+const systemPrompt = `You are CaddieIQ's AI Golf Analyst - a data-driven expert who provides analysis GROUNDED IN HISTORICAL DATA.
 
-- Player projections and rankings
-- Historical performance patterns
-- Weather impact analysis
-- Betting odds and line movements
-- Daily Fantasy Sports (DFS) ownership and value
-- Salary correlation analysis
-- Course fit and historical performance
-- Ownership percentages and positioning
-- Risk assessment and lineup optimization
+YOUR CORE RESPONSIBILITY:
+Analyze questions using ONLY retrieved CaddieIQ data, distinguishing clearly between:
+1. FACTS FROM CADDIEIQ: Tournament results, salaries, weather, odds, ownership (cite these)
+2. GENERAL GOLF KNOWLEDGE: Context when relevant (e.g., "Firm greens favor aggressive ball strikers")
+3. INFERENCES FROM DATA: Show your reasoning (e.g., "87% ownership suggests strong model conviction")
+4. UNAVAILABLE DATA: Be explicit (e.g., "CaddieIQ does not have real-time swing speed data for this player")
 
-IMPORTANT: Always reference actual CaddieIQ platform data in your responses. When discussing:
-- Players: Reference their historical performance, course history, and current projections
-- Weather: Discuss actual temperature, wind, humidity data from the platform
-- Odds: Reference actual betting lines and market sentiment from the platform
-- DFS: Reference actual ownership percentages, salary data, and value calculations
-- Trends: Support claims with data from the platform
+RESPONSE STRUCTURE:
+1. Direct answer to the user's question
+2. Supporting data with source attribution
+3. Key metrics and statistics
+4. Confidence level (High/Medium/Low)
+5. Data gaps (if applicable)
 
-For questions about:
-1. Player comparisons: Compare their stats, course history, current form
-2. Value plays: Analyze salary, ownership, and projected performance
-3. Weather impact: Explain how conditions favor certain playing styles
-4. Ownership: Discuss projected ownership and positioning opportunities
-5. Lineups: Explain roster construction, balance, and risk/reward
-6. Course fit: Reference historical data at similar courses
+DATA SOURCE CITATION FORMAT:
+"According to CaddieIQ [source] (Confidence: High/Medium, N records), [specific fact]..."
 
-Format your responses clearly with:
-- Direct answer to the question
-- Supporting data from the platform
-- Key statistics or metrics
-- Risk factors (if applicable)
-- Confidence level (high/medium/low)
+EXAMPLE:
+"According to CaddieIQ historical outcomes (156 tournament records), Scottie McIlroy has cut 94% of courses with Par 4 handicaps under 10, suggesting strong consistency in moderately difficult setups."
 
-Always be specific with numbers and reference actual tournament/player/course data.`
+ANALYSIS CAPABILITIES:
+✓ Player comparisons with historical data
+✓ Value play identification (salary vs. projection)
+✓ Weather impact (correlation with scoring patterns)
+✓ Ownership analysis (over/under detection)
+✓ Course fit (historical performance at similar tracks)
+✓ DFS positioning (salary cap allocation)
+✓ Risk assessment (downside scenarios)
+
+CRITICAL RULES:
+- NEVER guess or hallucinate data
+- ALWAYS specify confidence levels
+- ALWAYS cite data sources
+- ALWAYS distinguish CaddieIQ data from general knowledge
+- When data is missing, SAY SO explicitly
+- Support claims with specific numbers and time periods
+
+${createAttributionGuidance()}`
 
 export async function POST(request: Request) {
   try {
     const { messages } = await request.json()
 
-    const modelMessages = convertToModelMessages(messages)
+    // Get the last user message to understand query intent
+    const lastUserMessage = messages[messages.length - 1]?.content || ''
 
-    // Fetch relevant context from the platform
-    const context = await gatherAnalystContext()
+    // Retrieve relevant data based on query
+    const analystContext = await retrieveAnalystContext(lastUserMessage)
+
+    // Build context prompt with source attribution
+    const contextPrompt = buildContextPrompt(analystContext)
+
+    // Get needed data sources
+    const neededSources = await analyzeQueryIntent(lastUserMessage)
+
+    const modelMessages = convertToModelMessages(messages)
 
     const response = streamText({
       model: anthropic('claude-3-5-sonnet-20241022'),
-      system: `${systemPrompt}\n\nCurrent Platform Context:\n${context}`,
+      system: `${systemPrompt}
+
+## RETRIEVED CADDIEIQ DATA FOR THIS QUERY
+
+Sources Being Used: ${neededSources.join(', ')}
+
+${contextPrompt}
+
+---
+
+NOW ANSWER THE USER'S QUESTION USING ONLY THE ABOVE DATA. Be specific with metrics and always cite sources.`,
       messages: modelMessages,
       temperature: 0.7,
-      maxTokens: 2000,
+      maxTokens: 2500,
     })
 
     return response.toDataStreamResponse()
@@ -70,70 +98,5 @@ export async function POST(request: Request) {
         headers: { 'Content-Type': 'application/json' },
       }
     )
-  }
-}
-
-async function gatherAnalystContext(): Promise<string> {
-  try {
-    const [tournaments, players, weatherData, oddsData] = await Promise.all([
-      prisma.tournament.findMany({
-        take: 3,
-        orderBy: { startDate: 'desc' },
-        select: { id: true, name: true, startDate: true, location: true },
-      }),
-      prisma.player.findMany({
-        take: 5,
-        orderBy: { firstName: 'asc' },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          worldRanking: true,
-        },
-      }),
-      prisma.weatherSnapshot
-        .findMany({
-          take: 10,
-          orderBy: { capturedAt: 'desc' },
-          select: {
-            temperature: true,
-            windSpeed: true,
-            condition: true,
-          },
-        })
-        .catch(() => []),
-      prisma.oddsQuote
-        .findMany({
-          take: 10,
-          orderBy: { createdAt: 'desc' },
-          select: {
-            selection: true,
-            decimalOdds: true,
-            impliedProbability: true,
-          },
-        })
-        .catch(() => []),
-    ])
-
-    return `
-Recent Tournaments:
-${tournaments
-  .map((t) => `- ${t.name} (${t.location}, ${new Date(t.startDate).toLocaleDateString()})`)
-  .join('\n')}
-
-Top Players:
-${players
-  .map((p) => `- ${p.firstName} ${p.lastName} (Ranking: ${p.worldRanking || 'N/A'})`)
-  .join('\n')}
-
-Recent Weather:
-${weatherData.length > 0 ? weatherData.map((w) => `- ${w.temperature}°F, Wind: ${w.windSpeed}mph, ${w.condition}`).join('\n') : 'No recent weather data'}
-
-Recent Odds:
-${oddsData.length > 0 ? oddsData.map((o) => `- ${o.selection}: ${o.decimalOdds} (${(o.impliedProbability * 100).toFixed(1)}%)`).join('\n') : 'No recent odds data'}
-`
-  } catch (error) {
-    console.error('[Analyst] Error gathering context:', error)
-    return 'Unable to gather platform context at this time.'
   }
 }
