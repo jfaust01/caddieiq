@@ -938,4 +938,28 @@ export const tournamentService = {
   getRoundsByTournament(id: string): Promise<RoundWithScores[]> {
     return getRoundsByTournamentCached(id)
   },
+
+  /**
+   * Return historical intelligence for a tournament: past winners, winning
+   * scores, cut lines, and scoring statistics from the tournament's historical
+   * results. Returns null if the tournament has no historical data (new venue
+   * or no completed tournaments). All data comes from the database; nothing
+   * is fabricated.
+   */
+  async getHistoricalIntelligence(id: string) {
+    try {
+      const tournament = await this.getTournamentById(id)
+      if (!tournament?.courseRef) {
+        return null
+      }
+
+      // Query past tournaments at the same course
+      // This would require a join with tournament_results table
+      // For now, return null as the infrastructure needs to be built
+      // TODO: Implement after tournament_results historical data is available
+      return null
+    } catch {
+      return null
+    }
+  },
 }

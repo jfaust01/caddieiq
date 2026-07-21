@@ -24,6 +24,7 @@ import { TournamentCourseIntelligenceWrapper } from '@/features/tournaments/comp
 import { TournamentCourseInsightsWrapper } from '@/features/tournaments/components/tournament-course-insights-wrapper'
 import { TournamentWeatherIntelligence } from '@/features/tournaments/components/tournament-weather-intelligence'
 import { TournamentOddsIntelligence } from '@/features/tournaments/components/tournament-odds-intelligence'
+import { TournamentHistoricalIntelligence } from '@/features/tournaments/components/tournament-historical-intelligence'
 import { TournamentSkillLeaderboards } from '@/features/tournaments/components/tournament-skill-leaderboards'
 import { TournamentDfsLeaderboards } from '@/features/tournaments/components/tournament-dfs-leaderboards'
 import { TournamentRoundsTable } from '@/features/tournaments/components/tournament-rounds-table'
