@@ -60,10 +60,10 @@ export function CommandCenterHeader({
   return (
     <header 
       ref={headerRef}
-      className="sticky z-40 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6"
+      className="sticky z-40 w-full border-b border-border bg-background/95 px-4 py-2 backdrop-blur-md sm:px-6"
       style={{ top: 'var(--sticky-top, 0px)' } as React.CSSProperties & { '--sticky-top': string }}
     >
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mx-auto max-w-7xl flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <TournamentStatusBadge status={tournament.status} />

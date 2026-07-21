@@ -53,7 +53,7 @@ export function TournamentDetailTabs({
 
   return (
     <Tabs defaultValue="overview" className="gap-4">
-      <div className="overflow-x-auto">
+      <div>
         <TabsList variant="line" className="h-9 gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="field" disabled={!hasField}>
