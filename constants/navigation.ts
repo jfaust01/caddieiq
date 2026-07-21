@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import {
   Activity,
   BarChart3,
+  Brain,
   CircleHelp,
   Database,
   Flag,
@@ -40,6 +41,12 @@ export const primaryNavigation: NavSection[] = [
         href: '/dashboard',
         icon: LayoutDashboard,
         description: 'Your command center for models and picks.',
+      },
+      {
+        title: 'AI Golf Analyst',
+        href: '/analyst',
+        icon: Brain,
+        description: 'Data-driven insights powered by CaddieIQ historical data.',
       },
       {
         title: 'AI Caddie',
