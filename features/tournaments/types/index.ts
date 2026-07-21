@@ -106,6 +106,10 @@ export interface TournamentSummary {
   purse: number | null
   /** Winner of the prior edition, or null when not derivable. */
   defendingChampion: string | null
+  /** Cut line score (strokes under/over par), or null when not applicable. */
+  cutLine: number | null
+  /** Number of rounds played before cut, or null when not applicable. */
+  cutAfterRounds: number | null
   /**
    * Record lifecycle timestamps (ISO strings). Only populated on the detail
    * view; the directory list omits them, so they are optional.

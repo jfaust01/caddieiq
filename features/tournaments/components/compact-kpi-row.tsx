@@ -23,8 +23,10 @@ export function CompactKpiRow({
 }: CompactKpiRowProps) {
   const fieldSize = field?.size ?? 0
   const fedExPoints = tournament?.fedExPoints ?? null
-  const cutLine = tournament?.cutLine !== null ? tournament.cutLine : null
-  const cutAfter = tournament?.cutAfterRounds ?? null
+  // Normalize cut line: handle undefined, null, "undefined", "null", NaN
+  const cutLineValue = tournament?.cutLine
+  const cutLine = typeof cutLineValue === 'number' && Number.isFinite(cutLineValue) ? cutLineValue : null
+  const cutAfter = typeof tournament?.cutAfterRounds === 'number' && Number.isFinite(tournament.cutAfterRounds) ? tournament.cutAfterRounds : null
   const tourName = tournament?.tour?.code ?? 'Event'
   
   // Calculate field strength as % of field with world ranking
