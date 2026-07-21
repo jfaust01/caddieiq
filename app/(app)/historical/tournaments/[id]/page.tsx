@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { TournamentDetailView } from '@/features/historical/components/tournament-detail-view'
 import prismaClient from '@/lib/prisma'
+import TournamentAnalyticsDashboard from '@/features/analytics/components/tournament-analytics-dashboard'
 
 export async function generateMetadata({
   params,
@@ -18,8 +18,8 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${tournament.name} — Historical Tournament`,
-    description: `Historical data, weather, odds, and DFS context for ${tournament.name}`,
+    title: `${tournament.name} — Analytics Dashboard`,
+    description: `AI-powered analytics, player comparisons, and historical data for ${tournament.name}`,
   }
 }
 
@@ -36,5 +36,5 @@ export default async function TournamentDetailPage({
     notFound()
   }
 
-  return <TournamentDetailView tournamentId={params.id} />
+  return <TournamentAnalyticsDashboard tournamentId={params.id} />
 }
