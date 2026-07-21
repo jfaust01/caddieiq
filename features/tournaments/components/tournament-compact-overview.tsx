@@ -15,7 +15,6 @@ interface TournamentCompactOverviewProps {
   tournament: TournamentSummary
   field: TournamentField
   fieldReport?: { cutLine?: string; averageScore?: number } | null
-  fitBoard?: Record<string, unknown> | null
   weather: WeatherIntelligence | null
   dfsField?: Record<string, unknown> | null
   courseProfile: CourseIntelligence | null
@@ -32,13 +31,13 @@ export function TournamentCompactOverview({
   tournament,
   field,
   fieldReport,
-  fitBoard,
   weather,
   dfsField,
   courseProfile,
 }: TournamentCompactOverviewProps) {
   const hasField = field.size > 0
   const courseRef = tournament.courseRef
+  const topRankedLeaders = field.rankingLeaders?.topRanked
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,11 +56,7 @@ export function TournamentCompactOverview({
           field={field}
           tournamentId={tournament.id}
         />
-        <CompactCourseFitSummary
-          fitBoard={fitBoard}
-          hasCourse={Boolean(courseRef)}
-          courseRef={courseRef}
-        />
+        <CompactCourseFitSummary leaders={topRankedLeaders} />
       </div>
 
       {/* Two-column grid: Weather + DFS Summary */}

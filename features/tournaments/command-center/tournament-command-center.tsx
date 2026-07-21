@@ -219,7 +219,6 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
                 tournament={tournament}
                 field={field}
                 fieldReport={fieldReport}
-                fitBoard={fitBoard}
                 weather={weather}
                 dfsField={dfsField}
                 courseProfile={courseProfile}

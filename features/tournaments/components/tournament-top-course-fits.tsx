@@ -1,136 +1,74 @@
 'use client'
 
-import { TrendingUp, Zap, Target, Wind, Trophy } from 'lucide-react'
+import Link from 'next/link'
+import { TrendingUp } from 'lucide-react'
+import type { FieldLeader } from '@/features/tournaments/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { SectionHeader } from '@/components/shared/section-header'
-
-interface CourseFitPlayer {
-  rank: number
-  playerName: string
-  playerId: string
-  fitScore: number
-  drivingFit: number
-  approachFit: number
-  shortGameFit: number
-  puttingFit: number
-  courseHistory: number
-}
 
 interface TournamentTopCourseFitsProps {
-  players: CourseFitPlayer[]
+  /** Real ranking data from field.rankingLeaders.topRanked */
+  leaders: FieldLeader[] | undefined
 }
 
 /**
- * Top 10 Course Fits — shows players with the best fit for this specific course.
- * Displays 10 players with course fit breakdown: driving, approach, short game, putting, history.
- * Replaces empty placeholder sections with valuable actionable data.
+ * Course Fit component using real field ranking data only.
+ *
+ * Data contract:
+ * - Input: leaders from field.rankingLeaders.topRanked (FieldLeader[])
+ * - Source: Analytics Engine ranking calculation
+ * - Fields: rank, playerId, playerName, score (0-100), band
+ * - Handles: empty arrays, undefined gracefully
+ * - No invented data: if leaders empty, shows honest empty state
  */
-export function TournamentTopCourseFits({ players }: TournamentTopCourseFitsProps) {
-  if (!players || players.length === 0) {
-    return null
-  }
-
-  const topPlayers = players.slice(0, 10)
-
-  return (
-    <section aria-label="Top course fits">
-      <SectionHeader
-        title="Top Course Fits"
-        description="Players best suited for this specific course based on their game and history"
-        icon={Target}
-      />
-      
+export function TournamentTopCourseFits({ leaders }: TournamentTopCourseFitsProps) {
+  // Graceful empty state if no leaders
+  if (!leaders || leaders.length === 0) {
+    return (
       <Card>
         <CardHeader className="pb-3">
-          <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground">
-            <div className="col-span-1 text-center">Rank</div>
-            <div className="col-span-3">Player</div>
-            <div className="col-span-2 text-center">Fit Score</div>
-            <div className="col-span-2 text-center flex items-center justify-center gap-1">
-              <Zap className="size-3" />
-              Drive
-            </div>
-            <div className="col-span-2 text-center flex items-center justify-center gap-1">
-              <Trophy className="size-3" />
-              Short
-            </div>
-            <div className="col-span-2 text-center flex items-center justify-center gap-1">
-              <Wind className="size-3" />
-              Hist
-            </div>
-          </div>
+          <CardTitle className="text-base">Course Fit</CardTitle>
         </CardHeader>
-        
-        <CardContent>
-          <div className="space-y-2">
-            {topPlayers.map((player) => (
-              <div
-                key={player.playerId}
-                className="grid grid-cols-12 gap-2 px-3 py-2 rounded hover:bg-muted/30 transition-colors text-sm"
-              >
-                <div className="col-span-1 text-center font-semibold text-muted-foreground">
-                  {player.rank}
-                </div>
-                <div className="col-span-3 truncate font-medium">
-                  {player.playerName}
-                </div>
-                <div className="col-span-2 text-center">
-                  <div className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-chart-1/20 text-chart-1 font-bold text-xs">
-                    {player.fitScore}%
-                  </div>
-                </div>
-                <div className="col-span-2 text-center text-xs">
-                  <div className="h-1.5 w-full bg-muted rounded overflow-hidden">
-                    <div
-                      className="h-full bg-chart-2"
-                      style={{ width: `${Math.min(player.drivingFit, 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground mt-0.5 block">{player.drivingFit}%</span>
-                </div>
-                <div className="col-span-2 text-center text-xs">
-                  <div className="h-1.5 w-full bg-muted rounded overflow-hidden">
-                    <div
-                      className="h-full bg-chart-3"
-                      style={{ width: `${Math.min(player.shortGameFit, 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground mt-0.5 block">{player.shortGameFit}%</span>
-                </div>
-                <div className="col-span-2 text-center text-xs">
-                  <div className="h-1.5 w-full bg-muted rounded overflow-hidden">
-                    <div
-                      className="h-full bg-chart-4"
-                      style={{ width: `${Math.min(player.courseHistory, 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground mt-0.5 block">{player.courseHistory}%</span>
-                </div>
-              </div>
-            ))}
+        <CardContent className="flex flex-col items-center justify-center gap-2 py-8">
+          <TrendingUp className="size-5 text-muted-foreground/50" aria-hidden />
+          <div className="text-center">
+            <p className="text-sm font-medium text-muted-foreground">Field data unavailable</p>
+            <p className="text-xs text-muted-foreground/70">Rankings pending</p>
           </div>
         </CardContent>
       </Card>
-      
-      {/* Legend */}
-      <div className="mt-3 grid grid-cols-4 gap-3 text-xs">
-        <div className="flex items-center gap-2">
-          <div className="size-3 rounded-full bg-chart-2" />
-          <span className="text-muted-foreground">Driving</span>
+    )
+  }
+
+  // Display top 5 leaders only
+  const topFive = leaders.slice(0, 5)
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Course Fit</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {topFive.map((leader) => (
+            <div key={leader.playerId} className="flex items-center justify-between gap-2 pb-2 border-b border-border/50 last:border-b-0 last:pb-0">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className="text-xs font-bold text-muted-foreground w-5 text-center shrink-0">
+                  {leader.rank}
+                </span>
+                <Link
+                  href={`/players/${leader.playerId}`}
+                  className="text-sm font-medium truncate hover:underline text-foreground"
+                >
+                  {leader.playerName}
+                </Link>
+              </div>
+              <div className="text-sm font-bold text-primary shrink-0">
+                {leader.score}
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="size-3 rounded-full bg-chart-3" />
-          <span className="text-muted-foreground">Short Game</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="size-3 rounded-full bg-chart-4" />
-          <span className="text-muted-foreground">History</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="size-3 rounded-full bg-chart-1" />
-          <span className="text-muted-foreground">Overall Fit</span>
-        </div>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   )
 }
