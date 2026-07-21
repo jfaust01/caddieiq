@@ -1,10 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, TriangleAlert, UserX } from 'lucide-react'
+import { ArrowLeft, TriangleAlert, UserX, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageShell } from '@/components/shared/page-shell'
-import { EmptyState } from '@/components/shared/empty-state'
+import { EmptyState, PageHeader, LoadingState } from '@/features/ui/shared'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { usePlayerDetail } from '@/features/players/hooks/use-player-detail'
 import { PlayerHeader } from '@/features/players/components/player-header'
@@ -58,7 +58,7 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
     return (
       <PageShell>
         {backButton}
-        <PlayerDetailSkeleton />
+        <LoadingState message="Loading player profile..." variant="page" />
       </PageShell>
     )
   }
@@ -98,15 +98,15 @@ export function PlayerDetailView({ playerId }: PlayerDetailViewProps) {
       <AiSummaryCard analytics={player.analytics} playerName={player.fullName} />
 
       <Tabs defaultValue="profile-v2">
-        <TabsList>
-          <TabsTrigger value="profile-v2">Profile 2.0</TabsTrigger>
-          <TabsTrigger value="workspace">Workspace</TabsTrigger>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="statistics">Statistics</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="news">News</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
+        <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 w-full">
+          <TabsTrigger value="profile-v2" className="text-xs sm:text-sm">Profile</TabsTrigger>
+          <TabsTrigger value="workspace" className="text-xs sm:text-sm">Workspace</TabsTrigger>
+          <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+          <TabsTrigger value="analytics" className="text-xs sm:text-sm">Analytics</TabsTrigger>
+          <TabsTrigger value="statistics" className="text-xs sm:text-sm">Stats</TabsTrigger>
+          <TabsTrigger value="history" className="text-xs sm:text-sm">History</TabsTrigger>
+          <TabsTrigger value="news" className="text-xs sm:text-sm">News</TabsTrigger>
+          <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile-v2" className="flex flex-col gap-6">

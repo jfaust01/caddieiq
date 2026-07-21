@@ -1,4 +1,5 @@
-import { PageHeader } from '@/components/shared/page-header'
+import { Settings } from 'lucide-react'
+import { PageHeader } from '@/features/ui/shared'
 import { PageShell } from '@/components/shared/page-shell'
 import { WorkspaceForm } from '@/features/settings/workspace-form'
 import { NotificationPreferences } from '@/features/settings/notification-preferences'
@@ -15,13 +16,13 @@ export function SettingsView() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Workspace"
         title="Settings"
         description="Manage your workspace, preferences, and account configuration."
+        icon={<Settings className="h-6 w-6" />}
       />
 
       <Tabs defaultValue="general" className="gap-6">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
