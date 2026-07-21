@@ -1,9 +1,8 @@
 'use client'
 
-import { Users, TrendingUp } from 'lucide-react'
 import type { TournamentSummary } from '@/features/tournaments/types'
 import type { TournamentField } from '@/features/tournaments/types'
-import { Card, CardContent } from '@/components/ui/card'
+import { MetricGrid, MetricItem } from '@/components/shared/surface-primitives'
 
 interface CompactKpiRowProps {
   tournament: TournamentSummary
@@ -14,6 +13,8 @@ interface CompactKpiRowProps {
 /**
  * Compact KPI row (5 metrics) for the tournament overview.
  * Shows: Field Size, Top Player by Rank, Field Strength, Rated Players, Status
+ * 
+ * Uses MetricGrid + MetricItem for clean spacing without individual cards.
  */
 export function CompactKpiRow({
   tournament,
@@ -28,55 +29,41 @@ export function CompactKpiRow({
   const tourName = tournament?.tour?.code ?? 'Event'
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+    <MetricGrid columns="auto">
       {/* Field Size */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="text-xs font-medium text-muted-foreground uppercase tracking-tight">Field</div>
-          <div className="mt-2 flex items-center gap-1">
-            <span className="text-2xl font-bold text-foreground">{fieldSize}</span>
-          </div>
-          <div className="mt-1 text-xs text-muted-foreground">players</div>
-        </CardContent>
-      </Card>
+      <MetricItem
+        label="Field"
+        value={fieldSize}
+        hint="players"
+      />
 
       {/* Top Ranked Player */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="text-xs font-medium text-muted-foreground uppercase tracking-tight">Top Ranked</div>
-          <div className="mt-2 font-semibold text-sm text-foreground truncate leading-tight">{topPlayer?.playerName ?? '—'}</div>
-          <div className="mt-1 text-xs text-muted-foreground">in field</div>
-        </CardContent>
-      </Card>
+      <MetricItem
+        label="Top Ranked"
+        value={topPlayer?.playerName ?? '—'}
+        hint="in field"
+      />
 
       {/* Rating of Top Player */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="text-xs font-medium text-muted-foreground uppercase tracking-tight">Score</div>
-          <div className="mt-2 text-2xl font-bold text-primary">{topPlayerScore !== null ? topPlayerScore : '—'}</div>
-          <div className="mt-1 text-xs text-muted-foreground">rating</div>
-        </CardContent>
-      </Card>
+      <MetricItem
+        label="Score"
+        value={topPlayerScore !== null ? topPlayerScore : '—'}
+        hint="rating"
+      />
 
       {/* Rated Players */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="text-xs font-medium text-muted-foreground uppercase tracking-tight">Rated</div>
-          <div className="mt-2">
-            <span className="text-2xl font-bold text-foreground">{ratedPlayers}</span>
-          </div>
-          <div className="mt-1 text-xs text-muted-foreground">players</div>
-        </CardContent>
-      </Card>
+      <MetricItem
+        label="Rated"
+        value={ratedPlayers}
+        hint="players"
+      />
 
       {/* Tournament Status */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="text-xs font-medium text-muted-foreground uppercase tracking-tight">Tour</div>
-          <div className="mt-2 font-bold text-sm text-foreground">{tourName}</div>
-          <div className="mt-1 text-xs text-muted-foreground">{tournament?.status ?? '—'}</div>
-        </CardContent>
-      </Card>
-    </div>
+      <MetricItem
+        label="Tour"
+        value={tourName}
+        hint={tournament?.status ?? '—'}
+      />
+    </MetricGrid>
   )
 }

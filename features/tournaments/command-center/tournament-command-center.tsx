@@ -155,19 +155,21 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
   }))
 
   return (
-    <PageShell>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-fit text-muted-foreground"
-        nativeButton={false}
-        render={
-          <Link href="/tournaments">
-            <ChevronLeft data-icon="inline-start" />
-            All tournaments
-          </Link>
-        }
-      />
+    <>
+      <PageShell>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-fit text-muted-foreground"
+          nativeButton={false}
+          render={
+            <Link href="/tournaments">
+              <ChevronLeft data-icon="inline-start" />
+              All tournaments
+            </Link>
+          }
+        />
+      </PageShell>
 
       <CommandCenterHeader
         tournament={tournament}
@@ -187,6 +189,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         }
       />
 
+      <PageShell>
       {/* Tournament System Health - DISABLED pending database migration */}
       {/* TODO: Re-enable once CourseDetails table exists
       <CommandCenterWidget
@@ -340,6 +343,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
           />
         </aside>
       </div>
-    </PageShell>
+      </PageShell>
+    </>
   )
 }
