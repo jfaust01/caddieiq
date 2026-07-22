@@ -17,13 +17,9 @@ import {
 } from '@/components/ui/select'
 import { CountryFlag } from '@/features/players/components/country-flag'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
-import { FieldStatusBadge } from '@/features/tournaments/components/field-status-badge'
-import { TournamentPagination } from '@/features/tournaments/components/tournament-pagination'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
-
-const PAGE_SIZE = 20
 
 type SortKey =
   | 'pos-asc'
@@ -135,11 +131,6 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
               <CountryFlag countryCode={entrant.countryCode} className="h-4 w-4 flex-shrink-0" />
             )}
           </div>
-          
-          {/* Status Badge */}
-          <div className="flex-shrink-0">
-            <FieldStatusBadge status={entrant.status} />
-          </div>
         </div>
       </td>
 
@@ -203,7 +194,6 @@ export function TournamentField({ field }: TournamentFieldProps) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
   const [sort, setSort] = useState<SortKey>('pos-asc')
-  const [page, setPage] = useState(1)
 
   // Status options limited to those actually present in this field.
   const statusOptions = useMemo(() => {
@@ -293,10 +283,6 @@ export function TournamentField({ field }: TournamentFieldProps) {
     return result
   }, [field.entrants, query, statusFilter, sort])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safePage = Math.min(page, totalPages)
-  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
-
   // Field genuinely empty (nothing imported yet).
   if (field.size === 0) {
     return (
@@ -315,19 +301,13 @@ export function TournamentField({ field }: TournamentFieldProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchBar
           placeholder="Search players by name..."
-          onSearch={(value) => {
-            setQuery(value)
-            setPage(1)
-          }}
+          onSearch={(value) => setQuery(value)}
           className="sm:flex-1"
         />
         <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto">
           <Select
             value={statusFilter}
-            onValueChange={(value) => {
-              setStatusFilter(value as FieldEntryStatus | 'ALL')
-              setPage(1)
-            }}
+            onValueChange={(value) => setStatusFilter(value as FieldEntryStatus | 'ALL')}
           >
             <SelectTrigger aria-label="Filter by status" className="w-full sm:w-40">
               <SelectValue />
@@ -342,10 +322,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
           </Select>
           <Select
             value={sort}
-            onValueChange={(value) => {
-              setSort(value as SortKey)
-              setPage(1)
-            }}
+            onValueChange={(value) => setSort(value as SortKey)}
           >
             <SelectTrigger aria-label="Sort players" className="w-full sm:w-40">
               <SelectValue />
@@ -367,7 +344,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
           : `${filtered.length} of ${field.size} players`}
       </p>
 
-      {pageItems.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyState
           icon={Users}
           title="No players match your filters"
@@ -396,7 +373,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
               </tr>
             </thead>
             <tbody>
-              {pageItems.map((entrant) => (
+              {filtered.map((entrant) => (
                 <LeaderboardRow key={entrant.playerId} entrant={entrant} />
               ))}
             </tbody>
@@ -404,8 +381,6 @@ export function TournamentField({ field }: TournamentFieldProps) {
           </div>
         </div>
       )}
-
-      <TournamentPagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
     </div>
   )
 }
