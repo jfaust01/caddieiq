@@ -18,6 +18,7 @@ import {
 import { CountryFlag } from '@/features/players/components/country-flag'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
+import { TotalCell } from '@/features/tournaments/components/total-cell'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
@@ -33,6 +34,8 @@ type SortKey =
   | 'proj-desc'
   | 'dk-asc'
   | 'dk-desc'
+  | 'own-asc'
+  | 'own-desc'
   | 'odds-asc'
   | 'odds-desc'
 
@@ -47,6 +50,8 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'proj-desc', label: 'Projection (↓)' },
   { value: 'dk-asc', label: 'DK Points (Low)' },
   { value: 'dk-desc', label: 'DK Points (High)' },
+  { value: 'own-asc', label: 'Ownership (Low)' },
+  { value: 'own-desc', label: 'Ownership (High)' },
   { value: 'odds-asc', label: 'Odds (Favorable)' },
   { value: 'odds-desc', label: 'Odds (Long)' },
 ]
@@ -92,6 +97,11 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
     .toUpperCase()
     .slice(0, 2)
 
+  // Format ownership percentage
+  const ownershipDisplay = entrant.ownershipPercent == null 
+    ? '—' 
+    : entrant.ownershipPercent.toFixed(1) + '%'
+
   return (
     <tr className="group border-b border-border hover:bg-muted/40 transition-colors h-[68px]">
       {/* POS */}
@@ -124,9 +134,9 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
         </div>
       </td>
 
-      {/* TOTAL - Three-line score cell */}
+      {/* TOTAL - Single value relative-to-par with color coding */}
       <td className="px-2 sm:px-3 py-3 text-center align-middle">
-        <ScoreCell score={entrant.totalStrokes} relToPar={entrant.total} dkPoints={entrant.totalDkFantasyPoints} />
+        <TotalCell relToPar={entrant.total} />
       </td>
 
       {/* R1 - Three-line score cell */}
@@ -157,6 +167,11 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
       {/* DK POINTS */}
       <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
         {entrant.dkFantasyPoints == null ? '—' : entrant.dkFantasyPoints.toFixed(1)}
+      </td>
+
+      {/* OWNERSHIP % */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
+        {ownershipDisplay}
       </td>
 
       {/* ODDS TO WIN */}
@@ -244,6 +259,18 @@ export function TournamentField({ field }: TournamentFieldProps) {
         const dkA = a.dkFantasyPoints ?? Number.MIN_VALUE
         const dkB = b.dkFantasyPoints ?? Number.MIN_VALUE
         return dkB !== dkA ? dkB - dkA : a.playerName.localeCompare(b.playerName)
+      }
+
+      // Ownership % sorting (nulls after real values)
+      if (sort === 'own-asc') {
+        const ownA = a.ownershipPercent ?? Number.MAX_VALUE
+        const ownB = b.ownershipPercent ?? Number.MAX_VALUE
+        return ownA !== ownB ? ownA - ownB : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'own-desc') {
+        const ownA = a.ownershipPercent ?? Number.MIN_VALUE
+        const ownB = b.ownershipPercent ?? Number.MIN_VALUE
+        return ownB !== ownA ? ownB - ownA : a.playerName.localeCompare(b.playerName)
       }
 
       // Odds sorting
@@ -348,6 +375,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
                 <th className="px-3 py-3 text-center text-xs font-semibold">R4</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">PROJ.</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">DK POINTS</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold">OWNERSHIP %</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">ODDS TO WIN</th>
               </tr>
             </thead>

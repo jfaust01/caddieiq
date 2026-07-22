@@ -63,6 +63,7 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     fantasyScore: null,
     dkFantasyPoints: row.dkFantasyPoints ?? null,
     totalDkFantasyPoints: row.dkFantasyPoints ?? null, // Use tournament-level DK points for TOTAL
+    ownershipPercent: row.ownershipPercent ?? null,
     round1: row.round1 ?? null,
     round1RelToPar: row.round1RelToPar ?? null,
     round1DkPoints: null, // Per-round DK points not yet implemented

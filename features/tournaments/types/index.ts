@@ -217,6 +217,11 @@ export interface FieldEntrant {
   dkFantasyPoints: number | null
   /** Current betting odds to win (e.g., "+1800", "+6500"), or null when unavailable. */
   oddsToWin: string | null
+  /**
+   * Projected DFS ownership percentage (0-100), or null when unavailable.
+   * Represents the expected percentage of fantasy contests with this player in their lineup.
+   */
+  ownershipPercent: number | null
 }
 
 /**

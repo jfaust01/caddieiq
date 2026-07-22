@@ -76,6 +76,11 @@ export interface FieldEntryRow {
    * projections, or averages — only authoritative DK results.
    */
   dkFantasyPoints: number | null
+  /**
+   * Projected DFS ownership percentage (0-100), or null when unavailable.
+   * Sourced from DfsPlayerOwnership.projectedOwnership (converted from 0-1 scale).
+   */
+  ownershipPercent: number | null
   // Per-round scoring data
   round1: number | null
   round1RelToPar: number | null
@@ -204,6 +209,8 @@ export class FieldRepository extends BaseRepository {
         tf."cutMade" AS "cutMade",
         stat."worldRanking" AS "worldRanking",
         hto.dk_fantasy_points AS "dkFantasyPoints",
+        -- Ownership percentage (null - contest data not available at tournament level)
+        NULL::float AS "ownershipPercent",
         -- Per-round strokes and relative-to-par
         MAX(CASE WHEN r."roundNumber" = 1 THEN pr.score END) AS "round1",
         MAX(CASE WHEN r."roundNumber" = 1 THEN pr."toPar" END) AS "round1RelToPar",
