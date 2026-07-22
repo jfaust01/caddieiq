@@ -531,15 +531,18 @@ export function TournamentField({ field }: TournamentFieldProps) {
                     key={`player-${entrant.playerId}`}
                     onClick={(event) => {
                       const target = event.target as HTMLElement
-                      // Prevent toggle if clicking on buttons, links, inputs, etc.
-                      if (target.closest('button, a, input, select, textarea, [role="button"], [data-stop-row-toggle]')) {
+                      // Prevent toggle if clicking on interactive elements (but not the row itself)
+                      const interactiveElement = target.closest(
+                        'button, a, input, select, textarea, [data-stop-row-toggle]'
+                      )
+                      if (interactiveElement) {
                         return
                       }
                       setExpandedPlayerId(isExpanded ? null : entrant.playerId)
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
                         setExpandedPlayerId(isExpanded ? null : entrant.playerId)
                       }
                     }}
@@ -547,14 +550,18 @@ export function TournamentField({ field }: TournamentFieldProps) {
                     tabIndex={0}
                     aria-expanded={isExpanded}
                     aria-controls={`player-scorecard-${entrant.playerId}`}
-                    className="cursor-pointer hover:bg-muted/40 transition-colors"
+                    className="cursor-pointer transition-colors hover:bg-muted/40"
                   >
                     <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
                   </tr>,
                   isExpanded && (
-                    <tr key={`scorecard-${entrant.playerId}`} className="bg-background hover:bg-background">
-                      <td colSpan={VISIBLE_COLUMN_COUNT} className="p-4" id={`player-scorecard-${entrant.playerId}`}>
-                        <div className="rounded-md border border-border bg-card">
+                    <tr key={`scorecard-${entrant.playerId}`} id={`player-scorecard-${entrant.playerId}`}>
+                      <td colSpan={VISIBLE_COLUMN_COUNT} className="p-0">
+                        <div
+                          className="border-t border-border"
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        >
                           <ScorecardLoader
                             playerId={entrant.playerId}
                             playerName={entrant.playerName}
