@@ -67,8 +67,12 @@ export function CommandCenterHeader({
   return (
     <header 
       ref={headerRef}
-      className="sticky z-40 w-full border-b border-border bg-background/95 backdrop-blur-md"
-      style={{ top: 'var(--sticky-top, 0px)' } as React.CSSProperties & { '--sticky-top': string }}
+      className="sticky z-40 w-full border-b border-border/50 backdrop-blur-xl"
+      style={{ 
+        top: 'var(--sticky-top, 0px)',
+        background: 'color-mix(in srgb, var(--background) 80%, transparent)',
+        WebkitBackdropFilter: 'blur(14px)',
+      } as React.CSSProperties & { '--sticky-top': string; WebkitBackdropFilter: string }}
     >
       <div className="px-4 py-2 sm:px-6">
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
