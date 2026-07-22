@@ -84,16 +84,56 @@ export async function GET(
       },
     })
 
-    // Fetch course holes for par data (course-agnostic approach)
-    // Try to get course holes from tournament course mapping or database
+    // Fetch course holes for par data
+    // Path: tournament -> tournament_courses -> course -> course_holes
     let courseHoles: Array<{ holeNumber: number; par: number | null }> = []
     
-    // For now, create placeholder course holes (18 holes)
-    // In production, this would fetch from tournament->course->course_holes
-    courseHoles = Array.from({ length: 18 }, (_, i) => ({
-      holeNumber: i + 1,
-      par: null, // Will be populated from course data
-    }))
+    try {
+      // Get tournament with its courses
+      const tournament = await prisma.tournament.findUnique({
+        where: { id: tournamentId },
+        select: {
+          id: true,
+          courses: {
+            select: {
+              course: {
+                select: {
+                  holes: {
+                    orderBy: { holeNumber: 'asc' },
+                    select: {
+                      holeNumber: true,
+                      par: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      })
+
+      if (tournament?.courses && tournament.courses.length > 0) {
+        // Use first course's holes (most tournaments have one primary course)
+        const courseHolesData = tournament.courses[0]?.course?.holes || []
+        if (courseHolesData.length === 18) {
+          courseHoles = courseHolesData.map(hole => ({
+            holeNumber: hole.holeNumber,
+            par: hole.par,
+          }))
+        }
+      }
+    } catch (err) {
+      // Silently continue if course query fails - Par display is optional
+      console.log('[v0] Could not fetch course holes for par data:', err)
+    }
+
+    // Ensure we have 18 holes even if query failed
+    if (courseHoles.length === 0) {
+      courseHoles = Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        par: null,
+      }))
+    }
 
     // Not found
     if (!playerRound) {
