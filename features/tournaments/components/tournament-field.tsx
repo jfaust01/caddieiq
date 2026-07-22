@@ -27,6 +27,7 @@ import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-a
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import { TourChip } from '@/features/tournaments/components/tour-chip'
+import { buildPositionCountMap, formatPositionWithTies } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
@@ -88,8 +89,14 @@ function parseOdds(odds: string | null): number {
 /**
  * Tournament leaderboard row: displays all scoring columns with proper alignment
  */
-function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
-  const positionDisplay = formatMissing(entrant.position)
+function LeaderboardRow({
+  entrant,
+  positionCountMap = new Map(),
+}: {
+  entrant: FieldEntrant
+  positionCountMap?: Map<number, number>
+}) {
+  const positionDisplay = formatPositionWithTies(entrant.position, positionCountMap)
   const projDisplay = formatMissing(entrant.projection)
   const oddsDisplay = formatMissing(entrant.oddsToWin)
   
@@ -287,6 +294,9 @@ export function TournamentField({ field }: TournamentFieldProps) {
     return result
   }, [field.entrants, query, statusFilter, sort])
 
+  // Build position count map for tie detection
+  const positionCountMap = useMemo(() => buildPositionCountMap(field.entrants), [field.entrants])
+
   // Field genuinely empty (nothing imported yet).
   if (field.size === 0) {
     return (
@@ -399,7 +409,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
             </thead>
             <tbody>
               {filtered.map((entrant) => (
-                <LeaderboardRow key={entrant.playerId} entrant={entrant} />
+                <LeaderboardRow key={entrant.playerId} entrant={entrant} positionCountMap={positionCountMap} />
               ))}
             </tbody>
           </table>
