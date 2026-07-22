@@ -1,7 +1,7 @@
 'use client'
 
 import { Users } from 'lucide-react'
-import { useMemo, useState, Suspense } from 'react'
+import { useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { SearchBar } from '@/components/shared/search-bar'
@@ -27,8 +27,6 @@ import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-a
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import { TourChip } from '@/features/tournaments/components/tour-chip'
-import { PlayerRoundScorecard } from '@/features/tournaments/components/player-round-scorecard'
-import { getPlayerRoundScorecard } from '@/features/tournaments/actions/get-player-round-scorecard'
 import { buildPositionCountMap, formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
@@ -291,143 +289,7 @@ function PlayerRowCells({
   )
 }
 
-/**
- * Wrapper around LeaderboardRow that adds expand/collapse functionality.
- * Renders player row + optional expanded scorecard below.
- * Does NOT use Fragment to avoid invalid tbody structure.
- */
-function ExpandableLeaderboardRow({
-  entrant,
-  positionCountMap,
-  isExpanded,
-  onToggleExpand,
-  selectedRound,
-  onRoundChange,
-  tournamentId,
-}: {
-  entrant: FieldEntrant
-  positionCountMap?: Map<number, number>
-  isExpanded: boolean
-  onToggleExpand: () => void
-  selectedRound: number
-  onRoundChange: (round: number) => void
-  tournamentId: string
-}) {
-  return (
-    // Fragment for multiple elements is OK when returned directly from render context
-    // (React flattens it into separate array elements), just not allowed inside tbody
-    <>
-      <tr
-        onClick={onToggleExpand}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onToggleExpand()
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-expanded={isExpanded}
-        aria-controls={`player-scorecard-${entrant.playerId}`}
-        className="cursor-pointer hover:bg-muted/40 transition-colors"
-      >
-        <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
-      </tr>
 
-      {/* Expanded scorecard row - 9 columns (removed chevron column) */}
-      {isExpanded && (
-        <tr className="bg-muted/20 hover:bg-muted/20">
-          <td colSpan={9} className="p-0" id={`player-scorecard-${entrant.playerId}`}>
-            <div className="border-t border-border">
-              <ScorecardLoader
-                playerRoundId={entrant.playerId}
-                selectedRound={selectedRound}
-                onRoundChange={onRoundChange}
-                tournamentId={tournamentId}
-              />
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
-  )
-}
-
-/**
- * Async loader for the scorecard that fetches hole-by-hole data.
- */
-function ScorecardLoader({
-  playerRoundId,
-  selectedRound,
-  onRoundChange,
-  tournamentId,
-}: {
-  playerRoundId: string
-  selectedRound: number
-  onRoundChange: (round: number) => void
-  tournamentId: string
-}) {
-  return (
-    <Suspense
-      fallback={
-        <div className="p-4 text-center text-sm text-muted-foreground">
-          Loading scorecard...
-        </div>
-      }
-    >
-      <ScorecardContent
-        playerRoundId={playerRoundId}
-        selectedRound={selectedRound}
-        onRoundChange={onRoundChange}
-      />
-    </Suspense>
-  )
-}
-
-/**
- * Server component that fetches scorecard data.
- */
-async function ScorecardContent({
-  playerRoundId,
-  selectedRound,
-  onRoundChange,
-}: {
-  playerRoundId: string
-  selectedRound: number
-  onRoundChange: (round: number) => void
-}) {
-  // Note: This needs to be updated to fetch the correct player_round record
-  // For now, this is a placeholder that would fetch hole-by-hole data
-  const scorecard = await getPlayerRoundScorecard(playerRoundId)
-
-  if (!scorecard) {
-    return (
-      <div className="p-4 text-center text-sm text-muted-foreground">
-        Hole-by-hole data not yet available for this round.
-      </div>
-    )
-  }
-
-  return (
-    <div className="p-4">
-      <div className="mb-4 flex items-center gap-2">
-        <label className="text-xs font-semibold text-muted-foreground">Round:</label>
-        <select
-          value={selectedRound}
-          onChange={(e) => onRoundChange(parseInt(e.target.value, 10))}
-          className="rounded border border-border bg-background px-2 py-1 text-xs"
-        >
-          {[1, 2, 3, 4].map((round) => (
-            <option key={round} value={round}>
-              R{round}
-            </option>
-          ))}
-        </select>
-      </div>
-      <PlayerRoundScorecard data={scorecard} />
-    </div>
-  )
-}
 
 interface TournamentFieldProps {
   field: TournamentField
@@ -659,18 +521,37 @@ export function TournamentField({ field }: TournamentFieldProps) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((entrant) => (
-                <ExpandableLeaderboardRow
-                  key={entrant.playerId}
-                  entrant={entrant}
-                  positionCountMap={positionCountMap}
-                  isExpanded={expandedPlayerId === entrant.playerId}
-                  onToggleExpand={() => setExpandedPlayerId(expandedPlayerId === entrant.playerId ? null : entrant.playerId)}
-                  selectedRound={selectedRound}
-                  onRoundChange={setSelectedRound}
-                  tournamentId={field.tournamentId}
-                />
-              ))}
+              {filtered.flatMap((entrant) => {
+                const isExpanded = expandedPlayerId === entrant.playerId
+                return [
+                  <tr
+                    key={`player-${entrant.playerId}`}
+                    onClick={() => setExpandedPlayerId(isExpanded ? null : entrant.playerId)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setExpandedPlayerId(isExpanded ? null : entrant.playerId)
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isExpanded}
+                    aria-controls={`player-scorecard-${entrant.playerId}`}
+                    className="cursor-pointer hover:bg-muted/40 transition-colors"
+                  >
+                    <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
+                  </tr>,
+                  isExpanded && (
+                    <tr key={`scorecard-${entrant.playerId}`} className="bg-muted/20 hover:bg-muted/20">
+                      <td colSpan={9} className="p-0" id={`player-scorecard-${entrant.playerId}`}>
+                        <div className="border-t border-border p-4 text-center text-sm text-muted-foreground">
+                          Scorecard expanded for {entrant.playerName}
+                        </div>
+                      </td>
+                    </tr>
+                  ),
+                ].filter(Boolean)
+              })}
             </tbody>
           </table>
           </div>
