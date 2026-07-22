@@ -238,7 +238,7 @@ export class FieldRepository extends BaseRepository {
         hto.dk_fantasy_points AS "dkFantasyPoints",
         hto.total_strokes AS "totalStrokes",
         hto.score_to_par AS "totalRelativeToPar",
-        fp.fantasyPointsDraftKings::float AS "projection",
+        fp."fantasyPointsDraftKings"::float AS "projection",
         -- Odds (disabled - requires dedupli cation logic for multiple odds events/quotes per player)
         NULL::text AS "odds",
         -- Ownership percentage (null - not available in current schema)
@@ -284,7 +284,7 @@ export class FieldRepository extends BaseRepository {
       WHERE tf."tournamentId" = ${tournamentId}
       GROUP BY tf.id, p.id, p."fullName", p."countryCode", p."headshotUrl", ds.operator, tf.status, 
                tf."isAlternate", tf.withdrawn, tf."cutMade", tf."finalPosition", stat."worldRanking", 
-               hto.dk_fantasy_points, hto.total_strokes, hto.score_to_par, fp.fantasyPointsDraftKings
+               hto.dk_fantasy_points, hto.total_strokes, hto.score_to_par, fp."fantasyPointsDraftKings"
       ORDER BY p."fullName" ASC
     `)
   }
