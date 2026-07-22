@@ -1,7 +1,7 @@
 'use client'
 
 import { Users } from 'lucide-react'
-import { useMemo, useState, Suspense } from 'react'
+import { useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { SearchBar } from '@/components/shared/search-bar'
@@ -27,8 +27,7 @@ import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-a
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import { TourChip } from '@/features/tournaments/components/tour-chip'
-import { PlayerRoundScorecard } from '@/features/tournaments/components/player-round-scorecard'
-import { getPlayerRoundScorecard } from '@/features/tournaments/actions/get-player-round-scorecard'
+import { ScorecardLoader } from '@/features/tournaments/components/scorecard-loader'
 import { buildPositionCountMap, formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
@@ -547,19 +546,12 @@ export function TournamentField({ field }: TournamentFieldProps) {
                     <tr key={`scorecard-${entrant.playerId}`} className="bg-muted/20 hover:bg-muted/20">
                       <td colSpan={9} className="p-0" id={`player-scorecard-${entrant.playerId}`}>
                         <div className="border-t border-border">
-                          <Suspense
-                            fallback={
-                              <div className="p-4 text-center text-sm text-muted-foreground">
-                                Loading scorecard...
-                              </div>
-                            }
-                          >
-                            <ScorecardContent
-                              playerRoundId={entrant.playerId}
-                              playerName={entrant.playerName}
-                              tournamentId={field.tournamentId}
-                            />
-                          </Suspense>
+                          <ScorecardLoader
+                            playerRoundId={entrant.playerId}
+                            playerName={entrant.playerName}
+                            tournamentId={field.tournamentId}
+                            roundNumber={selectedRound}
+                          />
                         </div>
                       </td>
                     </tr>
