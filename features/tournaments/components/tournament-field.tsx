@@ -18,7 +18,6 @@ import {
 import { CountryFlag } from '@/features/players/components/country-flag'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
-import { TotalCell } from '@/features/tournaments/components/total-cell'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
@@ -134,29 +133,29 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
         </div>
       </td>
 
-      {/* TOTAL - Three-line score cell with strokes, rel-to-par, and DK points */}
+      {/* TOTAL - Three-line score cell with tournament strokes, rel-to-par, and DK points */}
       <td className="px-2 sm:px-3 py-3 text-center align-middle">
-        <TotalCell score={entrant.totalStrokes} relToPar={entrant.total} dkPoints={entrant.totalDkFantasyPoints} />
+        <ScoreCell strokes={entrant.totalStrokes} relativeToPar={entrant.total} dkPoints={entrant.totalDkFantasyPoints} emphasis="total" />
       </td>
 
       {/* R1 - Three-line score cell */}
       <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell score={entrant.round1} relToPar={entrant.round1RelToPar} dkPoints={entrant.round1DkPoints} />
+        <ScoreCell strokes={entrant.round1} relativeToPar={entrant.round1RelToPar} dkPoints={entrant.round1DkPoints} />
       </td>
 
       {/* R2 - Three-line score cell */}
       <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell score={entrant.round2} relToPar={entrant.round2RelToPar} dkPoints={entrant.round2DkPoints} />
+        <ScoreCell strokes={entrant.round2} relativeToPar={entrant.round2RelToPar} dkPoints={entrant.round2DkPoints} />
       </td>
 
       {/* R3 - Three-line score cell */}
       <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell score={entrant.round3} relToPar={entrant.round3RelToPar} dkPoints={entrant.round3DkPoints} />
+        <ScoreCell strokes={entrant.round3} relativeToPar={entrant.round3RelToPar} dkPoints={entrant.round3DkPoints} />
       </td>
 
       {/* R4 - Three-line score cell */}
       <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell score={entrant.round4} relToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
+        <ScoreCell strokes={entrant.round4} relativeToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
       </td>
 
       {/* PROJ. */}
