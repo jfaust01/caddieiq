@@ -130,24 +130,23 @@ export function TournamentSelector({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          className={cn(
-            "group inline-flex items-center gap-2 px-3 py-2",
-            "text-2xl sm:text-3xl font-semibold tracking-tight",
-            "rounded-lg border-2 border-transparent",
-            "transition-colors duration-200",
-            "hover:bg-muted/50 focus:outline-none focus-visible:border-primary",
-            "cursor-pointer active:scale-95"
-          )}
-          title="Click to select tournament"
-        >
-          <span className="text-pretty break-words">{currentTournamentName}</span>
-          <ChevronDown
-            size={24}
-            className="flex-shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180"
-          />
-        </button>
+      <PopoverTrigger
+        className={cn(
+          "group inline-flex items-center gap-2 px-3 py-2",
+          "text-2xl sm:text-3xl font-semibold tracking-tight",
+          "rounded-lg border-2 border-transparent",
+          "transition-colors duration-200",
+          "hover:bg-muted/50 focus:outline-none focus-visible:border-primary",
+          "cursor-pointer active:scale-95"
+        )}
+        title="Click to select tournament"
+        type="button"
+      >
+        <span className="text-pretty break-words">{currentTournamentName}</span>
+        <ChevronDown
+          size={24}
+          className="flex-shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180"
+        />
       </PopoverTrigger>
 
       <PopoverContent className="w-[420px] sm:w-full p-3" align="start">
