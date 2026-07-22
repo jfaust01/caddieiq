@@ -3,6 +3,7 @@
 import { AlertCircle, CheckCircle, Clock, Eye, EyeOff, MoreVertical, Sparkles, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { formatTimestamp } from '@/features/tournaments/utils/format'
 import { useState } from 'react'
 
 export interface ModuleStatus {
@@ -146,7 +147,7 @@ export function TournamentDataQualityPanel({ modules }: TournamentDataQualityPan
                       <div className="flex justify-between">
                         <span className="text-gray-400">Last Updated:</span>
                         <span className="text-gray-300">
-                          {new Date(module.lastUpdated).toLocaleString()}
+                          {formatTimestamp(module.lastUpdated)}
                         </span>
                       </div>
                     )}

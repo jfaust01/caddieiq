@@ -9,6 +9,7 @@
 
 import { Zap, Wind, Target, BarChart3, AlertTriangle } from "lucide-react"
 import type { CourseIntelligence } from "@/lib/course-intelligence"
+import { formatTimestamp } from '@/features/tournaments/utils/format'
 
 interface CourseIntelligenceCardProps {
   intelligence: CourseIntelligence
@@ -74,8 +75,7 @@ export function CourseIntelligenceCard({ intelligence }: CourseIntelligenceCardP
       <div>
         <h3 className="text-sm font-semibold text-foreground">Course Intelligence</h3>
         <p className="text-xs text-muted-foreground mt-1">
-          Generated {intelligence.generatedAt.toLocaleDateString()} at{" "}
-          {intelligence.generatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          Generated {formatTimestamp(intelligence.generatedAt)}
         </p>
       </div>
 

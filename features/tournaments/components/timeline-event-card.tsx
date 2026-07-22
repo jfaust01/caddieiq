@@ -3,6 +3,7 @@ import type { TimelineEvent } from "@/lib/timeline"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { formatTimestamp } from '@/features/tournaments/utils/format'
 import { cn } from "@/lib/utils"
 
 interface TimelineEventCardProps {
@@ -69,7 +70,7 @@ export function TimelineEventCard({
             <div className="flex-1 min-w-0">
               <h3 className="font-medium text-sm leading-snug">{event.title}</h3>
               <p className="text-xs text-muted-foreground mt-1">
-                {event.timestamp.toLocaleString()}
+                {formatTimestamp(event.timestamp)}
               </p>
             </div>
           </div>
