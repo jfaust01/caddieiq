@@ -16,8 +16,23 @@ interface PlayerRoundScorecardProps {
  */
 export function PlayerRoundScorecard({ data, isLoading }: PlayerRoundScorecardProps) {
   // Organize holes into front 9 and back 9
-  const frontNine = useMemo(() => data.holes.slice(0, 9), [data.holes])
-  const backNine = useMemo(() => data.holes.slice(9, 18), [data.holes])
+  // Ensure we have exactly 18 holes (pad with empty if needed)
+  const allHoles = useMemo(() => {
+    const holes = [...data.holes]
+    while (holes.length < 18) {
+      holes.push({
+        holeNumber: holes.length + 1,
+        score: null,
+        par: null,
+        toPar: null,
+        dkPoints: null,
+      })
+    }
+    return holes.slice(0, 18)
+  }, [data.holes])
+
+  const frontNine = useMemo(() => allHoles.slice(0, 9), [allHoles])
+  const backNine = useMemo(() => allHoles.slice(9, 18), [allHoles])
 
   // Calculate front/back subtotals
   const frontTotal = useMemo(() => {
@@ -47,16 +62,18 @@ export function PlayerRoundScorecard({ data, isLoading }: PlayerRoundScorecardPr
     return 'text-red-600 dark:text-red-500'
   }
 
-  if (isLoading) {
-    return (
-      <div className="p-4 text-center text-sm text-muted-foreground">
-        Loading scorecard...
-      </div>
-    )
-  }
+
 
   return (
-    <div className="space-y-6 p-4">
+    <div className={`space-y-6 p-4 ${isLoading ? 'relative opacity-60' : ''}`}>
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded z-10">
+          <div className="text-center">
+            <div className="text-sm text-muted-foreground">Loading scorecard…</div>
+          </div>
+        </div>
+      )}
+
       {/* Header with player name and round info */}
       <div className="border-b border-border pb-4">
         <h3 className="font-semibold text-base">{data.playerName}</h3>

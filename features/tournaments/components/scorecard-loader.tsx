@@ -34,29 +34,18 @@ export function ScorecardLoader({
     const timeoutId = setTimeout(() => controller.abort(), 10000)
 
     try {
-      console.log('[v0] Fetching scorecard:', {
-        playerId,
-        round: roundNumber,
-        tournament: tournamentId,
-      })
-
       const url = `/api/tournaments/${tournamentId}/players/${playerId}/rounds/${roundNumber}/scorecard`
       const response = await fetch(url, { signal: controller.signal })
 
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        console.error('[v0] Scorecard fetch failed:', {
-          status: response.status,
-          statusText: response.statusText,
-        })
         setState('error')
         setError('Unable to load scorecard.')
         return
       }
 
       const json = await response.json()
-      console.log('[v0] Scorecard response:', json)
 
       if (!json.data) {
         setState('empty')
@@ -70,13 +59,11 @@ export function ScorecardLoader({
       clearTimeout(timeoutId)
 
       if (err instanceof Error && err.name === 'AbortError') {
-        console.error('[v0] Scorecard fetch timeout after 10s')
         setState('error')
         setError('Scorecard request timed out.')
         return
       }
 
-      console.error('[v0] Scorecard fetch error:', err)
       setState('error')
       setError('Unable to load scorecard.')
     }
@@ -87,48 +74,45 @@ export function ScorecardLoader({
     fetchScorecard()
   }, [fetchScorecard])
 
-  // Render states
-  if (state === 'loading') {
-    return (
-      <div className="p-4 text-center text-sm text-muted-foreground">
-        Loading scorecard…
-      </div>
-    )
-  }
+  // Always show the scorecard grid, even with empty data
+  // Generate empty scorecard structure if data is null
+  const displayData =
+    data ||
+    ({
+      playerName,
+      roundNumber,
+      totalStrokes: null,
+      totalToPar: null,
+      totalDkPoints: null,
+      holes: Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        score: null,
+        par: null,
+        toPar: null,
+        dkPoints: null,
+      })),
+    } as PlayerRoundScorecardData)
 
-  if (state === 'empty') {
-    return (
-      <div className="p-4 text-center text-sm text-muted-foreground">
-        Hole-by-hole scorecard unavailable for this round.
-      </div>
-    )
-  }
+  const isLoading = state === 'loading'
 
-  if (state === 'error') {
-    return (
-      <div className="p-4">
-        <div className="text-center text-sm text-muted-foreground mb-3">
-          {error || 'Unable to load scorecard.'}
+  return (
+    <div className="p-4">
+      <PlayerRoundScorecard data={displayData} isLoading={isLoading} />
+      {state === 'error' && (
+        <div className="mt-4 p-3 bg-muted/20 rounded">
+          <div className="text-center text-xs text-muted-foreground mb-2">
+            {error || 'Unable to load scorecard data.'}
+          </div>
+          <div className="flex justify-center">
+            <button
+              onClick={() => fetchScorecard()}
+              className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted/50 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         </div>
-        <div className="flex justify-center">
-          <button
-            onClick={() => fetchScorecard()}
-            className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted/50 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (state === 'success' && data) {
-    return (
-      <div className="p-4">
-        <PlayerRoundScorecard data={data} />
-      </div>
-    )
-  }
-
-  return null
+      )}
+    </div>
+  )
 }
