@@ -106,6 +106,13 @@ export interface TournamentSummary {
   purse: number | null
   /** Sum of all actual DraftKings fantasy points for all players in the tournament, or null when no data exists. */
   totalDkFantasyPoints: number | null
+  /** Top DraftKings scorer for the tournament with player details, or null when no data exists. */
+  topDkScorer: {
+    playerId: string
+    playerName: string
+    headshotUrl: string | null
+    dkFantasyPoints: number
+  } | null
   /** Winner of the prior edition, or null when not derivable. */
   defendingChampion: string | null
   /** Cut line score (strokes under/over par), or null when not applicable. */

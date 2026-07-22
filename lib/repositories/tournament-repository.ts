@@ -114,6 +114,14 @@ export interface TournamentDetailRow extends TournamentSearchRow {
   updatedAt: Date | null
   /** Sum of all actual DraftKings fantasy points for all players, or null when no data exists. */
   totalDkFantasyPoints: number | null
+  /** Top DraftKings scorer player ID, or null when no data exists. */
+  topDkScorerPlayerId: string | null
+  /** Top DraftKings scorer player name, or null when no data exists. */
+  topDkScorerPlayerName: string | null
+  /** Top DraftKings scorer player headshot URL, or null when no data exists or no image available. */
+  topDkScorerHeadshotUrl: string | null
+  /** Top DraftKings scorer DK fantasy points, or null when no data exists. */
+  topDkScorerDkFantasyPoints: number | null
 }
 
 /**
@@ -342,7 +350,11 @@ export class TournamentRepository extends BaseRepository {
         champ."fullName" AS "defendingChampion",
         t."cutLine" AS "cutLine",
         t."cutAfterRounds" AS "cutAfterRounds",
-        dkTotal."totalDkFantasyPoints" AS "totalDkFantasyPoints"
+        dkTotal."totalDkFantasyPoints" AS "totalDkFantasyPoints",
+        topScorer."topDkScorerPlayerId" AS "topDkScorerPlayerId",
+        topScorer."topDkScorerPlayerName" AS "topDkScorerPlayerName",
+        topScorer."topDkScorerHeadshotUrl" AS "topDkScorerHeadshotUrl",
+        topScorer."topDkScorerDkFantasyPoints" AS "topDkScorerDkFantasyPoints"
       FROM tournaments t
       JOIN tours tr ON tr.id = t."tourId"
       LEFT JOIN seasons s ON s.id = t."seasonId"
@@ -378,6 +390,22 @@ export class TournamentRepository extends BaseRepository {
         WHERE hto."tournament_id" = t.id
           AND hto."dk_fantasy_points" IS NOT NULL
       ) dkTotal ON true
+      LEFT JOIN LATERAL (
+        SELECT 
+          pl.id AS "topDkScorerPlayerId",
+          pl."fullName" AS "topDkScorerPlayerName",
+          pl."headshotUrl" AS "topDkScorerHeadshotUrl",
+          hto."dk_fantasy_points"::float8 AS "topDkScorerDkFantasyPoints"
+        FROM historical_tournament_outcomes hto
+        JOIN players pl ON pl.id = hto.player_id
+        WHERE hto.tournament_id = t.id
+          AND hto."dk_fantasy_points" IS NOT NULL
+        ORDER BY 
+          hto."dk_fantasy_points" DESC,
+          COALESCE(hto.finish_position, 9999) ASC,
+          pl."fullName" ASC
+        LIMIT 1
+      ) topScorer ON true
       WHERE t.id = ${id} AND t."deletedAt" IS NULL
       LIMIT 1
     `)
