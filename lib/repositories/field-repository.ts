@@ -70,6 +70,21 @@ export interface FieldEntryRow {
    */
   worldRanking: number | null
   /**
+   * Tournament finishing position (1, 2, 3, etc.), or null when not yet set.
+   * Sourced from tournament_fields.finalPosition (authoritative result).
+   */
+  position: number | null
+  /**
+   * Total tournament strokes, or null when no historical outcome exists.
+   * Sourced from historical_tournament_outcomes.total_strokes (authoritative result).
+   */
+  totalStrokes: number | null
+  /**
+   * Total tournament score relative to par, or null when unavailable.
+   * Sourced from historical_tournament_outcomes.score_to_par (authoritative result).
+   */
+  totalRelativeToPar: number | null
+  /**
    * The player's final DraftKings fantasy points for this tournament, or null
    * when no historical tournament outcome exists. Only populated when
    * HistoricalTournamentOutcome records are available. Never estimates,
@@ -77,8 +92,19 @@ export interface FieldEntryRow {
    */
   dkFantasyPoints: number | null
   /**
+   * DraftKings fantasy point projection for this tournament, or null when unavailable.
+   * Sourced from fantasy_projections.fantasyPointsDraftKings (not actual scoring).
+   */
+  projection: number | null
+  /**
+   * American odds to win the tournament, formatted as string (e.g., "+1200", "-500"),
+   * or null when no odds are available.
+   * Sourced from odds_quotes.americanOdds for the tournament's odds event.
+   */
+  odds: string | null
+  /**
    * Projected DFS ownership percentage (0-100), or null when unavailable.
-   * Sourced from DfsPlayerOwnership.projectedOwnership (converted from 0-1 scale).
+   * Not currently sourced (schema does not identify ownership data).
    */
   ownershipPercent: number | null
   // Per-round scoring data
@@ -207,9 +233,14 @@ export class FieldRepository extends BaseRepository {
         tf."isAlternate" AS "isAlternate",
         tf.withdrawn AS "withdrawn",
         tf."cutMade" AS "cutMade",
+        tf."finalPosition" AS "position",
         stat."worldRanking" AS "worldRanking",
         hto.dk_fantasy_points AS "dkFantasyPoints",
-        -- Ownership percentage (null - contest data not available at tournament level)
+        hto.total_strokes AS "totalStrokes",
+        hto.score_to_par AS "totalRelativeToPar",
+        fp.fantasyPointsDraftKings::float AS "projection",
+        oq.americanOdds::text AS "odds",
+        -- Ownership percentage (null - not available in current schema)
         NULL::float AS "ownershipPercent",
         -- Per-round strokes and relative-to-par
         MAX(CASE WHEN r."roundNumber" = 1 THEN pr.score END) AS "round1",
@@ -239,15 +270,24 @@ export class FieldRepository extends BaseRepository {
         ORDER BY s.season DESC
         LIMIT 1
       ) stat ON true
-      -- Historical tournament outcomes with DraftKings fantasy points (if available).
-      -- LEFT JOIN allows entrants without outcomes (no DK points data).
+      -- Historical tournament outcomes (total strokes, scoring, DK points).
+      -- LEFT JOIN allows entrants without outcomes (no historical data).
       LEFT JOIN historical_tournament_outcomes hto
         ON hto.tournament_id = tf."tournamentId"
         AND hto.player_id = tf."playerId"
-        AND hto.dk_fantasy_points IS NOT NULL
+      -- Fantasy projections (DraftKings projections for this tournament).
+      -- LEFT JOIN allows entrants without projections (not yet generated).
+      LEFT JOIN fantasy_projections fp
+        ON fp."playerId" = tf."playerId"
+        AND fp."tournamentId" = tf."tournamentId"
+      -- Tournament odds (if odds event exists for this tournament).
+      -- LEFT JOIN allows entrants without odds (not offered or no event).
+      LEFT JOIN odds_events oe ON oe."tournamentId" = tf."tournamentId"
+      LEFT JOIN odds_quotes oq ON oq."oddsEventId" = oe.id AND oq."playerId" = tf."playerId"
       WHERE tf."tournamentId" = ${tournamentId}
       GROUP BY tf.id, p.id, p."fullName", p."countryCode", p."headshotUrl", ds.operator, tf.status, 
-               tf."isAlternate", tf.withdrawn, tf."cutMade", stat."worldRanking", hto.dk_fantasy_points
+               tf."isAlternate", tf.withdrawn, tf."cutMade", tf."finalPosition", stat."worldRanking", 
+               hto.dk_fantasy_points, hto.total_strokes, hto.score_to_par, fp.fantasyPointsDraftKings, oq.americanOdds
       ORDER BY p."fullName" ASC
     `)
   }

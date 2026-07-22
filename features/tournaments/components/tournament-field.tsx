@@ -26,7 +26,6 @@ import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import { TourChip } from '@/features/tournaments/components/tour-chip'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
-import { getDevelopmentPlayerMetadata } from '@/lib/development/mock-player-metadata'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
 
@@ -105,8 +104,8 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
     ? '—' 
     : entrant.ownershipPercent.toFixed(1) + '%'
 
-  // Get Tour data: use real if available, fallback to development mock
-  const tour = entrant.tour ?? getDevelopmentPlayerMetadata(entrant.playerId, entrant.playerName).tour
+  // Use real tour data from dfs_salaries operator; display "No Tour" if unavailable
+  const tour = entrant.tour
 
   return (
     <tr className="group border-b border-border hover:bg-muted/40 transition-colors">
