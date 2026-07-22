@@ -181,7 +181,7 @@ export class FieldRepository extends BaseRepository {
         p."fullName" AS "playerName",
         p."countryCode" AS "countryCode",
         p."headshotUrl" AS "headshotUrl",
-        p.tour AS "tour",
+        NULL AS "tour",
         tf.status::text AS "status",
         tf."isAlternate" AS "isAlternate",
         tf.withdrawn AS "withdrawn",

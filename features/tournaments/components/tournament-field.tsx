@@ -136,16 +136,6 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
             )}
           </div>
           
-          {/* Tour Chip */}
-          {entrant.tour && (
-            <Badge
-              variant="secondary"
-              className="text-xs px-1.5 py-0 h-5 flex-shrink-0 group-hover:bg-muted"
-            >
-              {entrant.tour}
-            </Badge>
-          )}
-          
           {/* Status Badge */}
           <div className="flex-shrink-0">
             <FieldStatusBadge status={entrant.status} />

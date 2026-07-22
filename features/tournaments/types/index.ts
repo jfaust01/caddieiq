@@ -138,8 +138,6 @@ export interface FieldEntrant {
   countryCode: string | null
   /** Remote headshot URL when available; null renders an initials placeholder. */
   headshotUrl: string | null
-  /** Active professional tour membership (PGA, LIV, DP_WORLD, KORN_FERRY, LPGA, CHAMPIONS). */
-  tour: string | null
   status: FieldEntryStatus
   isAlternate: boolean
   withdrawn: boolean
