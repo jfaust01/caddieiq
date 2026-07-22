@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { Globe2 } from 'lucide-react'
 import { useState } from 'react'
 import { normalizeCountryCode } from '@/lib/utils/normalize-country-code'
 
@@ -16,37 +17,48 @@ const FALLBACK_FLAG_URL = 'https://flagsapi.com/UN/shiny/64.png'
 /**
  * Displays a country flag image from FlagsAPI.
  * 
- * Always renders exactly one image:
- * - Valid country codes display the corresponding flag
- * - Invalid/null/unknown codes display the UN flag (neutral fallback)
- * - Failed image loads swap to fallback automatically
+ * Renders either:
+ * - Valid country flag image (16x16px)
+ * - Globe icon fallback when:
+ *   - Country code is missing or null
+ *   - Country code is invalid
+ *   - Flag image fails to load
+ * 
+ * The globe icon is muted, same size as flag, and centered.
  */
 export function PlayerFlag({ countryCode, className }: PlayerFlagProps) {
-  const [showFallback, setShowFallback] = useState(false)
+  const [showGlobeFallback, setShowGlobeFallback] = useState(false)
   
   const normalizedCode = normalizeCountryCode(countryCode)
-  const flagUrl = normalizedCode
-    ? `https://flagsapi.com/${normalizedCode}/shiny/64.png`
-    : FALLBACK_FLAG_URL
-  
-  const currentUrl = showFallback ? FALLBACK_FLAG_URL : flagUrl
   const countryName = normalizedCode 
     ? getCountryName(normalizedCode)
-    : 'Unknown country'
+    : 'Country unavailable'
+  
+  // Show globe icon immediately if no valid country code
+  if (!normalizedCode || showGlobeFallback) {
+    return (
+      <Globe2
+        size={16}
+        className={`text-muted-foreground ${className || ''}`}
+        aria-label="Country unavailable"
+        title="Country unavailable"
+      />
+    )
+  }
+
+  const flagUrl = `https://flagsapi.com/${normalizedCode}/shiny/64.png`
 
   return (
     <Image
-      src={currentUrl}
+      src={flagUrl}
       alt={countryName}
       width={16}
       height={16}
       loading="lazy"
       className={className}
       onError={() => {
-        // Swap to fallback if image fails to load
-        if (!showFallback) {
-          setShowFallback(true)
-        }
+        // Swap to globe fallback if image fails to load
+        setShowGlobeFallback(true)
       }}
     />
   )
