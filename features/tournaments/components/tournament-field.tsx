@@ -203,8 +203,107 @@ function LeaderboardRow({
 }
 
 /**
+ * Internal component to render player row with all cells.
+ * Extracted to avoid fragment issues in tbody.
+ */
+function PlayerRowCells({
+  entrant,
+  positionCountMap,
+  isExpanded,
+}: {
+  entrant: FieldEntrant
+  positionCountMap?: Map<number, number>
+  isExpanded: boolean
+}) {
+  const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
+  const salaryDisplay = formatMissing(entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null)
+  const ownershipDisplay = formatMissing(entrant.ownershipPercent ? `${entrant.ownershipPercent.toFixed(1)}%` : null)
+  const oddsDisplay = formatMissing(entrant.oddsToWin)
+
+  const initials = entrant.playerName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  return (
+    <>
+      {/* POS column with expand/collapse chevron */}
+      <td className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground align-middle">
+        <div className="flex items-center justify-end gap-2">
+          <ChevronDown
+            size={16}
+            className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          />
+          <span>{positionDisplay}</span>
+        </div>
+      </td>
+
+      {/* PLAYER column */}
+      <td className="px-2 sm:px-3 py-3 text-left align-middle min-w-0" style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}>
+        <Link href={`/players/${entrant.playerId}`} onClick={(e) => e.stopPropagation()} className="hover:underline flex items-center gap-2 min-w-0">
+          <Avatar className="h-8 w-8 flex-shrink-0">
+            <AvatarImage src={entrant.headshotUrl || ''} alt={entrant.playerName} />
+            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-semibold">{entrant.playerName}</div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {entrant.countryCode && <PlayerFlag code={entrant.countryCode} />}
+              {entrant.tour && <TourChip tour={entrant.tour} />}
+            </div>
+          </div>
+        </Link>
+      </td>
+
+      {/* TOTAL column */}
+      <td className="px-2 sm:px-3 py-3 text-center align-middle">
+        <ScoreCell strokes={entrant.totalStrokes} relativeToPar={entrant.total} dkPoints={entrant.dkFantasyPoints} emphasis="total" />
+      </td>
+
+      {/* R1 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell strokes={entrant.round1} relativeToPar={entrant.round1RelToPar} dkPoints={entrant.round1DkPoints} />
+      </td>
+
+      {/* R2 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell strokes={entrant.round2} relativeToPar={entrant.round2RelToPar} dkPoints={entrant.round2DkPoints} />
+      </td>
+
+      {/* R3 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell strokes={entrant.round3} relativeToPar={entrant.round3RelToPar} dkPoints={entrant.round3DkPoints} />
+      </td>
+
+      {/* R4 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell strokes={entrant.round4} relativeToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
+      </td>
+
+      {/* DK SALARY */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums align-middle">
+        {salaryDisplay}
+      </td>
+
+      {/* OWNERSHIP % */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
+        {ownershipDisplay}
+      </td>
+
+      {/* ODDS TO WIN */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
+        {oddsDisplay}
+      </td>
+    </>
+  )
+}
+
+/**
  * Wrapper around LeaderboardRow that adds expand/collapse functionality.
- * Shows a chevron button and optional scorecard details below the row.
+ * Renders player row + optional expanded scorecard below.
+ * Does NOT use Fragment to avoid invalid tbody structure.
  */
 function ExpandableLeaderboardRow({
   entrant,
@@ -223,12 +322,9 @@ function ExpandableLeaderboardRow({
   onRoundChange: (round: number) => void
   tournamentId: string
 }) {
-  const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
-  const salaryDisplay = formatMissing(entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null)
-  const ownershipDisplay = formatMissing(entrant.ownershipPercent ? `${entrant.ownershipPercent.toFixed(1)}%` : null)
-  const oddsDisplay = formatMissing(entrant.oddsToWin)
-
   return (
+    // Fragment for multiple elements is OK when returned directly from render context
+    // (React flattens it into separate array elements), just not allowed inside tbody
     <>
       <tr
         onClick={onToggleExpand}
@@ -242,80 +338,15 @@ function ExpandableLeaderboardRow({
         tabIndex={0}
         className="cursor-pointer hover:bg-muted/50 transition-colors"
       >
-        {/* POS column with expand/collapse chevron */}
-        <td className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground align-middle">
-          <div className="flex items-center justify-end gap-2">
-            <ChevronDown
-              size={16}
-              className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            />
-            <span>{positionDisplay}</span>
-          </div>
-        </td>
-
-        {/* PLAYER column */}
-        <td className="px-2 sm:px-3 py-3 text-left align-middle min-w-0" style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}>
-          <Link href={`/players/${entrant.playerId}`} className="hover:underline flex items-center gap-2 min-w-0">
-            <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarImage src={entrant.headshotUrl || ''} alt={entrant.playerName} />
-              <AvatarFallback className="text-xs">{entrant.playerName.split(' ').map((n) => n[0]).join('')}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="truncate font-semibold">{entrant.playerName}</div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                {entrant.countryCode && <PlayerFlag code={entrant.countryCode} />}
-                {entrant.tour && <TourChip tour={entrant.tour} />}
-              </div>
-            </div>
-          </Link>
-        </td>
-
-        {/* TOTAL column */}
-        <td className="px-2 sm:px-3 py-3 text-center align-middle">
-          <ScoreCell strokes={entrant.totalStrokes} relativeToPar={entrant.total} dkPoints={entrant.dkFantasyPoints} emphasis="total" />
-        </td>
-
-        {/* R1 - Three-line score cell */}
-        <td className="px-3 py-3 text-center align-middle">
-          <ScoreCell strokes={entrant.round1} relativeToPar={entrant.round1RelToPar} dkPoints={entrant.round1DkPoints} />
-        </td>
-
-        {/* R2 - Three-line score cell */}
-        <td className="px-3 py-3 text-center align-middle">
-          <ScoreCell strokes={entrant.round2} relativeToPar={entrant.round2RelToPar} dkPoints={entrant.round2DkPoints} />
-        </td>
-
-        {/* R3 - Three-line score cell */}
-        <td className="px-3 py-3 text-center align-middle">
-          <ScoreCell strokes={entrant.round3} relativeToPar={entrant.round3RelToPar} dkPoints={entrant.round3DkPoints} />
-        </td>
-
-        {/* R4 - Three-line score cell */}
-        <td className="px-3 py-3 text-center align-middle">
-          <ScoreCell strokes={entrant.round4} relativeToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
-        </td>
-
-        {/* DK SALARY */}
-        <td className="px-3 py-3 text-right text-sm font-mono tabular-nums align-middle">
-          {salaryDisplay}
-        </td>
-
-        {/* OWNERSHIP % */}
-        <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
-          {ownershipDisplay}
-        </td>
-
-        {/* ODDS TO WIN */}
-        <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
-          {oddsDisplay}
-        </td>
+        <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} isExpanded={isExpanded} />
       </tr>
 
-      {/* Expanded scorecard row */}
+      {/* Expanded scorecard row - 10 columns for visible fields */}
       {isExpanded && (
         <tr className="bg-muted/20 hover:bg-muted/20">
-          <td colSpan={11} className="p-0">
+          <td colSpan={10} className="p-0">
             <div className="border-t border-border">
+              Scorecard expanded for {entrant.playerName}
               <ScorecardLoader
                 playerRoundId={entrant.playerId}
                 selectedRound={selectedRound}
