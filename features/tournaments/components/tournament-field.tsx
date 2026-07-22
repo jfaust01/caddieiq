@@ -230,10 +230,10 @@ function PlayerRowCells({
         <span>{positionDisplay}</span>
       </td>
 
-      {/* PLAYER column - sticky with opaque background and right separator shadow */}
+      {/* PLAYER column - becomes sticky at left edge when scrolled */}
       <td 
-        className="sticky z-20 bg-background px-2 sm:px-3 py-3 text-left align-middle min-w-0 shadow-[4px_0_8px_-6px_rgba(0,0,0,0.8)]"
-        style={{ left: '64px', width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
+        className="sticky left-0 z-20 bg-background px-2 sm:px-3 py-3 text-left align-middle min-w-0 shadow-[4px_0_8px_-6px_rgba(0,0,0,0.8)]"
+        style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
       >
         <div className="flex items-center gap-2 min-w-0">
           <Avatar className="h-8 w-8 flex-shrink-0">
@@ -491,8 +491,8 @@ export function TournamentField({ field }: TournamentFieldProps) {
               <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
                 <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
                 <th 
-                  className="sticky z-30 bg-muted/40 px-2 sm:px-3 py-3 text-left text-xs font-semibold"
-                  style={{ left: '64px', width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
+                  className="sticky left-0 z-30 bg-muted/40 px-2 sm:px-3 py-3 text-left text-xs font-semibold"
+                  style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
                 >
                   PLAYER
                 </th>
