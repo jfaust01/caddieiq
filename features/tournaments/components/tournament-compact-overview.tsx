@@ -4,7 +4,6 @@ import type { TournamentSummary, TournamentField } from '@/features/tournaments/
 import { EventDetailsPills } from './event-details-pills'
 import { TournamentField } from './tournament-field'
 import { TournamentWinnerCard } from './tournament-elevation/tournament-winner-card'
-import { DkTotalCard } from './tournament-elevation/dk-total-card'
 import { TopDkScorerCard } from './tournament-elevation/top-dk-scorer-card'
 
 interface TournamentCompactOverviewProps {
@@ -30,15 +29,14 @@ export function TournamentCompactOverview({
         <EventDetailsPills tournament={tournament} />
       </div>
 
-      {/* Winner, DK Total and Top DK Scorer Cards - displayed above Field section */}
+      {/* Winner and Top DK Scorer Cards - displayed above Field section */}
       {hasField && (
         <div className="border-t border-border pt-6">
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             <TournamentWinnerCard
               tournamentWinner={tournament.tournamentWinner}
               isCompleted={tournament.status === 'COMPLETED'}
             />
-            <DkTotalCard dkTotal={tournament.totalDkFantasyPoints} />
             <TopDkScorerCard topDkScorer={tournament.topDkScorer} />
           </div>
         </div>
