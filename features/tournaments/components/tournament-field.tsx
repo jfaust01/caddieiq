@@ -232,7 +232,7 @@ function PlayerRowCells({
 
       {/* PLAYER column - completely opaque frozen column */}
       <td 
-        className="sticky left-0 z-30 px-2 sm:px-3 py-3 text-left align-middle min-w-0 border-r"
+        className="sticky left-0 z-40 px-2 sm:px-3 py-3 text-left align-middle min-w-0 border-r"
         style={{ 
           width: 'var(--player-column-width, 220px)', 
           minWidth: 'var(--player-column-width, 220px)',
@@ -494,10 +494,10 @@ export function TournamentField({ field }: TournamentFieldProps) {
           >
             <table className="w-full min-w-max text-sm border-collapse">
             <thead>
-              <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
+              <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-10">
                 <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
                 <th 
-                  className="sticky left-0 z-40 px-2 sm:px-3 py-3 text-left text-xs font-semibold border-r"
+                  className="sticky left-0 z-50 px-2 sm:px-3 py-3 text-left text-xs font-semibold border-r"
                   style={{ 
                     width: 'var(--player-column-width, 220px)', 
                     minWidth: 'var(--player-column-width, 220px)',
