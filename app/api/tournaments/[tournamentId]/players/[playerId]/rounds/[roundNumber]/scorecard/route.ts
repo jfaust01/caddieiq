@@ -30,14 +30,20 @@ export async function GET(
     console.log('[v0] Fetching scorecard:', { playerId, round, tournamentId })
 
     // Query PlayerRound with hole scores
+    // Path: playerRound -> tournamentField -> playerId, tournament, player
+    // Path: playerRound -> round -> roundNumber
     const playerRound = await prisma.playerRound.findFirst({
       where: {
-        playerIdActual: playerId,
+        // Match round number
         round: {
           roundNumber: round,
+          tournament: {
+            id: tournamentId,
+          },
         },
+        // Match player via tournament field
         tournamentField: {
-          tournamentId: tournamentId,
+          playerId: playerId,
         },
       },
       select: {
