@@ -1,0 +1,24 @@
+/**
+ * Drag-to-scroll container styles
+ */
+.scrollContainer {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/**
+ * When actively dragging, change cursor to grabbing
+ */
+.scrollContainer.dragging {
+  cursor: grabbing;
+}
+
+/**
+ * Ensure child elements don't interfere with drag selection
+ */
+.scrollContainer * {
+  pointer-events: auto;
+}

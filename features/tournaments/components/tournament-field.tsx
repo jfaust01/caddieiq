@@ -6,6 +6,8 @@ import { useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { SearchBar } from '@/components/shared/search-bar'
+import { useDragScroll } from '@/features/tournaments/hooks/use-drag-scroll'
+import styles from './tournament-field.module.css'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -199,6 +201,9 @@ export function TournamentField({ field }: TournamentFieldProps) {
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
   const [sort, setSort] = useState<SortKey>('pos-asc')
 
+  // Enable drag-to-scroll on the table container
+  const scrollContainerRef = useDragScroll({ dragThreshold: 5 })
+
   // Status options limited to those actually present in this field.
   const statusOptions = useMemo(() => {
     const present = new Set<FieldEntryStatus>()
@@ -354,7 +359,11 @@ export function TournamentField({ field }: TournamentFieldProps) {
           <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1">
             <span>Scroll for more →</span>
           </div>
-          <div className="w-full min-w-0 overflow-x-auto border rounded-md">
+          <div
+            ref={scrollContainerRef}
+            className={cn('w-full min-w-0 overflow-x-auto border rounded-md select-none', styles.scrollContainer)}
+            style={{ userSelect: 'none' }}
+          >
             <table className="w-full min-w-max text-sm border-collapse">
             <thead>
               <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
