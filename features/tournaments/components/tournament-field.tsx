@@ -526,7 +526,14 @@ export function TournamentField({ field }: TournamentFieldProps) {
                 return [
                   <tr
                     key={`player-${entrant.playerId}`}
-                    onClick={() => setExpandedPlayerId(isExpanded ? null : entrant.playerId)}
+                    onClick={(event) => {
+                      const target = event.target as HTMLElement
+                      // Prevent toggle if clicking on buttons, links, inputs, etc.
+                      if (target.closest('button, a, input, select, textarea, [role="button"], [data-stop-row-toggle]')) {
+                        return
+                      }
+                      setExpandedPlayerId(isExpanded ? null : entrant.playerId)
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
