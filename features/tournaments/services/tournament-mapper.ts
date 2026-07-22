@@ -139,6 +139,7 @@ export function mapTournamentSummary(row: TournamentSearchRow): TournamentSummar
         }
       : null,
     purse: typeof row.purse === 'number' && Number.isFinite(row.purse) ? row.purse : null,
+    totalDkFantasyPoints: typeof (row as any).totalDkFantasyPoints === 'number' && Number.isFinite((row as any).totalDkFantasyPoints) ? (row as any).totalDkFantasyPoints : null,
     defendingChampion: row.defendingChampion ?? null,
     cutLine: typeof row.cutLine === 'number' && Number.isFinite(row.cutLine) ? row.cutLine : null,
     cutAfterRounds: typeof row.cutAfterRounds === 'number' && Number.isFinite(row.cutAfterRounds) ? row.cutAfterRounds : null,

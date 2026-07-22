@@ -104,6 +104,8 @@ export interface TournamentSummary {
   location: TournamentLocation | null
   /** Prize purse in source currency units, or null when unsupplied. */
   purse: number | null
+  /** Sum of all actual DraftKings fantasy points for all players in the tournament, or null when no data exists. */
+  totalDkFantasyPoints: number | null
   /** Winner of the prior edition, or null when not derivable. */
   defendingChampion: string | null
   /** Cut line score (strokes under/over par), or null when not applicable. */

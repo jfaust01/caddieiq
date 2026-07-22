@@ -104,13 +104,16 @@ export interface TournamentSearchRow {
 
 /**
  * A single tournament for the detail page: everything in {@link TournamentSearchRow}
- * plus the record lifecycle timestamps. Kept separate so the list query stays
- * lean (it never selects the timestamps) while the detail page can surface
- * created/updated metadata.
+ * plus the record lifecycle timestamps and the sum of all actual DraftKings
+ * fantasy points. Kept separate so the list query stays lean (it never selects
+ * the timestamps) while the detail page can surface created/updated metadata
+ * and DK Total.
  */
 export interface TournamentDetailRow extends TournamentSearchRow {
   createdAt: Date | null
   updatedAt: Date | null
+  /** Sum of all actual DraftKings fantasy points for all players, or null when no data exists. */
+  totalDkFantasyPoints: number | null
 }
 
 /**
@@ -338,7 +341,8 @@ export class TournamentRepository extends BaseRepository {
         course.country AS "country",
         champ."fullName" AS "defendingChampion",
         t."cutLine" AS "cutLine",
-        t."cutAfterRounds" AS "cutAfterRounds"
+        t."cutAfterRounds" AS "cutAfterRounds",
+        dkTotal."totalDkFantasyPoints" AS "totalDkFantasyPoints"
       FROM tournaments t
       JOIN tours tr ON tr.id = t."tourId"
       LEFT JOIN seasons s ON s.id = t."seasonId"
@@ -368,6 +372,12 @@ export class TournamentRepository extends BaseRepository {
         WHERE tf."tournamentId" = prev_edition.id AND tf."finalPosition" = 1
         LIMIT 1
       ) champ ON true
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(SUM(hto."dk_fantasy_points"), NULL)::float8 AS "totalDkFantasyPoints"
+        FROM historical_tournament_outcomes hto
+        WHERE hto."tournament_id" = t.id
+          AND hto."dk_fantasy_points" IS NOT NULL
+      ) dkTotal ON true
       WHERE t.id = ${id} AND t."deletedAt" IS NULL
       LIMIT 1
     `)

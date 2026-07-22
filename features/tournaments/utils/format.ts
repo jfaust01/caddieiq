@@ -121,6 +121,28 @@ export function formatPurse(purse: number | null): string {
   return PURSE_FMT.format(purse)
 }
 
+const DK_TOTAL_FMT = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 1,
+})
+
+/**
+ * DraftKings total fantasy points display, e.g. "6,842.5" or "6,842".
+ * Formats with thousands separators and up to one decimal place.
+ * Returns an em-dash when unknown or no data exists.
+ */
+export function formatDkTotal(dkTotal: number | null): string {
+  if (dkTotal === null || !Number.isFinite(dkTotal)) return EMPTY_VALUE
+  
+  // Round to one decimal place
+  const rounded = Math.round(dkTotal * 10) / 10
+  
+  // Format with thousands separators
+  const formatted = DK_TOTAL_FMT.format(rounded)
+  
+  // Remove trailing .0
+  return formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted
+}
+
 /** Location display, e.g. "Augusta, GA, USA", or an em-dash when unknown. */
 export function formatLocation(location: TournamentLocation | null): string {
   if (!location) return EMPTY_VALUE
