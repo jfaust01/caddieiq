@@ -103,13 +103,13 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
 
   return (
     <tr className="border-b border-border hover:bg-muted/40 transition-colors">
-      {/* POS - STICKY */}
-      <td className="sticky left-0 z-10 px-2 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground w-12 sm:w-16 bg-background hover:bg-muted/40">
+      {/* POS */}
+      <td className="px-2 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground">
         {positionDisplay}
       </td>
 
       {/* PLAYER - STICKY */}
-      <td className="sticky left-12 sm:left-16 z-10 px-2 sm:px-3 py-3 text-left text-sm font-medium w-32 sm:w-48 bg-background hover:bg-muted/40">
+      <td className="sticky left-0 z-10 px-2 sm:px-3 py-3 text-left text-sm font-medium bg-background hover:bg-muted/40 border-r border-border/50">
         <div className="flex items-center gap-1 sm:gap-2 min-w-0">
           <Link
             href={`/players/${entrant.playerId}`}
@@ -122,8 +122,8 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
         </div>
       </td>
 
-      {/* TOTAL - STICKY */}
-      <td className="sticky left-44 sm:left-64 z-10 px-2 sm:px-3 py-3 text-right text-sm font-mono tabular-nums w-16 sm:w-20 bg-background hover:bg-muted/40 border-r border-border/50">
+      {/* TOTAL */}
+      <td className="px-2 sm:px-3 py-3 text-right text-sm font-mono tabular-nums">
         {totalDisplay}
       </td>
 
@@ -383,9 +383,9 @@ export function TournamentField({ field }: TournamentFieldProps) {
             <table className="w-full min-w-max text-sm border-collapse">
             <thead>
               <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
-                <th className="sticky left-0 z-20 px-2 sm:px-3 py-3 text-right text-xs font-semibold text-muted-foreground w-12 sm:w-16 bg-muted/40">POS</th>
-                <th className="sticky left-12 sm:left-16 z-20 px-2 sm:px-3 py-3 text-left text-xs font-semibold w-32 sm:w-48 bg-muted/40">PLAYER</th>
-                <th className="sticky left-44 sm:left-64 z-20 px-2 sm:px-3 py-3 text-right text-xs font-semibold w-16 sm:w-20 bg-muted/40 border-r border-border/50">TOTAL</th>
+                <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
+                <th className="sticky left-0 z-20 px-2 sm:px-3 py-3 text-left text-xs font-semibold bg-muted/40 border-r border-border/50">PLAYER</th>
+                <th className="px-2 sm:px-3 py-3 text-right text-xs font-semibold">TOTAL</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">THRU</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">ROUND</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R1</th>
