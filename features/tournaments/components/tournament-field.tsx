@@ -28,6 +28,7 @@ import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import { TourChip } from '@/features/tournaments/components/tour-chip'
 import { ScorecardLoader } from '@/features/tournaments/components/scorecard-loader'
+import { ExpandedPlayerScorecard } from '@/features/tournaments/components/expanded-player-scorecard'
 import { buildPositionCountMap, formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
@@ -598,8 +599,6 @@ async function ScorecardContent({
   }
 
   return (
-    <div className="p-4">
-      <PlayerRoundScorecard data={scorecard} />
-    </div>
+    <ExpandedPlayerScorecard data={scorecard} />
   )
 }

@@ -20,10 +20,21 @@ export interface CourseHoleData {
 
 export interface PlayerRoundScorecardData {
   playerName: string
+  headshotUrl?: string | null
+  tour?: string | null
+  currentPosition?: string | null
   roundNumber: number
   totalStrokes: number | null
   totalToPar: number | null
   totalDkPoints: number | null
+  dfsSalary?: number | null
+  ownershipPercent?: number | null
+  round1Score?: number | null
+  round2Score?: number | null
+  round3Score?: number | null
+  round4Score?: number | null
+  courseName?: string | null
+  courseYardage?: number | null
   courseHoles?: CourseHoleData[] // Course hole par data for display
   holes: HoleScoreData[]
 }
@@ -49,13 +60,34 @@ export const getPlayerRoundScorecard = cache(
           round: {
             select: {
               roundNumber: true,
+              course: {
+                select: {
+                  name: true,
+                  yardage: true,
+                  par: true,
+                  holes: {
+                    orderBy: { holeNumber: 'asc' },
+                    select: {
+                      holeNumber: true,
+                      par: true,
+                    },
+                  },
+                },
+              },
             },
           },
           tournamentField: {
             select: {
+              finalPosition: true,
               player: {
                 select: {
                   fullName: true,
+                  headshotUrl: true,
+                },
+              },
+              tournament: {
+                select: {
+                  id: true,
                 },
               },
             },
@@ -116,10 +148,18 @@ export const getPlayerRoundScorecard = cache(
 
       return {
         playerName: playerRound.tournamentField.player.fullName,
+        headshotUrl: playerRound.tournamentField.player.headshotUrl,
+        currentPosition: playerRound.tournamentField.finalPosition?.toString() || undefined,
         roundNumber: playerRound.round.roundNumber,
         totalStrokes: playerRound.score,
         totalToPar: playerRound.toPar,
         totalDkPoints: totalDkPoints,
+        courseName: playerRound.round.course?.name,
+        courseYardage: playerRound.round.course?.yardage,
+        courseHoles: playerRound.round.course?.holes.map((hole) => ({
+          holeNumber: hole.holeNumber,
+          par: hole.par,
+        })),
         holes: playerRound.holeScores.map((hole) => ({
           holeNumber: hole.holeNumber,
           score: hole.score,
