@@ -1,7 +1,6 @@
 'use client'
 
-import { Users, ChevronDown } from 'lucide-react'
-import Link from 'next/link'
+import { Users } from 'lucide-react'
 import { useMemo, useState, Suspense } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
@@ -209,11 +208,9 @@ function LeaderboardRow({
 function PlayerRowCells({
   entrant,
   positionCountMap,
-  isExpanded,
 }: {
   entrant: FieldEntrant
   positionCountMap?: Map<number, number>
-  isExpanded: boolean
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
   const salaryDisplay = formatMissing(entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null)
@@ -229,20 +226,14 @@ function PlayerRowCells({
 
   return (
     <>
-      {/* POS column with expand/collapse chevron */}
+      {/* POS column */}
       <td className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground align-middle">
-        <div className="flex items-center justify-end gap-2">
-          <ChevronDown
-            size={16}
-            className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-          />
-          <span>{positionDisplay}</span>
-        </div>
+        <span>{positionDisplay}</span>
       </td>
 
-      {/* PLAYER column */}
+      {/* PLAYER column - plain text, no link */}
       <td className="px-2 sm:px-3 py-3 text-left align-middle min-w-0" style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}>
-        <Link href={`/players/${entrant.playerId}`} onClick={(e) => e.stopPropagation()} className="hover:underline flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage src={entrant.headshotUrl || ''} alt={entrant.playerName} />
             <AvatarFallback className="text-xs">{initials}</AvatarFallback>
@@ -254,7 +245,7 @@ function PlayerRowCells({
               {entrant.tour && <TourChip tour={entrant.tour} />}
             </div>
           </div>
-        </Link>
+        </div>
       </td>
 
       {/* TOTAL column */}
@@ -336,17 +327,18 @@ function ExpandableLeaderboardRow({
         }}
         role="button"
         tabIndex={0}
-        className="cursor-pointer hover:bg-muted/50 transition-colors"
+        aria-expanded={isExpanded}
+        aria-controls={`player-scorecard-${entrant.playerId}`}
+        className="cursor-pointer hover:bg-muted/40 transition-colors"
       >
-        <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} isExpanded={isExpanded} />
+        <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
       </tr>
 
-      {/* Expanded scorecard row - 10 columns for visible fields */}
+      {/* Expanded scorecard row - 9 columns (removed chevron column) */}
       {isExpanded && (
         <tr className="bg-muted/20 hover:bg-muted/20">
-          <td colSpan={10} className="p-0">
+          <td colSpan={9} className="p-0" id={`player-scorecard-${entrant.playerId}`}>
             <div className="border-t border-border">
-              Scorecard expanded for {entrant.playerName}
               <ScorecardLoader
                 playerRoundId={entrant.playerId}
                 selectedRound={selectedRound}
