@@ -296,13 +296,14 @@ function PlayerRowCells({
 
 interface TournamentFieldProps {
   field: TournamentField
+  tournamentId: string
 }
 
 /**
  * Tournament Field leaderboard: a searchable, sortable, paginated table showing
  * all players with live tournament scoring, round-by-round results, and projections.
  */
-export function TournamentField({ field }: TournamentFieldProps) {
+export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
   const [sort, setSort] = useState<SortKey>('pos-asc')
@@ -565,7 +566,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
                           <ScorecardLoader
                             playerId={entrant.playerId}
                             playerName={entrant.playerName}
-                            tournamentId={field.tournamentId}
+                            tournamentId={tournamentId}
                             roundNumber={selectedRound}
                           />
                         </div>

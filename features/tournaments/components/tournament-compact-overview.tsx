@@ -20,6 +20,7 @@ export function TournamentCompactOverview({
   field,
   fieldReport,
 }: TournamentCompactOverviewProps) {
+  const tournamentId = tournament.id
   const hasField = field.size > 0
 
   return (
@@ -46,7 +47,7 @@ export function TournamentCompactOverview({
       {hasField && (
         <div className="pt-2 border-t border-border min-w-0">
           <div className="min-w-0">
-            <TournamentField field={field} />
+            <TournamentField field={field} tournamentId={tournamentId} />
           </div>
         </div>
       )}
