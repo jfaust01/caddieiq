@@ -140,14 +140,9 @@ function LeaderboardRow({
           {/* Two-row text block - vertically centered with headshot */}
           <div className="flex flex-col gap-1 min-w-0">
             {/* Row 1: Player Name */}
-            <Link
-              href={`/players/${entrant.playerId}`}
-              className="text-primary hover:underline text-xs sm:text-sm font-medium leading-tight whitespace-nowrap"
-              title={entrant.playerName}
-              data-player-name
-            >
+            <div className="text-xs sm:text-sm font-medium leading-tight whitespace-nowrap">
               {entrant.playerName}
-            </Link>
+            </div>
             
             {/* Row 2: Country Flag Image + Tour Chip (always renders) */}
             <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
