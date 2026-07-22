@@ -1,4 +1,5 @@
 import { Coins, Info, Scale, Sparkles, TrendingUp, Trophy } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -79,7 +80,18 @@ interface TournamentOddsIntelligenceProps {
 export function TournamentOddsIntelligence({ odds }: TournamentOddsIntelligenceProps) {
   const confidence = CONFIDENCE[odds.confidence]
   const winner = odds.markets.find((m) => m.market === 'TOURNAMENT_WINNER') ?? odds.markets[0] ?? null
-  const captured = capturedAgo(odds.capturedAt)
+  
+  // Calculate relative time only on client to avoid hydration mismatch
+  const [captured, setCaptured] = useState<string | null>(null)
+  
+  useEffect(() => {
+    setCaptured(capturedAgo(odds.capturedAt))
+    // Update every minute to keep "N hours/days ago" fresh
+    const interval = setInterval(() => {
+      setCaptured(capturedAgo(odds.capturedAt))
+    }, 60_000)
+    return () => clearInterval(interval)
+  }, [odds.capturedAt])
 
   return (
     <section className="flex flex-col gap-4">
