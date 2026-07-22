@@ -42,6 +42,16 @@ export function useDragScroll(options: DragScrollOptions = {}) {
     const dragState = dragStateRef.current
 
     /**
+     * End drag and clean up state
+     */
+    const endDrag = () => {
+      if (dragState.isDragging) {
+        dragState.isDragging = false
+        container.classList.remove('dragging')
+      }
+    }
+
+    /**
      * Prevent click events if we were actually dragging
      */
     const handleClick = (e: PointerEvent) => {
@@ -74,6 +84,14 @@ export function useDragScroll(options: DragScrollOptions = {}) {
      * Handle pointer move to scroll
      */
     const handlePointerMove = (e: PointerEvent) => {
+      // Stop dragging if mouse button is no longer held
+      if (e.buttons !== 1) {
+        if (dragState.isDragging) {
+          endDrag()
+        }
+        return
+      }
+
       // Check if we've moved enough to consider this a drag
       const movedDistance = Math.abs(e.clientX - dragState.startX)
       
@@ -99,26 +117,34 @@ export function useDragScroll(options: DragScrollOptions = {}) {
      * Stop dragging on pointer up
      */
     const handlePointerUp = (e: PointerEvent) => {
-      if ((e.target as HTMLElement)?.releasePointerCapture) {
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+      // Release pointer capture
+      try {
+        if ((e.target as HTMLElement)?.releasePointerCapture) {
+          (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+        }
+      } catch (err) {
+        // Ignore errors from releasing capture
       }
-      // Remove dragging class if it was added
-      if (dragState.isDragging) {
-        container.classList.remove('dragging')
-      }
-      // Keep isDragging state for click handler to see
+      
+      // End drag immediately and reset state
+      dragState.isDragging = false
+      endDrag()
     }
 
     /**
-     * Stop dragging if pointer leaves container
+     * Stop dragging on pointer leave
      */
     const handlePointerLeave = (e: PointerEvent) => {
-      if ((e.target as HTMLElement)?.releasePointerCapture) {
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId)
-      }
-      // Remove dragging class if it was added
+      // Only stop if we're actually dragging
       if (dragState.isDragging) {
-        container.classList.remove('dragging')
+        try {
+          if ((e.target as HTMLElement)?.releasePointerCapture) {
+            (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+          }
+        } catch (err) {
+          // Ignore errors from releasing capture
+        }
+        endDrag()
       }
     }
 
@@ -126,14 +152,31 @@ export function useDragScroll(options: DragScrollOptions = {}) {
      * Stop dragging on pointer cancel (e.g., system interruption)
      */
     const handlePointerCancel = (e: PointerEvent) => {
-      if ((e.target as HTMLElement)?.releasePointerCapture) {
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId)
-      }
-      // Remove dragging class if it was added
-      if (dragState.isDragging) {
-        container.classList.remove('dragging')
+      try {
+        if ((e.target as HTMLElement)?.releasePointerCapture) {
+          (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+        }
+      } catch (err) {
+        // Ignore errors from releasing capture
       }
       dragState.isDragging = false
+      endDrag()
+    }
+
+    /**
+     * Stop dragging on lost pointer capture (e.g., window blur, focus change)
+     */
+    const handleLostPointerCapture = (e: PointerEvent) => {
+      dragState.isDragging = false
+      endDrag()
+    }
+
+    /**
+     * Stop dragging on window blur
+     */
+    const handleWindowBlur = () => {
+      dragState.isDragging = false
+      endDrag()
     }
 
     // Add event listeners
@@ -143,6 +186,8 @@ export function useDragScroll(options: DragScrollOptions = {}) {
     container.addEventListener('pointerup', handlePointerUp as EventListener)
     container.addEventListener('pointerleave', handlePointerLeave as EventListener)
     container.addEventListener('pointercancel', handlePointerCancel as EventListener)
+    container.addEventListener('lostpointercapture', handleLostPointerCapture as EventListener)
+    window.addEventListener('blur', handleWindowBlur)
 
     return () => {
       container.removeEventListener('click', handleClick as EventListener, true)
@@ -151,6 +196,8 @@ export function useDragScroll(options: DragScrollOptions = {}) {
       container.removeEventListener('pointerup', handlePointerUp as EventListener)
       container.removeEventListener('pointerleave', handlePointerLeave as EventListener)
       container.removeEventListener('pointercancel', handlePointerCancel as EventListener)
+      container.removeEventListener('lostpointercapture', handleLostPointerCapture as EventListener)
+      window.removeEventListener('blur', handleWindowBlur)
     }
   }, [dragThreshold, scrollMultiplier])
 
