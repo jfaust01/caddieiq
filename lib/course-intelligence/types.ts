@@ -14,29 +14,66 @@ export interface Metric {
 }
 
 /**
+ * Metric with both star rating and numeric score.
+ * Enhanced with confidence level and explanation.
+ */
+export interface MetricWithExplanation extends Metric {
+  confidence?: number // 0-100
+  explanation?: string
+}
+
+/**
  * Course Intelligence output.
  *
  * Analyzes imported course data and generates reusable characteristics.
  * Used throughout CaddieIQ for course context and player analysis.
+ * 20+ metrics covering difficulty, strategy, hazards, and playability.
  */
 export interface CourseIntelligence {
   courseId: string
   generatedAt: Date
 
-  // Primary difficulty metrics
+  // CORE DIFFICULTY METRICS (4)
   overallDifficulty: Metric
+  scoringDifficulty: Metric
+  bogeyRisk: Metric
+  variance: Metric
+
+  // STRATEGY METRICS - Game Emphasis (4)
   drivingImportance: Metric
   approachImportance: Metric
   shortGameImportance: Metric
   puttingImportance: Metric
 
-  // Environmental factors
+  // ENVIRONMENTAL & SCORING METRICS (4)
   windSensitivity: Metric
   penaltySeverity: Metric
-
-  // Scoring environment
   birdiePotential: Metric
   scoringVolatility: Metric
+
+  // FAIRWAY & APPROACH METRICS (3)
+  fairwayWidth: Metric
+  ironDifficulty: Metric
+  puttingDifficulty: Metric
+
+  // HAZARD METRICS (5)
+  waterHazardRisk: Metric
+  sandHazardRisk: Metric
+  treeRisk: Metric
+  outOfBoundsRisk: Metric
+  hazardImpact: Metric
+
+  // ENVIRONMENTAL CHARACTERISTICS (4)
+  elevationImpact: Metric
+  weatherFactor: Metric
+  playability: Metric
+  uniqueness: Metric
+
+  // METADATA (2)
+  dataCompleteness: number // 0-100, % of available data used
+  courseTags: string[] // e.g., ["Bomber Friendly", "Accuracy Course", ...]
+
+  // SUMMARY: 28 total metrics across 6 categories
 }
 
 /**

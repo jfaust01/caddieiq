@@ -106,6 +106,10 @@ export interface TournamentSummary {
   purse: number | null
   /** Winner of the prior edition, or null when not derivable. */
   defendingChampion: string | null
+  /** Cut line score (strokes under/over par), or null when not applicable. */
+  cutLine: number | null
+  /** Number of rounds played before cut, or null when not applicable. */
+  cutAfterRounds: number | null
   /**
    * Record lifecycle timestamps (ISO strings). Only populated on the detail
    * view; the directory list omits them, so they are optional.
@@ -125,15 +129,17 @@ export type FieldEntryStatus =
 
 /**
  * One player in a tournament's field, as shown in the UI. `playerId` links to
- * the player profile. Finishing position is intentionally absent: the provider
- * tier obfuscates it, so the field is presented as a roster with reliable
- * participation status rather than fabricated standings.
+ * the player profile. Includes live tournament scoring data when available.
  */
 export interface FieldEntrant {
   playerId: string
   playerName: string
   /** Raw ISO-ish country code, or null when unknown. */
   countryCode: string | null
+  /** Remote headshot URL when available; null renders an initials placeholder. */
+  headshotUrl: string | null
+  /** Professional tour affiliation (e.g., "PGA TOUR", "LIV", "DP WORLD TOUR"), or null when unavailable. */
+  tour: string | null
   status: FieldEntryStatus
   isAlternate: boolean
   withdrawn: boolean
@@ -163,6 +169,61 @@ export interface FieldEntrant {
    * ranking is built from.
    */
   fantasyScore: number | null
+
+  // Tournament Scoring Data
+  /** Current tournament position (rank), or null when not yet available. */
+  position: number | null
+  /** Total tournament score relative to par (e.g., -12, 0, +3), or null when not played. */
+  total: number | null
+  /** Total tournament score in strokes, or null when not applicable. */
+  totalStrokes: number | null
+  /** Tournament-level DK fantasy points, or null when unavailable. */
+  totalDkFantasyPoints: number | null
+  /** Current hole number completed in current round, or null. "F" indicates finished. */
+  thruHole: string | null
+  /** Current round score relative to par (e.g., -4, E, +2), or null. */
+  roundScore: number | null
+  /** Round 1 score in strokes, or null if not played. */
+  round1: number | null
+  /** Round 1 score relative to par, or null if not played. */
+  round1RelToPar: number | null
+  /** Round 1 DK fantasy points, or null if not played or unavailable. */
+  round1DkPoints: number | null
+  /** Round 2 score in strokes, or null if not played. */
+  round2: number | null
+  /** Round 2 score relative to par, or null if not played. */
+  round2RelToPar: number | null
+  /** Round 2 DK fantasy points, or null if not played or unavailable. */
+  round2DkPoints: number | null
+  /** Round 3 score in strokes, or null if not played. */
+  round3: number | null
+  /** Round 3 score relative to par, or null if not played. */
+  round3RelToPar: number | null
+  /** Round 3 DK fantasy points, or null if not played or unavailable. */
+  round3DkPoints: number | null
+  /** Round 4 score in strokes, or null if not played. */
+  round4: number | null
+  /** Round 4 score relative to par, or null if not played. */
+  round4RelToPar: number | null
+  /** Round 4 DK fantasy points, or null if not played or unavailable. */
+  round4DkPoints: number | null
+  /** Projected finishing position or score, or null when not available. */
+  projection: string | null
+  /** Scheduled tee time for the player, or null when not applicable. */
+  startingTime: string | null
+  /**
+   * The player's final DraftKings fantasy points for this tournament, or null
+   * when no historical outcome exists. Only authoritative DK results — never
+   * projections, averages, or salaries.
+   */
+  dkFantasyPoints: number | null
+  /** Current betting odds to win (e.g., "+1800", "+6500"), or null when unavailable. */
+  oddsToWin: string | null
+  /**
+   * Projected DFS ownership percentage (0-100), or null when unavailable.
+   * Represents the expected percentage of fantasy contests with this player in their lineup.
+   */
+  ownershipPercent: number | null
 }
 
 /**

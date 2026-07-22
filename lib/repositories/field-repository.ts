@@ -54,6 +54,10 @@ export interface FieldEntryRow {
   playerId: string
   playerName: string
   countryCode: string | null
+  /** Remote headshot URL when available; null renders an initials placeholder. */
+  headshotUrl: string | null
+  /** Active professional tour membership. */
+  tour: string | null
   status: string
   isAlternate: boolean
   withdrawn: boolean
@@ -65,6 +69,27 @@ export interface FieldEntryRow {
    * known rank obfuscation.
    */
   worldRanking: number | null
+  /**
+   * The player's final DraftKings fantasy points for this tournament, or null
+   * when no historical tournament outcome exists. Only populated when
+   * HistoricalTournamentOutcome records are available. Never estimates,
+   * projections, or averages — only authoritative DK results.
+   */
+  dkFantasyPoints: number | null
+  /**
+   * Projected DFS ownership percentage (0-100), or null when unavailable.
+   * Sourced from DfsPlayerOwnership.projectedOwnership (converted from 0-1 scale).
+   */
+  ownershipPercent: number | null
+  // Per-round scoring data
+  round1: number | null
+  round1RelToPar: number | null
+  round2: number | null
+  round2RelToPar: number | null
+  round3: number | null
+  round3RelToPar: number | null
+  round4: number | null
+  round4RelToPar: number | null
 }
 
 /** Compact entrant used for the tournament hub's field preview. */
@@ -176,13 +201,35 @@ export class FieldRepository extends BaseRepository {
         p.id AS "playerId",
         p."fullName" AS "playerName",
         p."countryCode" AS "countryCode",
+        p."headshotUrl" AS "headshotUrl",
+        ds.operator AS "tour",
         tf.status::text AS "status",
         tf."isAlternate" AS "isAlternate",
         tf.withdrawn AS "withdrawn",
         tf."cutMade" AS "cutMade",
-        stat."worldRanking" AS "worldRanking"
+        stat."worldRanking" AS "worldRanking",
+        hto.dk_fantasy_points AS "dkFantasyPoints",
+        -- Ownership percentage (null - contest data not available at tournament level)
+        NULL::float AS "ownershipPercent",
+        -- Per-round strokes and relative-to-par
+        MAX(CASE WHEN r."roundNumber" = 1 THEN pr.score END) AS "round1",
+        MAX(CASE WHEN r."roundNumber" = 1 THEN pr."toPar" END) AS "round1RelToPar",
+        MAX(CASE WHEN r."roundNumber" = 2 THEN pr.score END) AS "round2",
+        MAX(CASE WHEN r."roundNumber" = 2 THEN pr."toPar" END) AS "round2RelToPar",
+        MAX(CASE WHEN r."roundNumber" = 3 THEN pr.score END) AS "round3",
+        MAX(CASE WHEN r."roundNumber" = 3 THEN pr."toPar" END) AS "round3RelToPar",
+        MAX(CASE WHEN r."roundNumber" = 4 THEN pr.score END) AS "round4",
+        MAX(CASE WHEN r."roundNumber" = 4 THEN pr."toPar" END) AS "round4RelToPar"
       FROM tournament_fields tf
       JOIN players p ON p.id = tf."playerId" AND p."deletedAt" IS NULL
+      -- DFS salaries: source of authoritative tour operator
+      -- LEFT JOIN (optional) allows entrants without DFS salary records (no tour data)
+      LEFT JOIN dfs_salaries ds
+        ON ds."playerId" = tf."playerId"
+        AND ds."tournamentId" = tf."tournamentId"
+      -- Per-round scoring data
+      LEFT JOIN player_rounds pr ON pr."tournamentFieldId" = tf.id
+      LEFT JOIN rounds r ON r.id = pr."roundId"
       -- The player's most recent season ranking, if any has been imported.
       -- LEFT JOIN LATERAL keeps entrants without stats in the roster (rank null).
       LEFT JOIN LATERAL (
@@ -192,7 +239,15 @@ export class FieldRepository extends BaseRepository {
         ORDER BY s.season DESC
         LIMIT 1
       ) stat ON true
+      -- Historical tournament outcomes with DraftKings fantasy points (if available).
+      -- LEFT JOIN allows entrants without outcomes (no DK points data).
+      LEFT JOIN historical_tournament_outcomes hto
+        ON hto.tournament_id = tf."tournamentId"
+        AND hto.player_id = tf."playerId"
+        AND hto.dk_fantasy_points IS NOT NULL
       WHERE tf."tournamentId" = ${tournamentId}
+      GROUP BY tf.id, p.id, p."fullName", p."countryCode", p."headshotUrl", ds.operator, tf.status, 
+               tf."isAlternate", tf.withdrawn, tf."cutMade", stat."worldRanking", hto.dk_fantasy_points
       ORDER BY p."fullName" ASC
     `)
   }

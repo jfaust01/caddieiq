@@ -98,10 +98,27 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
           />
           <Fact icon={DollarSign} label="Purse" value={formatPurse(tournament.purse)} />
           <Fact
-            icon={Award}
-            label="Defending champion"
-            value={textDisplay(tournament.defendingChampion)}
+            icon={Trophy}
+            label="FedEx points"
+            value={textDisplay(tournament.fedExPoints ? `${tournament.fedExPoints}` : null)}
           />
+          <Fact
+            icon={Trophy}
+            label="World ranking points"
+            value={textDisplay(tournament.worldRankingPoints ? `${tournament.worldRankingPoints}` : null)}
+          />
+          <Fact
+            icon={Flag}
+            label="Cut rule"
+            value={tournament.cutAfterRounds ? `After ${tournament.cutAfterRounds} round${tournament.cutAfterRounds !== 1 ? 's' : ''}` : '—'}
+          />
+          {tournament.cutLine !== null && (
+            <Fact
+              icon={Flag}
+              label="Cut line"
+              value={tournament.cutLine >= 0 ? `+${tournament.cutLine}` : `${tournament.cutLine}`}
+            />
+          )}
         </dl>
       </CardContent>
     </Card>

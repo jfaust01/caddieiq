@@ -55,13 +55,9 @@ export async function CourseIntelligenceHub({
   ]
   const potentialFades = ['Pure Bombers', 'Wind-Sensitive Players']
 
-  // Mock hole breakdown - would come from courseDetails.holes once available
-  const holes = Array.from({ length: 18 }, (_, i) => ({
-    number: i + 1,
-    par: i < 9 ? (Math.random() > 0.5 ? 3 : 4) : Math.random() > 0.5 ? 4 : 5,
-    yardage: 350 + Math.random() * 250,
-    handicap: Math.floor(Math.random() * 18) + 1,
-  }))
+  // Hole-by-hole data would come from courseDetails.holes once available
+  // For now, pass null to HoleBreakdown component to display unavailable state
+  const holes = null
 
     return (
       <div className="space-y-8">

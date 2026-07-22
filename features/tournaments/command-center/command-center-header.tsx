@@ -16,8 +16,6 @@ interface CommandCenterHeaderProps {
   weatherPlaceholder: string
   /** One-word data-confidence label for the whole hub (e.g. "verified"). */
   dataConfidence: string | null
-  /** Quick actions row (client component) rendered on the right. */
-  actions?: ReactNode
 }
 
 /** A compact fact chip in the header meta row. */
@@ -42,7 +40,6 @@ export function CommandCenterHeader({
   weatherSummary,
   weatherPlaceholder,
   dataConfidence,
-  actions,
 }: CommandCenterHeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   
@@ -60,22 +57,25 @@ export function CommandCenterHeader({
   return (
     <header 
       ref={headerRef}
-      className="sticky z-40 w-full border-b border-border bg-background/95 px-4 py-2 backdrop-blur-md sm:px-6"
-      style={{ top: 'var(--sticky-top, 0px)', display: 'inline' } as React.CSSProperties & { '--sticky-top': string }}
+      className="sticky z-40 w-full border-b border-border bg-background/95 backdrop-blur-md"
+      style={{ top: 'var(--sticky-top, 0px)' } as React.CSSProperties & { '--sticky-top': string }}
     >
-      <div className="mx-auto max-w-7xl flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="px-4 py-2 sm:px-6">
+        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <TournamentStatusBadge status={tournament.status} />
-            {dataConfidence ? (
-              <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
-                {dataConfidence} data
-              </span>
-            ) : null}
+            <h1 className="truncate text-lg font-semibold tracking-tight text-balance">
+              {tournament.name}
+            </h1>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <TournamentStatusBadge status={tournament.status} />
+              {dataConfidence ? (
+                <span className="rounded-full border border-border bg-muted/60 px-1.5 py-0.5 text-[0.5rem] font-medium uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                  {dataConfidence} data
+                </span>
+              ) : null}
+            </div>
           </div>
-          <h1 className="truncate text-lg font-semibold tracking-tight text-balance">
-            {tournament.name}
-          </h1>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <MetaChip icon={<CalendarDays aria-hidden />}>
               {formatDateRange(tournament.startDate, tournament.endDate)}
@@ -91,7 +91,7 @@ export function CommandCenterHeader({
             </MetaChip>
           </div>
         </div>
-        {actions ? <div className="shrink-0">{actions}</div> : null}
+        </div>
       </div>
     </header>
   )

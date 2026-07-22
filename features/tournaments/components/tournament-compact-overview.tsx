@@ -1,91 +1,44 @@
 'use client'
 
 import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
-import type { WeatherIntelligence } from '@/lib/weather-intelligence'
-import type { CourseIntelligence } from '@/features/courses/types'
-import { CompactKpiRow } from './compact-kpi-row'
-import { CompactLeaderboard } from './compact-leaderboard'
-import { CompactCourseFitSummary } from './compact-course-fit-summary'
-import { CompactWeatherSummary } from './compact-weather-summary'
-import { CompactDfsSummary } from './compact-dfs-summary'
-import { CompactCourseHistoryRow } from './compact-course-history-row'
-import { TournamentOverview } from './tournament-overview'
+import { EventDetailsPills } from './event-details-pills'
+import { TournamentField } from './tournament-field'
 
 interface TournamentCompactOverviewProps {
   tournament: TournamentSummary
   field: TournamentField
   fieldReport?: { cutLine?: string; averageScore?: number } | null
-  fitBoard?: Record<string, unknown> | null
-  weather: WeatherIntelligence | null
-  dfsField?: Record<string, unknown> | null
-  courseProfile: CourseIntelligence | null
 }
 
 /**
- * Compact tournament overview dashboard (target: 2-3 viewport heights).
- * Combines KPIs, top-5 leaderboard, course fit, weather, DFS summary,
- * and course/history facts into a single scrollable overview.
- *
- * Full content is available in dedicated tabs (via TournamentDetailTabs).
+ * Tournament overview displaying event metadata and field information.
  */
 export function TournamentCompactOverview({
   tournament,
   field,
   fieldReport,
-  fitBoard,
-  weather,
-  dfsField,
-  courseProfile,
 }: TournamentCompactOverviewProps) {
   const hasField = field.size > 0
-  const courseRef = tournament.courseRef
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* KPI Row: 5 metric cards */}
-      <div>
-        <CompactKpiRow
-          tournament={tournament}
-          field={field}
-          fieldReport={fieldReport}
-        />
+    <div className="flex flex-col gap-6 min-w-0">
+      {/* Event Details Pills */}
+      <div className="min-w-0">
+        <EventDetailsPills tournament={tournament} />
       </div>
 
-      {/* Two-column grid: Leaderboard + Course Fit */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <CompactLeaderboard
-          field={field}
-          tournamentId={tournament.id}
-        />
-        <CompactCourseFitSummary
-          fitBoard={fitBoard}
-          hasCourse={Boolean(courseRef)}
-          courseRef={courseRef}
-        />
-      </div>
-
-      {/* Two-column grid: Weather + DFS */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <CompactWeatherSummary weather={weather} />
-        {hasField && (
-          <CompactDfsSummary
-            dfsField={dfsField}
-            tournamentId={tournament.id}
-          />
-        )}
-      </div>
-
-      {/* Course & History Facts */}
-      <CompactCourseHistoryRow
-        tournament={tournament}
-        courseProfile={courseProfile}
-      />
-
-      {/* Full Tournament Overview Card (event metadata) */}
-      <div className="pt-2 border-t border-border">
-        <h3 className="text-sm font-semibold mb-4">Event Details</h3>
-        <TournamentOverview tournament={tournament} />
-      </div>
+      {/* Field Section */}
+      {hasField && (
+        <div className="pt-8 border-t border-border min-w-0">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold">Field</h3>
+            <p className="text-sm text-muted-foreground">Browse every golfer in this tournament.</p>
+          </div>
+          <div className="min-w-0">
+            <TournamentField field={field} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

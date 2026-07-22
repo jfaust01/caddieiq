@@ -16,7 +16,7 @@ import { TournamentHero } from '@/features/tournaments/components/tournament-her
 import { TournamentFieldBanner } from '@/features/tournaments/components/tournament-field-banner'
 import { TournamentIntelligence } from '@/features/tournaments/components/tournament-intelligence'
 import { TournamentOverview } from '@/features/tournaments/components/tournament-overview'
-import { TournamentSidebar } from '@/features/tournaments/components/tournament-sidebar'
+
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
 import { courseService } from '@/features/courses/services/course-service'
 import { isCurrentUserAdmin } from '@/lib/session'
@@ -63,7 +63,6 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
   const [
     field,
     fieldReport,
-    fieldNews,
     courseProfile,
     fitBoard,
     weather,
@@ -74,7 +73,6 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
   ] = await Promise.all([
     tournamentService.getTournamentField(tournament.id),
     tournamentService.getFieldReport(tournament.id),
-    tournamentService.getFieldNews(tournament.id),
     courseRef ? courseService.getCourseIntelligence(courseRef.id) : Promise.resolve(null),
     tournamentService.getFieldFitBoard(tournament.id),
     tournamentService.getWeatherIntelligence(tournament.id),
@@ -141,27 +139,16 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
         <FieldFitBoard board={fitBoard} hasCourse={Boolean(courseRef)} />
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <TournamentDetailTabs
-            overview={
-              <div className="flex flex-col gap-6">
-                <TournamentOverview tournament={tournament} />
-                <FieldRankingLeaders leaders={field.rankingLeaders} />
-              </div>
-            }
-            field={<TournamentField field={field} />}
-            fieldCount={field.size}
-          />
-        </div>
-        <aside className="lg:col-span-1" aria-label="Tournament research">
-          <TournamentSidebar
-            tournament={tournament}
-            fieldNews={fieldNews}
-            hasField={field.size > 0}
-          />
-        </aside>
-      </div>
+      <TournamentDetailTabs
+        overview={
+          <div className="flex flex-col gap-6">
+            <TournamentOverview tournament={tournament} />
+            <FieldRankingLeaders leaders={field.rankingLeaders} />
+          </div>
+        }
+        field={<TournamentField field={field} />}
+        fieldCount={field.size}
+      />
     </PageShell>
   )
 }

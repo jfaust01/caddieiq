@@ -9,6 +9,14 @@ import {
   calculateScoringDifficulty,
   calculateBogeyRisk,
   calculateVariance,
+  calculateDrivingImportance,
+  calculateApproachImportance,
+  calculateShortGameImportance,
+  calculatePuttingImportance,
+  calculateWindSensitivity,
+  calculatePenaltySeverity,
+  calculateBirdiePotential,
+  calculateScoringVolatility,
   calculateFairwayWidth,
   calculateIronDifficulty,
   calculatePuttingDifficulty,
@@ -31,6 +39,18 @@ export interface CalculatedMetrics {
   scoringDifficulty: MetricResult
   bogeyRisk: MetricResult
   variance: MetricResult
+
+  // Strategy metrics (game emphasis)
+  drivingImportance: MetricResult
+  approachImportance: MetricResult
+  shortGameImportance: MetricResult
+  puttingImportance: MetricResult
+
+  // Environmental & scoring metrics
+  windSensitivity: MetricResult
+  penaltySeverity: MetricResult
+  birdiePotential: MetricResult
+  scoringVolatility: MetricResult
 
   // Fairway & approach metrics
   fairwayWidth: MetricResult
@@ -62,13 +82,25 @@ export class CourseIntelligenceEngine {
   static calculateMetrics(course: CourseData): CalculatedMetrics {
     console.log(`[v0] Calculating intelligence metrics for: ${course.name}`)
 
-    // Calculate all metrics in parallel groups
+    // Calculate all 20+ metrics
     const metrics: CalculatedMetrics = {
       // Difficulty metrics
       difficulty: calculateDifficulty(course),
       scoringDifficulty: calculateScoringDifficulty(course),
       bogeyRisk: calculateBogeyRisk(course),
       variance: calculateVariance(course),
+
+      // Strategy metrics (game emphasis)
+      drivingImportance: calculateDrivingImportance(course),
+      approachImportance: calculateApproachImportance(course),
+      shortGameImportance: calculateShortGameImportance(course),
+      puttingImportance: calculatePuttingImportance(course),
+
+      // Environmental & scoring metrics
+      windSensitivity: calculateWindSensitivity(course),
+      penaltySeverity: calculatePenaltySeverity(course),
+      birdiePotential: calculateBirdiePotential(course),
+      scoringVolatility: calculateScoringVolatility(course),
 
       // Fairway & approach metrics
       fairwayWidth: calculateFairwayWidth(course),
@@ -92,7 +124,7 @@ export class CourseIntelligenceEngine {
       dataCompleteness: this.calculateDataCompleteness(course),
     }
 
-    console.log(`[v0] Metrics calculated. Overall difficulty: ${metrics.difficulty.score}/100`)
+    console.log(`[v0] Metrics calculated. Overall difficulty: ${metrics.difficulty.score}/100 (20+ metrics generated)`)
 
     return metrics
   }

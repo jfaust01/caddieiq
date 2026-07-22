@@ -52,6 +52,8 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     playerId: row.playerId,
     playerName: row.playerName,
     countryCode: row.countryCode ?? null,
+    headshotUrl: row.headshotUrl ?? null,
+    tour: row.tour ?? null,
     status: toFieldStatus(row.status),
     isAlternate: row.isAlternate,
     withdrawn: row.withdrawn,
@@ -60,6 +62,21 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     rankingScore: null,
     formScore: null,
     fantasyScore: null,
+    dkFantasyPoints: row.dkFantasyPoints ?? null,
+    totalDkFantasyPoints: row.dkFantasyPoints ?? null, // Use tournament-level DK points for TOTAL
+    ownershipPercent: row.ownershipPercent ?? null,
+    round1: row.round1 ?? null,
+    round1RelToPar: row.round1RelToPar ?? null,
+    round1DkPoints: null, // Per-round DK points not yet implemented
+    round2: row.round2 ?? null,
+    round2RelToPar: row.round2RelToPar ?? null,
+    round2DkPoints: null,
+    round3: row.round3 ?? null,
+    round3RelToPar: row.round3RelToPar ?? null,
+    round3DkPoints: null,
+    round4: row.round4 ?? null,
+    round4RelToPar: row.round4RelToPar ?? null,
+    round4DkPoints: null,
   }
 }
 
@@ -115,5 +132,7 @@ export function mapTournamentSummary(row: TournamentSearchRow): TournamentSummar
       : null,
     purse: typeof row.purse === 'number' && Number.isFinite(row.purse) ? row.purse : null,
     defendingChampion: row.defendingChampion ?? null,
+    cutLine: typeof row.cutLine === 'number' && Number.isFinite(row.cutLine) ? row.cutLine : null,
+    cutAfterRounds: typeof row.cutAfterRounds === 'number' && Number.isFinite(row.cutAfterRounds) ? row.cutAfterRounds : null,
   }
 }

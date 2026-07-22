@@ -6,6 +6,8 @@ import { useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { SearchBar } from '@/components/shared/search-bar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -13,50 +15,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
-import { FieldStatusBadge } from '@/features/tournaments/components/field-status-badge'
-import { TournamentPagination } from '@/features/tournaments/components/tournament-pagination'
+import { PlayerFlag } from '@/features/tournaments/components/player-flag'
+import { ScoreCell } from '@/features/tournaments/components/score-cell'
+import { TourChip } from '@/features/tournaments/components/tour-chip'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
+import { getDevelopmentPlayerMetadata } from '@/lib/development/mock-player-metadata'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
 
-const PAGE_SIZE = 20
-
 type SortKey =
+  | 'pos-asc'
+  | 'pos-desc'
   | 'name-asc'
   | 'name-desc'
-  | 'status'
-  | 'rank'
-  | 'ranking-score'
-  | 'form-score'
-  | 'fantasy-score'
+  | 'total-asc'
+  | 'total-desc'
+  | 'proj-asc'
+  | 'proj-desc'
+  | 'own-asc'
+  | 'own-desc'
+  | 'odds-asc'
+  | 'odds-desc'
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'pos-asc', label: 'Position (↑)' },
+  { value: 'pos-desc', label: 'Position (↓)' },
   { value: 'name-asc', label: 'Name (A–Z)' },
   { value: 'name-desc', label: 'Name (Z–A)' },
-  { value: 'ranking-score', label: 'CaddieIQ ranking' },
-  { value: 'form-score', label: 'Recent form' },
-  { value: 'fantasy-score', label: 'Fantasy value' },
-  { value: 'rank', label: 'World rank' },
-  { value: 'status', label: 'Status' },
+  { value: 'total-asc', label: 'Total (Low)' },
+  { value: 'total-desc', label: 'Total (High)' },
+  { value: 'proj-asc', label: 'Projection (↑)' },
+  { value: 'proj-desc', label: 'Projection (↓)' },
+  { value: 'own-asc', label: 'Ownership (Low)' },
+  { value: 'own-desc', label: 'Ownership (High)' },
+  { value: 'odds-asc', label: 'Odds (Favorable)' },
+  { value: 'odds-desc', label: 'Odds (Long)' },
 ]
 
-/**
- * Which entrant score the "score" column shows, driven by the active sort so
- * the visible number always matches the ordering. Defaults to the overall
- * CaddieIQ ranking for the non-score sorts.
- */
-const SCORE_FIELD_BY_SORT: Record<SortKey, { key: 'rankingScore' | 'formScore' | 'fantasyScore'; label: string }> = {
-  'name-asc': { key: 'rankingScore', label: 'CaddieIQ ranking score' },
-  'name-desc': { key: 'rankingScore', label: 'CaddieIQ ranking score' },
-  status: { key: 'rankingScore', label: 'CaddieIQ ranking score' },
-  rank: { key: 'rankingScore', label: 'CaddieIQ ranking score' },
-  'ranking-score': { key: 'rankingScore', label: 'CaddieIQ ranking score' },
-  'form-score': { key: 'formScore', label: 'Recent form score' },
-  'fantasy-score': { key: 'fantasyScore', label: 'Fantasy production score' },
-}
-
-/** Order statuses so the "most notable" participation states sort first. */
 const STATUS_ORDER: Record<FieldEntryStatus, number> = {
   CONFIRMED: 0,
   FINISHED: 1,
@@ -66,83 +68,122 @@ const STATUS_ORDER: Record<FieldEntryStatus, number> = {
   DISQUALIFIED: 5,
 }
 
-interface CountryChipProps {
-  code: string | null
+/**
+ * Format a number as "—" if null/undefined, else return the value
+ */
+function formatMissing<T>(value: T | null | undefined): T | string {
+  return value == null ? '—' : value
 }
 
 /**
- * Compact country code chip. Renders the raw ISO code the field feed supplies;
- * shows a neutral placeholder rather than fabricating a country when unknown.
+ * Parse betting odds string to numeric value for sorting
  */
-function CountryChip({ code }: CountryChipProps) {
-  const label = code && code.trim() ? code.trim().toUpperCase() : null
-  return (
-    <span
-      aria-hidden
-      className="inline-flex h-5 min-w-8 items-center justify-center rounded-[3px] bg-muted px-1 text-[10px] font-semibold tracking-wide text-muted-foreground tabular-nums"
-    >
-      {label ?? '??'}
-    </span>
-  )
-}
-
-interface FieldRowProps {
-  entrant: FieldEntrant
-  scoreKey: 'rankingScore' | 'formScore' | 'fantasyScore'
-  scoreLabel: string
+function parseOdds(odds: string | null): number {
+  if (!odds) return Number.MAX_VALUE
+  const num = parseInt(odds.replace(/[^\d-]/g, ''), 10)
+  return isNaN(num) ? Number.MAX_VALUE : num
 }
 
 /**
- * The player's most recent world rank, shown as a compact `#N` chip. Renders a
- * muted em-dash when no ranking has been imported, so the column stays aligned
- * without implying a rank we do not have.
+ * Tournament leaderboard row: displays all scoring columns with proper alignment
  */
-function RankChip({ rank }: { rank: number | null }) {
-  return (
-    <span
-      className="w-12 shrink-0 text-right text-xs font-medium tabular-nums text-muted-foreground"
-      title={rank === null ? 'No world ranking available' : `World rank #${rank}`}
-    >
-      {rank === null ? '—' : `#${rank}`}
-    </span>
-  )
-}
+function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
+  const positionDisplay = formatMissing(entrant.position)
+  const projDisplay = formatMissing(entrant.projection)
+  const oddsDisplay = formatMissing(entrant.oddsToWin)
+  
+  // Extract initials from player name for avatar fallback
+  const initials = entrant.playerName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 
-/**
- * A CaddieIQ score (0–100) as a compact chip. `label` names which score is
- * shown (it tracks the active sort). Shows a muted em-dash for unrated players
- * (no season data) so the column stays aligned without implying a score we
- * cannot ground in data.
- */
-function ScoreChip({ score, label }: { score: number | null; label: string }) {
-  return (
-    <span
-      className="hidden w-12 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground sm:inline"
-      title={score === null ? 'Unrated — no season data' : `${label} ${Math.round(score)}`}
-    >
-      {score === null ? '—' : Math.round(score)}
-    </span>
-  )
-}
+  // Format ownership percentage
+  const ownershipDisplay = entrant.ownershipPercent == null 
+    ? '—' 
+    : entrant.ownershipPercent.toFixed(1) + '%'
 
-/**
- * A single entrant row: country, name (links to the player), the active
- * CaddieIQ score, world rank, and status.
- */
-function FieldRow({ entrant, scoreKey, scoreLabel }: FieldRowProps) {
+  // Get Tour data: use real if available, fallback to development mock
+  const tour = entrant.tour ?? getDevelopmentPlayerMetadata(entrant.playerId, entrant.playerName).tour
+
   return (
-    <li className="flex items-center gap-3 py-2.5">
-      <CountryChip code={entrant.countryCode} />
-      <Link
-        href={`/players/${entrant.playerId}`}
-        className="min-w-0 flex-1 truncate text-sm font-medium tracking-tight outline-none hover:underline focus-visible:underline"
-      >
-        {entrant.playerName}
-      </Link>
-      <ScoreChip score={entrant[scoreKey]} label={scoreLabel} />
-      <RankChip rank={entrant.worldRanking} />
-      <FieldStatusBadge status={entrant.status} />
-    </li>
+    <tr className="group border-b border-border hover:bg-muted/40 transition-colors">
+      {/* POS */}
+      <td className="px-2 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
+        {positionDisplay}
+      </td>
+
+      {/* PLAYER - STICKY with two-row layout: headshot+name / flag+tour */}
+      <td className="sticky left-0 z-10 px-3 py-2.5 text-left bg-background group-hover:bg-muted/40 border-r border-border/50 align-middle">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Headshot Avatar - larger size: 44px desktop, 42px tablet, 40px mobile */}
+          <Avatar className="h-11 w-11 sm:h-11 flex-shrink-0">
+            <AvatarImage src={entrant.headshotUrl ?? undefined} alt={entrant.playerName} />
+            <AvatarFallback className="text-sm font-semibold">{initials}</AvatarFallback>
+          </Avatar>
+          
+          {/* Two-row text block - vertically centered with headshot */}
+          <div className="flex flex-col gap-1 min-w-0">
+            {/* Row 1: Player Name */}
+            <Link
+              href={`/players/${entrant.playerId}`}
+              className="truncate text-primary hover:underline text-xs sm:text-sm font-medium leading-tight"
+              title={entrant.playerName}
+            >
+              {entrant.playerName}
+            </Link>
+            
+            {/* Row 2: Country Flag Image + Tour Chip (always renders) */}
+            <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
+              <PlayerFlag countryCode={entrant.countryCode} />
+              <TourChip tour={tour} />
+            </div>
+          </div>
+        </div>
+      </td>
+
+      {/* TOTAL - Three-line score cell with tournament strokes, rel-to-par, and DK points */}
+      <td className="px-2 sm:px-3 py-3 text-center align-middle">
+        <ScoreCell strokes={entrant.totalStrokes} relativeToPar={entrant.total} dkPoints={entrant.totalDkFantasyPoints} emphasis="total" />
+      </td>
+
+      {/* R1 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell strokes={entrant.round1} relativeToPar={entrant.round1RelToPar} dkPoints={entrant.round1DkPoints} />
+      </td>
+
+      {/* R2 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell strokes={entrant.round2} relativeToPar={entrant.round2RelToPar} dkPoints={entrant.round2DkPoints} />
+      </td>
+
+      {/* R3 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell strokes={entrant.round3} relativeToPar={entrant.round3RelToPar} dkPoints={entrant.round3DkPoints} />
+      </td>
+
+      {/* R4 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell strokes={entrant.round4} relativeToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
+      </td>
+
+      {/* PROJ. */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums align-middle">
+        {projDisplay}
+      </td>
+
+      {/* OWNERSHIP % */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
+        {ownershipDisplay}
+      </td>
+
+      {/* ODDS TO WIN */}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
+        {oddsDisplay}
+      </td>
+    </tr>
   )
 }
 
@@ -151,19 +192,13 @@ interface TournamentFieldProps {
 }
 
 /**
- * The tournament Field tab: a searchable, sortable, paginated roster of every
- * player in the field, each linking to their profile.
- *
- * Presented as a roster with participation status — NOT a leaderboard —
- * because the provider tier obfuscates finishing positions. Ordering,
- * filtering, and paging run client-side: a field is at most a few hundred
- * players, so the full roster is sent once and manipulated locally.
+ * Tournament Field leaderboard: a searchable, sortable, paginated table showing
+ * all players with live tournament scoring, round-by-round results, and projections.
  */
 export function TournamentField({ field }: TournamentFieldProps) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
-  const [sort, setSort] = useState<SortKey>('name-asc')
-  const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<SortKey>('pos-asc')
 
   // Status options limited to those actually present in this field.
   const statusOptions = useMemo(() => {
@@ -186,35 +221,67 @@ export function TournamentField({ field }: TournamentFieldProps) {
     })
 
     result.sort((a, b) => {
+      // Position sorting (default)
+      if (sort === 'pos-asc') {
+        const posA = a.position ?? Number.MAX_VALUE
+        const posB = b.position ?? Number.MAX_VALUE
+        return posA !== posB ? posA - posB : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'pos-desc') {
+        const posA = a.position ?? Number.MIN_VALUE
+        const posB = b.position ?? Number.MIN_VALUE
+        return posB !== posA ? posB - posA : a.playerName.localeCompare(b.playerName)
+      }
+
+      // Name sorting
+      if (sort === 'name-asc') return a.playerName.localeCompare(b.playerName)
       if (sort === 'name-desc') return b.playerName.localeCompare(a.playerName)
-      if (sort === 'status') {
-        const byStatus = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
-        return byStatus !== 0 ? byStatus : a.playerName.localeCompare(b.playerName)
+
+      // Total score sorting
+      if (sort === 'total-asc') {
+        const totA = a.total ?? Number.MAX_VALUE
+        const totB = b.total ?? Number.MAX_VALUE
+        return totA !== totB ? totA - totB : a.playerName.localeCompare(b.playerName)
       }
-      if (sort === 'rank') {
-        // Lower world-ranking number is better; unranked players sort last, then
-        // fall back to alphabetical so the order is stable.
-        const ra = a.worldRanking ?? Number.POSITIVE_INFINITY
-        const rb = b.worldRanking ?? Number.POSITIVE_INFINITY
-        return ra !== rb ? ra - rb : a.playerName.localeCompare(b.playerName)
+      if (sort === 'total-desc') {
+        const totA = a.total ?? Number.MIN_VALUE
+        const totB = b.total ?? Number.MIN_VALUE
+        return totB !== totA ? totB - totA : a.playerName.localeCompare(b.playerName)
       }
-      if (sort === 'ranking-score' || sort === 'form-score' || sort === 'fantasy-score') {
-        // Higher score is better; unrated players (no season data → null) sort
-        // last, then fall back to alphabetical for a stable order. The scored
-        // field tracks the active sort so the column and ordering always agree.
-        const field = SCORE_FIELD_BY_SORT[sort].key
-        const sa = a[field] ?? Number.NEGATIVE_INFINITY
-        const sb = b[field] ?? Number.NEGATIVE_INFINITY
-        return sb !== sa ? sb - sa : a.playerName.localeCompare(b.playerName)
+
+      // Projection sorting (treat as text for now, as format varies)
+      if (sort === 'proj-asc' || sort === 'proj-desc') {
+        return a.playerName.localeCompare(b.playerName)
       }
-      return a.playerName.localeCompare(b.playerName)
+
+      // Ownership % sorting (nulls after real values)
+      if (sort === 'own-asc') {
+        const ownA = a.ownershipPercent ?? Number.MAX_VALUE
+        const ownB = b.ownershipPercent ?? Number.MAX_VALUE
+        return ownA !== ownB ? ownA - ownB : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'own-desc') {
+        const ownA = a.ownershipPercent ?? Number.MIN_VALUE
+        const ownB = b.ownershipPercent ?? Number.MIN_VALUE
+        return ownB !== ownA ? ownB - ownA : a.playerName.localeCompare(b.playerName)
+      }
+
+      // Odds sorting
+      if (sort === 'odds-asc') {
+        const oddsA = parseOdds(a.oddsToWin)
+        const oddsB = parseOdds(b.oddsToWin)
+        return oddsA !== oddsB ? oddsA - oddsB : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'odds-desc') {
+        const oddsA = parseOdds(a.oddsToWin)
+        const oddsB = parseOdds(b.oddsToWin)
+        return oddsB !== oddsA ? oddsB - oddsA : a.playerName.localeCompare(b.playerName)
+      }
+
+      return 0
     })
     return result
   }, [field.entrants, query, statusFilter, sort])
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safePage = Math.min(page, totalPages)
-  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   // Field genuinely empty (nothing imported yet).
   if (field.size === 0) {
@@ -234,19 +301,13 @@ export function TournamentField({ field }: TournamentFieldProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchBar
           placeholder="Search players by name..."
-          onSearch={(value) => {
-            setQuery(value)
-            setPage(1)
-          }}
+          onSearch={(value) => setQuery(value)}
           className="sm:flex-1"
         />
         <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto">
           <Select
             value={statusFilter}
-            onValueChange={(value) => {
-              setStatusFilter(value as FieldEntryStatus | 'ALL')
-              setPage(1)
-            }}
+            onValueChange={(value) => setStatusFilter(value as FieldEntryStatus | 'ALL')}
           >
             <SelectTrigger aria-label="Filter by status" className="w-full sm:w-40">
               <SelectValue />
@@ -261,10 +322,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
           </Select>
           <Select
             value={sort}
-            onValueChange={(value) => {
-              setSort(value as SortKey)
-              setPage(1)
-            }}
+            onValueChange={(value) => setSort(value as SortKey)}
           >
             <SelectTrigger aria-label="Sort players" className="w-full sm:w-40">
               <SelectValue />
@@ -286,26 +344,63 @@ export function TournamentField({ field }: TournamentFieldProps) {
           : `${filtered.length} of ${field.size} players`}
       </p>
 
-      {pageItems.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyState
           icon={Users}
           title="No players match your filters"
           description="Try a different search term or clear the status filter."
         />
       ) : (
-        <ul className={cn('divide-y divide-border')}>
-          {pageItems.map((entrant) => (
-            <FieldRow
-              key={entrant.playerId}
-              entrant={entrant}
-              scoreKey={SCORE_FIELD_BY_SORT[sort].key}
-              scoreLabel={SCORE_FIELD_BY_SORT[sort].label}
-            />
-          ))}
-        </ul>
+        <div className="w-full min-w-0">
+          <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1">
+            <span>Scroll for more →</span>
+          </div>
+          <div className="w-full min-w-0 overflow-x-auto border rounded-md">
+            <table className="w-full min-w-max text-sm border-collapse">
+            <thead>
+              <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
+                <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
+                <th className="sticky left-0 z-20 px-2 sm:px-3 py-3 text-left text-xs font-semibold bg-muted/40 border-r border-border/50">PLAYER</th>
+                <th className="px-2 sm:px-3 py-3 text-center text-xs font-semibold">TOTAL</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold">R1</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold">R2</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold">R3</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold">R4</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold">PROJ.</th>
+                <th className="px-2 py-3 text-right text-xs font-semibold">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help">OWN %</span>
+                      </TooltipTrigger>
+                      <TooltipContent>Projected Ownership Percentage</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </th>
+                <th className="px-2 py-3 text-right text-xs font-semibold">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help">ODDS</span>
+                      </TooltipTrigger>
+                      <TooltipContent>Betting Odds to Win Tournament</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((entrant) => (
+                <LeaderboardRow key={entrant.playerId} entrant={entrant} />
+              ))}
+            </tbody>
+          </table>
+          </div>
+          <div className="text-xs text-muted-foreground italic">
+            Final DraftKings points are unavailable for this tournament.
+          </div>
+        </div>
       )}
-
-      <TournamentPagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
     </div>
   )
 }

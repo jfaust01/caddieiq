@@ -13,6 +13,22 @@ export {
   calculateVariance,
 } from "./difficulty"
 
+// Strategy Metrics (game emphasis)
+export {
+  calculateDrivingImportance,
+  calculateApproachImportance,
+  calculateShortGameImportance,
+  calculatePuttingImportance,
+} from "./strategy"
+
+// Environmental & Scoring Metrics
+export {
+  calculateWindSensitivity,
+  calculatePenaltySeverity,
+  calculateBirdiePotential,
+  calculateScoringVolatility,
+} from "./environmental"
+
 // Fairway & Iron Metrics
 export {
   calculateFairwayWidth,
@@ -38,22 +54,41 @@ export {
 } from "./characteristics"
 
 /**
- * All metric calculations (16 deterministic metrics)
+ * All metric calculations (20+ deterministic metrics)
  * Each returns MetricResult { score 0-100, stars 1-5, confidence 0-100, explanation, dataPoints }
  */
 export const ALL_METRICS = [
+  // Difficulty Metrics
   "difficulty",
   "scoringDifficulty",
   "bogeyRisk",
   "variance",
+  
+  // Strategy Metrics
+  "drivingImportance",
+  "approachImportance",
+  "shortGameImportance",
+  "puttingImportance",
+  
+  // Environmental & Scoring
+  "windSensitivity",
+  "penaltySeverity",
+  "birdiePotential",
+  "scoringVolatility",
+  
+  // Fairway & Iron
   "fairwayWidth",
   "ironDifficulty",
   "puttingDifficulty",
+  
+  // Hazards
   "waterHazardRisk",
   "sandHazardRisk",
   "treeRisk",
   "outOfBoundsRisk",
   "hazardImpact",
+  
+  // Characteristics
   "elevationImpact",
   "weatherFactor",
   "playability",

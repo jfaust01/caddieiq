@@ -96,6 +96,10 @@ export interface TournamentSearchRow {
   stateProvince: string | null
   country: string | null
   defendingChampion: string | null
+  /** Cut line score (strokes under/over par), or null when not applicable. */
+  cutLine: number | null
+  /** Number of rounds played before cut, or null when not applicable. */
+  cutAfterRounds: number | null
 }
 
 /**
@@ -263,7 +267,9 @@ export class TournamentRepository extends BaseRepository {
         course.city AS "city",
         course."stateProvince" AS "stateProvince",
         course.country AS "country",
-        champ."fullName" AS "defendingChampion"
+        champ."fullName" AS "defendingChampion",
+        t."cutLine" AS "cutLine",
+        t."cutAfterRounds" AS "cutAfterRounds"
       ${fromCore}
       LEFT JOIN LATERAL (
         SELECT c.id, c.name, c.par, c.yardage, c.city, c."stateProvince", c.country
@@ -330,7 +336,9 @@ export class TournamentRepository extends BaseRepository {
         course.city AS "city",
         course."stateProvince" AS "stateProvince",
         course.country AS "country",
-        champ."fullName" AS "defendingChampion"
+        champ."fullName" AS "defendingChampion",
+        t."cutLine" AS "cutLine",
+        t."cutAfterRounds" AS "cutAfterRounds"
       FROM tournaments t
       JOIN tours tr ON tr.id = t."tourId"
       LEFT JOIN seasons s ON s.id = t."seasonId"
