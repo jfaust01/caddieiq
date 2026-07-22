@@ -40,8 +40,8 @@ type SortKey =
   | 'name-desc'
   | 'total-asc'
   | 'total-desc'
-  | 'proj-asc'
-  | 'proj-desc'
+  | 'salary-asc'
+  | 'salary-desc'
   | 'own-asc'
   | 'own-desc'
   | 'odds-asc'
@@ -54,8 +54,8 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'name-desc', label: 'Name (Z–A)' },
   { value: 'total-asc', label: 'Total (Low)' },
   { value: 'total-desc', label: 'Total (High)' },
-  { value: 'proj-asc', label: 'Projection (↑)' },
-  { value: 'proj-desc', label: 'Projection (↓)' },
+  { value: 'salary-asc', label: 'DK Salary (Low)' },
+  { value: 'salary-desc', label: 'DK Salary (High)' },
   { value: 'own-asc', label: 'Ownership (Low)' },
   { value: 'own-desc', label: 'Ownership (High)' },
   { value: 'odds-asc', label: 'Odds (Favorable)' },
@@ -98,7 +98,7 @@ function LeaderboardRow({
   positionCountMap?: Map<number, number>
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
-  const projDisplay = formatMissing(entrant.projection)
+  const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : '—'
   const oddsDisplay = formatMissing(entrant.oddsToWin)
   
   // Extract initials from player name for avatar fallback
@@ -182,9 +182,9 @@ function LeaderboardRow({
         <ScoreCell strokes={entrant.round4} relativeToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
       </td>
 
-      {/* PROJ. */}
+      {/* DK SALARY */}
       <td className="px-3 py-3 text-right text-sm font-mono tabular-nums align-middle">
-        {projDisplay}
+        {salaryDisplay}
       </td>
 
       {/* OWNERSHIP % */}
@@ -268,9 +268,16 @@ export function TournamentField({ field }: TournamentFieldProps) {
         return totB !== totA ? totB - totA : a.playerName.localeCompare(b.playerName)
       }
 
-      // Projection sorting (treat as text for now, as format varies)
-      if (sort === 'proj-asc' || sort === 'proj-desc') {
-        return a.playerName.localeCompare(b.playerName)
+      // DK Salary sorting (numeric, nulls after real values)
+      if (sort === 'salary-asc') {
+        const salA = a.dfsSalary ?? Number.MAX_VALUE
+        const salB = b.dfsSalary ?? Number.MAX_VALUE
+        return salA !== salB ? salA - salB : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'salary-desc') {
+        const salA = a.dfsSalary ?? Number.MIN_VALUE
+        const salB = b.dfsSalary ?? Number.MIN_VALUE
+        return salB !== salA ? salB - salA : a.playerName.localeCompare(b.playerName)
       }
 
       // Ownership % sorting (nulls after real values)
@@ -397,7 +404,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
                 <th className="px-3 py-3 text-center text-xs font-semibold">R2</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R3</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R4</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold">PROJ.</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold">DK SALARY</th>
                 <th className="px-2 py-3 text-right text-xs font-semibold">
                   <TooltipProvider>
                     <Tooltip>

@@ -242,6 +242,10 @@ export interface FieldEntrant {
    * Represents the expected percentage of fantasy contests with this player in their lineup.
    */
   ownershipPercent: number | null
+  /**
+   * DraftKings salary for this tournament, or null when no DFS salary record exists.
+   */
+  dfsSalary: number | null
 }
 
 /**

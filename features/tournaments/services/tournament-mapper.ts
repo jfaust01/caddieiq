@@ -73,6 +73,7 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     dkFantasyPoints: row.dkFantasyPoints ?? null,
     oddsToWin: row.odds ?? null,
     ownershipPercent: row.ownershipPercent ?? null,
+    dfsSalary: row.dfsSalary ?? null,
     round1: row.round1 ?? null,
     round1RelToPar: row.round1RelToPar ?? null,
     round1DkPoints: null, // Per-round DK points not yet implemented

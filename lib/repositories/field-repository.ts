@@ -107,6 +107,11 @@ export interface FieldEntryRow {
    * Not currently sourced (schema does not identify ownership data).
    */
   ownershipPercent: number | null
+  /**
+   * DraftKings salary for this tournament, or null when no DFS salary record exists.
+   * Sourced from dfs_salaries.salary for the player and tournament.
+   */
+  dfsSalary: number | null
   // Per-round scoring data
   round1: number | null
   round1RelToPar: number | null
@@ -243,6 +248,7 @@ export class FieldRepository extends BaseRepository {
         NULL::text AS "odds",
         -- Ownership percentage (null - not available in current schema)
         NULL::float AS "ownershipPercent",
+        ds.salary AS "dfsSalary",
         -- Per-round strokes and relative-to-par
         MAX(CASE WHEN r."roundNumber" = 1 THEN pr.score END) AS "round1",
         MAX(CASE WHEN r."roundNumber" = 1 THEN pr."toPar" END) AS "round1RelToPar",
@@ -284,7 +290,8 @@ export class FieldRepository extends BaseRepository {
       WHERE tf."tournamentId" = ${tournamentId}
       GROUP BY tf.id, p.id, p."fullName", p."countryCode", p."headshotUrl", ds.operator, tf.status, 
                tf."isAlternate", tf.withdrawn, tf."cutMade", tf."finalPosition", stat."worldRanking", 
-               hto.dk_fantasy_points, hto.total_strokes, hto.score_to_par, fp."fantasyPointsDraftKings"
+               hto.dk_fantasy_points, hto.total_strokes, hto.score_to_par, fp."fantasyPointsDraftKings",
+               ds.salary
       ORDER BY p."fullName" ASC
     `)
   }
