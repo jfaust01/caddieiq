@@ -109,23 +109,23 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
   const tour = entrant.tour ?? getDevelopmentPlayerMetadata(entrant.playerId, entrant.playerName).tour
 
   return (
-    <tr className="group border-b border-border hover:bg-muted/40 transition-colors h-[68px]">
+    <tr className="group border-b border-border hover:bg-muted/40 transition-colors h-[88px]">
       {/* POS */}
       <td className="px-2 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
         {positionDisplay}
       </td>
 
       {/* PLAYER - STICKY with two-row layout: headshot+name / flag+tour */}
-      <td className="sticky left-0 z-10 px-2 sm:px-3 py-2 text-left bg-background group-hover:bg-muted/40 border-r border-border/50 align-middle">
-        <div className="flex gap-2 min-w-0">
-          {/* Headshot Avatar */}
-          <Avatar className="h-7 w-7 flex-shrink-0 mt-0.5">
+      <td className="sticky left-0 z-10 px-2 sm:px-3 py-2 text-left bg-background group-hover:bg-muted/40 border-r border-border/50 align-top">
+        <div className="flex gap-2.5 min-w-0 pt-0.5">
+          {/* Headshot Avatar - larger size: 42-46px desktop, 40-44px tablet, 38-42px mobile */}
+          <Avatar className="h-11 w-11 sm:h-12 sm:w-12 flex-shrink-0">
             <AvatarImage src={entrant.headshotUrl ?? undefined} alt={entrant.playerName} />
-            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+            <AvatarFallback className="text-sm font-semibold">{initials}</AvatarFallback>
           </Avatar>
           
           {/* Two-row text block */}
-          <div className="flex flex-col gap-0 min-w-0">
+          <div className="flex flex-col gap-0.5 min-w-0">
             {/* Row 1: Player Name */}
             <Link
               href={`/players/${entrant.playerId}`}
@@ -136,13 +136,11 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
             </Link>
             
             {/* Row 2: Country Flag + Tour Chip (no wrapping, aligned with name) */}
-            <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
+            <div className="flex items-center gap-1 flex-nowrap whitespace-nowrap">
               {entrant.countryCode && (
-                <CountryFlag countryCode={entrant.countryCode} className="h-3.5 w-3.5 flex-shrink-0" />
+                <CountryFlag countryCode={entrant.countryCode} className="h-4 w-4 flex-shrink-0" />
               )}
-              {tour && (
-                <TourChip tour={tour} />
-              )}
+              <TourChip tour={tour} />
             </div>
           </div>
         </div>

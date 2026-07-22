@@ -7,23 +7,23 @@
 
 /** Development mock data for player Tour affiliations. */
 const MOCK_TOUR_DATA: Record<string, string> = {
-  // PGA players
-  'adamscott': 'PGA',
-  'collinmorikawa': 'PGA',
-  'dennymccarthy': 'PGA',
-  'garywoods': 'PGA',
-  'davidlipsky': 'PGA',
+  // PGA Tour players
+  'adamscott': 'PGA TOUR',
+  'collinmorikawa': 'PGA TOUR',
+  'dennymccarthy': 'PGA TOUR',
+  'garywoods': 'PGA TOUR',
+  'davidlipsky': 'PGA TOUR',
 
-  // LIV players
+  // LIV Golf players
   'jonrahm': 'LIV',
   'dustinjohnson': 'LIV',
   'broookskoepka': 'LIV',
   'phil mickelson': 'LIV',
 
   // DP World Tour players
-  'tommyfleetwood': 'DP WORLD',
-  'torynvandevelde': 'DP WORLD',
-  'rorymc': 'DP WORLD',
+  'tommyfleetwood': 'DP WORLD TOUR',
+  'torynvandevelde': 'DP WORLD TOUR',
+  'rorymc': 'EUROPEAN TOUR',
 }
 
 /**
