@@ -134,9 +134,9 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
         </div>
       </td>
 
-      {/* TOTAL - Single value relative-to-par with color coding */}
+      {/* TOTAL - Three-line score cell with strokes, rel-to-par, and DK points */}
       <td className="px-2 sm:px-3 py-3 text-center align-middle">
-        <TotalCell relToPar={entrant.total} />
+        <TotalCell score={entrant.totalStrokes} relToPar={entrant.total} dkPoints={entrant.totalDkFantasyPoints} />
       </td>
 
       {/* R1 - Three-line score cell */}
