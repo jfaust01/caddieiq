@@ -5,7 +5,7 @@ import { PlayerRoundScorecard } from './player-round-scorecard'
 import type { PlayerRoundScorecardData } from '@/features/tournaments/actions/get-player-round-scorecard'
 
 interface ScorecardLoaderProps {
-  playerRoundId: string
+  playerId: string
   playerName: string
   tournamentId: string
   roundNumber: number
@@ -14,7 +14,7 @@ interface ScorecardLoaderProps {
 type LoadingState = 'idle' | 'loading' | 'success' | 'empty' | 'error'
 
 export function ScorecardLoader({
-  playerRoundId,
+  playerId,
   playerName,
   tournamentId,
   roundNumber,
@@ -35,12 +35,12 @@ export function ScorecardLoader({
 
     try {
       console.log('[v0] Fetching scorecard:', {
-        playerId: playerRoundId,
+        playerId,
         round: roundNumber,
         tournament: tournamentId,
       })
 
-      const url = `/api/tournaments/${tournamentId}/players/${playerRoundId}/rounds/${roundNumber}/scorecard`
+      const url = `/api/tournaments/${tournamentId}/players/${playerId}/rounds/${roundNumber}/scorecard`
       const response = await fetch(url, { signal: controller.signal })
 
       clearTimeout(timeoutId)
@@ -80,7 +80,7 @@ export function ScorecardLoader({
       setState('error')
       setError('Unable to load scorecard.')
     }
-  }, [playerRoundId, roundNumber, tournamentId])
+  }, [playerId, roundNumber, tournamentId])
 
   // Fetch when props change
   useEffect(() => {

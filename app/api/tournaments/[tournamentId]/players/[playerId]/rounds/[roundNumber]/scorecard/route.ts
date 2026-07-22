@@ -152,9 +152,33 @@ export async function GET(
 
     return NextResponse.json({ data: responseData }, { status: 200 })
   } catch (error) {
-    console.error('[v0] Error fetching scorecard:', error)
+    // Log full error for debugging
+    const errorInfo: Record<string, any> = {
+      timestamp: new Date().toISOString(),
+      message: error instanceof Error ? error.message : 'Unknown error',
+    }
+
+    // Add Prisma-specific diagnostics
+    if (error instanceof Error) {
+      if ('code' in error) {
+        errorInfo.prismaCode = (error as any).code
+      }
+      if ('meta' in error) {
+        errorInfo.meta = (error as any).meta
+      }
+    }
+
+    console.error('[v0] Scorecard API error:', errorInfo)
+
+    // Return diagnostic response (safe, no credentials exposed)
     return NextResponse.json(
-      { error: 'Unable to load scorecard' },
+      {
+        error: 'Unable to load scorecard',
+        diagnostics: {
+          errorType: error instanceof Error ? error.name : 'UnknownError',
+          timestamp: new Date().toISOString(),
+        },
+      },
       { status: 500 }
     )
   }

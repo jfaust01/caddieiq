@@ -547,7 +547,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
                       <td colSpan={9} className="p-0" id={`player-scorecard-${entrant.playerId}`}>
                         <div className="border-t border-border">
                           <ScorecardLoader
-                            playerRoundId={entrant.playerId}
+                            playerId={entrant.playerId}
                             playerName={entrant.playerName}
                             tournamentId={field.tournamentId}
                             roundNumber={selectedRound}
