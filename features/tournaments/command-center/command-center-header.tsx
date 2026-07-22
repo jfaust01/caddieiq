@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useRef, type ReactNode } from "react"
-import { CalendarDays, CloudSun, MapPin, Users } from "lucide-react"
+import Image from "next/image"
+import { CalendarDays, CloudSun, MapPin, Users, Trophy } from "lucide-react"
 
 import { TournamentStatusBadge } from "@/features/tournaments/components/tournament-status-badge"
+import { TournamentTourChip } from "@/features/tournaments/components/tournament-tour-chip"
 import type { TournamentSummary } from "@/features/tournaments/types"
 import { formatDateRange, formatFieldSize } from "@/features/tournaments/utils/format"
 
@@ -64,16 +66,39 @@ export function CommandCenterHeader({
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-lg font-semibold tracking-tight text-balance">
-              {tournament.name}
-            </h1>
+            {/* Tournament Logo */}
+            <div className="flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-muted/40 border border-muted-foreground/10 rounded-md">
+              {tournament.tour ? (
+                <Image
+                  src={`https://flagsapi.com/UN/shiny/64.png`}
+                  alt={`${tournament.name} logo`}
+                  width={44}
+                  height={44}
+                  className="w-full h-full object-contain rounded-md"
+                  loading="eager"
+                />
+              ) : (
+                <Trophy size={24} className="text-muted-foreground" aria-hidden />
+              )}
+            </div>
+
+            {/* Title and Tour */}
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg font-semibold tracking-tight text-pretty">
+                  {tournament.name}
+                </h1>
+                {tournament.tour ? (
+                  <TournamentTourChip tour={tournament.tour} />
+                ) : (
+                  <TournamentTourChip tour={null} />
+                )}
+              </div>
+            </div>
+
+            {/* Status Badge */}
             <div className="flex items-center gap-1.5 shrink-0">
               <TournamentStatusBadge status={tournament.status} />
-              {dataConfidence ? (
-                <span className="rounded-full border border-border bg-muted/60 px-1.5 py-0.5 text-[0.5rem] font-medium uppercase tracking-wide text-muted-foreground whitespace-nowrap">
-                  {dataConfidence} data
-                </span>
-              ) : null}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
