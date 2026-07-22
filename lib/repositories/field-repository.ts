@@ -69,6 +69,13 @@ export interface FieldEntryRow {
    * known rank obfuscation.
    */
   worldRanking: number | null
+  /**
+   * The player's final DraftKings fantasy points for this tournament, or null
+   * when no historical tournament outcome exists. Only populated when
+   * HistoricalTournamentOutcome records are available. Never estimates,
+   * projections, or averages — only authoritative DK results.
+   */
+  dkFantasyPoints: number | null
 }
 
 /** Compact entrant used for the tournament hub's field preview. */
@@ -186,7 +193,8 @@ export class FieldRepository extends BaseRepository {
         tf."isAlternate" AS "isAlternate",
         tf.withdrawn AS "withdrawn",
         tf."cutMade" AS "cutMade",
-        stat."worldRanking" AS "worldRanking"
+        stat."worldRanking" AS "worldRanking",
+        hto.dk_fantasy_points AS "dkFantasyPoints"
       FROM tournament_fields tf
       JOIN players p ON p.id = tf."playerId" AND p."deletedAt" IS NULL
       -- The player's most recent season ranking, if any has been imported.
@@ -198,6 +206,12 @@ export class FieldRepository extends BaseRepository {
         ORDER BY s.season DESC
         LIMIT 1
       ) stat ON true
+      -- Historical tournament outcomes with DraftKings fantasy points (if available).
+      -- LEFT JOIN allows entrants without outcomes (no DK points data).
+      LEFT JOIN historical_tournament_outcomes hto
+        ON hto.tournament_id = tf."tournamentId"
+        AND hto.player_id = tf."playerId"
+        AND hto.dk_fantasy_points IS NOT NULL
       WHERE tf."tournamentId" = ${tournamentId}
       ORDER BY p."fullName" ASC
     `)

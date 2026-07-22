@@ -191,6 +191,12 @@ export interface FieldEntrant {
   projection: string | null
   /** Scheduled tee time for the player, or null when not applicable. */
   startingTime: string | null
+  /**
+   * The player's final DraftKings fantasy points for this tournament, or null
+   * when no historical outcome exists. Only authoritative DK results — never
+   * projections, averages, or salaries.
+   */
+  dkFantasyPoints: number | null
   /** Current betting odds to win (e.g., "+1800", "+6500"), or null when unavailable. */
   oddsToWin: string | null
 }

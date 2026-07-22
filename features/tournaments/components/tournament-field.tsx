@@ -32,8 +32,8 @@ type SortKey =
   | 'strokes-desc'
   | 'proj-asc'
   | 'proj-desc'
-  | 'starting-asc'
-  | 'starting-desc'
+  | 'dk-asc'
+  | 'dk-desc'
   | 'odds-asc'
   | 'odds-desc'
 
@@ -48,8 +48,8 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'strokes-desc', label: 'Strokes (High)' },
   { value: 'proj-asc', label: 'Projection (↑)' },
   { value: 'proj-desc', label: 'Projection (↓)' },
-  { value: 'starting-asc', label: 'Starting Time (Early)' },
-  { value: 'starting-desc', label: 'Starting Time (Late)' },
+  { value: 'dk-asc', label: 'DK Points (Low)' },
+  { value: 'dk-desc', label: 'DK Points (High)' },
   { value: 'odds-asc', label: 'Odds (Favorable)' },
   { value: 'odds-desc', label: 'Odds (Long)' },
 ]
@@ -91,7 +91,7 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
   const r4Display = entrant.round4 == null ? '—' : entrant.round4
   const strokesDisplay = formatMissing(entrant.totalStrokes)
   const projDisplay = formatMissing(entrant.projection)
-  const startDisplay = formatMissing(entrant.startingTime)
+  const dkDisplay = formatMissing(entrant.dkFantasyPoints)
   const oddsDisplay = formatMissing(entrant.oddsToWin)
   
   // Extract initials from player name for avatar fallback
@@ -169,9 +169,9 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
         {projDisplay}
       </td>
 
-      {/* STARTING */}
+      {/* DK POINTS */}
       <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground">
-        {startDisplay}
+        {dkDisplay}
       </td>
 
       {/* ODDS TO WIN */}
@@ -261,9 +261,16 @@ export function TournamentField({ field }: TournamentFieldProps) {
         return a.playerName.localeCompare(b.playerName)
       }
 
-      // Starting time sorting
-      if (sort === 'starting-asc' || sort === 'starting-desc') {
-        return a.playerName.localeCompare(b.playerName)
+      // DK Fantasy Points sorting (nulls after real values)
+      if (sort === 'dk-asc') {
+        const dkA = a.dkFantasyPoints ?? Number.MAX_VALUE
+        const dkB = b.dkFantasyPoints ?? Number.MAX_VALUE
+        return dkA !== dkB ? dkA - dkB : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'dk-desc') {
+        const dkA = a.dkFantasyPoints ?? Number.MIN_VALUE
+        const dkB = b.dkFantasyPoints ?? Number.MIN_VALUE
+        return dkB !== dkA ? dkB - dkA : a.playerName.localeCompare(b.playerName)
       }
 
       // Odds sorting
@@ -368,7 +375,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
                 <th className="px-3 py-3 text-center text-xs font-semibold">R4</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">STROKES</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">PROJ.</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold">STARTING</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold">DK POINTS</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">ODDS TO WIN</th>
               </tr>
             </thead>
@@ -378,6 +385,9 @@ export function TournamentField({ field }: TournamentFieldProps) {
               ))}
             </tbody>
           </table>
+          </div>
+          <div className="text-xs text-muted-foreground italic">
+            Final DraftKings points are unavailable for this tournament.
           </div>
         </div>
       )}

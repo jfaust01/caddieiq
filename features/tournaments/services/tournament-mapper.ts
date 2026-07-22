@@ -61,6 +61,7 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     rankingScore: null,
     formScore: null,
     fantasyScore: null,
+    dkFantasyPoints: row.dkFantasyPoints ?? null,
   }
 }
 
