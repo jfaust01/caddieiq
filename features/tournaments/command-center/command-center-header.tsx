@@ -45,6 +45,10 @@ export function CommandCenterHeader({
 }: CommandCenterHeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   
+  // Determine if tournament is completed
+  const isCompleted =
+    tournament.status?.trim().toUpperCase() === "COMPLETED"
+  
   useEffect(() => {
     // Measure TopNav height and set CommandCenterHeader offset to appear below it
     const topNav = document.querySelector('header[class*="sticky"][class*="top-0"][class*="z-50"]')
@@ -111,9 +115,11 @@ export function CommandCenterHeader({
             <MetaChip icon={<Users aria-hidden />} pending={fieldSize === 0}>
               {(fieldSize > 0 ? formatFieldSize(fieldSize) : null) ?? "Field pending"}
             </MetaChip>
-            <MetaChip icon={<CloudSun aria-hidden />} pending={!weatherSummary}>
-              {weatherSummary ?? weatherPlaceholder}
-            </MetaChip>
+            {!isCompleted ? (
+              <MetaChip icon={<CloudSun aria-hidden />} pending={!weatherSummary}>
+                {weatherSummary ?? weatherPlaceholder}
+              </MetaChip>
+            ) : null}
           </div>
         </div>
         </div>
