@@ -41,13 +41,48 @@ function toFieldStatus(value: string | null): FieldEntryStatus {
 }
 
 /**
+ * Calculate the cumulative tournament score relative to par by summing valid round scores.
+ * Returns null if no valid rounds exist.
+ *
+ * This is used as a fallback when HistoricalTournamentOutcome.scoreToPar is unavailable.
+ * Only sums relative-to-par values (never raw strokes).
+ */
+function calculateTotalRelativeToPar(
+  round1RelToPar: number | null,
+  round2RelToPar: number | null,
+  round3RelToPar: number | null,
+  round4RelToPar: number | null,
+): number | null {
+  const validRounds = [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar].filter(
+    (score) => score !== null && score !== undefined,
+  ) as number[]
+
+  if (validRounds.length === 0) return null
+  return validRounds.reduce((sum, score) => sum + score, 0)
+}
+
+/**
  * Map a flattened field row to the UI `FieldEntrant`.
  *
  * The ranking scores default to null here (this mapper is a pure row
  * translation); the tournament service enriches them from the Ranking/Analytics
  * engines so the scores stay a single derived source rather than a duplicate.
+ *
+ * For the TOTAL score:
+ * 1. Prefer HistoricalTournamentOutcome.scoreToPar when available.
+ * 2. Fall back to calculating from R1–R4 relative-to-par values.
  */
 export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
+  // Calculate TOTAL as fallback when tournament outcome data is unavailable
+  const totalRelativeToPar =
+    row.totalRelativeToPar ??
+    calculateTotalRelativeToPar(
+      row.round1RelToPar ?? null,
+      row.round2RelToPar ?? null,
+      row.round3RelToPar ?? null,
+      row.round4RelToPar ?? null,
+    )
+
   return {
     playerId: row.playerId,
     playerName: row.playerName,
@@ -63,7 +98,7 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     formScore: null,
     fantasyScore: null,
     position: row.position ?? null,
-    total: row.totalRelativeToPar ?? null,
+    total: totalRelativeToPar,
     totalStrokes: row.totalStrokes ?? null,
     totalDkFantasyPoints: row.dkFantasyPoints ?? null,
     thruHole: null, // Not implemented

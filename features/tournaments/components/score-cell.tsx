@@ -52,25 +52,33 @@ export function ScoreCell({
   const dkDisplay = dkPoints == null ? '—' : dkPoints.toFixed(1)
   const strokesDisplay = strokes == null ? '—' : strokes.toString()
   const isTotalEmphasis = emphasis === 'total'
+  
+  // For TOTAL emphasis: display relative-to-par as main value (line 1), then DK points (line 3)
+  // For regular rounds: display strokes as main value (line 1), relative-to-par (line 2), then DK points (line 3)
+  const mainDisplay = isTotalEmphasis ? formatRelToPar(relativeToPar) : strokesDisplay
+  const mainColor = isTotalEmphasis ? getRelToParColor(relativeToPar) : ''
 
   return (
     <div className={cn('flex flex-col items-center justify-center space-y-0.5', className)}>
-      {/* Line 1: Stroke Score (largest; bold if total, regular if round) */}
+      {/* Line 1: Main Score Value (largest; bold if total, regular if round) */}
       <div
         className={cn(
           'text-sm font-mono tabular-nums leading-none',
           isTotalEmphasis ? 'font-bold' : 'font-semibold',
+          mainColor,
         )}
       >
-        {strokesDisplay}
+        {mainDisplay}
       </div>
 
-      {/* Line 2: Relative to Par (medium, color-coded) */}
-      <div
-        className={cn('text-xs font-mono tabular-nums leading-none', getRelToParColor(relativeToPar))}
-      >
-        {formatRelToPar(relativeToPar)}
-      </div>
+      {/* Line 2: Relative to Par (medium, color-coded) - only for rounds, not total */}
+      {!isTotalEmphasis && (
+        <div
+          className={cn('text-xs font-mono tabular-nums leading-none', getRelToParColor(relativeToPar))}
+        >
+          {formatRelToPar(relativeToPar)}
+        </div>
+      )}
 
       {/* Line 3: DK Label + Points (tertiary; label much smaller than value) */}
       <div className="flex items-baseline justify-center gap-0.5 leading-none">
