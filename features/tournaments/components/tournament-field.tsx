@@ -31,8 +31,6 @@ type SortKey =
   | 'total-desc'
   | 'proj-asc'
   | 'proj-desc'
-  | 'dk-asc'
-  | 'dk-desc'
   | 'own-asc'
   | 'own-desc'
   | 'odds-asc'
@@ -47,8 +45,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'total-desc', label: 'Total (High)' },
   { value: 'proj-asc', label: 'Projection (↑)' },
   { value: 'proj-desc', label: 'Projection (↓)' },
-  { value: 'dk-asc', label: 'DK Points (Low)' },
-  { value: 'dk-desc', label: 'DK Points (High)' },
   { value: 'own-asc', label: 'Ownership (Low)' },
   { value: 'own-desc', label: 'Ownership (High)' },
   { value: 'odds-asc', label: 'Odds (Favorable)' },
@@ -163,11 +159,6 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
         {projDisplay}
       </td>
 
-      {/* DK POINTS */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
-        {entrant.dkFantasyPoints == null ? '—' : entrant.dkFantasyPoints.toFixed(1)}
-      </td>
-
       {/* OWNERSHIP % */}
       <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
         {ownershipDisplay}
@@ -246,18 +237,6 @@ export function TournamentField({ field }: TournamentFieldProps) {
       // Projection sorting (treat as text for now, as format varies)
       if (sort === 'proj-asc' || sort === 'proj-desc') {
         return a.playerName.localeCompare(b.playerName)
-      }
-
-      // DK Fantasy Points sorting (nulls after real values)
-      if (sort === 'dk-asc') {
-        const dkA = a.dkFantasyPoints ?? Number.MAX_VALUE
-        const dkB = b.dkFantasyPoints ?? Number.MAX_VALUE
-        return dkA !== dkB ? dkA - dkB : a.playerName.localeCompare(b.playerName)
-      }
-      if (sort === 'dk-desc') {
-        const dkA = a.dkFantasyPoints ?? Number.MIN_VALUE
-        const dkB = b.dkFantasyPoints ?? Number.MIN_VALUE
-        return dkB !== dkA ? dkB - dkA : a.playerName.localeCompare(b.playerName)
       }
 
       // Ownership % sorting (nulls after real values)
@@ -373,7 +352,6 @@ export function TournamentField({ field }: TournamentFieldProps) {
                 <th className="px-3 py-3 text-center text-xs font-semibold">R3</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R4</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">PROJ.</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold">DK POINTS</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">OWNERSHIP %</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">ODDS TO WIN</th>
               </tr>
