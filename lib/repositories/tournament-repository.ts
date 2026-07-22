@@ -112,28 +112,6 @@ export interface TournamentSearchRow {
 export interface TournamentDetailRow extends TournamentSearchRow {
   createdAt: Date | null
   updatedAt: Date | null
-  /** Sum of all actual DraftKings fantasy points for all players, or null when no data exists. */
-  totalDkFantasyPoints: number | null
-  /** Tournament winner player ID, or null when no winner data exists. */
-  tournamentWinnerPlayerId: string | null
-  /** Tournament winner player name, or null when no winner data exists. */
-  tournamentWinnerPlayerName: string | null
-  /** Tournament winner player headshot URL, or null when no data exists or no image available. */
-  tournamentWinnerHeadshotUrl: string | null
-  /** Tournament winner score to par, or null when no data exists. */
-  tournamentWinnerScoreToPar: number | null
-  /** Tournament winner DK fantasy points, or null when no data exists. */
-  tournamentWinnerDkFantasyPoints: number | null
-  /** Tournament winner DFS salary (DraftKings), or null when no data exists. */
-  tournamentWinnerDfsSalary: number | null
-  /** Top DraftKings scorer player ID, or null when no data exists. */
-  topDkScorerPlayerId: string | null
-  /** Top DraftKings scorer player name, or null when no data exists. */
-  topDkScorerPlayerName: string | null
-  /** Top DraftKings scorer player headshot URL, or null when no data exists or no image available. */
-  topDkScorerHeadshotUrl: string | null
-  /** Top DraftKings scorer DK fantasy points, or null when no data exists. */
-  topDkScorerDkFantasyPoints: number | null
 }
 
 /**
@@ -361,18 +339,7 @@ export class TournamentRepository extends BaseRepository {
         course.country AS "country",
         champ."fullName" AS "defendingChampion",
         t."cutLine" AS "cutLine",
-        t."cutAfterRounds" AS "cutAfterRounds",
-        dkTotal."totalDkFantasyPoints" AS "totalDkFantasyPoints",
-        winner."tournamentWinnerPlayerId" AS "tournamentWinnerPlayerId",
-        winner."tournamentWinnerPlayerName" AS "tournamentWinnerPlayerName",
-        winner."tournamentWinnerHeadshotUrl" AS "tournamentWinnerHeadshotUrl",
-        winner."tournamentWinnerScoreToPar" AS "tournamentWinnerScoreToPar",
-        winner."tournamentWinnerDkFantasyPoints" AS "tournamentWinnerDkFantasyPoints",
-        winner."tournamentWinnerDfsSalary" AS "tournamentWinnerDfsSalary",
-        topScorer."topDkScorerPlayerId" AS "topDkScorerPlayerId",
-        topScorer."topDkScorerPlayerName" AS "topDkScorerPlayerName",
-        topScorer."topDkScorerHeadshotUrl" AS "topDkScorerHeadshotUrl",
-        topScorer."topDkScorerDkFantasyPoints" AS "topDkScorerDkFantasyPoints"
+        t."cutAfterRounds" AS "cutAfterRounds"
       FROM tournaments t
       JOIN tours tr ON tr.id = t."tourId"
       LEFT JOIN seasons s ON s.id = t."seasonId"
@@ -402,55 +369,6 @@ export class TournamentRepository extends BaseRepository {
         WHERE tf."tournamentId" = prev_edition.id AND tf."finalPosition" = 1
         LIMIT 1
       ) champ ON true
-      LEFT JOIN LATERAL (
-        SELECT COALESCE(SUM(hto."dkFantasyPoints"), NULL)::float8 AS "totalDkFantasyPoints"
-        FROM historical_tournament_outcomes hto
-        WHERE hto."tournamentId" = t.id
-          AND hto."dkFantasyPoints" IS NOT NULL
-      ) dkTotal ON true
-      LEFT JOIN LATERAL (
-        SELECT 
-          pl.id AS "tournamentWinnerPlayerId",
-          pl."fullName" AS "tournamentWinnerPlayerName",
-          pl."headshotUrl" AS "tournamentWinnerHeadshotUrl",
-          hto."scoreToPar"::numeric AS "tournamentWinnerScoreToPar",
-          hto."dkFantasyPoints"::float8 AS "tournamentWinnerDkFantasyPoints",
-          salary."salary"::integer AS "tournamentWinnerDfsSalary"
-        FROM historical_tournament_outcomes hto
-        JOIN players pl ON pl.id = hto."playerId"
-        LEFT JOIN LATERAL (
-          SELECT ds.salary
-          FROM dfs_salaries ds
-          WHERE ds."playerId" = hto."playerId"
-            AND ds."tournamentId" = t.id
-          ORDER BY 
-            CASE WHEN LOWER(ds.operator) = 'draftkings' THEN 0 ELSE 1 END,
-            ds."createdAt" DESC
-          LIMIT 1
-        ) salary ON true
-        WHERE hto."tournamentId" = t.id
-          AND hto."finishPosition" = 1
-        ORDER BY 
-          COALESCE(hto."scoreToPar", 9999) ASC,
-          pl."fullName" ASC
-        LIMIT 1
-      ) winner ON true
-      LEFT JOIN LATERAL (
-        SELECT 
-          pl.id AS "topDkScorerPlayerId",
-          pl."fullName" AS "topDkScorerPlayerName",
-          pl."headshotUrl" AS "topDkScorerHeadshotUrl",
-          hto."dkFantasyPoints"::float8 AS "topDkScorerDkFantasyPoints"
-        FROM historical_tournament_outcomes hto
-        JOIN players pl ON pl.id = hto."playerId"
-        WHERE hto."tournamentId" = t.id
-          AND hto."dkFantasyPoints" IS NOT NULL
-        ORDER BY 
-          hto."dkFantasyPoints" DESC,
-          COALESCE(hto."finishPosition", 9999) ASC,
-          pl."fullName" ASC
-        LIMIT 1
-      ) topScorer ON true
       WHERE t.id = ${id} AND t."deletedAt" IS NULL
       LIMIT 1
     `)

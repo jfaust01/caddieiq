@@ -139,31 +139,9 @@ export function mapTournamentSummary(row: TournamentSearchRow): TournamentSummar
         }
       : null,
     purse: typeof row.purse === 'number' && Number.isFinite(row.purse) ? row.purse : null,
-    totalDkFantasyPoints: typeof (row as any).totalDkFantasyPoints === 'number' && Number.isFinite((row as any).totalDkFantasyPoints) ? (row as any).totalDkFantasyPoints : null,
-    tournamentWinner:
-      (row as any).tournamentWinnerPlayerId &&
-      (row as any).tournamentWinnerPlayerName
-        ? {
-            playerId: (row as any).tournamentWinnerPlayerId,
-            playerName: (row as any).tournamentWinnerPlayerName,
-            headshotUrl: (row as any).tournamentWinnerHeadshotUrl ?? null,
-            scoreToPar: typeof (row as any).tournamentWinnerScoreToPar === 'number' && Number.isFinite((row as any).tournamentWinnerScoreToPar) ? (row as any).tournamentWinnerScoreToPar : null,
-            dkFantasyPoints: typeof (row as any).tournamentWinnerDkFantasyPoints === 'number' && Number.isFinite((row as any).tournamentWinnerDkFantasyPoints) ? (row as any).tournamentWinnerDkFantasyPoints : null,
-            dfsSalary: typeof (row as any).tournamentWinnerDfsSalary === 'number' && Number.isFinite((row as any).tournamentWinnerDfsSalary) ? (row as any).tournamentWinnerDfsSalary : null,
-          }
-        : null,
-    topDkScorer:
-      (row as any).topDkScorerPlayerId &&
-      (row as any).topDkScorerPlayerName &&
-      typeof (row as any).topDkScorerDkFantasyPoints === 'number' &&
-      Number.isFinite((row as any).topDkScorerDkFantasyPoints)
-        ? {
-            playerId: (row as any).topDkScorerPlayerId,
-            playerName: (row as any).topDkScorerPlayerName,
-            headshotUrl: (row as any).topDkScorerHeadshotUrl ?? null,
-            dkFantasyPoints: (row as any).topDkScorerDkFantasyPoints,
-          }
-        : null,
+    totalDkFantasyPoints: null,
+    tournamentWinner: null,
+    topDkScorer: null,
     defendingChampion: row.defendingChampion ?? null,
     cutLine: typeof row.cutLine === 'number' && Number.isFinite(row.cutLine) ? row.cutLine : null,
     cutAfterRounds: typeof row.cutAfterRounds === 'number' && Number.isFinite(row.cutAfterRounds) ? row.cutAfterRounds : null,
