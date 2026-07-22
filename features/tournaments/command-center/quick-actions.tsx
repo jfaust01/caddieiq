@@ -33,28 +33,20 @@ export function QuickActions({ tournamentId }: QuickActionsProps) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        nativeButton={false}
-        render={
-          <Link href="/compare">
-            <GitCompareArrows data-icon="inline-start" aria-hidden />
-            Compare players
-          </Link>
-        }
-      />
-      <Button
-        variant="outline"
-        size="sm"
-        nativeButton={false}
-        render={
-          <Link href="/rankings">
-            <ListOrdered data-icon="inline-start" aria-hidden />
-            Rankings
-          </Link>
-        }
-      />
+      <Link
+        href="/compare"
+        className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+      >
+        <GitCompareArrows data-icon="inline-start" aria-hidden />
+        Compare players
+      </Link>
+      <Link
+        href="/rankings"
+        className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+      >
+        <ListOrdered data-icon="inline-start" aria-hidden />
+        Rankings
+      </Link>
       <Button
         type="button"
         variant="outline"
