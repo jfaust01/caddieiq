@@ -15,6 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { CountryFlag } from '@/features/players/components/country-flag'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
@@ -365,8 +371,26 @@ export function TournamentField({ field }: TournamentFieldProps) {
                 <th className="px-3 py-3 text-center text-xs font-semibold">R3</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R4</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">PROJ.</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold">OWNERSHIP %</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold">ODDS TO WIN</th>
+                <th className="px-2 py-3 text-right text-xs font-semibold">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help">OWN %</span>
+                      </TooltipTrigger>
+                      <TooltipContent>Projected Ownership Percentage</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </th>
+                <th className="px-2 py-3 text-right text-xs font-semibold">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help">ODDS</span>
+                      </TooltipTrigger>
+                      <TooltipContent>Betting Odds to Win Tournament</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </th>
               </tr>
             </thead>
             <tbody>
