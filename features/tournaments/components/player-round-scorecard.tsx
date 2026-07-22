@@ -53,24 +53,29 @@ export function PlayerRoundScorecard({ data, isLoading }: PlayerRoundScorecardPr
   }, [outTotal, inTotal])
 
   return (
-    <div className={`bg-black/80 rounded-lg border border-slate-800 ${isLoading ? 'opacity-60' : ''}`}>
+    <div className={`bg-[#111318] border border-[#343944] rounded-2xl overflow-hidden ${isLoading ? 'opacity-60' : ''}`} style={{ padding: '32px' }}>
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl z-10">
           <div className="text-sm text-slate-400">Loading scorecard…</div>
         </div>
       )}
 
       {/* Header: Round selector + Info icon + Divider */}
-      <div className="border-b border-slate-700/50 px-6 py-4 flex items-center justify-between">
-        <div className="text-xl font-semibold text-white">Round {data.roundNumber}</div>
-        <button className="p-1 hover:bg-slate-700/50 rounded transition-colors" title="Scorecard info">
-          <Info className="w-4 h-4 text-slate-500" />
+      <div className="flex items-start justify-between mb-6">
+        <div className="text-[52px] font-bold text-white leading-none" style={{ letterSpacing: '-0.02em' }}>
+          Round {data.roundNumber}
+        </div>
+        <button className="w-10 h-10 rounded-full border border-[#5a6370] bg-[#1a1f26] hover:bg-[#222836] transition-colors flex items-center justify-center flex-shrink-0" title="Scorecard info">
+          <Info className="w-5 h-5 text-white" />
         </button>
       </div>
 
+      {/* Divider */}
+      <div className="h-px bg-[#343944] mb-6"></div>
+
       {/* Scrollable scorecard grid */}
-      <div className="overflow-x-auto">
-        <div className="min-w-max p-6">
+      <div className="overflow-x-auto -mx-8 px-8" style={{ marginBottom: '-32px', paddingBottom: '32px' }}>
+        <div className="min-w-max">
           {/* Single continuous row: HOLE | 1-9 | OUT | 10-18 | IN | TOT */}
           <ScorecardGrid
             holes={allHoles}
@@ -105,20 +110,20 @@ function ScorecardGrid({
     return (value > 0 ? '+' : '') + value
   }
 
-  const getToParColor = (value: number | null) => {
-    if (value === null) return 'text-slate-500'
-    if (value < 0) return 'text-emerald-400'
-    if (value === 0) return 'text-slate-300'
-    return 'text-rose-400'
+  const getStatusTextColor = (value: number | null) => {
+    if (value === null) return 'text-white'
+    if (value < 0) return 'text-[#22C55E]' // Green for under par
+    if (value === 0) return 'text-white'
+    return 'text-[#EF4444]' // Red for over par
   }
 
-  const getScoringMarker = (score: number | null, par: number | null) => {
+  const getScoringBadgeType = (score: number | null, par: number | null) => {
     if (score === null || par === null) return null
     const diff = score - par
-    if (diff <= -2) return '⊙⊙' // Eagle or better
-    if (diff === -1) return '⊙' // Birdie
-    if (diff === 1) return '◻' // Bogey
-    if (diff >= 2) return '◻◻' // Double bogey or worse
+    if (diff <= -2) return 'eagle' // Eagle or better
+    if (diff === -1) return 'birdie' // Birdie
+    if (diff === 1) return 'bogey' // Bogey
+    if (diff >= 2) return 'double' // Double bogey or worse
     return null
   }
 
@@ -128,31 +133,33 @@ function ScorecardGrid({
   const parTot = parOut + parIn
 
   return (
-    <div className="space-y-px">
+    <div className="space-y-0">
       {/* HOLE row */}
-      <div className="flex gap-px bg-slate-900">
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-500 bg-slate-950 border-r border-slate-700/50">
+      <div className="flex gap-0">
+        <div className="w-16 flex items-center justify-center text-lg font-medium text-[#9EA5B1] bg-[#1a1f26] border-b border-[#2a3038]" style={{ height: '56px' }}>
           HOLE
         </div>
         {holes.map((hole, i) => (
           <div
             key={`hole-${hole.holeNumber}`}
-            className={`w-10 flex items-center justify-center text-xs font-semibold text-slate-300 bg-slate-900 border-r border-slate-700/50 ${
-              i === 8 || i === 17 ? 'bg-slate-800' : ''
+            className={`w-12 flex items-center justify-center text-lg font-semibold text-white border-b ${
+              i === 17 ? 'bg-[#0a0d11]' : 'bg-[#151922]'
             }`}
+            style={{ borderColor: '#2a3038', height: '56px' }}
           >
             {hole.holeNumber}
           </div>
         ))}
         {/* OUT, IN, TOT */}
         {[
-          { label: 'OUT', width: 'w-12' },
-          { label: 'IN', width: 'w-12' },
-          { label: 'TOT', width: 'w-12' },
+          { label: 'OUT' },
+          { label: 'IN' },
+          { label: 'TOT' },
         ].map((col) => (
           <div
             key={col.label}
-            className={`${col.width} flex items-center justify-center text-xs font-semibold text-slate-300 bg-slate-800/70 border-r border-slate-700/50`}
+            className="w-14 flex items-center justify-center text-lg font-semibold text-white bg-[#1a1f26] border-b"
+            style={{ borderColor: '#2a3038', height: '56px' }}
           >
             {col.label}
           </div>
@@ -160,17 +167,18 @@ function ScorecardGrid({
       </div>
 
       {/* PAR row */}
-      <div className="flex gap-px bg-slate-900">
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-500 bg-slate-950 border-r border-slate-700/50">
+      <div className="flex gap-0">
+        <div className="w-16 flex items-center justify-center text-lg font-medium text-[#9EA5B1] bg-[#1a1f26] border-b" style={{ borderColor: '#2a3038', height: '56px' }}>
           PAR
         </div>
         {courseHoles
           ? courseHoles.map((ch, i) => (
               <div
                 key={`par-${ch.holeNumber}`}
-                className={`w-10 flex items-center justify-center text-xs text-slate-400 bg-slate-900 border-r border-slate-700/50 ${
-                  i === 8 || i === 17 ? 'bg-slate-800' : ''
+                className={`w-12 flex items-center justify-center text-lg font-semibold text-white border-b ${
+                  i === 17 ? 'bg-[#0a0d11]' : 'bg-[#151922]'
                 }`}
+                style={{ borderColor: '#2a3038', height: '56px' }}
               >
                 {ch.par !== null ? ch.par : '—'}
               </div>
@@ -178,101 +186,105 @@ function ScorecardGrid({
           : holes.map((hole, i) => (
               <div
                 key={`par-${hole.holeNumber}`}
-                className={`w-10 flex items-center justify-center text-xs text-slate-400 bg-slate-900 border-r border-slate-700/50 ${
-                  i === 8 || i === 17 ? 'bg-slate-800' : ''
+                className={`w-12 flex items-center justify-center text-lg font-semibold text-white border-b ${
+                  i === 17 ? 'bg-[#0a0d11]' : 'bg-[#151922]'
                 }`}
+                style={{ borderColor: '#2a3038', height: '56px' }}
               >
                 {hole.par !== null ? hole.par : '—'}
               </div>
             ))}
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-300 bg-slate-800/70 border-r border-slate-700/50">
+        <div className="w-14 flex items-center justify-center text-lg font-semibold text-white bg-[#1a1f26] border-b" style={{ borderColor: '#2a3038', height: '56px' }}>
           {parOut || '—'}
         </div>
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-300 bg-slate-800/70 border-r border-slate-700/50">
+        <div className="w-14 flex items-center justify-center text-lg font-semibold text-white bg-[#1a1f26] border-b" style={{ borderColor: '#2a3038', height: '56px' }}>
           {parIn || '—'}
         </div>
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-300 bg-slate-800/70">
+        <div className="w-14 flex items-center justify-center text-lg font-semibold text-white bg-[#1a1f26] border-b" style={{ borderColor: '#2a3038', height: '56px' }}>
           {parTot || '—'}
         </div>
       </div>
 
       {/* SCORE row */}
-      <div className="flex gap-px bg-slate-900">
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-500 bg-slate-950 border-r border-slate-700/50">
+      <div className="flex gap-0">
+        <div className="w-16 flex items-center justify-center text-lg font-medium text-[#9EA5B1] bg-[#1a1f26] border-b" style={{ borderColor: '#2a3038', height: '56px' }}>
           SCORE
         </div>
         {holes.map((hole, i) => (
           <div
             key={`score-${hole.holeNumber}`}
-            className={`w-10 flex flex-col items-center justify-center text-xs font-bold text-white bg-slate-900 border-r border-slate-700/50 ${
-              i === 8 || i === 17 ? 'bg-slate-800' : ''
+            className={`w-12 flex flex-col items-center justify-center border-b ${
+              i === 17 ? 'bg-[#0a0d11]' : 'bg-[#151922]'
             }`}
+            style={{ borderColor: '#2a3038', height: '56px' }}
           >
-            <span>{hole.score || '—'}</span>
+            <span className="text-xl font-bold text-white">{hole.score || '—'}</span>
             {hole.score && hole.par && (
-              <span className="text-xs text-slate-400 leading-none">{getScoringMarker(hole.score, hole.par)}</span>
+              <ScoringBadge score={hole.score} par={hole.par} />
             )}
           </div>
         ))}
-        <div className="w-12 flex items-center justify-center text-xs font-bold text-white bg-slate-800/70 border-r border-slate-700/50">
+        <div className="w-14 flex items-center justify-center text-xl font-bold text-white bg-[#1a1f26] border-b" style={{ borderColor: '#2a3038', height: '56px' }}>
           {outTotal.strokes || '—'}
         </div>
-        <div className="w-12 flex items-center justify-center text-xs font-bold text-white bg-slate-800/70 border-r border-slate-700/50">
+        <div className="w-14 flex items-center justify-center text-xl font-bold text-white bg-[#1a1f26] border-b" style={{ borderColor: '#2a3038', height: '56px' }}>
           {inTotal.strokes || '—'}
         </div>
-        <div className="w-12 flex items-center justify-center text-xs font-bold text-white bg-slate-800/70">
+        <div className="w-14 flex items-center justify-center text-xl font-bold text-white bg-[#1a1f26] border-b" style={{ borderColor: '#2a3038', height: '56px' }}>
           {totTotal.strokes || '—'}
         </div>
       </div>
 
       {/* STATUS row */}
-      <div className="flex gap-px bg-slate-900">
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-500 bg-slate-950 border-r border-slate-700/50">
+      <div className="flex gap-0">
+        <div className="w-16 flex items-center justify-center text-lg font-medium text-[#9EA5B1] bg-[#1a1f26] border-b" style={{ borderColor: '#2a3038', height: '56px' }}>
           STATUS
         </div>
         {holes.map((hole, i) => (
           <div
             key={`status-${hole.holeNumber}`}
-            className={`w-10 flex items-center justify-center text-xs font-semibold ${getToParColor(hole.toPar)} bg-slate-900 border-r border-slate-700/50 ${
-              i === 8 || i === 17 ? 'bg-slate-800' : ''
+            className={`w-12 flex items-center justify-center text-lg font-semibold border-b ${getStatusTextColor(hole.toPar)} ${
+              i === 17 ? 'bg-[#0a0d11]' : 'bg-[#151922]'
             }`}
+            style={{ borderColor: '#2a3038', height: '56px' }}
           >
             {hole.toPar !== null ? formatToPar(hole.toPar) : '—'}
           </div>
         ))}
-        <div className={`w-12 flex items-center justify-center text-xs font-semibold ${getToParColor(outTotal.toPar)} bg-slate-800/70 border-r border-slate-700/50`}>
+        <div className={`w-14 flex items-center justify-center text-lg font-semibold bg-[#1a1f26] border-b ${getStatusTextColor(outTotal.toPar)}`} style={{ borderColor: '#2a3038', height: '56px' }}>
           {formatToPar(outTotal.toPar)}
         </div>
-        <div className={`w-12 flex items-center justify-center text-xs font-semibold ${getToParColor(inTotal.toPar)} bg-slate-800/70 border-r border-slate-700/50`}>
+        <div className={`w-14 flex items-center justify-center text-lg font-semibold bg-[#1a1f26] border-b ${getStatusTextColor(inTotal.toPar)}`} style={{ borderColor: '#2a3038', height: '56px' }}>
           {formatToPar(inTotal.toPar)}
         </div>
-        <div className={`w-12 flex items-center justify-center text-xs font-semibold ${getToParColor(totTotal.toPar)} bg-slate-800/70`}>
+        <div className={`w-14 flex items-center justify-center text-lg font-semibold bg-[#1a1f26] border-b ${getStatusTextColor(totTotal.toPar)}`} style={{ borderColor: '#2a3038', height: '56px' }}>
           {formatToPar(totTotal.toPar)}
         </div>
       </div>
 
       {/* DK PTS row */}
-      <div className="flex gap-px bg-slate-900">
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-500 bg-slate-950 border-r border-slate-700/50">
+      <div className="flex gap-0">
+        <div className="w-16 flex items-center justify-center text-lg font-medium text-[#9EA5B1] bg-[#1a1f26]" style={{ height: '56px' }}>
           DK PTS
         </div>
         {holes.map((hole, i) => (
           <div
             key={`dk-${hole.holeNumber}`}
-            className={`w-10 flex items-center justify-center text-xs text-slate-500 bg-slate-900 border-r border-slate-700/50 ${
-              i === 8 || i === 17 ? 'bg-slate-800' : ''
+            className={`w-12 flex items-center justify-center text-lg text-[#9EA5B1] font-semibold ${
+              i === 17 ? 'bg-[#0a0d11]' : 'bg-[#151922]'
             }`}
+            style={{ height: '56px' }}
           >
             {hole.dkPoints !== null ? hole.dkPoints.toFixed(1) : '—'}
           </div>
         ))}
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-300 bg-slate-800/70 border-r border-slate-700/50">
+        <div className="w-14 flex items-center justify-center text-lg font-semibold text-[#9EA5B1] bg-[#1a1f26]" style={{ height: '56px' }}>
           {outTotal.dkPoints.toFixed(1)}
         </div>
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-300 bg-slate-800/70 border-r border-slate-700/50">
+        <div className="w-14 flex items-center justify-center text-lg font-semibold text-[#9EA5B1] bg-[#1a1f26]" style={{ height: '56px' }}>
           {inTotal.dkPoints.toFixed(1)}
         </div>
-        <div className="w-12 flex items-center justify-center text-xs font-semibold text-slate-300 bg-slate-800/70">
+        <div className="w-14 flex items-center justify-center text-lg font-semibold text-[#9EA5B1] bg-[#1a1f26]" style={{ height: '56px' }}>
           {totTotal.dkPoints.toFixed(1)}
         </div>
       </div>
@@ -280,4 +292,50 @@ function ScorecardGrid({
   )
 }
 
+interface ScoringBadgeProps {
+  score: number
+  par: number
+}
 
+function ScoringBadge({ score, par }: ScoringBadgeProps) {
+  const diff = score - par
+  
+  if (diff <= -2) {
+    // Eagle: Green outline circle
+    return (
+      <svg className="w-4 h-4 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+    )
+  }
+  
+  if (diff === -1) {
+    // Birdie: Blue outline circle
+    return (
+      <svg className="w-4 h-4 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+    )
+  }
+  
+  if (diff === 1) {
+    // Bogey: Gray outline square
+    return (
+      <svg className="w-4 h-4 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
+        <rect x="4" y="4" width="16" height="16" rx="1" />
+      </svg>
+    )
+  }
+  
+  if (diff >= 2) {
+    // Double bogey: Double square
+    return (
+      <svg className="w-4 h-4 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
+        <rect x="3" y="3" width="8" height="8" rx="0.5" />
+        <rect x="13" y="13" width="8" height="8" rx="0.5" />
+      </svg>
+    )
+  }
+  
+  return null
+}
