@@ -173,20 +173,38 @@ export interface FieldEntrant {
   position: number | null
   /** Total tournament score relative to par (e.g., -12, 0, +3), or null when not played. */
   total: number | null
+  /** Total tournament score in strokes, or null when not applicable. */
+  totalStrokes: number | null
+  /** Tournament-level DK fantasy points, or null when unavailable. */
+  totalDkFantasyPoints: number | null
   /** Current hole number completed in current round, or null. "F" indicates finished. */
   thruHole: string | null
   /** Current round score relative to par (e.g., -4, E, +2), or null. */
   roundScore: number | null
   /** Round 1 score in strokes, or null if not played. */
   round1: number | null
+  /** Round 1 score relative to par, or null if not played. */
+  round1RelToPar: number | null
+  /** Round 1 DK fantasy points, or null if not played or unavailable. */
+  round1DkPoints: number | null
   /** Round 2 score in strokes, or null if not played. */
   round2: number | null
+  /** Round 2 score relative to par, or null if not played. */
+  round2RelToPar: number | null
+  /** Round 2 DK fantasy points, or null if not played or unavailable. */
+  round2DkPoints: number | null
   /** Round 3 score in strokes, or null if not played. */
   round3: number | null
+  /** Round 3 score relative to par, or null if not played. */
+  round3RelToPar: number | null
+  /** Round 3 DK fantasy points, or null if not played or unavailable. */
+  round3DkPoints: number | null
   /** Round 4 score in strokes, or null if not played. */
   round4: number | null
-  /** Total strokes for the tournament, or null when not applicable. */
-  totalStrokes: number | null
+  /** Round 4 score relative to par, or null if not played. */
+  round4RelToPar: number | null
+  /** Round 4 DK fantasy points, or null if not played or unavailable. */
+  round4DkPoints: number | null
   /** Projected finishing position or score, or null when not available. */
   projection: string | null
   /** Scheduled tee time for the player, or null when not applicable. */

@@ -76,6 +76,15 @@ export interface FieldEntryRow {
    * projections, or averages — only authoritative DK results.
    */
   dkFantasyPoints: number | null
+  // Per-round scoring data
+  round1: number | null
+  round1RelToPar: number | null
+  round2: number | null
+  round2RelToPar: number | null
+  round3: number | null
+  round3RelToPar: number | null
+  round4: number | null
+  round4RelToPar: number | null
 }
 
 /** Compact entrant used for the tournament hub's field preview. */
@@ -194,9 +203,21 @@ export class FieldRepository extends BaseRepository {
         tf.withdrawn AS "withdrawn",
         tf."cutMade" AS "cutMade",
         stat."worldRanking" AS "worldRanking",
-        hto.dk_fantasy_points AS "dkFantasyPoints"
+        hto.dk_fantasy_points AS "dkFantasyPoints",
+        -- Per-round strokes and relative-to-par
+        MAX(CASE WHEN r."roundNumber" = 1 THEN pr.score END) AS "round1",
+        MAX(CASE WHEN r."roundNumber" = 1 THEN pr."toPar" END) AS "round1RelToPar",
+        MAX(CASE WHEN r."roundNumber" = 2 THEN pr.score END) AS "round2",
+        MAX(CASE WHEN r."roundNumber" = 2 THEN pr."toPar" END) AS "round2RelToPar",
+        MAX(CASE WHEN r."roundNumber" = 3 THEN pr.score END) AS "round3",
+        MAX(CASE WHEN r."roundNumber" = 3 THEN pr."toPar" END) AS "round3RelToPar",
+        MAX(CASE WHEN r."roundNumber" = 4 THEN pr.score END) AS "round4",
+        MAX(CASE WHEN r."roundNumber" = 4 THEN pr."toPar" END) AS "round4RelToPar"
       FROM tournament_fields tf
       JOIN players p ON p.id = tf."playerId" AND p."deletedAt" IS NULL
+      -- Per-round scoring data
+      LEFT JOIN player_rounds pr ON pr."tournamentFieldId" = tf.id
+      LEFT JOIN rounds r ON r.id = pr."roundId"
       -- The player's most recent season ranking, if any has been imported.
       -- LEFT JOIN LATERAL keeps entrants without stats in the roster (rank null).
       LEFT JOIN LATERAL (
@@ -213,6 +234,8 @@ export class FieldRepository extends BaseRepository {
         AND hto.player_id = tf."playerId"
         AND hto.dk_fantasy_points IS NOT NULL
       WHERE tf."tournamentId" = ${tournamentId}
+      GROUP BY tf.id, p.id, p."fullName", p."countryCode", p."headshotUrl", tf.status, 
+               tf."isAlternate", tf.withdrawn, tf."cutMade", stat."worldRanking", hto.dk_fantasy_points
       ORDER BY p."fullName" ASC
     `)
   }

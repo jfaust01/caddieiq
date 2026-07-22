@@ -62,6 +62,19 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     formScore: null,
     fantasyScore: null,
     dkFantasyPoints: row.dkFantasyPoints ?? null,
+    totalDkFantasyPoints: row.dkFantasyPoints ?? null, // Use tournament-level DK points for TOTAL
+    round1: row.round1 ?? null,
+    round1RelToPar: row.round1RelToPar ?? null,
+    round1DkPoints: null, // Per-round DK points not yet implemented
+    round2: row.round2 ?? null,
+    round2RelToPar: row.round2RelToPar ?? null,
+    round2DkPoints: null,
+    round3: row.round3 ?? null,
+    round3RelToPar: row.round3RelToPar ?? null,
+    round3DkPoints: null,
+    round4: row.round4 ?? null,
+    round4RelToPar: row.round4RelToPar ?? null,
+    round4DkPoints: null,
   }
 }
 

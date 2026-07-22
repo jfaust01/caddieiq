@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { CountryFlag } from '@/features/players/components/country-flag'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
+import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
@@ -28,8 +29,6 @@ type SortKey =
   | 'name-desc'
   | 'total-asc'
   | 'total-desc'
-  | 'strokes-asc'
-  | 'strokes-desc'
   | 'proj-asc'
   | 'proj-desc'
   | 'dk-asc'
@@ -44,8 +43,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'name-desc', label: 'Name (Z–A)' },
   { value: 'total-asc', label: 'Total (Low)' },
   { value: 'total-desc', label: 'Total (High)' },
-  { value: 'strokes-asc', label: 'Strokes (Low)' },
-  { value: 'strokes-desc', label: 'Strokes (High)' },
   { value: 'proj-asc', label: 'Projection (↑)' },
   { value: 'proj-desc', label: 'Projection (↓)' },
   { value: 'dk-asc', label: 'DK Points (Low)' },
@@ -84,14 +81,7 @@ function parseOdds(odds: string | null): number {
  */
 function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
   const positionDisplay = formatMissing(entrant.position)
-  const totalDisplay = entrant.total == null ? '—' : (entrant.total > 0 ? '+' : '') + entrant.total
-  const r1Display = entrant.round1 == null ? '—' : entrant.round1
-  const r2Display = entrant.round2 == null ? '—' : entrant.round2
-  const r3Display = entrant.round3 == null ? '—' : entrant.round3
-  const r4Display = entrant.round4 == null ? '—' : entrant.round4
-  const strokesDisplay = formatMissing(entrant.totalStrokes)
   const projDisplay = formatMissing(entrant.projection)
-  const dkDisplay = formatMissing(entrant.dkFantasyPoints)
   const oddsDisplay = formatMissing(entrant.oddsToWin)
   
   // Extract initials from player name for avatar fallback
@@ -103,14 +93,14 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
     .slice(0, 2)
 
   return (
-    <tr className="group border-b border-border hover:bg-muted/40 transition-colors">
+    <tr className="group border-b border-border hover:bg-muted/40 transition-colors h-[68px]">
       {/* POS */}
-      <td className="px-2 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground">
+      <td className="px-2 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
         {positionDisplay}
       </td>
 
-      {/* PLAYER - STICKY with image, flag, tour */}
-      <td className="sticky left-0 z-10 px-2 sm:px-3 py-3 text-left text-sm font-medium bg-background group-hover:bg-muted/40 border-r border-border/50">
+      {/* PLAYER - STICKY with image, flag */}
+      <td className="sticky left-0 z-10 px-2 sm:px-3 py-3 text-left text-sm font-medium bg-background group-hover:bg-muted/40 border-r border-border/50 align-middle">
         <div className="flex items-center gap-2 min-w-0">
           {/* Headshot Avatar */}
           <Avatar className="h-7 w-7 flex-shrink-0">
@@ -134,48 +124,43 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
         </div>
       </td>
 
-      {/* TOTAL */}
-      <td className="px-2 sm:px-3 py-3 text-right text-sm font-mono tabular-nums">
-        {totalDisplay}
+      {/* TOTAL - Three-line score cell */}
+      <td className="px-2 sm:px-3 py-3 text-center align-middle">
+        <ScoreCell score={entrant.totalStrokes} relToPar={entrant.total} dkPoints={entrant.totalDkFantasyPoints} />
       </td>
 
-      {/* R1 */}
-      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums text-muted-foreground">
-        {r1Display}
+      {/* R1 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell score={entrant.round1} relToPar={entrant.round1RelToPar} dkPoints={entrant.round1DkPoints} />
       </td>
 
-      {/* R2 */}
-      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums text-muted-foreground">
-        {r2Display}
+      {/* R2 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell score={entrant.round2} relToPar={entrant.round2RelToPar} dkPoints={entrant.round2DkPoints} />
       </td>
 
-      {/* R3 */}
-      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums text-muted-foreground">
-        {r3Display}
+      {/* R3 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell score={entrant.round3} relToPar={entrant.round3RelToPar} dkPoints={entrant.round3DkPoints} />
       </td>
 
-      {/* R4 */}
-      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums text-muted-foreground">
-        {r4Display}
-      </td>
-
-      {/* STROKES */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground">
-        {strokesDisplay}
+      {/* R4 - Three-line score cell */}
+      <td className="px-3 py-3 text-center align-middle">
+        <ScoreCell score={entrant.round4} relToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
       </td>
 
       {/* PROJ. */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums">
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums align-middle">
         {projDisplay}
       </td>
 
       {/* DK POINTS */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground">
-        {dkDisplay}
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
+        {entrant.dkFantasyPoints == null ? '—' : entrant.dkFantasyPoints.toFixed(1)}
       </td>
 
       {/* ODDS TO WIN */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground">
+      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
         {oddsDisplay}
       </td>
     </tr>
@@ -242,18 +227,6 @@ export function TournamentField({ field }: TournamentFieldProps) {
         const totA = a.total ?? Number.MIN_VALUE
         const totB = b.total ?? Number.MIN_VALUE
         return totB !== totA ? totB - totA : a.playerName.localeCompare(b.playerName)
-      }
-
-      // Strokes sorting
-      if (sort === 'strokes-asc') {
-        const strokesA = a.totalStrokes ?? Number.MAX_VALUE
-        const strokesB = b.totalStrokes ?? Number.MAX_VALUE
-        return strokesA !== strokesB ? strokesA - strokesB : a.playerName.localeCompare(b.playerName)
-      }
-      if (sort === 'strokes-desc') {
-        const strokesA = a.totalStrokes ?? Number.MIN_VALUE
-        const strokesB = b.totalStrokes ?? Number.MIN_VALUE
-        return strokesB !== strokesA ? strokesB - strokesA : a.playerName.localeCompare(b.playerName)
       }
 
       // Projection sorting (treat as text for now, as format varies)
@@ -368,12 +341,11 @@ export function TournamentField({ field }: TournamentFieldProps) {
               <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
                 <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
                 <th className="sticky left-0 z-20 px-2 sm:px-3 py-3 text-left text-xs font-semibold bg-muted/40 border-r border-border/50">PLAYER</th>
-                <th className="px-2 sm:px-3 py-3 text-right text-xs font-semibold">TOTAL</th>
+                <th className="px-2 sm:px-3 py-3 text-center text-xs font-semibold">TOTAL</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R1</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R2</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R3</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R4</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold">STROKES</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">PROJ.</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">DK POINTS</th>
                 <th className="px-3 py-3 text-right text-xs font-semibold">ODDS TO WIN</th>
