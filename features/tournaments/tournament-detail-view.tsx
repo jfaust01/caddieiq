@@ -1,7 +1,6 @@
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
-import { Button } from '@/components/ui/button'
 import { PageShell } from '@/components/shared/page-shell'
 import { TournamentDetailTabs } from '@/features/tournaments/components/tournament-detail-tabs'
 import { TournamentField } from '@/features/tournaments/components/tournament-field'
@@ -94,17 +93,13 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
 
   return (
     <PageShell>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-fit text-muted-foreground text-foreground/70 hover:text-foreground"
-        asChild
+      <Link 
+        href="/tournaments"
+        className="inline-flex items-center gap-2 h-9 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
       >
-        <Link href="/tournaments" className="no-underline">
-          <ChevronLeft data-icon="inline-start" />
-          All tournaments
-        </Link>
-      </Button>
+        <ChevronLeft className="size-4" />
+        All tournaments
+      </Link>
 
       <TournamentHero
         tournament={tournament}
