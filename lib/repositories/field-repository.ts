@@ -54,6 +54,10 @@ export interface FieldEntryRow {
   playerId: string
   playerName: string
   countryCode: string | null
+  /** Remote headshot URL when available; null renders an initials placeholder. */
+  headshotUrl: string | null
+  /** Active professional tour membership. */
+  tour: string | null
   status: string
   isAlternate: boolean
   withdrawn: boolean
@@ -176,6 +180,8 @@ export class FieldRepository extends BaseRepository {
         p.id AS "playerId",
         p."fullName" AS "playerName",
         p."countryCode" AS "countryCode",
+        p."headshotUrl" AS "headshotUrl",
+        p.tour AS "tour",
         tf.status::text AS "status",
         tf."isAlternate" AS "isAlternate",
         tf.withdrawn AS "withdrawn",

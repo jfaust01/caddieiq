@@ -6,6 +6,8 @@ import { useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { SearchBar } from '@/components/shared/search-bar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -13,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { CountryFlag } from '@/features/players/components/country-flag'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { FieldStatusBadge } from '@/features/tournaments/components/field-status-badge'
 import { TournamentPagination } from '@/features/tournaments/components/tournament-pagination'
@@ -29,8 +32,6 @@ type SortKey =
   | 'name-desc'
   | 'total-asc'
   | 'total-desc'
-  | 'round-asc'
-  | 'round-desc'
   | 'strokes-asc'
   | 'strokes-desc'
   | 'proj-asc'
@@ -47,8 +48,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'name-desc', label: 'Name (Z–A)' },
   { value: 'total-asc', label: 'Total (Low)' },
   { value: 'total-desc', label: 'Total (High)' },
-  { value: 'round-asc', label: 'Round (Low)' },
-  { value: 'round-desc', label: 'Round (High)' },
   { value: 'strokes-asc', label: 'Strokes (Low)' },
   { value: 'strokes-desc', label: 'Strokes (High)' },
   { value: 'proj-asc', label: 'Projection (↑)' },
@@ -90,8 +89,6 @@ function parseOdds(odds: string | null): number {
 function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
   const positionDisplay = formatMissing(entrant.position)
   const totalDisplay = entrant.total == null ? '—' : (entrant.total > 0 ? '+' : '') + entrant.total
-  const thruDisplay = formatMissing(entrant.thruHole)
-  const roundDisplay = entrant.roundScore == null ? '—' : (entrant.roundScore > 0 ? '+' : '') + entrant.roundScore
   const r1Display = entrant.round1 == null ? '—' : entrant.round1
   const r2Display = entrant.round2 == null ? '—' : entrant.round2
   const r3Display = entrant.round3 == null ? '—' : entrant.round3
@@ -100,6 +97,14 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
   const projDisplay = formatMissing(entrant.projection)
   const startDisplay = formatMissing(entrant.startingTime)
   const oddsDisplay = formatMissing(entrant.oddsToWin)
+  
+  // Extract initials from player name for avatar fallback
+  const initials = entrant.playerName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 
   return (
     <tr className="group border-b border-border hover:bg-muted/40 transition-colors">
@@ -108,33 +113,49 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
         {positionDisplay}
       </td>
 
-      {/* PLAYER - STICKY */}
+      {/* PLAYER - STICKY with image, flag, tour */}
       <td className="sticky left-0 z-10 px-2 sm:px-3 py-3 text-left text-sm font-medium bg-background group-hover:bg-muted/40 border-r border-border/50">
-        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-          <Link
-            href={`/players/${entrant.playerId}`}
-            className="truncate text-primary hover:underline text-xs sm:text-sm"
-            title={entrant.playerName}
-          >
-            {entrant.playerName}
-          </Link>
-          <FieldStatusBadge status={entrant.status} />
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Headshot Avatar */}
+          <Avatar className="h-7 w-7 flex-shrink-0">
+            <AvatarImage src={entrant.headshotUrl ?? undefined} alt={entrant.playerName} />
+            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          </Avatar>
+          
+          {/* Name + Country Flag */}
+          <div className="flex items-center gap-1 min-w-0">
+            <Link
+              href={`/players/${entrant.playerId}`}
+              className="truncate text-primary hover:underline text-xs sm:text-sm"
+              title={entrant.playerName}
+            >
+              {entrant.playerName}
+            </Link>
+            {entrant.countryCode && (
+              <CountryFlag countryCode={entrant.countryCode} className="h-4 w-4 flex-shrink-0" />
+            )}
+          </div>
+          
+          {/* Tour Chip */}
+          {entrant.tour && (
+            <Badge
+              variant="secondary"
+              className="text-xs px-1.5 py-0 h-5 flex-shrink-0 group-hover:bg-muted"
+            >
+              {entrant.tour}
+            </Badge>
+          )}
+          
+          {/* Status Badge */}
+          <div className="flex-shrink-0">
+            <FieldStatusBadge status={entrant.status} />
+          </div>
         </div>
       </td>
 
       {/* TOTAL */}
       <td className="px-2 sm:px-3 py-3 text-right text-sm font-mono tabular-nums">
         {totalDisplay}
-      </td>
-
-      {/* THRU */}
-      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums text-muted-foreground">
-        {thruDisplay}
-      </td>
-
-      {/* ROUND */}
-      <td className="px-3 py-3 text-center text-sm font-mono tabular-nums">
-        {roundDisplay}
       </td>
 
       {/* R1 */}
@@ -241,18 +262,6 @@ export function TournamentField({ field }: TournamentFieldProps) {
         const totA = a.total ?? Number.MIN_VALUE
         const totB = b.total ?? Number.MIN_VALUE
         return totB !== totA ? totB - totA : a.playerName.localeCompare(b.playerName)
-      }
-
-      // Round score sorting
-      if (sort === 'round-asc') {
-        const roundA = a.roundScore ?? Number.MAX_VALUE
-        const roundB = b.roundScore ?? Number.MAX_VALUE
-        return roundA !== roundB ? roundA - roundB : a.playerName.localeCompare(b.playerName)
-      }
-      if (sort === 'round-desc') {
-        const roundA = a.roundScore ?? Number.MIN_VALUE
-        const roundB = b.roundScore ?? Number.MIN_VALUE
-        return roundB !== roundA ? roundB - roundA : a.playerName.localeCompare(b.playerName)
       }
 
       // Strokes sorting
@@ -386,8 +395,6 @@ export function TournamentField({ field }: TournamentFieldProps) {
                 <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
                 <th className="sticky left-0 z-20 px-2 sm:px-3 py-3 text-left text-xs font-semibold bg-muted/40 border-r border-border/50">PLAYER</th>
                 <th className="px-2 sm:px-3 py-3 text-right text-xs font-semibold">TOTAL</th>
-                <th className="px-3 py-3 text-center text-xs font-semibold">THRU</th>
-                <th className="px-3 py-3 text-center text-xs font-semibold">ROUND</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R1</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R2</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R3</th>
