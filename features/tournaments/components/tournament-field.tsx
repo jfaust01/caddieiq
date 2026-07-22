@@ -119,7 +119,7 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
           </Avatar>
           
           {/* Two-row text block */}
-          <div className="flex flex-col gap-0.5 min-w-0">
+          <div className="flex flex-col gap-0 min-w-0">
             {/* Row 1: Player Name */}
             <Link
               href={`/players/${entrant.playerId}`}
@@ -129,10 +129,10 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
               {entrant.playerName}
             </Link>
             
-            {/* Row 2: Country Flag + Tour Chip */}
-            <div className="flex items-center gap-1 flex-wrap">
+            {/* Row 2: Country Flag + Tour Chip (no wrapping, aligned with name) */}
+            <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
               {entrant.countryCode && (
-                <CountryFlag countryCode={entrant.countryCode} className="h-3.5 w-3.5 flex-shrink-0" />
+                <CountryFlag countryCode={entrant.countryCode} className="h-4 w-4 flex-shrink-0" />
               )}
               {tour && (
                 <TourChip tour={tour} />
