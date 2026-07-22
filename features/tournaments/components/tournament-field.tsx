@@ -28,7 +28,7 @@ import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-a
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import { TourChip } from '@/features/tournaments/components/tour-chip'
-import { buildPositionCountMap, formatPositionWithTies } from '@/features/tournaments/utils/format-position'
+import { buildPositionCountMap, formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
@@ -97,7 +97,7 @@ function LeaderboardRow({
   entrant: FieldEntrant
   positionCountMap?: Map<number, number>
 }) {
-  const positionDisplay = formatPositionWithTies(entrant.position, positionCountMap)
+  const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
   const projDisplay = formatMissing(entrant.projection)
   const oddsDisplay = formatMissing(entrant.oddsToWin)
   
