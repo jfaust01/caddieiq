@@ -12,6 +12,7 @@ import {
 import { isCurrentUserAdmin } from '@/lib/session'
 import type { TournamentSummary } from '@/features/tournaments/types'
 import type { WeatherIntelligence } from '@/lib/weather-intelligence'
+import { fetchTournamentsForSelector } from '@/features/tournaments/actions/fetch-tournaments-for-selector'
 
 interface TournamentCommandCenterProps {
   tournament: TournamentSummary
@@ -56,6 +57,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
     dfsField,
     weather,
     isAdmin,
+    tournamentOptions,
   ] = await Promise.all([
     tournamentService.getTournamentField(tournament.id),
     tournamentService.getFieldReport(tournament.id),
@@ -63,6 +65,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
     tournamentService.getDfsValueField(tournament.id),
     tournamentService.getWeatherIntelligence(tournament.id),
     isCurrentUserAdmin(),
+    fetchTournamentsForSelector(),
   ])
 
   const weatherAdmin = isAdmin
@@ -87,6 +90,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
         weatherSummary={weatherSummary(weather)}
         weatherPlaceholder={weather.statusReport.label}
         dataConfidence={dataConfidence}
+        tournamentOptions={tournamentOptions}
       />
 
       <PageShell>

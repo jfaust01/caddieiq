@@ -5,8 +5,10 @@ import { CalendarDays, CloudSun, MapPin, Users } from "lucide-react"
 
 import { TournamentStatusBadge } from "@/features/tournaments/components/tournament-status-badge"
 import { TournamentTourChip } from "@/features/tournaments/components/tournament-tour-chip"
+import { TournamentSelector } from "@/features/tournaments/components/tournament-selector"
 import type { TournamentSummary } from "@/features/tournaments/types"
 import { formatDateRange, formatFieldSize } from "@/features/tournaments/utils/format"
+import type { TournamentSelectorOption } from "@/features/tournaments/actions/fetch-tournaments-for-selector"
 
 interface CommandCenterHeaderProps {
   tournament: TournamentSummary
@@ -17,6 +19,8 @@ interface CommandCenterHeaderProps {
   weatherPlaceholder: string
   /** One-word data-confidence label for the whole hub (e.g. "verified"). */
   dataConfidence: string | null
+  /** Tournament options for the selector dropdown. */
+  tournamentOptions?: TournamentSelectorOption[]
 }
 
 /** A compact fact chip in the header meta row. */
@@ -41,6 +45,7 @@ export function CommandCenterHeader({
   weatherSummary,
   weatherPlaceholder,
   dataConfidence,
+  tournamentOptions = [],
 }: CommandCenterHeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   
@@ -76,10 +81,18 @@ export function CommandCenterHeader({
               <TournamentTourChip tour={null} variant="default" />
             )}
 
-            {/* Tournament Title */}
-            <h1 className="text-lg font-semibold tracking-tight text-pretty">
-              {tournament.name}
-            </h1>
+            {/* Tournament Selector / Title */}
+            {tournamentOptions.length > 0 ? (
+              <TournamentSelector
+                currentTournamentId={tournament.id}
+                currentTournamentName={tournament.name}
+                options={tournamentOptions}
+              />
+            ) : (
+              <h1 className="text-lg font-semibold tracking-tight text-pretty">
+                {tournament.name}
+              </h1>
+            )}
 
             {/* Status Badge */}
             <div className="flex items-center gap-1.5 shrink-0">
