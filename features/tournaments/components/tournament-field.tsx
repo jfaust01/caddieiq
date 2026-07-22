@@ -549,9 +549,9 @@ export function TournamentField({ field }: TournamentFieldProps) {
                     <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
                   </tr>,
                   isExpanded && (
-                    <tr key={`scorecard-${entrant.playerId}`} className="bg-muted/20 hover:bg-muted/20">
-                      <td colSpan={9} className="p-0" id={`player-scorecard-${entrant.playerId}`}>
-                        <div className="border-t border-border">
+                    <tr key={`scorecard-${entrant.playerId}`} className="bg-background hover:bg-background">
+                      <td colSpan={10} className="p-4" id={`player-scorecard-${entrant.playerId}`}>
+                        <div className="rounded-md border border-border bg-card">
                           <ScorecardLoader
                             playerId={entrant.playerId}
                             playerName={entrant.playerName}
