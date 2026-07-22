@@ -83,6 +83,11 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
       row.round4RelToPar ?? null,
     )
 
+  // Extract per-round DK points from JSONB object
+  const roundDkPoints = row.roundDkPoints ?? {}
+  const getRoundDkPoints = (roundNum: number) =>
+    roundDkPoints[roundNum.toString()] ?? null
+
   return {
     playerId: row.playerId,
     playerName: row.playerName,
@@ -111,16 +116,16 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     dfsSalary: row.dfsSalary ?? null,
     round1: row.round1 ?? null,
     round1RelToPar: row.round1RelToPar ?? null,
-    round1DkPoints: null, // Per-round DK points not yet implemented
+    round1DkPoints: getRoundDkPoints(1),
     round2: row.round2 ?? null,
     round2RelToPar: row.round2RelToPar ?? null,
-    round2DkPoints: null,
+    round2DkPoints: getRoundDkPoints(2),
     round3: row.round3 ?? null,
     round3RelToPar: row.round3RelToPar ?? null,
-    round3DkPoints: null,
+    round3DkPoints: getRoundDkPoints(3),
     round4: row.round4 ?? null,
     round4RelToPar: row.round4RelToPar ?? null,
-    round4DkPoints: null,
+    round4DkPoints: getRoundDkPoints(4),
   }
 }
 
