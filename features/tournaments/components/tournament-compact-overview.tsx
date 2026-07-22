@@ -3,6 +3,7 @@
 import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
 import { EventDetailsPills } from './event-details-pills'
 import { TournamentField } from './tournament-field'
+import { DkTotalCard } from './tournament-elevation/dk-total-card'
 
 interface TournamentCompactOverviewProps {
   tournament: TournamentSummary
@@ -26,6 +27,13 @@ export function TournamentCompactOverview({
       <div className="min-w-0">
         <EventDetailsPills tournament={tournament} />
       </div>
+
+      {/* DK Total Card - displayed above Field section */}
+      {hasField && (
+        <div className="border-t border-border pt-6">
+          <DkTotalCard dkTotal={tournament.totalDkFantasyPoints} />
+        </div>
+      )}
 
       {/* Field Section */}
       {hasField && (

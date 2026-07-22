@@ -1,7 +1,7 @@
 'use client'
 
 import type { TournamentSummary } from '@/features/tournaments/types'
-import { formatPurse, formatDkTotal, textDisplay } from '@/features/tournaments/utils/format'
+import { formatPurse, textDisplay } from '@/features/tournaments/utils/format'
 
 interface EventDetailsPill {
   label: string
@@ -45,11 +45,6 @@ export function EventDetailsPills({ tournament }: { tournament: TournamentSummar
   // Actually, check header - purse is NOT in header, so include it
   if (tournament.purse) {
     pills.push({ label: 'Purse', value: formatPurse(tournament.purse) })
-  }
-
-  // DK Total (sum of all DraftKings fantasy points for the tournament)
-  if (tournament.totalDkFantasyPoints !== null && tournament.totalDkFantasyPoints !== undefined) {
-    pills.push({ label: 'DK Total', value: formatDkTotal(tournament.totalDkFantasyPoints) })
   }
 
   // Cut rule (not in header)
