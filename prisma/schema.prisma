@@ -996,6 +996,7 @@ model PlayerRound {
   round           Round           @relation(fields: [roundId], references: [id], onDelete: Cascade)
   tournamentField TournamentField @relation(fields: [tournamentFieldId], references: [id], onDelete: Cascade)
   statistic       RoundStatistic?
+  holeScores      HoleScore[]
 
   // A player has exactly one record per round.
   @@unique([roundId, tournamentFieldId])
@@ -1045,6 +1046,33 @@ model RoundStatistic {
   @@unique([playerRoundId])
   @@index([playerRoundId])
   @@map("round_statistics")
+}
+
+// ---------------------------------------------------------------------------
+// Hole Score (Sprint 3.9)
+// ---------------------------------------------------------------------------
+
+/// Individual hole score for a player in a round. Provides hole-by-hole breakdown
+/// for scorecard display and detailed shot-by-shot analysis.
+model HoleScore {
+  id            String   @id @default(cuid())
+  playerRoundId String
+  holeNumber    Int      // 1-18
+  score         Int?     // Raw strokes (e.g., 4, 5, 3)
+  par           Int?     // Hole par (3, 4, 5)
+  toPar         Int?     // Relative to par (-1 for birdie, 0 for par, +1 for bogey)
+  dkPoints      Float?   // Per-hole DraftKings points (if available)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  playerRound PlayerRound @relation(fields: [playerRoundId], references: [id], onDelete: Cascade)
+
+  // Exactly one score record per hole per player round.
+  @@unique([playerRoundId, holeNumber])
+  @@index([playerRoundId])
+  @@index([holeNumber])
+  @@map("hole_scores")
 }
 
 // ---------------------------------------------------------------------------

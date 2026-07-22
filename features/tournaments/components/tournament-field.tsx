@@ -1,8 +1,8 @@
 'use client'
 
-import { Users } from 'lucide-react'
+import { Users, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, Suspense } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { SearchBar } from '@/components/shared/search-bar'
@@ -28,6 +28,8 @@ import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-a
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import { TourChip } from '@/features/tournaments/components/tour-chip'
+import { PlayerRoundScorecard } from '@/features/tournaments/components/player-round-scorecard'
+import { getPlayerRoundScorecard } from '@/features/tournaments/actions/get-player-round-scorecard'
 import { buildPositionCountMap, formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
@@ -200,6 +202,210 @@ function LeaderboardRow({
   )
 }
 
+/**
+ * Wrapper around LeaderboardRow that adds expand/collapse functionality.
+ * Shows a chevron button and optional scorecard details below the row.
+ */
+function ExpandableLeaderboardRow({
+  entrant,
+  positionCountMap,
+  isExpanded,
+  onToggleExpand,
+  selectedRound,
+  onRoundChange,
+  tournamentId,
+}: {
+  entrant: FieldEntrant
+  positionCountMap?: Map<number, number>
+  isExpanded: boolean
+  onToggleExpand: () => void
+  selectedRound: number
+  onRoundChange: (round: number) => void
+  tournamentId: string
+}) {
+  const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
+  const salaryDisplay = formatMissing(entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null)
+  const ownershipDisplay = formatMissing(entrant.ownershipPercent ? `${entrant.ownershipPercent.toFixed(1)}%` : null)
+  const oddsDisplay = formatMissing(entrant.oddsToWin)
+
+  return (
+    <>
+      <tr
+        onClick={onToggleExpand}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onToggleExpand()
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        className="cursor-pointer hover:bg-muted/50 transition-colors"
+      >
+        {/* POS column with expand/collapse chevron */}
+        <td className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground align-middle">
+          <div className="flex items-center justify-end gap-2">
+            <ChevronDown
+              size={16}
+              className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            />
+            <span>{positionDisplay}</span>
+          </div>
+        </td>
+
+        {/* PLAYER column */}
+        <td className="px-2 sm:px-3 py-3 text-left align-middle min-w-0" style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}>
+          <Link href={`/players/${entrant.playerId}`} className="hover:underline flex items-center gap-2 min-w-0">
+            <Avatar className="h-8 w-8 flex-shrink-0">
+              <AvatarImage src={entrant.headshotUrl || ''} alt={entrant.playerName} />
+              <AvatarFallback className="text-xs">{entrant.playerName.split(' ').map((n) => n[0]).join('')}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-semibold">{entrant.playerName}</div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                {entrant.countryCode && <PlayerFlag code={entrant.countryCode} />}
+                {entrant.tour && <TourChip tour={entrant.tour} />}
+              </div>
+            </div>
+          </Link>
+        </td>
+
+        {/* TOTAL column */}
+        <td className="px-2 sm:px-3 py-3 text-center align-middle">
+          <ScoreCell strokes={entrant.totalStrokes} relativeToPar={entrant.total} dkPoints={entrant.dkFantasyPoints} emphasis="total" />
+        </td>
+
+        {/* R1 - Three-line score cell */}
+        <td className="px-3 py-3 text-center align-middle">
+          <ScoreCell strokes={entrant.round1} relativeToPar={entrant.round1RelToPar} dkPoints={entrant.round1DkPoints} />
+        </td>
+
+        {/* R2 - Three-line score cell */}
+        <td className="px-3 py-3 text-center align-middle">
+          <ScoreCell strokes={entrant.round2} relativeToPar={entrant.round2RelToPar} dkPoints={entrant.round2DkPoints} />
+        </td>
+
+        {/* R3 - Three-line score cell */}
+        <td className="px-3 py-3 text-center align-middle">
+          <ScoreCell strokes={entrant.round3} relativeToPar={entrant.round3RelToPar} dkPoints={entrant.round3DkPoints} />
+        </td>
+
+        {/* R4 - Three-line score cell */}
+        <td className="px-3 py-3 text-center align-middle">
+          <ScoreCell strokes={entrant.round4} relativeToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
+        </td>
+
+        {/* DK SALARY */}
+        <td className="px-3 py-3 text-right text-sm font-mono tabular-nums align-middle">
+          {salaryDisplay}
+        </td>
+
+        {/* OWNERSHIP % */}
+        <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
+          {ownershipDisplay}
+        </td>
+
+        {/* ODDS TO WIN */}
+        <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
+          {oddsDisplay}
+        </td>
+      </tr>
+
+      {/* Expanded scorecard row */}
+      {isExpanded && (
+        <tr className="bg-muted/20 hover:bg-muted/20">
+          <td colSpan={11} className="p-0">
+            <div className="border-t border-border">
+              <ScorecardLoader
+                playerRoundId={entrant.playerId}
+                selectedRound={selectedRound}
+                onRoundChange={onRoundChange}
+                tournamentId={tournamentId}
+              />
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
+/**
+ * Async loader for the scorecard that fetches hole-by-hole data.
+ */
+function ScorecardLoader({
+  playerRoundId,
+  selectedRound,
+  onRoundChange,
+  tournamentId,
+}: {
+  playerRoundId: string
+  selectedRound: number
+  onRoundChange: (round: number) => void
+  tournamentId: string
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-4 text-center text-sm text-muted-foreground">
+          Loading scorecard...
+        </div>
+      }
+    >
+      <ScorecardContent
+        playerRoundId={playerRoundId}
+        selectedRound={selectedRound}
+        onRoundChange={onRoundChange}
+      />
+    </Suspense>
+  )
+}
+
+/**
+ * Server component that fetches scorecard data.
+ */
+async function ScorecardContent({
+  playerRoundId,
+  selectedRound,
+  onRoundChange,
+}: {
+  playerRoundId: string
+  selectedRound: number
+  onRoundChange: (round: number) => void
+}) {
+  // Note: This needs to be updated to fetch the correct player_round record
+  // For now, this is a placeholder that would fetch hole-by-hole data
+  const scorecard = await getPlayerRoundScorecard(playerRoundId)
+
+  if (!scorecard) {
+    return (
+      <div className="p-4 text-center text-sm text-muted-foreground">
+        Hole-by-hole data not yet available for this round.
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4">
+      <div className="mb-4 flex items-center gap-2">
+        <label className="text-xs font-semibold text-muted-foreground">Round:</label>
+        <select
+          value={selectedRound}
+          onChange={(e) => onRoundChange(parseInt(e.target.value, 10))}
+          className="rounded border border-border bg-background px-2 py-1 text-xs"
+        >
+          {[1, 2, 3, 4].map((round) => (
+            <option key={round} value={round}>
+              R{round}
+            </option>
+          ))}
+        </select>
+      </div>
+      <PlayerRoundScorecard data={scorecard} />
+    </div>
+  )
+}
+
 interface TournamentFieldProps {
   field: TournamentField
 }
@@ -212,6 +418,8 @@ export function TournamentField({ field }: TournamentFieldProps) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
   const [sort, setSort] = useState<SortKey>('pos-asc')
+  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
+  const [selectedRound, setSelectedRound] = useState<number>(1)
 
   // Enable drag-to-scroll on the table container
   const scrollContainerRef = useDragScroll({ dragThreshold: 5 })
@@ -429,7 +637,16 @@ export function TournamentField({ field }: TournamentFieldProps) {
             </thead>
             <tbody>
               {filtered.map((entrant) => (
-                <LeaderboardRow key={entrant.playerId} entrant={entrant} positionCountMap={positionCountMap} />
+                <ExpandableLeaderboardRow
+                  key={entrant.playerId}
+                  entrant={entrant}
+                  positionCountMap={positionCountMap}
+                  isExpanded={expandedPlayerId === entrant.playerId}
+                  onToggleExpand={() => setExpandedPlayerId(expandedPlayerId === entrant.playerId ? null : entrant.playerId)}
+                  selectedRound={selectedRound}
+                  onRoundChange={setSelectedRound}
+                  tournamentId={field.tournamentId}
+                />
               ))}
             </tbody>
           </table>
