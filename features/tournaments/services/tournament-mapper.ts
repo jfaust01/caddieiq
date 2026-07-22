@@ -53,6 +53,7 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
     playerName: row.playerName,
     countryCode: row.countryCode ?? null,
     headshotUrl: row.headshotUrl ?? null,
+    tour: row.tour ?? null,
     status: toFieldStatus(row.status),
     isAlternate: row.isAlternate,
     withdrawn: row.withdrawn,

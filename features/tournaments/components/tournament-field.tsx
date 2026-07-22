@@ -18,7 +18,9 @@ import {
 import { CountryFlag } from '@/features/players/components/country-flag'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
+import { TourChip } from '@/features/tournaments/components/tour-chip'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
+import { getDevelopmentPlayerMetadata } from '@/lib/development/mock-player-metadata'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
 
@@ -97,6 +99,9 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
     ? '—' 
     : entrant.ownershipPercent.toFixed(1) + '%'
 
+  // Get Tour data: use real if available, fallback to development mock
+  const tour = entrant.tour ?? getDevelopmentPlayerMetadata(entrant.playerId, entrant.playerName).tour
+
   return (
     <tr className="group border-b border-border hover:bg-muted/40 transition-colors h-[68px]">
       {/* POS */}
@@ -104,27 +109,35 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
         {positionDisplay}
       </td>
 
-      {/* PLAYER - STICKY with image, flag */}
-      <td className="sticky left-0 z-10 px-2 sm:px-3 py-3 text-left text-sm font-medium bg-background group-hover:bg-muted/40 border-r border-border/50 align-middle">
-        <div className="flex items-center gap-2 min-w-0">
+      {/* PLAYER - STICKY with two-row layout: headshot+name / flag+tour */}
+      <td className="sticky left-0 z-10 px-2 sm:px-3 py-2 text-left bg-background group-hover:bg-muted/40 border-r border-border/50 align-middle">
+        <div className="flex gap-2 min-w-0">
           {/* Headshot Avatar */}
-          <Avatar className="h-7 w-7 flex-shrink-0">
+          <Avatar className="h-7 w-7 flex-shrink-0 mt-0.5">
             <AvatarImage src={entrant.headshotUrl ?? undefined} alt={entrant.playerName} />
             <AvatarFallback className="text-xs">{initials}</AvatarFallback>
           </Avatar>
           
-          {/* Name + Country Flag */}
-          <div className="flex items-center gap-1 min-w-0">
+          {/* Two-row text block */}
+          <div className="flex flex-col gap-0.5 min-w-0">
+            {/* Row 1: Player Name */}
             <Link
               href={`/players/${entrant.playerId}`}
-              className="truncate text-primary hover:underline text-xs sm:text-sm"
+              className="truncate text-primary hover:underline text-xs sm:text-sm font-medium"
               title={entrant.playerName}
             >
               {entrant.playerName}
             </Link>
-            {entrant.countryCode && (
-              <CountryFlag countryCode={entrant.countryCode} className="h-4 w-4 flex-shrink-0" />
-            )}
+            
+            {/* Row 2: Country Flag + Tour Chip */}
+            <div className="flex items-center gap-1 flex-wrap">
+              {entrant.countryCode && (
+                <CountryFlag countryCode={entrant.countryCode} className="h-3.5 w-3.5 flex-shrink-0" />
+              )}
+              {tour && (
+                <TourChip tour={tour} />
+              )}
+            </div>
           </div>
         </div>
       </td>

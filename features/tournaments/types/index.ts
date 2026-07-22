@@ -138,6 +138,8 @@ export interface FieldEntrant {
   countryCode: string | null
   /** Remote headshot URL when available; null renders an initials placeholder. */
   headshotUrl: string | null
+  /** Professional tour affiliation (e.g., "PGA TOUR", "LIV", "DP WORLD TOUR"), or null when unavailable. */
+  tour: string | null
   status: FieldEntryStatus
   isAlternate: boolean
   withdrawn: boolean
