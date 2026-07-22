@@ -83,18 +83,6 @@ export function mapFieldEntrant(row: FieldEntryRow): FieldEntrant {
       row.round4RelToPar ?? null,
     )
 
-  // Debug logging
-  if (row.playerName === 'Cameron Young') {
-    console.log('[v0] Cameron Young mapping:', {
-      totalRelativeToPar: row.totalRelativeToPar,
-      round1RelToPar: row.round1RelToPar,
-      round2RelToPar: row.round2RelToPar,
-      round3RelToPar: row.round3RelToPar,
-      round4RelToPar: row.round4RelToPar,
-      calculated: totalRelativeToPar,
-    })
-  }
-
   return {
     playerId: row.playerId,
     playerName: row.playerName,
