@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { ChevronRight, Users2 } from 'lucide-react'
 import type { TournamentField } from '@/features/tournaments/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const BAND_TONE: Record<string, string> = {
@@ -54,17 +53,13 @@ export function CompactLeaderboard({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Top Ranked</CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1 inline-flex"
-            asChild
+          <Link
+            href={`/tournaments/${tournamentId}?tab=field`}
+            className="inline-flex gap-1 h-9 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors"
           >
-            <Link href={`/tournaments/${tournamentId}?tab=field`}>
-              <span>View all</span>
-              <ChevronRight className="size-4 ml-auto" />
-            </Link>
-          </Button>
+            <span>View all</span>
+            <ChevronRight className="size-4 ml-auto" />
+          </Link>
         </div>
       </CardHeader>
       <CardContent className="space-y-1">
