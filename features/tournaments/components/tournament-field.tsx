@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react'
 import { EmptyState } from '@/components/shared/empty-state'
 import { SearchBar } from '@/components/shared/search-bar'
 import { useDragScroll } from '@/features/tournaments/hooks/use-drag-scroll'
+import { usePlayerColumnWidth } from '@/features/tournaments/hooks/use-player-column-width'
 import styles from './tournament-field.module.css'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -124,7 +125,10 @@ function LeaderboardRow({
       </td>
 
       {/* PLAYER - STICKY with two-row layout: headshot+name / flag+tour */}
-      <td className="sticky left-0 z-10 px-3 py-2.5 text-left bg-background group-hover:bg-muted/40 border-r border-border/50 align-middle">
+      <td 
+        className="sticky left-0 z-10 px-3 py-2.5 text-left bg-background group-hover:bg-muted/40 border-r border-border/50 align-middle"
+        style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
+      >
         <div className="flex items-center gap-3 min-w-0">
           {/* Headshot Avatar - larger size: 44px desktop, 42px tablet, 40px mobile */}
           <Avatar className="h-11 w-11 sm:h-11 flex-shrink-0">
@@ -137,8 +141,9 @@ function LeaderboardRow({
             {/* Row 1: Player Name */}
             <Link
               href={`/players/${entrant.playerId}`}
-              className="truncate text-primary hover:underline text-xs sm:text-sm font-medium leading-tight"
+              className="text-primary hover:underline text-xs sm:text-sm font-medium leading-tight whitespace-nowrap"
               title={entrant.playerName}
+              data-player-name
             >
               {entrant.playerName}
             </Link>
@@ -210,6 +215,9 @@ export function TournamentField({ field }: TournamentFieldProps) {
 
   // Enable drag-to-scroll on the table container
   const scrollContainerRef = useDragScroll({ dragThreshold: 5 })
+
+  // Calculate PLAYER column width based on longest visible name
+  const playerColumnWidth = usePlayerColumnWidth(field.entrants, '.tournament-table-container')
 
   // Status options limited to those actually present in this field.
   const statusOptions = useMemo(() => {
@@ -365,7 +373,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
           description="Try a different search term or clear the status filter."
         />
       ) : (
-        <div className="w-full min-w-0">
+        <div className="w-full min-w-0 tournament-table-container" style={{ '--player-column-width': playerColumnWidth || '220px' } as React.CSSProperties}>
           <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1">
             <span>Scroll for more →</span>
           </div>
@@ -378,7 +386,12 @@ export function TournamentField({ field }: TournamentFieldProps) {
             <thead>
               <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
                 <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
-                <th className="sticky left-0 z-20 px-2 sm:px-3 py-3 text-left text-xs font-semibold bg-muted/40 border-r border-border/50">PLAYER</th>
+                <th 
+                  className="sticky left-0 z-20 px-2 sm:px-3 py-3 text-left text-xs font-semibold bg-muted/40 border-r border-border/50"
+                  style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
+                >
+                  PLAYER
+                </th>
                 <th className="px-2 sm:px-3 py-3 text-center text-xs font-semibold">TOTAL</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R1</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R2</th>
