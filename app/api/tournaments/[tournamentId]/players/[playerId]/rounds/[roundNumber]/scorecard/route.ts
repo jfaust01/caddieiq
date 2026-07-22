@@ -29,9 +29,9 @@ export async function GET(
 
     console.log('[v0] Fetching scorecard:', { playerId, round, tournamentId })
 
-    // Query PlayerRound with hole scores
+    // Query PlayerRound with hole scores and course information
     // Path: playerRound -> tournamentField -> playerId, tournament, player
-    // Path: playerRound -> round -> roundNumber
+    // Path: playerRound -> round -> roundNumber, courseId
     const playerRound = await prisma.playerRound.findFirst({
       where: {
         // Match round number
@@ -53,6 +53,7 @@ export async function GET(
         round: {
           select: {
             roundNumber: true,
+            courseSetup: true,
           },
         },
         tournamentField: {
@@ -82,6 +83,17 @@ export async function GET(
         },
       },
     })
+
+    // Fetch course holes for par data (course-agnostic approach)
+    // Try to get course holes from tournament course mapping or database
+    let courseHoles: Array<{ holeNumber: number; par: number | null }> = []
+    
+    // For now, create placeholder course holes (18 holes)
+    // In production, this would fetch from tournament->course->course_holes
+    courseHoles = Array.from({ length: 18 }, (_, i) => ({
+      holeNumber: i + 1,
+      par: null, // Will be populated from course data
+    }))
 
     // Not found
     if (!playerRound) {
@@ -126,13 +138,14 @@ export async function GET(
     const totalDkPoints =
       playerRound.holeScores.reduce((sum, hole) => sum + (hole.dkPoints || 0), 0) || null
 
-    // Build response
+    // Build response with course hole par data
     const responseData = {
       playerName: playerRound.tournamentField.player.fullName,
       roundNumber: playerRound.round.roundNumber,
       totalStrokes: playerRound.score,
       totalToPar: playerRound.toPar,
       totalDkPoints: totalDkPoints,
+      courseHoles: courseHoles,
       holes: playerRound.holeScores.map((hole) => ({
         holeNumber: hole.holeNumber,
         score: hole.score,

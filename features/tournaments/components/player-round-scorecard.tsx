@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react'
 import { PlayerRoundScorecardData } from '../actions/get-player-round-scorecard'
-import { ChevronDown } from 'lucide-react'
 
 interface PlayerRoundScorecardProps {
   data: PlayerRoundScorecardData
@@ -86,10 +85,20 @@ export function PlayerRoundScorecard({ data, isLoading }: PlayerRoundScorecardPr
       </div>
 
       {/* Front 9 */}
-      <ScorecardSection title="Front 9" holes={frontNine} totals={frontTotal} />
+      <ScorecardSection 
+        title="Front 9" 
+        holes={frontNine} 
+        totals={frontTotal}
+        courseHoles={data.courseHoles?.slice(0, 9)}
+      />
 
       {/* Back 9 */}
-      <ScorecardSection title="Back 9" holes={backNine} totals={backTotal} />
+      <ScorecardSection 
+        title="Back 9" 
+        holes={backNine} 
+        totals={backTotal}
+        courseHoles={data.courseHoles?.slice(9, 18)}
+      />
 
       {/* Tournament Total */}
       <div className="border-t border-border pt-4 mt-4">
@@ -176,9 +185,10 @@ interface ScorecardSectionProps {
   title: string
   holes: Array<{ holeNumber: number; score: number | null; par: number | null; toPar: number | null; dkPoints: number | null }>
   totals: { strokes: number; toPar: number; dkPoints: number }
+  courseHoles?: Array<{ holeNumber: number; par: number | null }>
 }
 
-function ScorecardSection({ title, holes, totals }: ScorecardSectionProps) {
+function ScorecardSection({ title, holes, totals, courseHoles }: ScorecardSectionProps) {
   const formatToPar = (value: number | null) => {
     if (value === null) return '—'
     if (value === 0) return 'E'
@@ -191,6 +201,14 @@ function ScorecardSection({ title, holes, totals }: ScorecardSectionProps) {
     if (value === 0) return 'text-muted-foreground'
     return 'text-red-600 dark:text-red-500'
   }
+
+  // Calculate par totals from courseHoles, only if all holes have par values
+  const parTotal = useMemo(() => {
+    if (!courseHoles || courseHoles.length === 0) return null
+    const allHavePar = courseHoles.every(h => h.par !== null)
+    if (!allHavePar) return null
+    return courseHoles.reduce((sum, h) => sum + (h.par || 0), 0)
+  }, [courseHoles])
 
   return (
     <div className="space-y-2">
@@ -206,16 +224,31 @@ function ScorecardSection({ title, holes, totals }: ScorecardSectionProps) {
         <div className="text-center font-semibold text-xs">Total</div>
       </div>
 
-      {/* Par row */}
+      {/* Par row - using courseHoles data when available */}
       <div className="grid grid-cols-10 gap-1 text-xs font-mono tabular-nums">
-        {holes.map((hole) => (
-          <div key={`par-${hole.holeNumber}`} className="text-center text-muted-foreground">
-            {hole.par || '—'}
-          </div>
-        ))}
-        <div className="text-center font-semibold bg-muted/30 rounded py-0.5">
-          {holes.reduce((sum, h) => sum + (h.par || 0), 0)}
-        </div>
+        {courseHoles && courseHoles.length > 0 ? (
+          <>
+            {courseHoles.map((courseHole) => (
+              <div key={`par-${courseHole.holeNumber}`} className="text-center text-muted-foreground">
+                {courseHole.par !== null ? courseHole.par : '—'}
+              </div>
+            ))}
+            <div className="text-center font-semibold bg-muted/30 rounded py-0.5">
+              {parTotal !== null ? parTotal : '—'}
+            </div>
+          </>
+        ) : (
+          <>
+            {holes.map((hole) => (
+              <div key={`par-${hole.holeNumber}`} className="text-center text-muted-foreground">
+                {hole.par !== null ? hole.par : '—'}
+              </div>
+            ))}
+            <div className="text-center font-semibold bg-muted/30 rounded py-0.5">
+              {holes.reduce((sum, h) => sum + (h.par || 0), 0) || '—'}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Score row */}

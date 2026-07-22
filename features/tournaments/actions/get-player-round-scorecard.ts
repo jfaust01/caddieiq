@@ -13,12 +13,18 @@ export interface HoleScoreData {
   externalId: string | null // PROVENANCE: Provider's external ID for audit
 }
 
+export interface CourseHoleData {
+  holeNumber: number
+  par: number | null
+}
+
 export interface PlayerRoundScorecardData {
   playerName: string
   roundNumber: number
   totalStrokes: number | null
   totalToPar: number | null
   totalDkPoints: number | null
+  courseHoles?: CourseHoleData[] // Course hole par data for display
   holes: HoleScoreData[]
 }
 

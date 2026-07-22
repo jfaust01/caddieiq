@@ -75,7 +75,7 @@ export function ScorecardLoader({
   }, [fetchScorecard])
 
   // Always show the scorecard grid, even with empty data
-  // Generate empty scorecard structure if data is null
+  // Generate empty scorecard structure if data is null, using courseHoles from API
   const displayData =
     data ||
     ({
@@ -84,6 +84,10 @@ export function ScorecardLoader({
       totalStrokes: null,
       totalToPar: null,
       totalDkPoints: null,
+      courseHoles: data?.courseHoles || Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        par: null,
+      })),
       holes: Array.from({ length: 18 }, (_, i) => ({
         holeNumber: i + 1,
         score: null,
