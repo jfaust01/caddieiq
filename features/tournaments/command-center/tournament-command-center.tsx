@@ -1,14 +1,10 @@
 import { PageShell } from '@/components/shared/page-shell'
 import { CommandCenterHeader } from '@/features/tournaments/command-center/command-center-header'
-import { AiCoachWidget } from '@/features/tournaments/command-center/ai-coach-widget'
 import { TournamentDetailTabs } from '@/features/tournaments/components/tournament-detail-tabs'
 import { TournamentCompactOverview } from '@/features/tournaments/components/tournament-compact-overview'
 import { TournamentDfsHub } from '@/features/tournaments/components/tournament-dfs-hub'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
 import { courseService } from '@/features/courses/services/course-service'
-import {
-  buildCoachRecommendations,
-} from '@/lib/command-center'
 import { isCurrentUserAdmin } from '@/lib/session'
 import type { TournamentSummary } from '@/features/tournaments/types'
 import type { WeatherIntelligence } from '@/lib/weather-intelligence'
@@ -77,9 +73,6 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
 
   const hasField = field.size > 0
 
-  // Derive AI Coach recommendations from verified engine output.
-  const coach = buildCoachRecommendations({ dfsField, fitBoard })
-
   const dataConfidence = field.analyticsSummary.ratedPlayers > 0 ? 'verified' : null
 
   return (
@@ -121,11 +114,6 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
                 },
               ]
             : []),
-          {
-            value: 'ai-coach',
-            label: 'AI Coach',
-            content: <AiCoachWidget coach={coach} />,
-          },
         ]}
       />
 

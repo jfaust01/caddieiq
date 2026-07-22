@@ -6,7 +6,6 @@ import {
   CircleHelp,
   Database,
   Flag,
-  History,
   LayoutDashboard,
   MapPinned,
   Radar,
@@ -14,7 +13,6 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
-  TrendingUp,
   Trophy,
   Users,
 } from 'lucide-react'
@@ -95,35 +93,6 @@ export const primaryNavigation: NavSection[] = [
         href: '/rankings',
         icon: Trophy,
         description: 'Live leaderboards driven by your models.',
-      },
-    ],
-  },
-  {
-    title: 'Historical Intelligence',
-    items: [
-      {
-        title: 'Tournaments',
-        href: '/historical/tournaments',
-        icon: History,
-        description: 'Browse complete historical tournament data and replay.',
-      },
-      {
-        title: 'Players',
-        href: '/historical/players',
-        icon: Users,
-        description: 'Historical player statistics and performance trends.',
-      },
-      {
-        title: 'Replay',
-        href: '/historical/replay',
-        icon: Flag,
-        description: 'Reconstruct tournaments with historical context.',
-      },
-      {
-        title: 'Trends',
-        href: '/historical/trends',
-        icon: TrendingUp,
-        description: 'Analyze historical patterns and correlations.',
       },
     ],
   },
