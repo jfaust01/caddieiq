@@ -403,40 +403,35 @@ export class TournamentRepository extends BaseRepository {
         LIMIT 1
       ) champ ON true
       LEFT JOIN LATERAL (
-        SELECT COALESCE(SUM(hto."dk_fantasy_points"), NULL)::float8 AS "totalDkFantasyPoints"
+        SELECT COALESCE(SUM(hto."dkFantasyPoints"), NULL)::float8 AS "totalDkFantasyPoints"
         FROM historical_tournament_outcomes hto
-        WHERE hto."tournament_id" = t.id
-          AND hto."dk_fantasy_points" IS NOT NULL
+        WHERE hto."tournamentId" = t.id
+          AND hto."dkFantasyPoints" IS NOT NULL
       ) dkTotal ON true
       LEFT JOIN LATERAL (
         SELECT 
           pl.id AS "tournamentWinnerPlayerId",
           pl."fullName" AS "tournamentWinnerPlayerName",
           pl."headshotUrl" AS "tournamentWinnerHeadshotUrl",
-          hto."score_to_par"::numeric AS "tournamentWinnerScoreToPar",
-          hto."dk_fantasy_points"::float8 AS "tournamentWinnerDkFantasyPoints",
+          hto."scoreToPar"::numeric AS "tournamentWinnerScoreToPar",
+          hto."dkFantasyPoints"::float8 AS "tournamentWinnerDkFantasyPoints",
           salary."salary"::integer AS "tournamentWinnerDfsSalary"
         FROM historical_tournament_outcomes hto
-        JOIN players pl ON pl.id = hto.player_id
+        JOIN players pl ON pl.id = hto."playerId"
         LEFT JOIN LATERAL (
           SELECT ds.salary
           FROM dfs_salaries ds
-          WHERE ds.player_id = hto.player_id
-            AND ds.tournament_id = t.id
+          WHERE ds."playerId" = hto."playerId"
+            AND ds."tournamentId" = t.id
           ORDER BY 
-            CASE WHEN ds.operator = 'DraftKings' THEN 0 ELSE 1 END,
-            ds.created_at DESC
+            CASE WHEN LOWER(ds.operator) = 'draftkings' THEN 0 ELSE 1 END,
+            ds."createdAt" DESC
           LIMIT 1
         ) salary ON true
-        WHERE hto.tournament_id = t.id
-          AND (
-            hto."finish_position" = 1
-            OR hto."finish_position" = '1'
-            OR hto."finish_position" = '1st'
-          )
+        WHERE hto."tournamentId" = t.id
+          AND hto."finishPosition" = 1
         ORDER BY 
-          COALESCE(hto."is_official_winner", false) DESC,
-          COALESCE(hto."score_to_par", 9999) ASC,
+          COALESCE(hto."scoreToPar", 9999) ASC,
           pl."fullName" ASC
         LIMIT 1
       ) winner ON true
@@ -445,14 +440,14 @@ export class TournamentRepository extends BaseRepository {
           pl.id AS "topDkScorerPlayerId",
           pl."fullName" AS "topDkScorerPlayerName",
           pl."headshotUrl" AS "topDkScorerHeadshotUrl",
-          hto."dk_fantasy_points"::float8 AS "topDkScorerDkFantasyPoints"
+          hto."dkFantasyPoints"::float8 AS "topDkScorerDkFantasyPoints"
         FROM historical_tournament_outcomes hto
-        JOIN players pl ON pl.id = hto.player_id
-        WHERE hto.tournament_id = t.id
-          AND hto."dk_fantasy_points" IS NOT NULL
+        JOIN players pl ON pl.id = hto."playerId"
+        WHERE hto."tournamentId" = t.id
+          AND hto."dkFantasyPoints" IS NOT NULL
         ORDER BY 
-          hto."dk_fantasy_points" DESC,
-          COALESCE(hto.finish_position, 9999) ASC,
+          hto."dkFantasyPoints" DESC,
+          COALESCE(hto."finishPosition", 9999) ASC,
           pl."fullName" ASC
         LIMIT 1
       ) topScorer ON true
