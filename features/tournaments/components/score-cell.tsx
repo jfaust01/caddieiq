@@ -72,9 +72,9 @@ export function ScoreCell({
         {formatRelToPar(relativeToPar)}
       </div>
 
-      {/* Line 3: DK Label + Points (smallest, muted; label is secondary) */}
+      {/* Line 3: DK Label + Points (tertiary; label much smaller than value) */}
       <div className="flex items-baseline justify-center gap-0.5 leading-none">
-        <span className="text-xs font-medium text-muted-foreground">DK</span>
+        <span className="text-[0.5rem] font-medium text-muted-foreground/65">DK</span>
         <span className="text-xs font-mono tabular-nums text-muted-foreground">{dkDisplay}</span>
       </div>
     </div>
