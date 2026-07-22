@@ -124,9 +124,9 @@ function LeaderboardRow({
         {positionDisplay}
       </td>
 
-      {/* PLAYER - STICKY with two-row layout: headshot+name / flag+tour */}
+      {/* PLAYER - with two-row layout: headshot+name / flag+tour */}
       <td 
-        className="sticky left-0 z-10 px-3 py-2.5 text-left bg-background group-hover:bg-muted/40 border-r border-border/50 align-middle"
+        className="px-3 py-2.5 text-left align-middle"
         style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
       >
         <div className="flex items-center gap-3 min-w-0">
@@ -387,7 +387,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
               <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
                 <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
                 <th 
-                  className="sticky left-0 z-20 px-2 sm:px-3 py-3 text-left text-xs font-semibold bg-muted/40 border-r border-border/50"
+                  className="px-2 sm:px-3 py-3 text-left text-xs font-semibold"
                   style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
                 >
                   PLAYER
