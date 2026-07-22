@@ -202,7 +202,7 @@ export class FieldRepository extends BaseRepository {
         p."fullName" AS "playerName",
         p."countryCode" AS "countryCode",
         p."headshotUrl" AS "headshotUrl",
-        NULL AS "tour",
+        ds.operator AS "tour",
         tf.status::text AS "status",
         tf."isAlternate" AS "isAlternate",
         tf.withdrawn AS "withdrawn",
@@ -222,6 +222,11 @@ export class FieldRepository extends BaseRepository {
         MAX(CASE WHEN r."roundNumber" = 4 THEN pr."toPar" END) AS "round4RelToPar"
       FROM tournament_fields tf
       JOIN players p ON p.id = tf."playerId" AND p."deletedAt" IS NULL
+      -- DFS salaries: source of authoritative tour operator
+      -- LEFT JOIN (optional) allows entrants without DFS salary records (no tour data)
+      LEFT JOIN dfs_salaries ds
+        ON ds."playerId" = tf."playerId"
+        AND ds."tournamentId" = tf."tournamentId"
       -- Per-round scoring data
       LEFT JOIN player_rounds pr ON pr."tournamentFieldId" = tf.id
       LEFT JOIN rounds r ON r.id = pr."roundId"
@@ -241,7 +246,7 @@ export class FieldRepository extends BaseRepository {
         AND hto.player_id = tf."playerId"
         AND hto.dk_fantasy_points IS NOT NULL
       WHERE tf."tournamentId" = ${tournamentId}
-      GROUP BY tf.id, p.id, p."fullName", p."countryCode", p."headshotUrl", tf.status, 
+      GROUP BY tf.id, p.id, p."fullName", p."countryCode", p."headshotUrl", ds.operator, tf.status, 
                tf."isAlternate", tf.withdrawn, tf."cutMade", stat."worldRanking", hto.dk_fantasy_points
       ORDER BY p."fullName" ASC
     `)
