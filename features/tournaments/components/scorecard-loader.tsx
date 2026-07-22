@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { ExpandedPlayerScorecard } from './expanded-player-scorecard'
+import { ScorecardErrorBoundary } from './scorecard-error-boundary'
 import type { PlayerRoundScorecardData } from '@/features/tournaments/actions/get-player-round-scorecard'
 
 interface ScorecardLoaderProps {
@@ -22,6 +23,26 @@ export function ScorecardLoader({
   const [state, setState] = useState<LoadingState>('idle')
   const [data, setData] = useState<PlayerRoundScorecardData | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Validate required props
+  if (!playerId || !playerName || !tournamentId || roundNumber === undefined) {
+    console.error('[v0] ScorecardLoader missing required props:', {
+      playerId,
+      playerName,
+      tournamentId,
+      roundNumber,
+    })
+    return (
+      <div className="p-4 bg-red-500/10 border border-red-500/30 rounded">
+        <div className="text-xs text-red-400">
+          Missing required scorecard data: {!playerId && 'playerId '}
+          {!playerName && 'playerName '}
+          {!tournamentId && 'tournamentId '}
+          {roundNumber === undefined && 'roundNumber'}
+        </div>
+      </div>
+    )
+  }
 
   const fetchScorecard = useCallback(async () => {
     // Reset state
@@ -101,7 +122,9 @@ export function ScorecardLoader({
 
   return (
     <div>
-      <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} />
+      <ScorecardErrorBoundary playerName={playerName}>
+        <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} />
+      </ScorecardErrorBoundary>
       {state === 'error' && (
         <div className="mt-4 p-3 bg-muted/20 rounded">
           <div className="text-center text-xs text-muted-foreground mb-2">
