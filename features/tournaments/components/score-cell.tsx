@@ -33,6 +33,10 @@ export function ScoreCell({
   emphasis = 'round',
   className,
 }: ScoreCellProps) {
+  if (emphasis === 'total' && strokes === null) {
+    console.log('[v0] TOTAL ScoreCell props:', { strokes, relativeToPar, dkPoints, emphasis })
+  }
+
   // Format relative-to-par with color coding
   const formatRelToPar = (value: number | null) => {
     if (value == null) return '—'
