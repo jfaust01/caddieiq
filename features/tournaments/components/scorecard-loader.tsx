@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { PlayerRoundScorecard } from './player-round-scorecard'
+import { ExpandedPlayerScorecard } from './expanded-player-scorecard'
 import type { PlayerRoundScorecardData } from '@/features/tournaments/actions/get-player-round-scorecard'
 
 interface ScorecardLoaderProps {
@@ -100,8 +100,8 @@ export function ScorecardLoader({
   const isLoading = state === 'loading'
 
   return (
-    <div className="p-4">
-      <PlayerRoundScorecard data={displayData} isLoading={isLoading} />
+    <div>
+      <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} />
       {state === 'error' && (
         <div className="mt-4 p-3 bg-muted/20 rounded">
           <div className="text-center text-xs text-muted-foreground mb-2">
