@@ -130,9 +130,9 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
             </Link>
             
             {/* Row 2: Country Flag + Tour Chip (no wrapping, aligned with name) */}
-            <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
+            <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
               {entrant.countryCode && (
-                <CountryFlag countryCode={entrant.countryCode} className="h-4 w-4 flex-shrink-0" />
+                <CountryFlag countryCode={entrant.countryCode} className="h-3.5 w-3.5 flex-shrink-0" />
               )}
               {tour && (
                 <TourChip tour={tour} />

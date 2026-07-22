@@ -22,9 +22,10 @@ export function TourChip({ tour, className }: TourChipProps) {
   return (
     <div
       className={cn(
-        'inline-flex items-center px-1.5 py-0',
-        'text-xs font-normal text-muted-foreground',
-        'bg-muted rounded border border-muted-foreground/20',
+        'inline-flex items-center px-1 py-0.5',
+        'text-[11px] font-medium text-muted-foreground/80',
+        'bg-muted/60 rounded-sm border border-muted-foreground/15',
+        'h-5',
         className,
       )}
     >
