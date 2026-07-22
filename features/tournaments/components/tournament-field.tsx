@@ -72,6 +72,9 @@ const STATUS_ORDER: Record<FieldEntryStatus, number> = {
   DISQUALIFIED: 5,
 }
 
+// Tournament DFS table has 10 visible columns: POS, PLAYER, TOTAL, R1, R2, R3, R4, DK SALARY, OWN %, ODDS
+const VISIBLE_COLUMN_COUNT = 10
+
 /**
  * Format a number as "—" if null/undefined, else return the value
  */
@@ -550,7 +553,7 @@ export function TournamentField({ field }: TournamentFieldProps) {
                   </tr>,
                   isExpanded && (
                     <tr key={`scorecard-${entrant.playerId}`} className="bg-background hover:bg-background">
-                      <td colSpan={10} className="p-4" id={`player-scorecard-${entrant.playerId}`}>
+                      <td colSpan={VISIBLE_COLUMN_COUNT} className="p-4" id={`player-scorecard-${entrant.playerId}`}>
                         <div className="rounded-md border border-border bg-card">
                           <ScorecardLoader
                             playerId={entrant.playerId}
