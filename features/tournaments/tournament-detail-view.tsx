@@ -97,10 +97,10 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
       <Button
         variant="ghost"
         size="sm"
-        className="w-fit text-muted-foreground"
+        className="w-fit text-muted-foreground text-foreground/70 hover:text-foreground"
         asChild
       >
-        <Link href="/tournaments">
+        <Link href="/tournaments" className="no-underline">
           <ChevronLeft data-icon="inline-start" />
           All tournaments
         </Link>
