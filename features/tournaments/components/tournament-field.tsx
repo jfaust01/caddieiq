@@ -21,12 +21,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { CountryFlag } from '@/features/players/components/country-flag'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import { TourChip } from '@/features/tournaments/components/tour-chip'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { getDevelopmentPlayerMetadata } from '@/lib/development/mock-player-metadata'
+import { getCountryFlagEmoji } from '@/lib/utils/country-flag-emoji'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
 
@@ -135,11 +135,11 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
               {entrant.playerName}
             </Link>
             
-            {/* Row 2: Country Flag + Tour Chip (no wrapping, aligned with name) */}
+            {/* Row 2: Country Flag Emoji + Tour Chip (always renders) */}
             <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
-              {entrant.countryCode && (
-                <CountryFlag countryCode={entrant.countryCode} className="h-3.5 w-3.5 flex-shrink-0" />
-              )}
+              <span className="text-base leading-none" title={entrant.countryCode ?? 'Unknown country'}>
+                {getCountryFlagEmoji(entrant.countryCode)}
+              </span>
               <TourChip tour={tour} />
             </div>
           </div>
