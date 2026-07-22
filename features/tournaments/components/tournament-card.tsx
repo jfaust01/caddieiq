@@ -113,18 +113,15 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
         {/* Visual affordance only. The whole card is the real link (above), so
             this is hidden from the a11y tree and removed from the tab order to
             avoid a redundant second stop to the same destination. */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="pointer-events-none w-full"
-          nativeButton={false}
-          render={
-            <Link href={`/tournaments/${tournament.id}`} tabIndex={-1} aria-hidden>
-              View details
-              <ArrowUpRight data-icon="inline-end" />
-            </Link>
-          }
-        />
+        <Link
+          href={`/tournaments/${tournament.id}`}
+          tabIndex={-1}
+          aria-hidden
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 pointer-events-none w-full"
+        >
+          View details
+          <ArrowUpRight data-icon="inline-end" />
+        </Link>
       </CardFooter>
     </Card>
   )

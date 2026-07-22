@@ -43,17 +43,13 @@ export async function TournamentCourseIntelligence({
           title="Course characteristics"
           description={`The verified characteristics of ${course.name}, the host venue — the same profile that powers course fit.`}
           actions={
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={
-                <Link href={`/courses/${course.id}`}>
-                  View course
-                  <ArrowUpRight data-icon="inline-end" />
-                </Link>
-              }
-            />
+            <Link
+              href={`/courses/${course.id}`}
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            >
+              View course
+              <ArrowUpRight data-icon="inline-end" />
+            </Link>
           }
         />
 

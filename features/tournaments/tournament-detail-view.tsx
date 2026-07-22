@@ -98,14 +98,13 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
         variant="ghost"
         size="sm"
         className="w-fit text-muted-foreground"
-        nativeButton={false}
-        render={
-          <Link href="/tournaments">
-            <ChevronLeft data-icon="inline-start" />
-            All tournaments
-          </Link>
-        }
-      />
+        asChild
+      >
+        <Link href="/tournaments">
+          <ChevronLeft data-icon="inline-start" />
+          All tournaments
+        </Link>
+      </Button>
 
       <TournamentHero
         tournament={tournament}
