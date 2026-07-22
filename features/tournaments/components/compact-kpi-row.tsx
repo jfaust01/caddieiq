@@ -3,6 +3,7 @@
 import type { TournamentSummary } from '@/features/tournaments/types'
 import type { TournamentField } from '@/features/tournaments/types'
 import { MetricGrid, MetricItem } from '@/components/shared/surface-primitives'
+import { formatDateRange } from '@/features/tournaments/utils/format'
 
 interface CompactKpiRowProps {
   tournament: TournamentSummary
@@ -47,12 +48,8 @@ export function CompactKpiRow({
   const courseYardage = tournament?.course?.yardage ?? null
   const courseYardageFormatted = courseYardage ? `${(courseYardage / 1000).toFixed(1)}K` : '—'
   
-  // Tournament dates
-  const startDate = tournament?.startDate ? new Date(tournament.startDate) : null
-  const endDate = tournament?.endDate ? new Date(tournament.endDate) : null
-  const datesFormatted = startDate && endDate 
-    ? `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-    : '—'
+  // Tournament dates - use server-safe UTC formatting
+  const datesFormatted = formatDateRange(tournament?.startDate ?? null, tournament?.endDate ?? null)
 
   return (
     <MetricGrid columns="auto">
