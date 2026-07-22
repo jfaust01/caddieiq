@@ -62,8 +62,7 @@ function LeaderList({ icon: Icon, title, caption, leaders }: LeaderListProps) {
                 {leader.playerName}
               </Link>
               <span className="col-span-2 text-right text-muted-foreground tabular-nums">
-                {/* OWGR placeholder - would come from player data */}
-                {Math.floor(Math.random() * 300) + 1}
+                —
               </span>
               <span
                 className={cn('col-span-2 text-right font-semibold tabular-nums', BAND_TONE[leader.band])}
@@ -71,8 +70,7 @@ function LeaderList({ icon: Icon, title, caption, leaders }: LeaderListProps) {
                 {Math.round(leader.score)}
               </span>
               <span className="col-span-3 text-right text-chart-2 font-semibold tabular-nums">
-                {/* Value score placeholder - would come from DFS data */}
-                ${Math.floor(Math.random() * 5000) + 3000}
+                —
               </span>
             </li>
           ))}

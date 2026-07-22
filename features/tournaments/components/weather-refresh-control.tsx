@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { RefreshCw } from 'lucide-react'
 
@@ -14,20 +14,11 @@ interface WeatherRefreshControlProps {
   importStatus: WeatherImportStatus
 }
 
-/** Absolute → "just now / 3 min ago / 2 hr ago / Jul 12" relative label. Uses UTC to avoid hydration mismatch. */
-function relativeTime(iso: string | null): string | null {
+/** Format absolute ISO date as "Jul 12" using UTC. Server-safe for hydration. */
+function formatUTCDate(iso: string | null): string | null {
   if (!iso) return null
-  const then = new Date(iso).getTime()
-  if (Number.isNaN(then)) return null
-  const diffMs = Date.now() - then
-  const min = Math.round(diffMs / 60_000)
-  if (min < 1) return 'just now'
-  if (min < 60) return `${min} min ago`
-  const hr = Math.round(min / 60)
-  if (hr < 24) return `${hr} hr ago`
-  
-  // Format as "Jul 12" using UTC to avoid locale-dependent mismatch
   const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   return `${months[date.getUTCMonth()]} ${date.getUTCDate()}`
 }
@@ -52,6 +43,55 @@ export function WeatherRefreshControl({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  // Calculate relative time only on client after hydration to avoid mismatch
+  const [lastSuccessLabel, setLastSuccessLabel] = useState('Loading...')
+  const [lastAttemptLabel, setLastAttemptLabel] = useState('')
+
+  useEffect(() => {
+    setIsHydrated(true)
+
+    function updateLabels() {
+      const lastSuccess = importStatus.lastSuccessAt
+        ? (() => {
+            const then = new Date(lastSuccess).getTime()
+            if (Number.isNaN(then)) return null
+            const diffMs = Date.now() - then
+            const min = Math.round(diffMs / 60_000)
+            if (min < 1) return 'just now'
+            if (min < 60) return `${min} min ago`
+            const hr = Math.round(min / 60)
+            if (hr < 24) return `${hr} hr ago`
+            return formatUTCDate(lastSuccess)
+          })()
+        : null
+
+      setLastSuccessLabel(
+        lastSuccess ? `Last stored ${lastSuccess}` : 'No forecast has been stored yet',
+      )
+
+      if (importStatus.lastAttemptAt) {
+        const lastAttempt = (() => {
+          const then = new Date(importStatus.lastAttemptAt).getTime()
+          if (Number.isNaN(then)) return null
+          const diffMs = Date.now() - then
+          const min = Math.round(diffMs / 60_000)
+          if (min < 1) return 'just now'
+          if (min < 60) return `${min} min ago`
+          const hr = Math.round(min / 60)
+          if (hr < 24) return `${hr} hr ago`
+          return formatUTCDate(importStatus.lastAttemptAt)
+        })()
+        setLastAttemptLabel(lastAttempt ? ` ${lastAttempt}` : '')
+      }
+    }
+
+    updateLabels()
+    // Update labels periodically to keep relative times fresh
+    const interval = setInterval(updateLabels, 60_000)
+    return () => clearInterval(interval)
+  }, [importStatus.lastSuccessAt, importStatus.lastAttemptAt])
 
   function onRefresh() {
     setMessage(null)
@@ -66,22 +106,15 @@ export function WeatherRefreshControl({
     })
   }
 
-  const lastSuccess = relativeTime(importStatus.lastSuccessAt)
-  const lastAttempt = relativeTime(importStatus.lastAttemptAt)
-
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/40 p-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium text-foreground">Admin · weather import</span>
           <span className="text-xs text-muted-foreground">
-            {lastSuccess
-              ? `Last stored ${lastSuccess}`
-              : 'No forecast has been stored yet'}
+            {isHydrated ? lastSuccessLabel : 'Loading...'}
             {importStatus.lastResult
-              ? ` · last attempt ${RESULT_LABEL[importStatus.lastResult]}${
-                  lastAttempt ? ` ${lastAttempt}` : ''
-                }`
+              ? ` · last attempt ${RESULT_LABEL[importStatus.lastResult]}${lastAttemptLabel}`
               : ''}
           </span>
         </div>
