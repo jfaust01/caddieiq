@@ -143,6 +143,22 @@ export function formatDkTotal(dkTotal: number | null): string {
   return formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted
 }
 
+const DFS_SALARY_FMT = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+})
+
+/**
+ * DFS salary display in USD with thousands separators and no decimals.
+ * Examples: $10,400, $8,500, $0
+ * Returns an em-dash when unknown or no data exists.
+ */
+export function formatDfsSalary(salary: number | null): string {
+  if (salary === null || !Number.isFinite(salary)) return EMPTY_VALUE
+  return DFS_SALARY_FMT.format(salary)
+}
+
 /** Location display, e.g. "Augusta, GA, USA", or an em-dash when unknown. */
 export function formatLocation(location: TournamentLocation | null): string {
   if (!location) return EMPTY_VALUE

@@ -3,6 +3,7 @@
 import { Award } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { formatDfsSalary } from '@/features/tournaments/utils/format'
 
 interface TournamentWinnerCardProps {
   tournamentWinner: {
@@ -11,6 +12,7 @@ interface TournamentWinnerCardProps {
     headshotUrl: string | null
     scoreToPar: number | null
     dkFantasyPoints: number | null
+    dfsSalary: number | null
   } | null
   /** Whether the tournament is completed; if false, shows "TBD" */
   isCompleted?: boolean
@@ -57,6 +59,7 @@ export function TournamentWinnerCard({
 }: TournamentWinnerCardProps) {
   const scoreToPar = formatScoreToPar(tournamentWinner?.scoreToPar)
   const dkPoints = formatDkPoints(tournamentWinner?.dkFantasyPoints)
+  const dfsSalary = formatDfsSalary(tournamentWinner?.dfsSalary)
 
   return (
     <Card className={cn('', className)}>
@@ -86,14 +89,19 @@ export function TournamentWinnerCard({
                     .toUpperCase()}
                 </div>
               )}
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-1.5">
                 <div className="text-sm font-semibold text-foreground">
                   {tournamentWinner.playerName}
                 </div>
-                <div className="text-xs text-muted-foreground space-x-2">
-                  <span className="tabular-nums">{scoreToPar}</span>
-                  <span>•</span>
-                  <span className="tabular-nums">{dkPoints}</span>
+                <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                  <div className="space-x-2 tabular-nums">
+                    <span>{scoreToPar}</span>
+                    <span>•</span>
+                    <span>{dkPoints}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground tabular-nums">
+                    {dfsSalary}
+                  </div>
                 </div>
               </div>
             </div>

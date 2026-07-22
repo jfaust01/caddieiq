@@ -124,6 +124,8 @@ export interface TournamentDetailRow extends TournamentSearchRow {
   tournamentWinnerScoreToPar: number | null
   /** Tournament winner DK fantasy points, or null when no data exists. */
   tournamentWinnerDkFantasyPoints: number | null
+  /** Tournament winner DFS salary (DraftKings), or null when no data exists. */
+  tournamentWinnerDfsSalary: number | null
   /** Top DraftKings scorer player ID, or null when no data exists. */
   topDkScorerPlayerId: string | null
   /** Top DraftKings scorer player name, or null when no data exists. */
@@ -366,6 +368,7 @@ export class TournamentRepository extends BaseRepository {
         winner."tournamentWinnerHeadshotUrl" AS "tournamentWinnerHeadshotUrl",
         winner."tournamentWinnerScoreToPar" AS "tournamentWinnerScoreToPar",
         winner."tournamentWinnerDkFantasyPoints" AS "tournamentWinnerDkFantasyPoints",
+        winner."tournamentWinnerDfsSalary" AS "tournamentWinnerDfsSalary",
         topScorer."topDkScorerPlayerId" AS "topDkScorerPlayerId",
         topScorer."topDkScorerPlayerName" AS "topDkScorerPlayerName",
         topScorer."topDkScorerHeadshotUrl" AS "topDkScorerHeadshotUrl",
@@ -411,9 +414,20 @@ export class TournamentRepository extends BaseRepository {
           pl."fullName" AS "tournamentWinnerPlayerName",
           pl."headshotUrl" AS "tournamentWinnerHeadshotUrl",
           hto."score_to_par"::numeric AS "tournamentWinnerScoreToPar",
-          hto."dk_fantasy_points"::float8 AS "tournamentWinnerDkFantasyPoints"
+          hto."dk_fantasy_points"::float8 AS "tournamentWinnerDkFantasyPoints",
+          salary."salary"::integer AS "tournamentWinnerDfsSalary"
         FROM historical_tournament_outcomes hto
         JOIN players pl ON pl.id = hto.player_id
+        LEFT JOIN LATERAL (
+          SELECT ds.salary
+          FROM dfs_salaries ds
+          WHERE ds.player_id = hto.player_id
+            AND ds.tournament_id = t.id
+          ORDER BY 
+            CASE WHEN ds.operator = 'DraftKings' THEN 0 ELSE 1 END,
+            ds.created_at DESC
+          LIMIT 1
+        ) salary ON true
         WHERE hto.tournament_id = t.id
           AND (
             hto."finish_position" = 1

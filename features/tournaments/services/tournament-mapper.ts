@@ -149,6 +149,7 @@ export function mapTournamentSummary(row: TournamentSearchRow): TournamentSummar
             headshotUrl: (row as any).tournamentWinnerHeadshotUrl ?? null,
             scoreToPar: typeof (row as any).tournamentWinnerScoreToPar === 'number' && Number.isFinite((row as any).tournamentWinnerScoreToPar) ? (row as any).tournamentWinnerScoreToPar : null,
             dkFantasyPoints: typeof (row as any).tournamentWinnerDkFantasyPoints === 'number' && Number.isFinite((row as any).tournamentWinnerDkFantasyPoints) ? (row as any).tournamentWinnerDkFantasyPoints : null,
+            dfsSalary: typeof (row as any).tournamentWinnerDfsSalary === 'number' && Number.isFinite((row as any).tournamentWinnerDfsSalary) ? (row as any).tournamentWinnerDfsSalary : null,
           }
         : null,
     topDkScorer:
