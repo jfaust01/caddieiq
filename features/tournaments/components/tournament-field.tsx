@@ -102,14 +102,14 @@ function LeaderboardRow({ entrant }: { entrant: FieldEntrant }) {
   const oddsDisplay = formatMissing(entrant.oddsToWin)
 
   return (
-    <tr className="border-b border-border hover:bg-muted/40 transition-colors">
+    <tr className="group border-b border-border hover:bg-muted/40 transition-colors">
       {/* POS */}
       <td className="px-2 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground">
         {positionDisplay}
       </td>
 
       {/* PLAYER - STICKY */}
-      <td className="sticky left-0 z-10 px-2 sm:px-3 py-3 text-left text-sm font-medium bg-background hover:bg-muted/40 border-r border-border/50">
+      <td className="sticky left-0 z-10 px-2 sm:px-3 py-3 text-left text-sm font-medium bg-background group-hover:bg-muted/40 border-r border-border/50">
         <div className="flex items-center gap-1 sm:gap-2 min-w-0">
           <Link
             href={`/players/${entrant.playerId}`}
