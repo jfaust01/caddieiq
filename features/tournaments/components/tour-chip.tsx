@@ -23,12 +23,12 @@ export function TourChip({ tour, className }: TourChipProps) {
   return (
     <div
       className={cn(
-        'inline-flex items-center px-1 py-0.5',
-        'text-[11px] font-medium',
+        'inline-flex items-center px-1.5 py-0',
+        'text-[10px] font-medium leading-none',
         isNoTour
           ? 'text-muted-foreground/60 bg-muted/40 border border-muted-foreground/10'
           : 'text-muted-foreground/80 bg-muted/60 border border-muted-foreground/15',
-        'rounded-sm h-5',
+        'rounded-sm h-4',
         className,
       )}
     >
