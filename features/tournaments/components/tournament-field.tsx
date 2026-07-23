@@ -668,6 +668,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
         isOpen={isScorecardModalOpen}
         onOpenChange={setIsScorecardModalOpen}
         selectedPlayerId={selectedScorecardPlayer}
+        onPlayerChange={setSelectedScorecardPlayer}
         players={field.entrants}
         tournamentId={tournamentId}
         visiblePlayers={filtered}

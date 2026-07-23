@@ -16,6 +16,7 @@ interface PlayerScorecardModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   selectedPlayerId: string | null
+  onPlayerChange: (playerId: string) => void
   players: FieldEntrant[]
   tournamentId: string
   visiblePlayers: FieldEntrant[]
@@ -25,6 +26,7 @@ export function PlayerScorecardModal({
   isOpen,
   onOpenChange,
   selectedPlayerId,
+  onPlayerChange,
   players,
   tournamentId,
   visiblePlayers,
@@ -49,20 +51,18 @@ export function PlayerScorecardModal({
   const handlePreviousPlayer = useCallback(() => {
     if (canGoPrevious) {
       const previousPlayer = visiblePlayers[visibleIndex - 1]
-      // Reset to round 1 when navigating to a different player
       setSelectedRound(1)
-      // The parent component should handle this update
+      onPlayerChange(previousPlayer.playerId)
     }
-  }, [canGoPrevious, visibleIndex, visiblePlayers])
+  }, [canGoPrevious, visibleIndex, visiblePlayers, onPlayerChange])
 
   const handleNextPlayer = useCallback(() => {
     if (canGoNext) {
       const nextPlayer = visiblePlayers[visibleIndex + 1]
-      // Reset to round 1 when navigating to a different player
       setSelectedRound(1)
-      // The parent component should handle this update
+      onPlayerChange(nextPlayer.playerId)
     }
-  }, [canGoNext, visibleIndex, visiblePlayers])
+  }, [canGoNext, visibleIndex, visiblePlayers, onPlayerChange])
 
   if (!selectedPlayer) {
     return null
