@@ -96,7 +96,7 @@ export function ScorecardDesktopLayout({
           </div>
 
           {/* RIGHT: Summary Stat Cards */}
-          <div className="grid grid-cols-4 gap-2 min-w-0">
+          <div className="grid grid-cols-3 gap-2 min-w-0">
             {/* Total Score */}
             <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-3 py-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
               <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">
@@ -126,17 +126,6 @@ export function ScorecardDesktopLayout({
                 {data.totalDkPoints?.toFixed(1) ?? '—'}
               </div>
               <span className="text-xs text-muted-foreground mt-1">Fantasy</span>
-            </div>
-
-            {/* Total Strokes */}
-            <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-3 py-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-              <span className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1 truncate max-w-full">
-                Strokes
-              </span>
-              <div className="text-2xl font-semibold text-white tabular-nums">
-                {data.totalStrokes ?? '—'}
-              </div>
-              <span className="text-xs text-muted-foreground mt-1">Total</span>
             </div>
           </div>
         </div>
