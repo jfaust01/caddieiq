@@ -638,13 +638,13 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                       tabIndex={0}
                       aria-expanded={isExpanded}
                       aria-controls={`player-scorecard-${entrant.playerId}`}
-                      className="cursor-pointer hover:bg-muted/40"
+                      className="cursor-pointer hover:bg-muted/40 border-b border-border"
                     >
                       <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
                     </tr>
 
                     {isExpanded ? (
-                      <tr id={`player-scorecard-${entrant.playerId}`}>
+                      <tr id={`player-scorecard-${entrant.playerId}`} className="border-b border-border">
                         <td colSpan={VISIBLE_COLUMN_COUNT} className="p-0 w-full">
                           <div
                             className="w-full min-w-0 max-w-full overflow-hidden border-t border-border bg-background"
