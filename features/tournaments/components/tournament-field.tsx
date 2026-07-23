@@ -1,7 +1,7 @@
 'use client'
 
 import { Users } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, Fragment } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { SearchBar } from '@/components/shared/search-bar'
@@ -478,6 +478,9 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
         />
       ) : (
         <div className="w-full min-w-0 tournament-table-container" style={{ '--player-column-width': playerColumnWidth || '220px' } as React.CSSProperties}>
+          <div className="mb-2 p-2 bg-yellow-500/20 border border-yellow-500 rounded text-xs text-yellow-700 font-mono">
+            [DIAGNOSTIC] Expanded player ID: {expandedPlayerId ?? 'none'}
+          </div>
           <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1">
             <span>Scroll for more →</span>
           </div>
@@ -525,55 +528,52 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               </tr>
             </thead>
             <tbody>
-              {filtered.flatMap((entrant) => {
+              {filtered.map((entrant) => {
                 const isExpanded = expandedPlayerId === entrant.playerId
-                return [
-                  <tr
-                    key={`player-${entrant.playerId}`}
-                    onClick={(event) => {
-                      const target = event.target as HTMLElement
-                      // Prevent toggle if clicking on interactive elements (but not the row itself)
-                      const interactiveElement = target.closest(
-                        'button, a, input, select, textarea, [data-stop-row-toggle]'
-                      )
-                      if (interactiveElement) {
-                        return
-                      }
-                      setExpandedPlayerId(isExpanded ? null : entrant.playerId)
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        setExpandedPlayerId(isExpanded ? null : entrant.playerId)
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    aria-expanded={isExpanded}
-                    aria-controls={`player-scorecard-${entrant.playerId}`}
-                    className="cursor-pointer transition-colors hover:bg-muted/40"
-                  >
-                    <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
-                  </tr>,
-                  isExpanded && (
-                    <tr key={`scorecard-${entrant.playerId}`} id={`player-scorecard-${entrant.playerId}`}>
-                      <td colSpan={VISIBLE_COLUMN_COUNT} className="p-0">
-                        <div
-                          className="border-t border-border"
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
-                        >
-                          <ScorecardLoader
-                            playerId={entrant.playerId}
-                            playerName={entrant.playerName}
-                            tournamentId={tournamentId}
-                            roundNumber={selectedRound}
-                          />
-                        </div>
-                      </td>
+                return (
+                  <Fragment key={entrant.playerId}>
+                    <tr
+                      onClick={(event) => {
+                        const target = event.target as HTMLElement
+                        // Prevent toggle if clicking on interactive elements
+                        const interactiveElement = target.closest(
+                          'button, a, input, select, textarea, [data-stop-row-toggle]'
+                        )
+                        if (interactiveElement) {
+                          return
+                        }
+                        setExpandedPlayerId((current) =>
+                          current === entrant.playerId ? null : entrant.playerId
+                        )
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          setExpandedPlayerId((current) =>
+                            current === entrant.playerId ? null : entrant.playerId
+                          )
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={isExpanded}
+                      aria-controls={`player-scorecard-${entrant.playerId}`}
+                      className="cursor-pointer hover:bg-muted/40"
+                    >
+                      <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
                     </tr>
-                  ),
-                ].filter(Boolean)
+
+                    {isExpanded ? (
+                      <tr id={`player-scorecard-${entrant.playerId}`}>
+                        <td colSpan={VISIBLE_COLUMN_COUNT} className="p-6 bg-blue-500/10">
+                          <div className="text-sm font-mono text-blue-600">
+                            EXPANDED ROW WORKING FOR {entrant.playerName}
+                          </div>
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
+                )
               })}
             </tbody>
           </table>
