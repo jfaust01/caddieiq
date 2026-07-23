@@ -28,11 +28,17 @@ function isActivePath(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
+// Navigation item styles
+const navItemClasses = {
+  base: 'group relative flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all duration-150',
+  inactive: 'text-muted-foreground hover:bg-white/[0.035] hover:text-foreground',
+  active: 'border border-emerald-400/15 bg-emerald-400/[0.10] text-emerald-200 font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]',
+  activeAccent: 'absolute inset-y-2 left-0 w-[2px] rounded-full bg-emerald-400/75',
+}
+
 export function AppSidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
-  // Better Auth's session user may carry a role; admin-only sections stay
-  // hidden unless the signed-in user is explicitly an ADMIN.
   const isAdmin =
     (session?.user as { role?: string } | undefined)?.role === 'ADMIN'
   const sections = primaryNavigation.filter(
@@ -40,32 +46,42 @@ export function AppSidebar() {
   )
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
+    <Sidebar collapsible="icon" className="relative border-r border-white/[0.07] bg-[#0b1015] shadow-[inset_-1px_0_0_rgba(255,255,255,0.015)]">
+      {/* Subtle decorative glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-emerald-500/[0.055] blur-3xl"
+      />
+
+      {/* Premium brand header */}
+      <SidebarHeader className="relative z-10 border-b border-white/[0.05] px-5 py-6">
         <Link
           href="/"
-          className="flex items-center gap-2.5 rounded-lg px-1.5 py-1 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="flex items-center gap-3 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/85 text-lg font-bold text-[#07120d] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
             CQ
-          </span>
-          <span className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold leading-none tracking-tight">
+          </div>
+          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <div className="text-base font-semibold tracking-tight text-white">
               {siteConfig.name}
-            </span>
-            <span className="mt-1 text-xs leading-none text-muted-foreground">
+            </div>
+            <div className="text-xs text-muted-foreground">
               Golf Analytics
-            </span>
-          </span>
+            </div>
+          </div>
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
+      {/* Navigation content */}
+      <SidebarContent className="relative z-10 flex-1 overflow-y-auto px-3 pb-4">
         {sections.map((section) => (
-          <SidebarGroup key={section.title}>
-            <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+          <SidebarGroup key={section.title} className="space-y-0">
+            <SidebarGroupLabel className="px-5 pb-2 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
+              {section.title}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="space-y-1">
                 {section.items.map((item) => {
                   const active = isActivePath(pathname, item.href)
                   return (
@@ -73,10 +89,15 @@ export function AppSidebar() {
                       <SidebarMenuButton
                         isActive={active}
                         tooltip={item.title}
+                        className={cn(
+                          navItemClasses.base,
+                          active ? navItemClasses.active : navItemClasses.inactive
+                        )}
                         render={
-                          <Link href={item.href}>
-                            <item.icon />
-                            <span>{item.title}</span>
+                          <Link href={item.href} className="flex items-center gap-3 w-full">
+                            {active && <span aria-hidden="true" className={navItemClasses.activeAccent} />}
+                            <item.icon className="h-5 w-5 flex-shrink-0" />
+                            <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                           </Link>
                         }
                       />
@@ -89,8 +110,9 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
+      {/* Bottom actions with divider */}
+      <SidebarFooter className="relative z-10 border-t border-white/[0.06] px-3 py-4">
+        <SidebarMenu className="space-y-1">
           {secondaryNavigation.map((item) => {
             const active = isActivePath(pathname, item.href)
             return (
@@ -98,11 +120,15 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   isActive={active}
                   tooltip={item.title}
-                  className={cn(active && 'font-medium')}
+                  className={cn(
+                    navItemClasses.base,
+                    active ? navItemClasses.active : navItemClasses.inactive
+                  )}
                   render={
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.title}</span>
+                    <Link href={item.href} className="flex items-center gap-3 w-full">
+                      {active && <span aria-hidden="true" className={navItemClasses.activeAccent} />}
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                     </Link>
                   }
                 />
