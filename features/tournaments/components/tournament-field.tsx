@@ -318,36 +318,31 @@ function PlayerRowCells({
   return (
     <>
       {/* POS */}
-      <td className="px-3 align-middle">
-        <div className="flex h-full items-center justify-center">
-          <span className={cn(
-            "text-sm font-semibold tabular-nums",
-            entrant.finalPosition === 1 ? "text-emerald-300" : "text-foreground"
-          )}>
-            {positionDisplay}
-          </span>
-        </div>
+      <td className="w-[64px] min-w-[64px] max-w-[64px] px-2 align-middle text-center">
+        <span className={cn(
+          "text-sm font-semibold tabular-nums",
+          entrant.finalPosition === 1 ? "text-emerald-300" : "text-foreground"
+        )}>
+          {positionDisplay}
+        </span>
       </td>
 
       {/* PLAYER */}
-      <td 
-        className="px-3 align-middle"
-        style={{ width: 'var(--player-column-width, 240px)', minWidth: 'var(--player-column-width, 240px)' }}
-      >
-        <div className="flex items-center justify-start gap-2.5 min-w-0 h-full">
+      <td className="w-[300px] min-w-[260px] max-w-[340px] px-3 align-middle text-left">
+        <div className="flex min-w-0 items-center gap-3">
           {entrant.headshotUrl ? (
             <img
               src={entrant.headshotUrl}
               alt={entrant.playerName}
-              className="h-9 w-9 shrink-0 rounded-full border border-white/[0.08] object-cover"
+              className="h-10 w-10 shrink-0 rounded-full border border-white/[0.08] object-cover"
             />
           ) : (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-xs font-semibold text-white">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-xs font-semibold text-white">
               {initials}
             </div>
           )}
-          <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
-            <span className="truncate text-sm font-semibold tracking-tight text-white">{entrant.playerName}</span>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-sm font-semibold text-foreground">{entrant.playerName}</span>
             {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0 rounded-[2px]" />}
           </div>
         </div>
@@ -637,12 +632,22 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                 style={{ userSelect: 'none' }}
               >
                 <table className="w-full min-w-max text-sm border-collapse">
+            <colgroup>
+              <col className="w-[64px]" />
+              <col className="w-[300px]" />
+              <col className="w-[92px]" />
+              <col className="w-[82px]" />
+              <col className="w-[82px]" />
+              <col className="w-[82px]" />
+              <col className="w-[82px]" />
+              <col className="w-[126px]" />
+              <col className="w-[80px]" />
+            </colgroup>
             <thead className="sticky top-0 z-10 bg-black/15 backdrop-blur-sm border-b border-white/[0.06]">
               <tr>
-                <th className="px-2 h-12 text-right text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
+                <th className="w-[64px] min-w-[64px] max-w-[64px] px-2 h-12 text-center text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
                 <th 
-                  className="px-2 sm:px-3 h-12 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
-                  style={{ width: 'var(--player-column-width, 240px)', minWidth: 'var(--player-column-width, 240px)' }}
+                  className="w-[300px] min-w-[260px] max-w-[340px] px-3 h-12 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
                 >
                   PLAYER
                 </th>
