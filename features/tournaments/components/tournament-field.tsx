@@ -318,18 +318,20 @@ function PlayerRowCells({
   return (
     <>
       {/* POS */}
-      <td className="px-4 py-2.5 text-center align-middle">
-        <span className="text-sm font-semibold tabular-nums text-foreground">
-          {positionDisplay}
-        </span>
+      <td className="px-4 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <span className="text-sm font-semibold tabular-nums text-foreground">
+            {positionDisplay}
+          </span>
+        </div>
       </td>
 
       {/* PLAYER */}
       <td 
-        className="px-3 py-2.5 text-left align-middle min-w-0"
+        className="px-3 align-middle"
         style={{ width: 'var(--player-column-width, 240px)', minWidth: 'var(--player-column-width, 240px)' }}
       >
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center justify-start gap-3 min-w-0 h-full">
           <Avatar className="h-10 w-10 flex-shrink-0">
             <AvatarImage src={entrant.headshotUrl || ''} alt={entrant.playerName} />
             <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
@@ -387,8 +389,8 @@ function PlayerRowCells({
       </td>
 
       {/* DFS */}
-      <td className="border-l border-border/40 px-4 py-2.5 text-center align-middle">
-        <div className="flex flex-col items-center justify-center gap-1">
+      <td className="border-l border-border/40 px-4 align-middle">
+        <div className="flex flex-col items-center justify-center gap-1 h-full">
           <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
             <DraftKingsMark className="h-3 w-auto shrink-0" />
             <span className="text-sm font-semibold tabular-nums text-foreground">
@@ -402,8 +404,12 @@ function PlayerRowCells({
       </td>
 
       {/* ODDS TO WIN */}
-      <td className="border-l border-border/40 px-3 py-2.5 text-center text-sm font-mono tabular-nums text-muted-foreground align-middle">
-        {oddsDisplay}
+      <td className="border-l border-border/40 px-3 align-middle">
+        <div className="flex items-center justify-center h-full">
+          <span className="text-sm font-mono tabular-nums text-muted-foreground">
+            {oddsDisplay}
+          </span>
+        </div>
       </td>
     </>
   )
