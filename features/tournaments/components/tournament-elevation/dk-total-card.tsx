@@ -4,6 +4,7 @@ import { Zap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { formatDkTotal } from '@/features/tournaments/utils/format'
+import { DraftKingsMark } from '../draftkings-mark'
 
 interface DkTotalCardProps {
   dkTotal: number | null
@@ -21,7 +22,10 @@ export function DkTotalCard({ dkTotal, className }: DkTotalCardProps) {
     <Card className={cn('', className)}>
       <CardHeader className="flex-row items-center gap-2 space-y-0 pb-3">
         <Zap className="size-5 text-primary" aria-hidden />
-        <CardTitle>DK Total</CardTitle>
+        <CardTitle className="flex items-center gap-1.5">
+          <DraftKingsMark className="h-4 w-auto" />
+          <span>Total</span>
+        </CardTitle>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-2">

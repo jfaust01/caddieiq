@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { DraftKingsMark } from './draftkings-mark'
 
 interface ScoreCellProps {
   /** Actual score in strokes (e.g., 68, 70, 72). */
@@ -80,9 +81,9 @@ export function ScoreCell({
         </div>
       )}
 
-      {/* Line 3: DK Label + Points (tertiary; label much smaller than value) */}
+      {/* Line 3: DK Logo + Points (tertiary; label much smaller than value) */}
       <div className="flex items-baseline justify-center gap-0.5 leading-none">
-        <span className="text-[0.5rem] font-medium text-muted-foreground/65">DK</span>
+        <DraftKingsMark className="h-2.5 w-auto" />
         <span className="text-xs font-mono tabular-nums text-muted-foreground">{dkDisplay}</span>
       </div>
     </div>

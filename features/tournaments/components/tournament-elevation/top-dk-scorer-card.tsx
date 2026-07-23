@@ -4,6 +4,7 @@ import { Trophy } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { formatDkTotal } from '@/features/tournaments/utils/format'
+import { DraftKingsMark } from '../draftkings-mark'
 
 interface TopDkScorerCardProps {
   topDkScorer: {
@@ -26,7 +27,11 @@ export function TopDkScorerCard({ topDkScorer, className }: TopDkScorerCardProps
     <Card className={cn('', className)}>
       <CardHeader className="flex-row items-center gap-2 space-y-0 pb-3">
         <Trophy className="size-5 text-primary" aria-hidden />
-        <CardTitle>Top DK Scorer</CardTitle>
+        <CardTitle className="flex items-center gap-1.5">
+          <span>Top</span>
+          <DraftKingsMark className="h-3.5 w-auto" />
+          <span>Scorer</span>
+        </CardTitle>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-3">
@@ -52,7 +57,10 @@ export function TopDkScorerCard({ topDkScorer, className }: TopDkScorerCardProps
               )}
               <div className="flex flex-col gap-0.5">
                 <div className="text-sm font-semibold text-foreground">{topDkScorer.playerName}</div>
-                <div className="text-xs text-muted-foreground tabular-nums">{formattedPoints} DK</div>
+                <div className="text-xs text-muted-foreground tabular-nums flex items-center gap-1">
+                  <DraftKingsMark className="h-2.5 w-auto" />
+                  <span>{formattedPoints}</span>
+                </div>
               </div>
             </div>
           </>

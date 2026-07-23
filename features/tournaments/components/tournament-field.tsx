@@ -30,6 +30,7 @@ import { TourChip } from '@/features/tournaments/components/tour-chip'
 import { ScorecardLoader } from '@/features/tournaments/components/scorecard-loader'
 import { ScorecardErrorBoundaryV2 } from '@/features/tournaments/components/scorecard-error-boundary-v2'
 import { ExpandedPlayerScorecard } from '@/features/tournaments/components/expanded-player-scorecard'
+import { DraftKingsMark, DKLabel } from '@/features/tournaments/components/draftkings-mark'
 import { buildPositionCountMap, formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
@@ -540,7 +541,9 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                 <th className="px-3 py-3 text-center text-xs font-semibold">R2</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R3</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R4</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold">DK SALARY</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold flex items-center justify-end gap-1.5">
+                  <DKLabel label="SALARY" />
+                </th>
                 <th className="px-2 py-3 text-right text-xs font-semibold">
                   <TooltipProvider>
                     <Tooltip>

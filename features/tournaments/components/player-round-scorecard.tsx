@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { PlayerRoundScorecardData } from '../actions/get-player-round-scorecard'
 import { Info } from 'lucide-react'
+import { DraftKingsMark } from './draftkings-mark'
 
 interface PlayerRoundScorecardProps {
   data: PlayerRoundScorecardData
@@ -264,8 +265,9 @@ function ScorecardGrid({
 
       {/* DK PTS row */}
       <div className="flex gap-0">
-        <div className="w-16 flex items-center justify-center text-lg font-medium text-[#9EA5B1] bg-[#1a1f26]" style={{ height: '56px' }}>
-          DK PTS
+        <div className="w-16 flex items-center justify-center text-lg font-medium text-[#9EA5B1] bg-[#1a1f26] gap-1" style={{ height: '56px' }}>
+          <DraftKingsMark className="h-4 w-auto" />
+          <span>PTS</span>
         </div>
         {holes.map((hole, i) => (
           <div

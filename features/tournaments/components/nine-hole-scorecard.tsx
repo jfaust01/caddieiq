@@ -1,6 +1,7 @@
 'use client'
 
 import { ScoreMarker } from './score-marker'
+import { DraftKingsMark } from './draftkings-mark'
 
 interface Hole {
   holeNumber: number
@@ -196,8 +197,9 @@ export function NineHoleScorecard({
           className="w-full grid hover:bg-[#0F1117] transition-colors"
           style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsMobile }}
         >
-          <div className={`text-left font-semibold text-[#9EA5B1] min-w-0 ${isDesktop ? 'px-2 py-2 text-xs' : 'px-1 py-1 text-[10px]'}`}>
-            DK PTS
+          <div className={`text-left font-semibold text-[#9EA5B1] min-w-0 flex items-center ${isDesktop ? 'px-2 py-2 text-xs' : 'px-1 py-1 text-[10px]'}`}>
+            <DraftKingsMark className={isDesktop ? 'h-3 w-auto' : 'h-2.5 w-auto'} />
+            <span className="ml-1">PTS</span>
           </div>
           {holes.map((hole) => (
             <div
