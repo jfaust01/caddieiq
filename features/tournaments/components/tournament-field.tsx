@@ -74,8 +74,8 @@ const STATUS_ORDER: Record<FieldEntryStatus, number> = {
   DISQUALIFIED: 5,
 }
 
-// Tournament DFS table has 10 visible columns: POS, PLAYER, TOTAL, R1, R2, R3, R4, DK SALARY, OWN %, ODDS
-const VISIBLE_COLUMN_COUNT = 10
+// Tournament DFS table has 9 visible columns: POS, PLAYER, TOTAL, R1, R2, R3, R4, DFS, ODDS
+const VISIBLE_COLUMN_COUNT = 9
 
 /**
  * Format a number as "—" if null/undefined, else return the value
@@ -238,14 +238,22 @@ function LeaderboardRow({
         />
       </td>
 
-      {/* DK SALARY */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums align-middle">
-        {salaryDisplay}
-      </td>
-
-      {/* OWNERSHIP % */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
-        {ownershipDisplay}
+      {/* DFS - Combined Salary and Ownership */}
+      <td className="px-3 py-3 text-center align-middle">
+        <div className="flex min-h-[72px] flex-col items-center justify-center gap-1 text-center">
+          <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <DraftKingsMark className="h-3 w-auto shrink-0" />
+            <span className="text-sm font-medium tabular-nums text-foreground">
+              {salaryDisplay}
+            </span>
+          </div>
+          <div className="text-xs tabular-nums text-muted-foreground">
+            <span className="mr-1 uppercase tracking-wide">
+              Own
+            </span>
+            {ownershipDisplay}
+          </div>
+        </div>
       </td>
 
       {/* ODDS TO WIN */}
@@ -350,14 +358,22 @@ function PlayerRowCells({
         />
       </td>
 
-      {/* DK SALARY */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums align-middle">
-        {salaryDisplay}
-      </td>
-
-      {/* OWNERSHIP % */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
-        {ownershipDisplay}
+      {/* DFS - Combined Salary and Ownership */}
+      <td className="px-3 py-3 text-center align-middle">
+        <div className="flex min-h-[72px] flex-col items-center justify-center gap-1 text-center">
+          <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <DraftKingsMark className="h-3 w-auto shrink-0" />
+            <span className="text-sm font-medium tabular-nums text-foreground">
+              {salaryDisplay}
+            </span>
+          </div>
+          <div className="text-xs tabular-nums text-muted-foreground">
+            <span className="mr-1 uppercase tracking-wide">
+              Own
+            </span>
+            {ownershipDisplay}
+          </div>
+        </div>
       </td>
 
       {/* ODDS TO WIN */}
@@ -577,18 +593,11 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                 <th className="px-3 py-3 text-center text-xs font-semibold">R2</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R3</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold">R4</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold flex items-center justify-end gap-1.5">
-                  <DKLabel label="SALARY" />
-                </th>
-                <th className="px-2 py-3 text-right text-xs font-semibold">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-help">OWN %</span>
-                      </TooltipTrigger>
-                      <TooltipContent>Projected Ownership Percentage</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <th className="px-3 py-3 text-center text-xs font-semibold">
+                  <div className="inline-flex items-center justify-center gap-1.5">
+                    <DraftKingsMark className="h-3 w-auto" />
+                    <span>DFS</span>
+                  </div>
                 </th>
                 <th className="px-2 py-3 text-right text-xs font-semibold">
                   <TooltipProvider>
