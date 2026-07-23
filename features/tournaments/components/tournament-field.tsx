@@ -343,7 +343,7 @@ function PlayerRowCells({
           )}
           <div className="flex min-w-0 items-center gap-1">
             <span className="min-w-0 truncate text-sm sm:text-sm font-semibold text-foreground">{entrant.playerName}</span>
-            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 sm:h-3 w-auto shrink-0 rounded-[2px]" />}
+            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-4 sm:h-5 w-auto shrink-0 rounded-[2px]" />}
           </div>
         </div>
       </td>
