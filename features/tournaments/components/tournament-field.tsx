@@ -530,7 +530,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
                 <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
                 <th 
-                  className="bg-muted/40 px-2 sm:px-3 py-3 text-left text-xs font-semibold"
+                  className="px-2 sm:px-3 py-3 text-left text-xs font-semibold"
                   style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
                 >
                   PLAYER
