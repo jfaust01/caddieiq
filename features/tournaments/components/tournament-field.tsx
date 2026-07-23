@@ -318,9 +318,9 @@ function PlayerRowCells({
   return (
     <>
       {/* POS */}
-      <td className="w-[36px] sm:w-[64px] min-w-[36px] sm:min-w-[64px] px-0.5 sm:px-2 align-middle text-center">
+      <td className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 align-middle text-center">
         <span className={cn(
-          "text-[11px] sm:text-sm font-semibold tabular-nums",
+          "text-sm font-semibold tabular-nums",
           entrant.finalPosition === 1 ? "text-emerald-300" : "text-foreground"
         )}>
           {positionDisplay}
@@ -328,28 +328,28 @@ function PlayerRowCells({
       </td>
 
       {/* PLAYER */}
-      <td className="w-[95px] sm:w-[300px] min-w-[95px] sm:min-w-[260px] px-1 sm:px-3 align-middle text-left">
-        <div className="flex min-w-0 items-center gap-1 sm:gap-3">
+      <td className="w-[calc(100vw-256px)] min-w-[190px] max-w-[240px] sm:w-[300px] sm:min-w-[260px] sm:max-w-none px-2 sm:px-3 align-middle text-left">
+        <div className="flex min-w-0 items-center gap-2">
           {entrant.headshotUrl ? (
             <img
               src={entrant.headshotUrl}
               alt={entrant.playerName}
-              className="h-6 w-6 sm:h-10 sm:w-10 shrink-0 rounded-full border border-white/[0.08] object-cover"
+              className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-full border border-white/[0.08] object-cover"
             />
           ) : (
-            <div className="flex h-6 w-6 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-[8px] sm:text-xs font-semibold text-white">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-xs sm:text-xs font-semibold text-white">
               {initials}
             </div>
           )}
-          <div className="flex min-w-0 items-center gap-0.5 sm:gap-1">
-            <span className="min-w-0 truncate text-[10px] sm:text-sm font-semibold text-foreground">{entrant.playerName}</span>
-            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-1.5 sm:h-3 w-auto shrink-0 rounded-[1px]" />}
+          <div className="flex min-w-0 items-center gap-1">
+            <span className="min-w-0 truncate text-sm sm:text-sm font-semibold text-foreground">{entrant.playerName}</span>
+            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 sm:h-3 w-auto shrink-0 rounded-[2px]" />}
           </div>
         </div>
       </td>
 
       {/* TOTAL */}
-      <td className="w-[60px] sm:w-[92px] min-w-[60px] sm:min-w-[92px] px-0.5 sm:px-2 align-middle bg-white/[0.012] border-x border-white/[0.035]">
+      <td className="w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 align-middle bg-white/[0.012] border-x border-white/[0.035]">
         <TournamentScoreCell 
           primary={entrant.totalStrokes ?? 'E'} 
           secondary={entrant.total ?? undefined}
@@ -359,64 +359,60 @@ function PlayerRowCells({
       </td>
 
       {/* R1 */}
-      <td className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 align-middle">
+      <td className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 align-middle">
         <TournamentScoreCell 
           primary={entrant.round1 ?? '—'} 
           secondary={entrant.round1RelToPar ?? undefined}
           dkPoints={entrant.round1DkPoints}
-          isMobile
         />
       </td>
 
       {/* R2 */}
-      <td className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 align-middle">
+      <td className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 align-middle">
         <TournamentScoreCell 
           primary={entrant.round2 ?? '—'} 
           secondary={entrant.round2RelToPar ?? undefined}
           dkPoints={entrant.round2DkPoints}
-          isMobile
         />
       </td>
 
       {/* R3 */}
-      <td className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 align-middle">
+      <td className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 align-middle">
         <TournamentScoreCell 
           primary={entrant.round3 ?? '—'} 
           secondary={entrant.round3RelToPar ?? undefined}
           dkPoints={entrant.round3DkPoints}
-          isMobile
         />
       </td>
 
       {/* R4 */}
-      <td className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 align-middle">
+      <td className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 align-middle">
         <TournamentScoreCell 
           primary={entrant.round4 ?? '—'} 
           secondary={entrant.round4RelToPar ?? undefined}
           dkPoints={entrant.round4DkPoints}
-          isMobile
         />
       </td>
 
       {/* DFS */}
-      <td className="w-[100px] sm:w-[126px] min-w-[100px] sm:min-w-[126px] border-l border-white/[0.055] px-1 sm:px-4 align-middle bg-orange-500/[0.012]">
-        <div className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 h-full">
-          <div className="inline-flex items-center gap-0.5 sm:gap-1.5 whitespace-nowrap">
-            <DraftKingsMark className="h-2.5 sm:h-3 w-auto shrink-0" />
-            <span className="text-xs sm:text-sm font-semibold tabular-nums text-white">
+      <td className="w-[126px] min-w-[126px] max-w-[126px] border-l border-white/[0.055] px-2 sm:px-4 align-middle bg-orange-500/[0.012]">
+        <div className="flex flex-col items-center justify-center gap-1 h-full">
+          <div className="inline-flex items-center gap-1 whitespace-nowrap">
+            <DraftKingsMark className="h-3 w-auto shrink-0" />
+            <span className="text-sm font-semibold tabular-nums text-white">
               {salaryDisplay}
             </span>
           </div>
-          <div className="whitespace-nowrap text-[9px] sm:text-[11px] tabular-nums text-muted-foreground">
+          <div className="whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
             {formatDraftedPercent(entrant.ownershipPercent)}
           </div>
         </div>
       </td>
 
       {/* ODDS TO WIN */}
-      <td className="w-[60px] sm:w-[80px] min-w-[60px] sm:min-w-[80px] border-l border-white/[0.045] px-1 sm:px-3 align-middle">
+      <td className="w-[80px] min-w-[80px] max-w-[80px] border-l border-white/[0.045] px-1 sm:px-3 align-middle">
         <div className="flex items-center justify-center h-full">
-          <span className="text-xs sm:text-sm font-mono tabular-nums text-foreground">
+          <span className="text-sm font-mono tabular-nums text-foreground">
             {oddsDisplay}
           </span>
         </div>
@@ -633,41 +629,41 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               </div>
               <div
                 ref={scrollContainerRef}
-                className={cn('w-full min-w-0 overflow-x-auto select-none', styles.scrollContainer)}
-                style={{ userSelect: 'none' }}
+                className={cn('overflow-x-auto overflow-y-hidden select-none', styles.scrollContainer)}
+                style={{ userSelect: 'none', maxWidth: '100%' }}
               >
-                <table className="w-full border-collapse">
+                <table className="w-max table-fixed border-collapse sm:w-full">
             <colgroup>
-              <col className="w-[36px] sm:w-[64px]" />
-              <col className="w-[95px] sm:w-[300px]" />
-              <col className="w-[60px] sm:w-[92px]" />
-              <col className="w-[62px] sm:w-[82px]" />
-              <col className="w-[62px] sm:w-[82px]" />
-              <col className="w-[62px] sm:w-[82px]" />
-              <col className="w-[62px] sm:w-[82px]" />
-              <col className="w-[100px] sm:w-[126px]" />
-              <col className="w-[60px] sm:w-[80px]" />
+              <col className="w-[52px]" />
+              <col className="w-[calc(100vw-256px)] sm:w-[300px]" />
+              <col className="w-[92px]" />
+              <col className="w-[82px]" />
+              <col className="w-[82px]" />
+              <col className="w-[82px]" />
+              <col className="w-[82px]" />
+              <col className="w-[126px]" />
+              <col className="w-[80px]" />
             </colgroup>
             <thead className="sticky top-0 z-10 bg-black/15 backdrop-blur-sm border-b border-white/[0.06]">
               <tr>
-                <th className="w-[36px] sm:w-[64px] min-w-[36px] sm:min-w-[64px] px-0.5 sm:px-2 h-12 text-center text-[9px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
+                <th className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
                 <th 
-                  className="w-[95px] sm:w-[300px] min-w-[95px] sm:min-w-[260px] px-1 sm:px-3 h-12 text-left text-[9px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+                  className="w-[calc(100vw-256px)] min-w-[190px] max-w-[240px] sm:w-[300px] sm:min-w-[260px] sm:max-w-none px-2 sm:px-3 h-12 text-left text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
                 >
                   PLAYER
                 </th>
-                <th className="w-[60px] sm:w-[92px] min-w-[60px] sm:min-w-[92px] px-0.5 sm:px-2 h-12 text-center text-[9px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">TOTAL</th>
-                <th className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R1</th>
-                <th className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R2</th>
-                <th className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R3</th>
-                <th className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R4</th>
-                <th className="w-[100px] sm:w-[126px] min-w-[100px] sm:min-w-[126px] border-l border-white/[0.055] px-1 sm:px-4 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  <div className="inline-flex items-center justify-center gap-0.5 sm:gap-1.5">
-                    <DraftKingsMark className="h-2.5 sm:h-3 w-auto" />
+                <th className="w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">TOTAL</th>
+                <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R1</th>
+                <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R2</th>
+                <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R3</th>
+                <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R4</th>
+                <th className="w-[126px] min-w-[126px] max-w-[126px] border-l border-white/[0.055] px-2 sm:px-4 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <div className="inline-flex items-center justify-center gap-1 sm:gap-1.5">
+                    <DraftKingsMark className="h-3 w-auto" />
                     <span>DFS</span>
                   </div>
                 </th>
-                <th className="w-[60px] sm:w-[80px] min-w-[60px] sm:min-w-[80px] border-l border-white/[0.055] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">
+                <th className="w-[80px] min-w-[80px] max-w-[80px] border-l border-white/[0.055] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>

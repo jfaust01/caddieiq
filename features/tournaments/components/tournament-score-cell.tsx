@@ -7,7 +7,6 @@ type TournamentScoreCellProps = {
   primary: React.ReactNode
   secondary?: number | null
   dkPoints?: number | null
-  isMobile?: boolean
 }
 
 /**
@@ -56,39 +55,7 @@ export function TournamentScoreCell({
   primary,
   secondary,
   dkPoints,
-  isMobile = false,
 }: TournamentScoreCellProps) {
-  if (isMobile) {
-    return (
-      <div className="grid h-[50px] grid-rows-[14px_20px_14px] place-items-center gap-0 w-full">
-        {/* Row 1: Stroke score (14px) */}
-        <div className="flex h-[14px] items-center justify-center">
-          <span className="text-[10px] font-medium leading-none tabular-nums text-muted-foreground">
-            {primary}
-          </span>
-        </div>
-
-        {/* Row 2: Relative-to-Par Value (20px, bold, color-coded) */}
-        <div className="flex h-[20px] items-center justify-center">
-          <span className={cn(
-            'text-base font-semibold leading-none tabular-nums',
-            getToParClass(secondary)
-          )}>
-            {formatToPar(secondary)}
-          </span>
-        </div>
-
-        {/* Row 3: DraftKings Logo and Points (14px) */}
-        <div className="flex h-[14px] items-center justify-center">
-          <div className="inline-flex items-center gap-0.5 whitespace-nowrap text-[9px] leading-none tabular-nums text-muted-foreground">
-            <DraftKingsMark className="h-2 w-auto shrink-0 opacity-90" />
-            <span>{typeof dkPoints === 'number' ? dkPoints.toFixed(1) : '—'}</span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="grid h-[58px] grid-rows-[16px_23px_17px] place-items-center gap-0 w-full">
       {/* Row 1: Stroke score (16px) */}
