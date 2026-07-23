@@ -478,9 +478,6 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
         />
       ) : (
         <div className="w-full min-w-0 tournament-table-container" style={{ '--player-column-width': playerColumnWidth || '220px' } as React.CSSProperties}>
-          <div className="mb-2 p-2 bg-yellow-500/20 border border-yellow-500 rounded text-xs text-yellow-700 font-mono">
-            [DIAGNOSTIC] Expanded player ID: {expandedPlayerId ?? 'none'}
-          </div>
           <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1">
             <span>Scroll for more →</span>
           </div>
@@ -565,9 +562,20 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
 
                     {isExpanded ? (
                       <tr id={`player-scorecard-${entrant.playerId}`}>
-                        <td colSpan={VISIBLE_COLUMN_COUNT} className="p-6 bg-blue-500/10">
-                          <div className="text-sm font-mono text-blue-600">
-                            EXPANDED ROW WORKING FOR {entrant.playerName}
+                        <td colSpan={VISIBLE_COLUMN_COUNT} className="p-0">
+                          <div
+                            className="border-t border-border bg-background"
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => event.stopPropagation()}
+                          >
+                            <ScorecardErrorBoundary playerName={entrant.playerName}>
+                              <ScorecardLoader
+                                playerId={entrant.playerId}
+                                playerName={entrant.playerName}
+                                tournamentId={tournamentId}
+                                roundNumber={selectedRound}
+                              />
+                            </ScorecardErrorBoundary>
                           </div>
                         </td>
                       </tr>
