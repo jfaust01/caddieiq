@@ -133,22 +133,26 @@ export function ExpandedPlayerScorecard({
           </div>
 
           {/* Desktop Scorecards */}
-          <div className="grid grid-cols-2 gap-6 p-6">
-            <NineHoleScorecard
-              label="FRONT 9"
-              holes={frontNine}
-              courseHoles={data.courseHoles?.slice(0, 9)}
-              total={outTotal}
-              isDesktop
-            />
-            <NineHoleScorecard
-              label="BACK 9"
-              holes={backNine}
-              courseHoles={data.courseHoles?.slice(9, 18)}
-              total={inTotal}
-              totTotal={totTotal}
-              isDesktop
-            />
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 p-4 lg:gap-6 lg:p-6">
+            <div className="min-w-0 w-full">
+              <NineHoleScorecard
+                label="FRONT 9"
+                holes={frontNine}
+                courseHoles={data.courseHoles?.slice(0, 9)}
+                total={outTotal}
+                isDesktop
+              />
+            </div>
+            <div className="min-w-0 w-full">
+              <NineHoleScorecard
+                label="BACK 9"
+                holes={backNine}
+                courseHoles={data.courseHoles?.slice(9, 18)}
+                total={inTotal}
+                totTotal={totTotal}
+                isDesktop
+              />
+            </div>
           </div>
 
           {/* Desktop Legend */}
