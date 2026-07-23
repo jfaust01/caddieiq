@@ -6,7 +6,6 @@ import {
   Dialog,
   DialogContent,
   DialogClose,
-  DialogPortal,
 } from '@/components/ui/dialog'
 import { ScorecardLoader } from './scorecard-loader'
 import { ScorecardErrorBoundaryV2 } from './scorecard-error-boundary-v2'
@@ -71,11 +70,13 @@ export function PlayerScorecardModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogPortal>
-        <DialogContent className={cn(
+      <DialogContent 
+        className={cn(
           "flex max-h-[calc(100vh-48px)] w-[min(1280px,calc(100vw-48px))] max-w-none flex-col overflow-hidden p-0",
           "md:rounded-lg rounded-none"
-        )}>
+        )}
+        showCloseButton={false}
+      >
         {/* Modal Header */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-background px-6 py-4">
           <div className="flex items-center justify-between flex-1">
@@ -138,7 +139,6 @@ export function PlayerScorecardModal({
           </ScorecardErrorBoundaryV2>
         </div>
       </DialogContent>
-      </DialogPortal>
     </Dialog>
   )
 }
