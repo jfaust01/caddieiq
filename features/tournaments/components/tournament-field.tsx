@@ -1,7 +1,7 @@
 'use client'
 
-import { Users } from 'lucide-react'
-import { useMemo, useState, Fragment } from 'react'
+import { Users, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { SearchBar } from '@/components/shared/search-bar'
@@ -23,9 +23,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import {
+  Dialog,
+  DialogContent,
+  DialogClose,
+} from '@/components/ui/dialog'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
+import { PlayerScorecardModal } from '@/features/tournaments/components/player-scorecard-modal'
 import { TournamentScoreCell } from '@/features/tournaments/components/tournament-score-cell'
 import { ScorecardLoader } from '@/features/tournaments/components/scorecard-loader'
 import { ScorecardErrorBoundaryV2 } from '@/features/tournaments/components/scorecard-error-boundary-v2'
@@ -412,7 +418,8 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
   const [sort, setSort] = useState<SortKey>('pos-asc')
-  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
+  const [selectedScorecardPlayer, setSelectedScorecardPlayer] = useState<string | null>(null)
+  const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
   const [selectedRound, setSelectedRound] = useState<number>(1)
 
   // Enable drag-to-scroll on the table container
@@ -625,65 +632,28 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((entrant) => {
-                const isExpanded = expandedPlayerId === entrant.playerId
-                
-                return (
-                  <Fragment key={entrant.playerId}>
+              {filtered.map((entrant) => (
                     <tr
                       onClick={(event) => {
                         const target = event.target as HTMLElement
-                        // Prevent toggle if clicking on interactive elements
+                        // Prevent modal open if clicking on interactive elements
                         const interactiveElement = target.closest(
-                          'button, a, input, select, textarea, [data-stop-row-toggle]'
+                          'button, a, input, select, textarea, [data-prevent-row-click]'
                         )
                         if (interactiveElement) {
                           return
                         }
-                        setExpandedPlayerId((current) =>
-                          current === entrant.playerId ? null : entrant.playerId
-                        )
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault()
-                          setExpandedPlayerId((current) =>
-                            current === entrant.playerId ? null : entrant.playerId
-                          )
-                        }
+                        // Open modal with selected player
+                        setSelectedScorecardPlayer(entrant.playerId)
+                        setIsScorecardModalOpen(true)
                       }}
                       role="button"
                       tabIndex={0}
-                      aria-expanded={isExpanded}
-                      aria-controls={`player-scorecard-${entrant.playerId}`}
-                      className="cursor-pointer border-b border-border hover:bg-muted/40 transition-colors duration-150"
+                      className="cursor-pointer border-b border-border hover:bg-white/[0.025] transition-colors duration-150"
                     >
                       <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
                     </tr>
-
-                    {isExpanded ? (
-                      <tr id={`player-scorecard-${entrant.playerId}`} className="border-b border-border">
-                        <td colSpan={VISIBLE_COLUMN_COUNT} className="p-0 w-full">
-                          <div
-                            className="w-full min-w-0 max-w-full overflow-hidden border-t border-border bg-background"
-                            onClick={(event) => event.stopPropagation()}
-                            onKeyDown={(event) => event.stopPropagation()}
-                          >
-                            <ScorecardErrorBoundaryV2 playerName={entrant.playerName}>
-                              <ScorecardLoader
-                                playerId={entrant.playerId}
-                                playerName={entrant.playerName}
-                                tournamentId={tournamentId}
-                                roundNumber={selectedRound}
-                              />
-                            </ScorecardErrorBoundaryV2>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
-                )
-              })}
+              ))}
             </tbody>
           </table>
           </div>
@@ -692,6 +662,16 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
           </div>
         </div>
       )}
+
+      {/* Player Scorecard Modal */}
+      <PlayerScorecardModal
+        isOpen={isScorecardModalOpen}
+        onOpenChange={setIsScorecardModalOpen}
+        selectedPlayerId={selectedScorecardPlayer}
+        players={field.entrants}
+        tournamentId={tournamentId}
+        visiblePlayers={filtered}
+      />
     </div>
   )
 }
