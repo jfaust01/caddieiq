@@ -77,21 +77,6 @@ function getResolvedWinner(tournament: TournamentSummary, field: TournamentField
     return null
   }
 
-  // Log diagnostic info temporarily
-  console.log('[v0] TOURNAMENT WINNER DEBUG', {
-    rawStatus: tournament.status,
-    isCompleted,
-    authoritativeWinner: tournament.tournamentWinner,
-    firstLeaderboardEntry: field.entrants[0],
-    resolvedWinner: {
-      playerId: firstPlaceEntrant.playerId,
-      playerName: firstPlaceEntrant.playerName,
-      position: firstPlaceEntrant.position,
-      total: firstPlaceEntrant.total,
-      totalStrokes: firstPlaceEntrant.totalStrokes,
-    },
-  })
-
   // Construct winner data from first-place entrant
   return {
     playerId: firstPlaceEntrant.playerId,
