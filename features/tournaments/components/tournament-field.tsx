@@ -36,6 +36,20 @@ import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
 
+/**
+ * Format ownership percentage as "X% Drafted" or "— Drafted" for missing
+ */
+function formatDraftedPercent(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) {
+    return '— Drafted'
+  }
+
+  // Handle both decimal (0-1) and percentage (0-100) formats
+  const percent = value <= 1 ? value * 100 : value
+
+  return `${Math.round(percent)}% Drafted`
+}
+
 type SortKey =
   | 'pos-asc'
   | 'pos-desc'
@@ -247,11 +261,8 @@ function LeaderboardRow({
               {salaryDisplay}
             </span>
           </div>
-          <div className="text-xs tabular-nums text-muted-foreground">
-            <span className="mr-1 uppercase tracking-wide">
-              Own
-            </span>
-            {ownershipDisplay}
+          <div className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+            {formatDraftedPercent(entrant.ownershipPercent)}
           </div>
         </div>
       </td>
@@ -367,11 +378,8 @@ function PlayerRowCells({
               {salaryDisplay}
             </span>
           </div>
-          <div className="text-xs tabular-nums text-muted-foreground">
-            <span className="mr-1 uppercase tracking-wide">
-              Own
-            </span>
-            {ownershipDisplay}
+          <div className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+            {formatDraftedPercent(entrant.ownershipPercent)}
           </div>
         </div>
       </td>
