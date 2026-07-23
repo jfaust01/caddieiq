@@ -37,18 +37,18 @@ export function NineHoleScorecard({
   const labelClassDesktop = 'px-3 py-2 text-xs'
 
   // Calculate grid columns: label + 9 holes + OUT/IN + (TOT if Back 9)
-  // Use aggressive minmax to compress hole columns on narrow viewports
+  // Responsive grid columns that expand to use full width
   const gridColsDesktop = showTotals
-    ? 'minmax(48px,0.8fr) repeat(9,minmax(28px,1fr)) minmax(44px,0.8fr) minmax(44px,0.8fr)'
-    : 'minmax(48px,0.8fr) repeat(9,minmax(28px,1fr)) minmax(44px,0.8fr)'
+    ? 'minmax(50px,1fr) repeat(9,minmax(40px,1fr)) minmax(50px,1fr) minmax(50px,1fr)'
+    : 'minmax(50px,1fr) repeat(9,minmax(40px,1fr)) minmax(50px,1fr)'
   
   const gridColsTablet = showTotals
-    ? 'minmax(40px,0.7fr) repeat(9,minmax(24px,0.9fr)) minmax(36px,0.7fr) minmax(36px,0.7fr)'
-    : 'minmax(40px,0.7fr) repeat(9,minmax(24px,0.9fr)) minmax(36px,0.7fr)'
+    ? 'minmax(45px,1fr) repeat(9,minmax(32px,1fr)) minmax(45px,1fr) minmax(45px,1fr)'
+    : 'minmax(45px,1fr) repeat(9,minmax(32px,1fr)) minmax(45px,1fr)'
   
   const gridColsMobile = showTotals
-    ? 'minmax(36px,0.6fr) repeat(9,minmax(20px,0.8fr)) minmax(32px,0.6fr) minmax(32px,0.6fr)'
-    : 'minmax(36px,0.6fr) repeat(9,minmax(20px,0.8fr)) minmax(32px,0.6fr)'
+    ? 'minmax(40px,1fr) repeat(9,minmax(24px,1fr)) minmax(40px,1fr) minmax(40px,1fr)'
+    : 'minmax(40px,1fr) repeat(9,minmax(24px,1fr)) minmax(40px,1fr)'
 
   return (
     <div className="border border-[#343944] rounded overflow-hidden min-w-0 w-full">
