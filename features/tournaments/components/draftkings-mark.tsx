@@ -21,7 +21,7 @@ export function DraftKingsMark({
 
   return (
     <Image
-      src="/draftkings-logo.png"
+      src="/draftkings-logo.svg"
       alt="DraftKings"
       height={16}
       width={16}
