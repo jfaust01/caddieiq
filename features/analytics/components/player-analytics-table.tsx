@@ -104,7 +104,7 @@ export function PlayerAnalyticsTable({ tournamentId }: PlayerAnalyticsTableProps
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="border-b border-border bg-muted/50">
+          <thead className="sticky top-0 z-10 border-b border-border bg-muted/50">
             <tr>
               <th className="px-4 py-3 text-left font-semibold">Player</th>
               <th 
