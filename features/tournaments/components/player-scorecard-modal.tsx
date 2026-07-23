@@ -78,6 +78,8 @@ export function PlayerScorecardModal({
           "flex flex-col overflow-hidden p-0 z-50",
           "bg-[#0b1015]/98 backdrop-blur-xl border border-white/[0.10]",
           "shadow-[0_24px_80px_rgba(0,0,0,0.55)]",
+          // Remove dialog's default max-width constraint
+          "!max-w-none",
           // Mobile: fixed to edges with margins
           "fixed left-2 right-2 top-2 bottom-2 h-auto w-auto",
           "translate-x-0 translate-y-0",
