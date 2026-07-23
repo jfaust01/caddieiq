@@ -27,7 +27,6 @@ import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-a
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import { TournamentScoreCell } from '@/features/tournaments/components/tournament-score-cell'
-import { TourChip } from '@/features/tournaments/components/tour-chip'
 import { ScorecardLoader } from '@/features/tournaments/components/scorecard-loader'
 import { ScorecardErrorBoundaryV2 } from '@/features/tournaments/components/scorecard-error-boundary-v2'
 import { ExpandedPlayerScorecard } from '@/features/tournaments/components/expanded-player-scorecard'
@@ -183,17 +182,12 @@ function LeaderboardRow({
           
           {/* Two-row text block - vertically centered with headshot */}
           <div className="flex flex-col gap-1 min-w-0">
-            {/* Row 1: Player Name + Flag */}
+            {/* Player Name + Flag */}
             <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
               <div className="text-xs sm:text-sm font-medium leading-tight">
                 {entrant.playerName}
               </div>
               <PlayerFlag countryCode={entrant.countryCode} />
-            </div>
-            
-            {/* Row 2: Tour Chip */}
-            <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
-              <TourChip tour={tour} />
             </div>
           </div>
         </div>
@@ -306,9 +300,6 @@ function PlayerRowCells({
             <div className="flex items-center gap-1 min-w-0 whitespace-nowrap">
               <div className="truncate font-semibold">{entrant.playerName}</div>
               {entrant.countryCode && <PlayerFlag code={entrant.countryCode} />}
-            </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              {entrant.tour && <TourChip tour={entrant.tour} />}
             </div>
           </div>
         </div>
