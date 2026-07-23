@@ -28,6 +28,7 @@ import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
 import { TourChip } from '@/features/tournaments/components/tour-chip'
 import { ScorecardLoader } from '@/features/tournaments/components/scorecard-loader'
+import { ScorecardErrorBoundaryV2 } from '@/features/tournaments/components/scorecard-error-boundary-v2'
 import { ExpandedPlayerScorecard } from '@/features/tournaments/components/expanded-player-scorecard'
 import { buildPositionCountMap, formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
@@ -606,13 +607,15 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                             onClick={(event) => event.stopPropagation()}
                             onKeyDown={(event) => event.stopPropagation()}
                           >
-                            <ExpandedPlayerScorecard
-                              data={createEmptyScorecard({
-                                playerName: entrant.playerName,
-                                roundNumber: selectedRound,
-                              })}
-                              isLoading={false}
-                            />
+                            <ScorecardErrorBoundaryV2 playerName={entrant.playerName}>
+                              <ExpandedPlayerScorecard
+                                data={createEmptyScorecard({
+                                  playerName: entrant.playerName,
+                                  roundNumber: selectedRound,
+                                })}
+                                isLoading={false}
+                              />
+                            </ScorecardErrorBoundaryV2>
                           </div>
                         </td>
                       </tr>
