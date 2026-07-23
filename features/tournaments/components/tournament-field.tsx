@@ -26,6 +26,7 @@ import {
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
+import { TournamentScoreCell } from '@/features/tournaments/components/tournament-score-cell'
 import { TourChip } from '@/features/tournaments/components/tour-chip'
 import { ScorecardLoader } from '@/features/tournaments/components/scorecard-loader'
 import { ScorecardErrorBoundaryV2 } from '@/features/tournaments/components/scorecard-error-boundary-v2'
@@ -197,28 +198,48 @@ function LeaderboardRow({
       </td>
 
       {/* TOTAL - Three-line score cell with tournament strokes, rel-to-par, and DK points */}
-      <td className="px-2 sm:px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.totalStrokes} relativeToPar={entrant.total} dkPoints={entrant.totalDkFantasyPoints} emphasis="total" />
+      <td className="px-2 sm:px-3 py-0 text-center align-middle">
+        <TournamentScoreCell 
+          primary={entrant.totalStrokes ?? 'E'} 
+          secondary={entrant.total === 0 ? 'E' : entrant.total ? `${entrant.total > 0 ? '+' : ''}${entrant.total}` : undefined}
+          dkPoints={entrant.totalDkFantasyPoints}
+        />
       </td>
 
       {/* R1 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round1} relativeToPar={entrant.round1RelToPar} dkPoints={entrant.round1DkPoints} />
+      <td className="px-3 py-0 text-center align-middle">
+        <TournamentScoreCell 
+          primary={entrant.round1 ?? '—'} 
+          secondary={entrant.round1RelToPar === 0 ? 'E' : entrant.round1RelToPar ? `${entrant.round1RelToPar > 0 ? '+' : ''}${entrant.round1RelToPar}` : undefined}
+          dkPoints={entrant.round1DkPoints}
+        />
       </td>
 
       {/* R2 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round2} relativeToPar={entrant.round2RelToPar} dkPoints={entrant.round2DkPoints} />
+      <td className="px-3 py-0 text-center align-middle">
+        <TournamentScoreCell 
+          primary={entrant.round2 ?? '—'} 
+          secondary={entrant.round2RelToPar === 0 ? 'E' : entrant.round2RelToPar ? `${entrant.round2RelToPar > 0 ? '+' : ''}${entrant.round2RelToPar}` : undefined}
+          dkPoints={entrant.round2DkPoints}
+        />
       </td>
 
       {/* R3 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round3} relativeToPar={entrant.round3RelToPar} dkPoints={entrant.round3DkPoints} />
+      <td className="px-3 py-0 text-center align-middle">
+        <TournamentScoreCell 
+          primary={entrant.round3 ?? '—'} 
+          secondary={entrant.round3RelToPar === 0 ? 'E' : entrant.round3RelToPar ? `${entrant.round3RelToPar > 0 ? '+' : ''}${entrant.round3RelToPar}` : undefined}
+          dkPoints={entrant.round3DkPoints}
+        />
       </td>
 
       {/* R4 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round4} relativeToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
+      <td className="px-3 py-0 text-center align-middle">
+        <TournamentScoreCell 
+          primary={entrant.round4 ?? '—'} 
+          secondary={entrant.round4RelToPar === 0 ? 'E' : entrant.round4RelToPar ? `${entrant.round4RelToPar > 0 ? '+' : ''}${entrant.round4RelToPar}` : undefined}
+          dkPoints={entrant.round4DkPoints}
+        />
       </td>
 
       {/* DK SALARY */}
@@ -290,28 +311,48 @@ function PlayerRowCells({
       </td>
 
       {/* TOTAL column */}
-      <td className="px-2 sm:px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.totalStrokes} relativeToPar={entrant.total} dkPoints={entrant.dkFantasyPoints} emphasis="total" />
+      <td className="px-2 sm:px-3 py-0 text-center align-middle">
+        <TournamentScoreCell 
+          primary={entrant.totalStrokes ?? 'E'} 
+          secondary={entrant.total === 0 ? 'E' : entrant.total ? `${entrant.total > 0 ? '+' : ''}${entrant.total}` : undefined}
+          dkPoints={entrant.dkFantasyPoints}
+        />
       </td>
 
       {/* R1 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round1} relativeToPar={entrant.round1RelToPar} dkPoints={entrant.round1DkPoints} />
+      <td className="px-3 py-0 text-center align-middle">
+        <TournamentScoreCell 
+          primary={entrant.round1 ?? '—'} 
+          secondary={entrant.round1RelToPar === 0 ? 'E' : entrant.round1RelToPar ? `${entrant.round1RelToPar > 0 ? '+' : ''}${entrant.round1RelToPar}` : undefined}
+          dkPoints={entrant.round1DkPoints}
+        />
       </td>
 
       {/* R2 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round2} relativeToPar={entrant.round2RelToPar} dkPoints={entrant.round2DkPoints} />
+      <td className="px-3 py-0 text-center align-middle">
+        <TournamentScoreCell 
+          primary={entrant.round2 ?? '—'} 
+          secondary={entrant.round2RelToPar === 0 ? 'E' : entrant.round2RelToPar ? `${entrant.round2RelToPar > 0 ? '+' : ''}${entrant.round2RelToPar}` : undefined}
+          dkPoints={entrant.round2DkPoints}
+        />
       </td>
 
       {/* R3 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round3} relativeToPar={entrant.round3RelToPar} dkPoints={entrant.round3DkPoints} />
+      <td className="px-3 py-0 text-center align-middle">
+        <TournamentScoreCell 
+          primary={entrant.round3 ?? '—'} 
+          secondary={entrant.round3RelToPar === 0 ? 'E' : entrant.round3RelToPar ? `${entrant.round3RelToPar > 0 ? '+' : ''}${entrant.round3RelToPar}` : undefined}
+          dkPoints={entrant.round3DkPoints}
+        />
       </td>
 
       {/* R4 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round4} relativeToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
+      <td className="px-3 py-0 text-center align-middle">
+        <TournamentScoreCell 
+          primary={entrant.round4 ?? '—'} 
+          secondary={entrant.round4RelToPar === 0 ? 'E' : entrant.round4RelToPar ? `${entrant.round4RelToPar > 0 ? '+' : ''}${entrant.round4RelToPar}` : undefined}
+          dkPoints={entrant.round4DkPoints}
+        />
       </td>
 
       {/* DK SALARY */}
