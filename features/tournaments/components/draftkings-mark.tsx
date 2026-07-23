@@ -1,6 +1,7 @@
-interface DraftKingsMarkProps {
+import Image from 'next/image'
+
+type DraftKingsMarkProps = {
   className?: string
-  variant?: 'inline' | 'header'
 }
 
 /**
@@ -10,19 +11,14 @@ interface DraftKingsMarkProps {
  */
 export function DraftKingsMark({
   className = 'h-4 w-auto',
-  variant = 'inline',
 }: DraftKingsMarkProps) {
-  const classNames = {
-    inline: 'h-3.5 sm:h-4 w-auto',
-    header: 'h-4 sm:h-5 w-auto',
-  }
-
   return (
-    <img
+    <Image
       src="/draftkings-logo.svg"
       alt="DraftKings"
-      className={`${className || classNames[variant]} inline-block`}
-      style={{ aspectRatio: '1' }}
+      width={48}
+      height={32}
+      className={`inline-block shrink-0 object-contain ${className}`}
     />
   )
 }
@@ -42,7 +38,7 @@ export function DKValue({
 }) {
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      <DraftKingsMark variant="inline" />
+      <DraftKingsMark className="h-[18px] w-auto" />
       <span>
         {label && <span className="text-[#9EA5B1]">{label}</span>}
         {value}
@@ -64,7 +60,7 @@ export function DKLabel({
 }) {
   return (
     <div className={`flex items-center gap-1.5 ${className}`}>
-      <DraftKingsMark variant="header" />
+      <DraftKingsMark className="h-5 w-auto" />
       <span>{label}</span>
     </div>
   )
