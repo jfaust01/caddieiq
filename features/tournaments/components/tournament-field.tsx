@@ -155,8 +155,8 @@ function LeaderboardRow({
 
   // Format ownership percentage
   const ownershipDisplay = entrant.ownershipPercent == null 
-    ? '—' 
-    : entrant.ownershipPercent.toFixed(1) + '%'
+    ? '0.00%' 
+    : entrant.ownershipPercent.toFixed(2) + '%'
 
   // Use real tour data from dfs_salaries operator; display "No Tour" if unavailable
   const tour = entrant.tour
@@ -277,7 +277,7 @@ function PlayerRowCells({
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
   const salaryDisplay = formatMissing(entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null)
-  const ownershipDisplay = formatMissing(entrant.ownershipPercent ? `${entrant.ownershipPercent.toFixed(1)}%` : null)
+  const ownershipDisplay = entrant.ownershipPercent ? `${entrant.ownershipPercent.toFixed(2)}%` : '0.00%'
   const oddsDisplay = formatMissing(entrant.oddsToWin)
 
   const initials = entrant.playerName
