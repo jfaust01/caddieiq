@@ -72,7 +72,7 @@ export function TournamentScoreCell({
         <div className="flex items-center justify-center">
           <div className="inline-flex items-center gap-0.5 whitespace-nowrap">
             <DraftKingsMark className="h-2 w-auto shrink-0" />
-            <span className="text-xs font-normal tabular-nums text-[#FF6600]">
+            <span className="text-xs font-normal tabular-nums text-muted-foreground">
               {typeof dkPoints === 'number' ? dkPoints.toFixed(1) : '—'}
             </span>
           </div>
