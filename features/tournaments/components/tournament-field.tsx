@@ -165,7 +165,7 @@ function LeaderboardRow({
   return (
     <tr className="group border-b border-border hover:bg-muted/40 transition-colors">
       {/* POS */}
-      <td className="px-2 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
+      <td className="px-2 py-3 text-right text-sm font-mono tabular-nums text-white align-middle">
         {positionDisplay}
       </td>
 
@@ -286,7 +286,7 @@ function PlayerRowCells({
   return (
     <>
       {/* POS column */}
-      <td className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground align-middle">
+      <td className="px-2 py-3 text-right text-xs font-semibold text-white align-middle">
         <span>{positionDisplay}</span>
       </td>
 
