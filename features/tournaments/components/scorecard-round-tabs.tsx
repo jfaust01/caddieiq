@@ -1,5 +1,7 @@
 'use client'
 
+import { cn } from '@/lib/utils'
+
 interface ScorecardRoundTabsProps {
   selectedRound: number
   onRoundChange: (round: number) => void
@@ -15,21 +17,20 @@ export function ScorecardRoundTabs({
   }
 
   return (
-    <div className="flex border-b border-[#343944]">
-      {[1, 2, 3, 4].map((round) => (
+    <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] inline-flex">
+      {[1, 2, 3, 4].map((round, index) => (
         <button
           key={round}
           onClick={handleTabClick(round)}
-          className={`flex-1 py-3 px-4 text-sm font-medium transition-colors relative ${
+          className={cn(
+            'flex-1 py-3 px-6 text-lg font-semibold transition-all',
+            'border-r border-white/[0.05] last:border-r-0',
             selectedRound === round
-              ? 'text-white'
-              : 'text-[#9EA5B1] hover:text-white'
-          }`}
+              ? 'bg-teal-900/40 text-emerald-300'
+              : 'text-gray-400 hover:text-gray-300'
+          )}
         >
           R{round}
-          {selectedRound === round && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#22C55E]"></div>
-          )}
         </button>
       ))}
     </div>
