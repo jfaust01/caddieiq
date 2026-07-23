@@ -526,7 +526,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
             className={cn('w-full min-w-0 overflow-x-auto border rounded-md select-none', styles.scrollContainer)}
             style={{ userSelect: 'none' }}
           >
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full min-w-max text-sm border-collapse">
             <thead>
               <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
                 <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
@@ -603,10 +603,10 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                     </tr>
 
                     {isExpanded ? (
-                      <tr id={`player-scorecard-${entrant.playerId}`} className="w-full">
-                        <td colSpan={VISIBLE_COLUMN_COUNT} className="p-0 w-full block">
+                      <tr id={`player-scorecard-${entrant.playerId}`}>
+                        <td colSpan={VISIBLE_COLUMN_COUNT} className="p-0 w-full">
                           <div
-                            className="w-full min-w-0 overflow-x-auto border-t border-border bg-background"
+                            className="w-full min-w-0 max-w-full overflow-hidden border-t border-border bg-background"
                             onClick={(event) => event.stopPropagation()}
                             onKeyDown={(event) => event.stopPropagation()}
                           >
