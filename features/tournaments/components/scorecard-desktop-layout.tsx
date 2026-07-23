@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { NineHoleScorecard } from './nine-hole-scorecard'
 import { ScorecardLegend } from './scorecard-legend'
 import { ScorecardRoundTabs } from './scorecard-round-tabs'
+import { DraftKingsMark } from './draftkings-mark'
 import { cn } from '@/lib/utils'
 
 interface DesktopScorecardLayoutProps {
@@ -119,9 +120,7 @@ export function ScorecardDesktopLayout({
 
             {/* DK Points */}
             <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-3 py-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">
-                DK Pts
-              </span>
+              <DraftKingsMark className="h-4 w-auto mb-1" />
               <div className="text-2xl font-semibold text-orange-400 tabular-nums">
                 {data.totalDkPoints?.toFixed(1) ?? '—'}
               </div>
