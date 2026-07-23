@@ -49,13 +49,18 @@ export function NineHoleScorecard({
   const labelClassDesktop = 'px-3 py-2 text-xs'
 
   // Calculate grid columns: label + 9 holes + OUT/IN + (TOT if Back 9)
+  // Use aggressive minmax to compress hole columns on narrow viewports
   const gridColsDesktop = showTotals
-    ? 'minmax(48px,0.8fr) repeat(9,minmax(0,1fr)) minmax(44px,0.8fr) minmax(44px,0.8fr)'
-    : 'minmax(48px,0.8fr) repeat(9,minmax(0,1fr)) minmax(44px,0.8fr)'
+    ? 'minmax(48px,0.8fr) repeat(9,minmax(28px,1fr)) minmax(44px,0.8fr) minmax(44px,0.8fr)'
+    : 'minmax(48px,0.8fr) repeat(9,minmax(28px,1fr)) minmax(44px,0.8fr)'
+  
+  const gridColsTablet = showTotals
+    ? 'minmax(40px,0.7fr) repeat(9,minmax(24px,0.9fr)) minmax(36px,0.7fr) minmax(36px,0.7fr)'
+    : 'minmax(40px,0.7fr) repeat(9,minmax(24px,0.9fr)) minmax(36px,0.7fr)'
   
   const gridColsMobile = showTotals
-    ? 'minmax(36px,0.7fr) repeat(9,minmax(0,1fr)) minmax(32px,0.6fr) minmax(32px,0.6fr)'
-    : 'minmax(36px,0.7fr) repeat(9,minmax(0,1fr)) minmax(32px,0.6fr)'
+    ? 'minmax(36px,0.6fr) repeat(9,minmax(20px,0.8fr)) minmax(32px,0.6fr) minmax(32px,0.6fr)'
+    : 'minmax(36px,0.6fr) repeat(9,minmax(20px,0.8fr)) minmax(32px,0.6fr)'
 
   return (
     <div className="border border-[#343944] rounded overflow-hidden min-w-0 w-full">
@@ -70,7 +75,7 @@ export function NineHoleScorecard({
       <div className="w-full min-w-0 overflow-hidden">
         <div
           className="w-full grid border-b border-[#343944] bg-[#151922]"
-          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsMobile }}
+          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsTablet }}
         >
           {/* Header: HOLE */}
           <div className={`text-left font-semibold text-[#9EA5B1] min-w-0 ${isDesktop ? 'px-2 py-2 text-xs' : 'px-1 py-1 text-[10px]'}`}>
@@ -99,7 +104,7 @@ export function NineHoleScorecard({
         {/* PAR Row */}
         <div
           className="w-full grid border-b border-[#343944] hover:bg-[#0F1117] transition-colors"
-          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsMobile }}
+          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsTablet }}
         >
           <div className={`text-left font-semibold text-[#9EA5B1] min-w-0 ${isDesktop ? 'px-2 py-2 text-xs' : 'px-1 py-1 text-[10px]'}`}>
             PAR
@@ -134,7 +139,7 @@ export function NineHoleScorecard({
         {/* SCORE Row */}
         <div
           className="w-full grid border-b border-[#343944] hover:bg-[#0F1117] transition-colors"
-          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsMobile }}
+          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsTablet }}
         >
           <div className={`text-left font-semibold text-[#9EA5B1] min-w-0 ${isDesktop ? 'px-2 py-2 text-xs' : 'px-1 py-1 text-[10px]'}`}>
             SCORE
@@ -165,7 +170,7 @@ export function NineHoleScorecard({
         {/* STATUS Row */}
         <div
           className="w-full grid border-b border-[#343944] hover:bg-[#0F1117] transition-colors"
-          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsMobile }}
+          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsTablet }}
         >
           <div className={`text-left font-semibold text-[#9EA5B1] min-w-0 ${isDesktop ? 'px-2 py-2 text-xs' : 'px-1 py-1 text-[10px]'}`}>
             STATUS
@@ -195,7 +200,7 @@ export function NineHoleScorecard({
         {/* DK PTS Row */}
         <div
           className="w-full grid hover:bg-[#0F1117] transition-colors"
-          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsMobile }}
+          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsTablet }}
         >
           <div className={`text-left font-semibold text-[#9EA5B1] min-w-0 flex items-center ${isDesktop ? 'px-2 py-2 text-xs' : 'px-1 py-1 text-[10px]'}`}>
             <DraftKingsMark className={isDesktop ? 'h-3 w-auto' : 'h-2.5 w-auto'} />
