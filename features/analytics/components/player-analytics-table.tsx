@@ -101,8 +101,8 @@ export function PlayerAnalyticsTable({ tournamentId }: PlayerAnalyticsTableProps
   }
 
   return (
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
+    <Card className="overflow-hidden max-h-[600px] flex flex-col">
+      <div className="overflow-x-auto overflow-y-auto flex-1">
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10 border-b border-border bg-muted/50">
             <tr>
