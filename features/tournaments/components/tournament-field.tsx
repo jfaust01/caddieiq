@@ -83,6 +83,44 @@ function formatMissing<T>(value: T | null | undefined): T | string {
 }
 
 /**
+ * Create a safe empty scorecard model - guaranteed no null reference errors
+ */
+function createEmptyScorecard({
+  playerName,
+  roundNumber = 1,
+}: {
+  playerName: string
+  roundNumber?: number
+}) {
+  return {
+    playerName,
+    headshotUrl: null,
+    tour: null,
+    currentPosition: null,
+    roundNumber,
+    totalStrokes: null,
+    totalToPar: null,
+    totalDkPoints: null,
+    dfsSalary: null,
+    ownershipPercent: null,
+    round1Score: null,
+    round2Score: null,
+    round3Score: null,
+    round4Score: null,
+    courseName: null,
+    coursePar: null,
+    courseYardage: null,
+    holes: Array.from({ length: 18 }, (_, index) => ({
+      holeNumber: index + 1,
+      par: null,
+      score: null,
+      toPar: null,
+      dkPoints: null,
+    })),
+  }
+}
+
+/**
  * Parse betting odds string to numeric value for sorting
  */
 function parseOdds(odds: string | null): number {
@@ -564,11 +602,17 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                       <tr id={`player-scorecard-${entrant.playerId}`}>
                         <td colSpan={VISIBLE_COLUMN_COUNT} className="p-0">
                           <div
-                            className="p-6 border-t border-border bg-background"
+                            className="border-t border-border bg-background"
                             onClick={(event) => event.stopPropagation()}
                             onKeyDown={(event) => event.stopPropagation()}
                           >
-                            SCORECARD CONTAINER WORKING
+                            <ExpandedPlayerScorecard
+                              data={createEmptyScorecard({
+                                playerName: entrant.playerName,
+                                roundNumber: selectedRound,
+                              })}
+                              isLoading={false}
+                            />
                           </div>
                         </td>
                       </tr>
