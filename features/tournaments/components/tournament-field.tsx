@@ -608,12 +608,11 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                             onKeyDown={(event) => event.stopPropagation()}
                           >
                             <ScorecardErrorBoundaryV2 playerName={entrant.playerName}>
-                              <ExpandedPlayerScorecard
-                                data={createEmptyScorecard({
-                                  playerName: entrant.playerName,
-                                  roundNumber: selectedRound,
-                                })}
-                                isLoading={false}
+                              <ScorecardLoader
+                                playerId={entrant.playerId}
+                                playerName={entrant.playerName}
+                                tournamentId={tournamentId}
+                                roundNumber={selectedRound}
                               />
                             </ScorecardErrorBoundaryV2>
                           </div>
