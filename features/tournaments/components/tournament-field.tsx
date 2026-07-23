@@ -224,6 +224,7 @@ function LeaderboardRow({
           primary={entrant.totalStrokes ?? 'E'} 
           secondary={entrant.total ?? undefined}
           dkPoints={entrant.totalDkFantasyPoints}
+          isTotal={true}
         />
       </td>
 
@@ -233,6 +234,7 @@ function LeaderboardRow({
           primary={entrant.round1 ?? '—'} 
           secondary={entrant.round1RelToPar ?? undefined}
           dkPoints={entrant.round1DkPoints}
+          isTotal={false}
         />
       </td>
 
@@ -242,6 +244,7 @@ function LeaderboardRow({
           primary={entrant.round2 ?? '—'} 
           secondary={entrant.round2RelToPar ?? undefined}
           dkPoints={entrant.round2DkPoints}
+          isTotal={false}
         />
       </td>
 
@@ -251,6 +254,7 @@ function LeaderboardRow({
           primary={entrant.round3 ?? '—'} 
           secondary={entrant.round3RelToPar ?? undefined}
           dkPoints={entrant.round3DkPoints}
+          isTotal={false}
         />
       </td>
 
@@ -260,6 +264,7 @@ function LeaderboardRow({
           primary={entrant.round4 ?? '—'} 
           secondary={entrant.round4RelToPar ?? undefined}
           dkPoints={entrant.round4DkPoints}
+          isTotal={false}
         />
       </td>
 
@@ -341,6 +346,7 @@ function PlayerRowCells({
           primary={entrant.totalStrokes ?? 'E'} 
           secondary={entrant.total ?? undefined}
           dkPoints={entrant.dkFantasyPoints}
+          isTotal={true}
         />
       </td>
 
@@ -350,6 +356,7 @@ function PlayerRowCells({
           primary={entrant.round1 ?? '—'} 
           secondary={entrant.round1RelToPar ?? undefined}
           dkPoints={entrant.round1DkPoints}
+          isTotal={false}
         />
       </td>
 
@@ -359,6 +366,7 @@ function PlayerRowCells({
           primary={entrant.round2 ?? '—'} 
           secondary={entrant.round2RelToPar ?? undefined}
           dkPoints={entrant.round2DkPoints}
+          isTotal={false}
         />
       </td>
 
@@ -368,6 +376,7 @@ function PlayerRowCells({
           primary={entrant.round3 ?? '—'} 
           secondary={entrant.round3RelToPar ?? undefined}
           dkPoints={entrant.round3DkPoints}
+          isTotal={false}
         />
       </td>
 
@@ -377,6 +386,7 @@ function PlayerRowCells({
           primary={entrant.round4 ?? '—'} 
           secondary={entrant.round4RelToPar ?? undefined}
           dkPoints={entrant.round4DkPoints}
+          isTotal={false}
         />
       </td>
 

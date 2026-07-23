@@ -7,6 +7,7 @@ type TournamentScoreCellProps = {
   primary: React.ReactNode
   secondary?: number | null
   dkPoints?: number | null
+  isTotal?: boolean
 }
 
 /**
@@ -54,6 +55,7 @@ export function TournamentScoreCell({
   primary,
   secondary,
   dkPoints,
+  isTotal = false,
 }: TournamentScoreCellProps) {
   return (
     <div className="flex h-full items-center justify-center">
@@ -63,8 +65,12 @@ export function TournamentScoreCell({
           {primary}
         </div>
 
-        {/* Row 2: Relative-to-Par Value (largest, bold, color-coded) */}
-        <div className={cn('text-lg font-bold leading-none tabular-nums', getToParClass(secondary))}>
+        {/* Row 2: Relative-to-Par Value (color-coded, size depends on column type) */}
+        <div className={cn(
+          'font-bold leading-none tabular-nums',
+          isTotal ? 'text-lg' : 'text-sm',
+          getToParClass(secondary)
+        )}>
           {formatToPar(secondary)}
         </div>
 
