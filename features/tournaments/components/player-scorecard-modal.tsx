@@ -75,22 +75,31 @@ export function PlayerScorecardModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         className={cn(
-          "flex max-h-[92vh] w-[min(96vw,1700px)] max-w-none flex-col overflow-hidden p-0 z-50",
+          "flex flex-col overflow-hidden p-0 z-50",
           "bg-black/20 backdrop-blur-xl border border-white/[0.06]",
-          "md:rounded-3xl rounded-2xl",
-          "shadow-[0_20px_64px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)]"
+          "shadow-[0_20px_64px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          // Mobile: nearly full screen
+          "fixed inset-x-2 top-2 bottom-2 w-auto max-w-none rounded-2xl",
+          // Desktop: wide modal
+          "sm:relative sm:inset-auto sm:max-h-[92vh] sm:w-[min(96vw,1700px)] sm:rounded-3xl"
         )}
         showCloseButton={false}
       >
-        {/* Premium Modal Header - Sticky */}
-        <div className="flex-shrink-0 sticky top-0 z-20 bg-gradient-to-b from-black/60 to-transparent backdrop-blur-md border-b border-white/[0.05] px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-            {/* Previous Button */}
+        {/* Modal Header - Mobile Compact / Desktop Premium */}
+        <div className={cn(
+          "flex-shrink-0 sticky top-0 z-20 bg-gradient-to-b from-black/60 to-transparent backdrop-blur-md border-b border-white/[0.05] flex items-center justify-between",
+          // Mobile: compact 56px header
+          "h-14 px-3 py-0",
+          // Desktop: larger 64px header
+          "sm:h-16 sm:px-6 sm:py-4"
+        )}>
+          <div className="flex items-center gap-1.5 sm:gap-4 min-w-0 flex-1">
+            {/* Previous Button - 44px touch target */}
             <button
               onClick={handlePreviousPlayer}
               disabled={!canGoPrevious}
               className={cn(
-                "flex-shrink-0 p-2 rounded-lg transition-colors",
+                "flex-shrink-0 flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-lg transition-colors",
                 canGoPrevious
                   ? "hover:bg-white/[0.08] cursor-pointer text-white"
                   : "opacity-30 cursor-not-allowed text-white/50"
@@ -100,19 +109,19 @@ export function PlayerScorecardModal({
               <ChevronLeft className="h-5 w-5" />
             </button>
 
-            {/* Player Name */}
-            <div className="min-w-0 flex-1">
-              <h2 className="text-base sm:text-lg font-bold truncate text-white">
+            {/* Player Name - Centered */}
+            <div className="min-w-0 flex-1 text-center">
+              <h2 className="text-sm sm:text-base font-bold truncate text-white">
                 {selectedPlayer.playerName}
               </h2>
             </div>
 
-            {/* Next Button */}
+            {/* Next Button - 44px touch target */}
             <button
               onClick={handleNextPlayer}
               disabled={!canGoNext}
               className={cn(
-                "flex-shrink-0 p-2 rounded-lg transition-colors",
+                "flex-shrink-0 flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-lg transition-colors",
                 canGoNext
                   ? "hover:bg-white/[0.08] cursor-pointer text-white"
                   : "opacity-30 cursor-not-allowed text-white/50"
@@ -123,16 +132,22 @@ export function PlayerScorecardModal({
             </button>
           </div>
 
-          {/* Close Button */}
-          <DialogClose className="flex-shrink-0 p-2 rounded-lg hover:bg-white/[0.08] transition-colors ml-2 text-white">
+          {/* Close Button - 44px touch target */}
+          <DialogClose className="flex-shrink-0 flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-lg hover:bg-white/[0.08] transition-colors ml-1 sm:ml-2 text-white">
             <X className="h-5 w-5" />
             <span className="sr-only">Close modal</span>
           </DialogClose>
         </div>
 
-        {/* Modal Content with Premium Scrolling */}
+        {/* Modal Content - Single Vertical Scroll */}
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-white/[0.02] to-transparent">
-          <div className="p-10 lg:p-10">
+          <div className={cn(
+            "w-full min-w-0 max-w-full",
+            // Mobile: compact padding
+            "px-3 py-4",
+            // Desktop: generous padding
+            "sm:px-10 sm:py-10"
+          )}>
             <ScorecardErrorBoundaryV2 playerName={selectedPlayer.playerName}>
               <ScorecardLoader
                 playerId={selectedPlayer.playerId}

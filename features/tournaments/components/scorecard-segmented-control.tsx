@@ -18,9 +18,10 @@ export function ScorecardSegmentedControl({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-full',
+        'w-full grid grid-cols-4 gap-1',
+        'rounded-xl',
         'border border-white/[0.08]',
-        'bg-white/[0.03]',
+        'bg-white/[0.025]',
         'backdrop-blur-sm',
         'p-1',
         className
@@ -31,8 +32,9 @@ export function ScorecardSegmentedControl({
           key={round}
           onClick={() => onRoundChange(round)}
           className={cn(
-            'px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200',
+            'min-h-11 px-2 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
             'uppercase tracking-wider',
+            'flex items-center justify-center',
             activeRound === round
               ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 shadow-[0_2px_8px_rgba(16,185,129,0.2)]'
               : 'text-white/60 hover:text-white/80'

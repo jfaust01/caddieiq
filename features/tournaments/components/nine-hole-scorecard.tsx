@@ -59,8 +59,8 @@ export function NineHoleScorecard({
         </div>
       </div>
 
-      {/* Grid Container */}
-      <div className="w-full min-w-0 overflow-hidden">
+      {/* Grid Container - Allow horizontal scroll on mobile/tablet */}
+      <div className="w-full min-w-0 overflow-x-auto">
         <div
           className="w-full grid border-b border-[#343944] bg-[#151922]"
           style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsTablet }}

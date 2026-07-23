@@ -8,6 +8,7 @@ import { ScorecardStatsCards } from './scorecard-stats-cards'
 import { ScorecardSegmentedControl } from './scorecard-segmented-control'
 import { ScorecardSidebar } from './scorecard-sidebar'
 import { ScorecardModalLayout } from './scorecard-modal-layout'
+import { ScorecardMobileHero } from './scorecard-mobile-hero'
 import { NineHoleScorecard } from './nine-hole-scorecard'
 import { ScorecardLegend } from './scorecard-legend'
 import { ScorecardPlayerRoundStats } from './scorecard-player-round-stats'
@@ -171,68 +172,51 @@ export function ExpandedPlayerScorecard({
         </div>
       </div>
 
-      {/* Mobile Layout */}
-      <div className="lg:hidden w-full min-w-0 px-4">
-        <div className="space-y-4">
-          {/* Hero Header */}
-          <ScorecardHeroHeader
-            playerName={data.playerName}
-            headshotUrl={data.headshotUrl ?? null}
-            countryCode={null}
-            position={data.currentPosition}
-            totalScore={data.totalToPar}
-            totalStrokes={data.totalStrokes}
+      {/* Mobile Layout - Stacked, Optimized */}
+      <div className="lg:hidden w-full min-w-0 flex flex-col gap-4">
+        {/* Compact Player Hero with 2-Column Metrics */}
+        <ScorecardMobileHero
+          playerName={data.playerName}
+          headshotUrl={data.headshotUrl ?? null}
+          position={data.currentPosition}
+          totalScore={data.totalToPar}
+          totalStrokes={data.totalStrokes}
+          dkFantasyPoints={data.totalDkPoints}
+          courseName={data.courseName}
+          coursePar={coursePar}
+        />
+
+        {/* Full-Width Round Selector */}
+        <div className="w-full">
+          <ScorecardSegmentedControl
+            rounds={rounds}
+            activeRound={`R${selectedRound}`}
+            onRoundChange={(round) => setSelectedRound(Number(round[1]))}
           />
+        </div>
 
-          {/* Stats Cards */}
-          <ScorecardStatsCards
-            dkFantasyPoints={data.totalDkPoints}
-            dfsSalary={data.dfsSalary ?? null}
-            ownership={data.ownershipPercent ?? null}
-            averageScore={null}
+        {/* Stacked Scorecards - Each Can Scroll Horizontally */}
+        <div className="w-full min-w-0 max-w-full space-y-3">
+          <NineHoleScorecard
+            label="FRONT 9"
+            holes={frontNine}
+            courseHoles={data.courseHoles?.slice(0, 9)}
+            total={outTotal}
+            isDesktop={false}
           />
-
-          {/* Segmented Control */}
-          <div className="flex justify-center">
-            <ScorecardSegmentedControl
-              rounds={rounds}
-              activeRound={`R${selectedRound}`}
-              onRoundChange={(round) => setSelectedRound(Number(round[1]))}
-            />
-          </div>
-
-          {/* Mobile Sidebar */}
-          <ScorecardSidebar
-            items={[
-              { label: 'Course', value: data.courseName },
-              { label: 'Par', value: coursePar },
-              { label: 'Yardage', value: data.courseYardage?.toLocaleString() || null, unit: ' yds' },
-            ]}
+          <NineHoleScorecard
+            label="BACK 9"
+            holes={backNine}
+            courseHoles={data.courseHoles?.slice(9, 18)}
+            total={inTotal}
+            totTotal={totTotal}
+            isDesktop={false}
           />
+        </div>
 
-          {/* Scorecards */}
-          <div className="space-y-4">
-            <NineHoleScorecard
-              label="FRONT 9"
-              holes={frontNine}
-              courseHoles={data.courseHoles?.slice(0, 9)}
-              total={outTotal}
-              isDesktop={false}
-            />
-            <NineHoleScorecard
-              label="BACK 9"
-              holes={backNine}
-              courseHoles={data.courseHoles?.slice(9, 18)}
-              total={inTotal}
-              totTotal={totTotal}
-              isDesktop={false}
-            />
-          </div>
-
-          {/* Legend */}
-          <div className="pt-4 border-t border-white/[0.05]">
-            <ScorecardLegend isDesktop={false} />
-          </div>
+        {/* Legend */}
+        <div className="w-full min-w-0 max-w-full pt-2 border-t border-white/[0.05]">
+          <ScorecardLegend isDesktop={false} />
         </div>
       </div>
     </div>
