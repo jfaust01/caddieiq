@@ -206,33 +206,7 @@ export function ScorecardDesktopLayout({
         </div>
       </div>
 
-      {/* Footer Metadata Bar */}
-      <div className="flex-shrink-0 border-t border-white/[0.07] mt-4 pt-4 grid grid-cols-6 gap-4 text-xs">
-        <div>
-          <div className="text-white/60 uppercase tracking-widest font-semibold mb-1">Weather</div>
-          <div className="text-white text-sm">78°F Sunny</div>
-        </div>
-        <div>
-          <div className="text-white/60 uppercase tracking-widest font-semibold mb-1">Wind</div>
-          <div className="text-white text-sm">8 mph SW</div>
-        </div>
-        <div>
-          <div className="text-white/60 uppercase tracking-widest font-semibold mb-1">Course</div>
-          <div className="text-white text-sm">Trump National Doral</div>
-        </div>
-        <div>
-          <div className="text-white/60 uppercase tracking-widest font-semibold mb-1">Tee Time</div>
-          <div className="text-white text-sm">8:35 AM</div>
-        </div>
-        <div>
-          <div className="text-white/60 uppercase tracking-widest font-semibold mb-1">Round Time</div>
-          <div className="text-white text-sm">4h 18m</div>
-        </div>
-        <div>
-          <div className="text-white/60 uppercase tracking-widest font-semibold mb-1">Local Time</div>
-          <div className="text-white text-sm">6:12 PM</div>
-        </div>
-      </div>
+
     </div>
   )
 }
