@@ -83,29 +83,31 @@ export function ExpandedPlayerScorecard({
   }
 
   return (
-    <div className="bg-[#0F1117] text-white w-full">
+    <div className="bg-[#0F1117] text-white w-full min-w-0 max-w-full overflow-hidden">
       {/* Desktop Layout */}
-      <div className="hidden lg:block">
-        <div className="bg-[#151922] border border-[#343944] rounded-lg overflow-hidden">
+      <div className="hidden lg:block w-full min-w-0">
+        <div className="bg-[#151922] border border-[#343944] rounded-lg overflow-hidden w-full min-w-0">
           {/* Desktop Header */}
-          <ScorecardPlayerHeader
-            playerName={data.playerName}
-            headshotUrl={data.headshotUrl}
-            tour={data.tour}
-            position={data.currentPosition}
-            scoreToPar={data.totalToPar}
-            round1={data.round1Score}
-            round2={data.round2Score}
-            round3={data.round3Score}
-            round4={data.round4Score}
-            dfsSalary={data.dfsSalary}
-            ownershipPercent={data.ownershipPercent}
-            isDesktop
-          />
+          <div className="w-full min-w-0 overflow-hidden">
+            <ScorecardPlayerHeader
+              playerName={data.playerName}
+              headshotUrl={data.headshotUrl}
+              tour={data.tour}
+              position={data.currentPosition}
+              scoreToPar={data.totalToPar}
+              round1={data.round1Score}
+              round2={data.round2Score}
+              round3={data.round3Score}
+              round4={data.round4Score}
+              dfsSalary={data.dfsSalary}
+              ownershipPercent={data.ownershipPercent}
+              isDesktop
+            />
+          </div>
 
           {/* Desktop Round Selector */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#343944]">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#343944] min-w-0 overflow-hidden">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-sm font-medium text-[#9EA5B1]">Round</span>
               <select
                 value={selectedRound}
@@ -120,87 +122,93 @@ export function ExpandedPlayerScorecard({
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-3 text-sm text-[#9EA5B1]">
-              <span>{data.courseName}</span>
-              <span>•</span>
-              <span>Par {coursePar || '—'}</span>
-              <span>•</span>
-              <span>{data.courseYardage?.toLocaleString() || '—'} yds</span>
-              <button className="p-1 hover:bg-[#222836] rounded transition-colors">
+            <div className="flex items-center gap-2 text-xs text-[#9EA5B1] flex-shrink-1 min-w-0 overflow-hidden">
+              <span className="truncate">{data.courseName}</span>
+              <span className="flex-shrink-0">•</span>
+              <span className="flex-shrink-0">Par {coursePar || '—'}</span>
+              <span className="flex-shrink-0">•</span>
+              <span className="flex-shrink-0">{data.courseYardage?.toLocaleString() || '—'} yds</span>
+              <button className="p-1 hover:bg-[#222836] rounded transition-colors flex-shrink-0">
                 <Info className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* Desktop Scorecards */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 p-4 lg:gap-6 lg:p-6">
-            <div className="min-w-0 w-full">
-              <NineHoleScorecard
-                label="FRONT 9"
-                holes={frontNine}
-                courseHoles={data.courseHoles?.slice(0, 9)}
-                total={outTotal}
-                isDesktop
-              />
-            </div>
-            <div className="min-w-0 w-full">
-              <NineHoleScorecard
-                label="BACK 9"
-                holes={backNine}
-                courseHoles={data.courseHoles?.slice(9, 18)}
-                total={inTotal}
-                totTotal={totTotal}
-                isDesktop
-              />
+          <div className="w-full min-w-0 overflow-hidden p-3">
+            <div className="grid w-full min-w-0 grid-cols-1 gap-3 xl:grid-cols-2">
+              <div className="w-full min-w-0 max-w-full overflow-hidden">
+                <NineHoleScorecard
+                  label="FRONT 9"
+                  holes={frontNine}
+                  courseHoles={data.courseHoles?.slice(0, 9)}
+                  total={outTotal}
+                  isDesktop
+                />
+              </div>
+              <div className="w-full min-w-0 max-w-full overflow-hidden">
+                <NineHoleScorecard
+                  label="BACK 9"
+                  holes={backNine}
+                  courseHoles={data.courseHoles?.slice(9, 18)}
+                  total={inTotal}
+                  totTotal={totTotal}
+                  isDesktop
+                />
+              </div>
             </div>
           </div>
 
           {/* Desktop Legend */}
-          <div className="border-t border-[#343944] px-6 py-4">
+          <div className="border-t border-[#343944] px-4 py-3 w-full min-w-0 overflow-hidden">
             <ScorecardLegend isDesktop />
           </div>
         </div>
       </div>
 
       {/* Mobile Layout */}
-      <div className="lg:hidden">
-        <div className="bg-[#151922] border border-[#343944] rounded-lg overflow-hidden">
+      <div className="lg:hidden w-full min-w-0 overflow-hidden">
+        <div className="bg-[#151922] border border-[#343944] rounded-lg overflow-hidden w-full min-w-0">
           {/* Mobile Sticky Header */}
-          <div className="sticky top-0 z-20 bg-[#151922] border-b border-[#343944] px-4 py-3 flex items-center justify-between">
+          <div className="sticky top-0 z-20 bg-[#151922] border-b border-[#343944] px-3 py-2 flex items-center justify-between flex-shrink-0">
             <button
               onClick={handlePreviousPlayer}
-              className="p-1 hover:bg-[#222836] rounded transition-colors"
+              className="p-1 hover:bg-[#222836] rounded transition-colors flex-shrink-0"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <div className="flex-1 text-center">
-              <div className="text-sm font-semibold">{data.playerName}</div>
+            <div className="flex-1 text-center min-w-0 overflow-hidden">
+              <div className="text-sm font-semibold truncate">{data.playerName}</div>
               {data.tour && <TourChip tour={data.tour} />}
             </div>
             <button
               onClick={() => setIsFavorite(!isFavorite)}
-              className="p-1 hover:bg-[#222836] rounded transition-colors"
+              className="p-1 hover:bg-[#222836] rounded transition-colors flex-shrink-0"
             >
               <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current text-red-500' : ''}`} />
             </button>
           </div>
 
           {/* Mobile Round Tabs */}
-          <ScorecardRoundTabs
-            selectedRound={selectedRound}
-            onRoundChange={setSelectedRound}
-          />
+          <div className="w-full min-w-0 overflow-hidden">
+            <ScorecardRoundTabs
+              selectedRound={selectedRound}
+              onRoundChange={setSelectedRound}
+            />
+          </div>
 
           {/* Mobile Round Summary */}
-          <ScorecardRoundSummary
-            round={selectedRound}
-            courseName={data.courseName}
-            coursePar={coursePar}
-            courseYardage={data.courseYardage}
-          />
+          <div className="w-full min-w-0 overflow-hidden">
+            <ScorecardRoundSummary
+              round={selectedRound}
+              courseName={data.courseName}
+              coursePar={coursePar}
+              courseYardage={data.courseYardage}
+            />
+          </div>
 
           {/* Mobile Scorecards */}
-          <div className="px-4 py-4 space-y-4">
+          <div className="w-full min-w-0 overflow-hidden px-2 py-3 space-y-3">
             <NineHoleScorecard
               label="FRONT 9"
               holes={frontNine}
@@ -219,7 +227,7 @@ export function ExpandedPlayerScorecard({
           </div>
 
           {/* Mobile Legend */}
-          <div className="px-4 py-3 border-t border-[#343944]">
+          <div className="px-3 py-2 border-t border-[#343944] w-full min-w-0 overflow-hidden">
             <ScorecardLegend isDesktop={false} />
           </div>
 
