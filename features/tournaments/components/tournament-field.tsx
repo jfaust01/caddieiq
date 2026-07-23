@@ -183,14 +183,16 @@ function LeaderboardRow({
           
           {/* Two-row text block - vertically centered with headshot */}
           <div className="flex flex-col gap-1 min-w-0">
-            {/* Row 1: Player Name */}
-            <div className="text-xs sm:text-sm font-medium leading-tight whitespace-nowrap">
-              {entrant.playerName}
+            {/* Row 1: Player Name + Flag */}
+            <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
+              <div className="text-xs sm:text-sm font-medium leading-tight">
+                {entrant.playerName}
+              </div>
+              <PlayerFlag countryCode={entrant.countryCode} />
             </div>
             
-            {/* Row 2: Country Flag Image + Tour Chip (always renders) */}
+            {/* Row 2: Tour Chip */}
             <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
-              <PlayerFlag countryCode={entrant.countryCode} />
               <TourChip tour={tour} />
             </div>
           </div>
@@ -301,9 +303,11 @@ function PlayerRowCells({
             <AvatarFallback className="text-xs">{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <div className="truncate font-semibold">{entrant.playerName}</div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 min-w-0 whitespace-nowrap">
+              <div className="truncate font-semibold">{entrant.playerName}</div>
               {entrant.countryCode && <PlayerFlag code={entrant.countryCode} />}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               {entrant.tour && <TourChip tour={entrant.tour} />}
             </div>
           </div>
