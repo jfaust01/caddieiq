@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
 
 interface TournamentDetailTabsProps {
   /** Compact overview panel content (redesigned for 2-3 viewport heights). */
@@ -33,28 +34,37 @@ export function TournamentDetailTabs({
   const tabsToShow = additionalTabs
 
   return (
-    <Tabs defaultValue="overview" className="gap-4 min-w-0">
-      <div>
-        <TabsList variant="line" className="h-9 gap-1">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {tabsToShow.map((tab) => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              disabled={tab.disabled ?? false}
-            >
-              {tab.label}
-              {tab.count !== undefined && (
-                <span className="ml-1.5 rounded bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">
-                  {tab.count}
-                </span>
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
+    <Tabs defaultValue="leaderboard" className="gap-4 min-w-0">
+      <TabsList className="h-auto rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] p-0 gap-0">
+        <TabsTrigger 
+          value="leaderboard"
+          className={cn(
+            'rounded-none py-2 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0 data-[state=active]:bg-emerald-500/15 data-[state=active]:text-emerald-300 data-[state=inactive]:text-white/60 data-[state=inactive]:hover:text-white'
+          )}
+        >
+          Leaderboard
+        </TabsTrigger>
+        {tabsToShow.map((tab) => (
+          <TabsTrigger
+            key={tab.value}
+            value={tab.value}
+            disabled={tab.disabled ?? false}
+            className={cn(
+              'rounded-none py-2 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0',
+              'data-[state=active]:bg-emerald-500/15 data-[state=active]:text-emerald-300 data-[state=inactive]:text-white/60 data-[state=inactive]:hover:text-white'
+            )}
+          >
+            {tab.label}
+            {tab.count !== undefined && (
+              <span className="ml-1.5 rounded bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">
+                {tab.count}
+              </span>
+            )}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
-      <TabsContent value="overview" className="flex flex-col gap-4 min-w-0">
+      <TabsContent value="leaderboard" className="flex flex-col gap-4 min-w-0">
         {overview}
       </TabsContent>
 
