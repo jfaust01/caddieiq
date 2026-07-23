@@ -21,6 +21,7 @@ export interface CourseHoleData {
 export interface PlayerRoundScorecardData {
   playerName: string
   headshotUrl?: string | null
+  countryCode?: string | null
   tour?: string | null
   currentPosition?: string | null
   roundNumber: number
@@ -83,6 +84,7 @@ export const getPlayerRoundScorecard = cache(
                 select: {
                   fullName: true,
                   headshotUrl: true,
+                  countryCode: true,
                 },
               },
               tournament: {
@@ -149,6 +151,7 @@ export const getPlayerRoundScorecard = cache(
       return {
         playerName: playerRound.tournamentField.player.fullName,
         headshotUrl: playerRound.tournamentField.player.headshotUrl,
+        countryCode: playerRound.tournamentField.player.countryCode,
         currentPosition: playerRound.tournamentField.finalPosition?.toString() || undefined,
         roundNumber: playerRound.round.roundNumber,
         totalStrokes: playerRound.score,

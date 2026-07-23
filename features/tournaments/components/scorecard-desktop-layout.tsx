@@ -6,6 +6,7 @@ import { NineHoleScorecard } from './nine-hole-scorecard'
 import { ScorecardLegend } from './scorecard-legend'
 import { ScorecardRoundTabs } from './scorecard-round-tabs'
 import { DraftKingsMark } from './draftkings-mark'
+import { PlayerFlag } from './player-flag'
 import { cn } from '@/lib/utils'
 
 interface DesktopScorecardLayoutProps {
@@ -67,7 +68,7 @@ export function ScorecardDesktopLayout({
                 <h2 className="truncate text-3xl font-semibold tracking-tight text-white">
                   {data.playerName}
                 </h2>
-                {/* Country flag placeholder - would need flag component */}
+                <PlayerFlag countryCode={data.countryCode} className="h-5 w-5 flex-shrink-0" />
               </div>
 
               <div className="mt-3 flex items-center gap-2 text-sm">
