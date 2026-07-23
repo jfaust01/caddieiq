@@ -60,7 +60,7 @@ export function DKLabel({
 }) {
   return (
     <div className={`flex items-center gap-1.5 ${className}`}>
-      <DraftKingsMark className="h-5 w-auto" />
+      <DraftKingsMark className="h-4 w-auto" />
       <span>{label}</span>
     </div>
   )
