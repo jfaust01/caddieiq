@@ -33,12 +33,18 @@ export function TournamentCompactOverview({
       {/* Winner and Top DK Scorer Cards - displayed above Field section */}
       {hasField && (
         <div className="border-t border-border pt-6">
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+          <div className="grid gap-5 lg:grid-cols-2">
             <TournamentWinnerCard
               tournamentWinner={tournament.tournamentWinner}
               isCompleted={tournament.status === 'COMPLETED'}
             />
             <TopDkScorerCard topDkScorer={tournament.topDkScorer} />
+          </div>
+
+          {/* Footnote */}
+          <div className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
+            <div className="mt-0.5 shrink-0 text-muted-foreground/60">ℹ</div>
+            <p>Stats update automatically when official results and scoring are available.</p>
           </div>
         </div>
       )}
