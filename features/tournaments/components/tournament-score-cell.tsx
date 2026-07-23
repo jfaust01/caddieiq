@@ -23,7 +23,7 @@ export function TournamentScoreCell({
   return (
     <div className="grid h-[96px] w-full grid-rows-[24px_32px_24px] content-center items-center justify-items-center text-center">
       {/* Row 1: Primary Score (smaller, not bold) */}
-      <div className="flex h-6 w-full items-center justify-center text-base font-normal tabular-nums text-foreground">
+      <div className="flex h-6 w-full items-center justify-center text-sm font-normal tabular-nums text-foreground">
         {primary}
       </div>
 
