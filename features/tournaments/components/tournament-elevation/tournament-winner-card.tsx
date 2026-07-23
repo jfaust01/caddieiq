@@ -146,7 +146,7 @@ export function TournamentWinnerCard({
                   {tournamentWinner.countryCode && (
                     <PlayerFlag
                       countryCode={tournamentWinner.countryCode}
-                      className="h-4 sm:h-5 w-auto shrink-0"
+                      className="h-6 sm:h-7 w-auto shrink-0"
                     />
                   )}
                 </div>
