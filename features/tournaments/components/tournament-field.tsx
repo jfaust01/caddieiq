@@ -562,8 +562,14 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
 
                     {isExpanded ? (
                       <tr id={`player-scorecard-${entrant.playerId}`}>
-                        <td colSpan={VISIBLE_COLUMN_COUNT} className="p-6">
-                          EXPANDED ROW WORKING FOR {entrant.playerName}
+                        <td colSpan={VISIBLE_COLUMN_COUNT} className="p-0">
+                          <div
+                            className="p-6 border-t border-border bg-background"
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => event.stopPropagation()}
+                          >
+                            SCORECARD CONTAINER WORKING
+                          </div>
                         </td>
                       </tr>
                     ) : null}
