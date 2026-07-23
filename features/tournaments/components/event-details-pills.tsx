@@ -1,7 +1,8 @@
 'use client'
 
 import type { TournamentSummary } from '@/features/tournaments/types'
-import { formatPurse, textDisplay } from '@/features/tournaments/utils/format'
+import { formatPurse, formatDkTotal, textDisplay } from '@/features/tournaments/utils/format'
+import { DraftKingsMark } from './draftkings-mark'
 
 interface EventDetailsPill {
   label: string
@@ -47,6 +48,11 @@ export function EventDetailsPills({ tournament }: { tournament: TournamentSummar
     pills.push({ label: 'Purse', value: formatPurse(tournament.purse) })
   }
 
+  // DK Total (aggregate fantasy points for field)
+  if (tournament.totalDkFantasyPoints !== null) {
+    pills.push({ label: 'DKTotal', value: formatDkTotal(tournament.totalDkFantasyPoints) })
+  }
+
   // Cut rule (not in header)
   if (tournament.cutAfterRounds) {
     pills.push({
@@ -85,8 +91,15 @@ export function EventDetailsPills({ tournament }: { tournament: TournamentSummar
           key={pill.label}
           className="flex flex-col gap-1 rounded-md border border-border bg-muted/40 px-3 py-2.5"
         >
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {pill.label}
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+            {pill.label === 'DKTotal' ? (
+              <>
+                <DraftKingsMark className="h-3 w-auto" />
+                <span>TOTAL</span>
+              </>
+            ) : (
+              pill.label
+            )}
           </span>
           <span className="text-sm font-semibold text-foreground">{pill.value}</span>
         </div>

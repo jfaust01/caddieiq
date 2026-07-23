@@ -4,6 +4,7 @@ import { Award } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { formatDfsSalary } from '@/features/tournaments/utils/format'
+import { DraftKingsMark } from '../draftkings-mark'
 
 interface TournamentWinnerCardProps {
   tournamentWinner: {
@@ -33,7 +34,8 @@ function formatScoreToPar(score: number | null | undefined): string {
 
 /**
  * Format DK fantasy points for display.
- * Examples: 112.5 → 112.5 DK, 112 → 112 DK, null → —
+ * Examples: 112.5 → 112.5, 112 → 112, null → —
+ * (Logo will be rendered separately)
  */
 function formatDkPoints(points: number | null | undefined): string {
   if (points === null || points === undefined || !Number.isFinite(points)) {
@@ -45,7 +47,7 @@ function formatDkPoints(points: number | null | undefined): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 1,
   })
-  return `${formatted} DK`
+  return formatted
 }
 
 /**
@@ -89,15 +91,18 @@ export function TournamentWinnerCard({
                     .toUpperCase()}
                 </div>
               )}
-              <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5">
                 <div className="text-sm font-semibold text-foreground">
                   {tournamentWinner.playerName}
                 </div>
                 <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                  <div className="space-x-2 tabular-nums">
+                  <div className="flex items-center gap-1 tabular-nums">
                     <span>{scoreToPar}</span>
                     <span>•</span>
-                    <span>{dkPoints}</span>
+                    <div className="flex items-center gap-1">
+                      <DraftKingsMark className="h-2.5 w-auto" />
+                      <span>{dkPoints}</span>
+                    </div>
                   </div>
                   <div className="text-xs text-muted-foreground tabular-nums">
                     {dfsSalary}

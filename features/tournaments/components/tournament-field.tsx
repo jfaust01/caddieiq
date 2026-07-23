@@ -1,7 +1,6 @@
 'use client'
 
-import { Users } from 'lucide-react'
-import Link from 'next/link'
+import { Users, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
@@ -24,14 +23,44 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import {
+  Dialog,
+  DialogContent,
+  DialogClose,
+} from '@/components/ui/dialog'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { ScoreCell } from '@/features/tournaments/components/score-cell'
-import { TourChip } from '@/features/tournaments/components/tour-chip'
+import { PlayerScorecardModal } from '@/features/tournaments/components/player-scorecard-modal'
+import { TournamentScoreCell } from '@/features/tournaments/components/tournament-score-cell'
+import { ScorecardLoader } from '@/features/tournaments/components/scorecard-loader'
+import { ScorecardErrorBoundaryV2 } from '@/features/tournaments/components/scorecard-error-boundary-v2'
+import { ExpandedPlayerScorecard } from '@/features/tournaments/components/expanded-player-scorecard'
+import { DraftKingsMark, DKLabel } from '@/features/tournaments/components/draftkings-mark'
 import { buildPositionCountMap, formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
+
+/**
+ * Format ownership percentage as "X% Drafted" or "— Drafted" for missing
+ */
+function formatDraftedPercent(
+  value: number | null | undefined
+): string {
+  if (
+    value == null ||
+    typeof value !== 'number' ||
+    !Number.isFinite(value)
+  ) {
+    return '— Drafted'
+  }
+
+  // Handle both decimal (0-1) and percentage (0-100) formats
+  const percent = value > 0 && value <= 1 ? value * 100 : value
+
+  return `${Math.round(percent)}% Drafted`
+}
 
 type SortKey =
   | 'pos-asc'
@@ -71,11 +100,52 @@ const STATUS_ORDER: Record<FieldEntryStatus, number> = {
   DISQUALIFIED: 5,
 }
 
+// Tournament DFS table has 9 visible columns: POS, PLAYER, TOTAL, R1, R2, R3, R4, DFS, ODDS
+const VISIBLE_COLUMN_COUNT = 9
+
 /**
  * Format a number as "—" if null/undefined, else return the value
  */
 function formatMissing<T>(value: T | null | undefined): T | string {
   return value == null ? '—' : value
+}
+
+/**
+ * Create a safe empty scorecard model - guaranteed no null reference errors
+ */
+function createEmptyScorecard({
+  playerName,
+  roundNumber = 1,
+}: {
+  playerName: string
+  roundNumber?: number
+}) {
+  return {
+    playerName,
+    headshotUrl: null,
+    tour: null,
+    currentPosition: null,
+    roundNumber,
+    totalStrokes: null,
+    totalToPar: null,
+    totalDkPoints: null,
+    dfsSalary: null,
+    ownershipPercent: null,
+    round1Score: null,
+    round2Score: null,
+    round3Score: null,
+    round4Score: null,
+    courseName: null,
+    coursePar: null,
+    courseYardage: null,
+    holes: Array.from({ length: 18 }, (_, index) => ({
+      holeNumber: index + 1,
+      par: null,
+      score: null,
+      toPar: null,
+      dkPoints: null,
+    })),
+  }
 }
 
 /**
@@ -111,107 +181,258 @@ function LeaderboardRow({
 
   // Format ownership percentage
   const ownershipDisplay = entrant.ownershipPercent == null 
-    ? '—' 
-    : entrant.ownershipPercent.toFixed(1) + '%'
+    ? '0.00%' 
+    : entrant.ownershipPercent.toFixed(2) + '%'
 
   // Use real tour data from dfs_salaries operator; display "No Tour" if unavailable
   const tour = entrant.tour
 
   return (
-    <tr className="group border-b border-border hover:bg-muted/40 transition-colors">
+    <tr className="group border-b border-border hover:bg-white/[0.025] transition-colors duration-150 cursor-pointer h-[82px]">
       {/* POS */}
-      <td className="px-2 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
-        {positionDisplay}
+      <td className="px-4 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <span className="text-sm font-semibold tabular-nums text-foreground">
+            {positionDisplay}
+          </span>
+        </div>
       </td>
 
-      {/* PLAYER - with two-row layout: headshot+name / flag+tour */}
+      {/* PLAYER */}
       <td 
-        className="px-3 py-2.5 text-left align-middle"
-        style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
+        className="px-3 align-middle"
+        style={{ width: 'var(--player-column-width, 240px)', minWidth: 'var(--player-column-width, 240px)' }}
       >
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Headshot Avatar - larger size: 44px desktop, 42px tablet, 40px mobile */}
-          <Avatar className="h-11 w-11 sm:h-11 flex-shrink-0">
+        <div className="flex items-center justify-start gap-3 min-w-0 h-full">
+          {/* Headshot Avatar - 40px circular */}
+          <Avatar className="h-10 w-10 flex-shrink-0">
             <AvatarImage src={entrant.headshotUrl ?? undefined} alt={entrant.playerName} />
-            <AvatarFallback className="text-sm font-semibold">{initials}</AvatarFallback>
+            <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
           </Avatar>
           
-          {/* Two-row text block - vertically centered with headshot */}
-          <div className="flex flex-col gap-1 min-w-0">
-            {/* Row 1: Player Name */}
-            <Link
-              href={`/players/${entrant.playerId}`}
-              className="text-primary hover:underline text-xs sm:text-sm font-medium leading-tight whitespace-nowrap"
-              title={entrant.playerName}
-              data-player-name
-            >
+          {/* Player name + flag (horizontally aligned) */}
+          <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
+            <span className="truncate text-sm font-semibold text-foreground">
               {entrant.playerName}
-            </Link>
-            
-            {/* Row 2: Country Flag Image + Tour Chip (always renders) */}
-            <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
-              <PlayerFlag countryCode={entrant.countryCode} />
-              <TourChip tour={tour} />
-            </div>
+            </span>
+            <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0" />
           </div>
         </div>
       </td>
 
-      {/* TOTAL - Three-line score cell with tournament strokes, rel-to-par, and DK points */}
-      <td className="px-2 sm:px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.totalStrokes} relativeToPar={entrant.total} dkPoints={entrant.totalDkFantasyPoints} emphasis="total" />
+      {/* TOTAL */}
+      <td className="px-2 sm:px-3 align-middle w-[108px] min-w-[108px]">
+        <TournamentScoreCell 
+          primary={entrant.totalStrokes ?? 'E'} 
+          secondary={entrant.total ?? undefined}
+          dkPoints={entrant.totalDkFantasyPoints}
+        />
       </td>
 
-      {/* R1 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round1} relativeToPar={entrant.round1RelToPar} dkPoints={entrant.round1DkPoints} />
+      {/* R1 */}
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+        <TournamentScoreCell 
+          primary={entrant.round1 ?? '—'} 
+          secondary={entrant.round1RelToPar ?? undefined}
+          dkPoints={entrant.round1DkPoints}
+        />
       </td>
 
-      {/* R2 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round2} relativeToPar={entrant.round2RelToPar} dkPoints={entrant.round2DkPoints} />
+      {/* R2 */}
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+        <TournamentScoreCell 
+          primary={entrant.round2 ?? '—'} 
+          secondary={entrant.round2RelToPar ?? undefined}
+          dkPoints={entrant.round2DkPoints}
+        />
       </td>
 
-      {/* R3 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round3} relativeToPar={entrant.round3RelToPar} dkPoints={entrant.round3DkPoints} />
+      {/* R3 */}
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+        <TournamentScoreCell 
+          primary={entrant.round3 ?? '—'} 
+          secondary={entrant.round3RelToPar ?? undefined}
+          dkPoints={entrant.round3DkPoints}
+        />
       </td>
 
-      {/* R4 - Three-line score cell */}
-      <td className="px-3 py-3 text-center align-middle">
-        <ScoreCell strokes={entrant.round4} relativeToPar={entrant.round4RelToPar} dkPoints={entrant.round4DkPoints} />
+      {/* R4 */}
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+        <TournamentScoreCell 
+          primary={entrant.round4 ?? '—'} 
+          secondary={entrant.round4RelToPar ?? undefined}
+          dkPoints={entrant.round4DkPoints}
+        />
       </td>
 
-      {/* DK SALARY */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums align-middle">
-        {salaryDisplay}
-      </td>
-
-      {/* OWNERSHIP % */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
-        {ownershipDisplay}
+      {/* DFS - Combined Salary and Ownership */}
+      <td className="border-l border-border/40 px-4 align-middle">
+        <div className="flex flex-col items-center justify-center gap-1 h-full">
+          <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <DraftKingsMark className="h-3 w-auto shrink-0" />
+            <span className="text-sm font-semibold tabular-nums text-foreground">
+              {salaryDisplay}
+            </span>
+          </div>
+          <div className="whitespace-nowrap text-xs tabular-nums text-muted-foreground/70">
+            {formatDraftedPercent(entrant.ownershipPercent)}
+          </div>
+        </div>
       </td>
 
       {/* ODDS TO WIN */}
-      <td className="px-3 py-3 text-right text-sm font-mono tabular-nums text-muted-foreground align-middle">
-        {oddsDisplay}
+      <td className="border-l border-border/40 px-3 align-middle">
+        <div className="flex items-center justify-center h-full">
+          <span className="text-sm font-mono tabular-nums text-muted-foreground">
+            {oddsDisplay}
+          </span>
+        </div>
       </td>
     </tr>
   )
 }
 
+/**
+ * Internal component to render player row with all cells.
+ * Extracted to avoid fragment issues in tbody.
+ */
+function PlayerRowCells({
+  entrant,
+  positionCountMap,
+}: {
+  entrant: FieldEntrant
+  positionCountMap?: Map<number, number>
+}) {
+  const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
+  const salaryDisplay = formatMissing(entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null)
+  const ownershipDisplay = entrant.ownershipPercent ? `${entrant.ownershipPercent.toFixed(2)}%` : '0.00%'
+  const oddsDisplay = formatMissing(entrant.oddsToWin)
+
+  const initials = entrant.playerName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  return (
+    <>
+      {/* POS */}
+      <td className="px-4 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <span className="text-sm font-semibold tabular-nums text-foreground">
+            {positionDisplay}
+          </span>
+        </div>
+      </td>
+
+      {/* PLAYER */}
+      <td 
+        className="px-3 align-middle"
+        style={{ width: 'var(--player-column-width, 240px)', minWidth: 'var(--player-column-width, 240px)' }}
+      >
+        <div className="flex items-center justify-start gap-3 min-w-0 h-full">
+          <Avatar className="h-10 w-10 flex-shrink-0">
+            <AvatarImage src={entrant.headshotUrl || ''} alt={entrant.playerName} />
+            <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
+            <span className="truncate text-sm font-semibold text-foreground">{entrant.playerName}</span>
+            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0" />}
+          </div>
+        </div>
+      </td>
+
+      {/* TOTAL */}
+      <td className="px-2 sm:px-3 align-middle w-[108px] min-w-[108px]">
+        <TournamentScoreCell 
+          primary={entrant.totalStrokes ?? 'E'} 
+          secondary={entrant.total ?? undefined}
+          dkPoints={entrant.dkFantasyPoints}
+        />
+      </td>
+
+      {/* R1 */}
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+        <TournamentScoreCell 
+          primary={entrant.round1 ?? '—'} 
+          secondary={entrant.round1RelToPar ?? undefined}
+          dkPoints={entrant.round1DkPoints}
+        />
+      </td>
+
+      {/* R2 */}
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+        <TournamentScoreCell 
+          primary={entrant.round2 ?? '—'} 
+          secondary={entrant.round2RelToPar ?? undefined}
+          dkPoints={entrant.round2DkPoints}
+        />
+      </td>
+
+      {/* R3 */}
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+        <TournamentScoreCell 
+          primary={entrant.round3 ?? '—'} 
+          secondary={entrant.round3RelToPar ?? undefined}
+          dkPoints={entrant.round3DkPoints}
+        />
+      </td>
+
+      {/* R4 */}
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+        <TournamentScoreCell 
+          primary={entrant.round4 ?? '—'} 
+          secondary={entrant.round4RelToPar ?? undefined}
+          dkPoints={entrant.round4DkPoints}
+        />
+      </td>
+
+      {/* DFS */}
+      <td className="border-l border-border/40 px-4 align-middle">
+        <div className="flex flex-col items-center justify-center gap-1 h-full">
+          <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <DraftKingsMark className="h-3 w-auto shrink-0" />
+            <span className="text-sm font-semibold tabular-nums text-foreground">
+              {salaryDisplay}
+            </span>
+          </div>
+          <div className="whitespace-nowrap text-xs tabular-nums text-muted-foreground/70">
+            {formatDraftedPercent(entrant.ownershipPercent)}
+          </div>
+        </div>
+      </td>
+
+      {/* ODDS TO WIN */}
+      <td className="border-l border-border/40 px-3 align-middle">
+        <div className="flex items-center justify-center h-full">
+          <span className="text-sm font-mono tabular-nums text-muted-foreground">
+            {oddsDisplay}
+          </span>
+        </div>
+      </td>
+    </>
+  )
+}
+
+
+
 interface TournamentFieldProps {
   field: TournamentField
+  tournamentId: string
 }
 
 /**
  * Tournament Field leaderboard: a searchable, sortable, paginated table showing
  * all players with live tournament scoring, round-by-round results, and projections.
  */
-export function TournamentField({ field }: TournamentFieldProps) {
+export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
   const [sort, setSort] = useState<SortKey>('pos-asc')
+  const [selectedScorecardPlayer, setSelectedScorecardPlayer] = useState<string | null>(null)
+  const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
+  const [selectedRound, setSelectedRound] = useState<number>(1)
 
   // Enable drag-to-scroll on the table container
   const scrollContainerRef = useDragScroll({ dragThreshold: 5 })
@@ -390,32 +611,27 @@ export function TournamentField({ field }: TournamentFieldProps) {
             style={{ userSelect: 'none' }}
           >
             <table className="w-full min-w-max text-sm border-collapse">
-            <thead>
-              <tr className="border-b-2 border-border bg-muted/40 sticky top-0 z-20">
-                <th className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">POS</th>
+            <thead className="sticky top-0 z-10 bg-background/95 backdrop-blur">
+              <tr className="border-b border-border">
+                <th className="px-2 py-2.5 text-right text-xs font-semibold uppercase tabular-nums text-muted-foreground/80">POS</th>
                 <th 
-                  className="px-2 sm:px-3 py-3 text-left text-xs font-semibold"
-                  style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
+                  className="px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase"
+                  style={{ width: 'var(--player-column-width, 240px)', minWidth: 'var(--player-column-width, 240px)' }}
                 >
                   PLAYER
                 </th>
-                <th className="px-2 sm:px-3 py-3 text-center text-xs font-semibold">TOTAL</th>
-                <th className="px-3 py-3 text-center text-xs font-semibold">R1</th>
-                <th className="px-3 py-3 text-center text-xs font-semibold">R2</th>
-                <th className="px-3 py-3 text-center text-xs font-semibold">R3</th>
-                <th className="px-3 py-3 text-center text-xs font-semibold">R4</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold">DK SALARY</th>
-                <th className="px-2 py-3 text-right text-xs font-semibold">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-help">OWN %</span>
-                      </TooltipTrigger>
-                      <TooltipContent>Projected Ownership Percentage</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <th className="px-2 sm:px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums">TOTAL</th>
+                <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums">R1</th>
+                <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums">R2</th>
+                <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums">R3</th>
+                <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums">R4</th>
+                <th className="border-l border-border/40 px-4 py-2.5 text-center text-xs font-semibold uppercase">
+                  <div className="inline-flex items-center justify-center gap-1.5">
+                    <DraftKingsMark className="h-3 w-auto" />
+                    <span>DFS</span>
+                  </div>
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-semibold">
+                <th className="border-l border-border/40 px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums text-muted-foreground/80">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -429,7 +645,26 @@ export function TournamentField({ field }: TournamentFieldProps) {
             </thead>
             <tbody>
               {filtered.map((entrant) => (
-                <LeaderboardRow key={entrant.playerId} entrant={entrant} positionCountMap={positionCountMap} />
+                    <tr
+                      onClick={(event) => {
+                        const target = event.target as HTMLElement
+                        // Prevent modal open if clicking on interactive elements
+                        const interactiveElement = target.closest(
+                          'button, a, input, select, textarea, [data-prevent-row-click]'
+                        )
+                        if (interactiveElement) {
+                          return
+                        }
+                        // Open modal with selected player
+                        setSelectedScorecardPlayer(entrant.playerId)
+                        setIsScorecardModalOpen(true)
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      className="cursor-pointer border-b border-border hover:bg-white/[0.025] transition-colors duration-150 h-[82px]"
+                    >
+                      <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
+                    </tr>
               ))}
             </tbody>
           </table>
@@ -439,6 +674,46 @@ export function TournamentField({ field }: TournamentFieldProps) {
           </div>
         </div>
       )}
+
+      {/* Player Scorecard Modal */}
+      <PlayerScorecardModal
+        isOpen={isScorecardModalOpen}
+        onOpenChange={setIsScorecardModalOpen}
+        selectedPlayerId={selectedScorecardPlayer}
+        onPlayerChange={setSelectedScorecardPlayer}
+        players={field.entrants}
+        tournamentId={tournamentId}
+        visiblePlayers={filtered}
+      />
     </div>
+  )
+}
+
+/**
+ * Server component that fetches and displays player round scorecard data.
+ * This component is called inside a Suspense boundary for loading state management.
+ */
+async function ScorecardContent({
+  playerRoundId,
+  playerName,
+  tournamentId,
+}: {
+  playerRoundId: string
+  playerName: string
+  tournamentId: string
+}) {
+  // Fetch the scorecard data (hole-by-hole scores)
+  const scorecard = await getPlayerRoundScorecard(playerRoundId)
+
+  if (!scorecard) {
+    return (
+      <div className="p-4 text-center text-sm text-muted-foreground">
+        Hole-by-hole scorecard unavailable for this round.
+      </div>
+    )
+  }
+
+  return (
+    <ExpandedPlayerScorecard data={scorecard} />
   )
 }

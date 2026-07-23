@@ -92,6 +92,12 @@ export interface FieldEntryRow {
    */
   dkFantasyPoints: number | null
   /**
+   * Per-round DraftKings fantasy points, stored as a JSONB object with round numbers as keys
+   * (e.g., {"1": 38, "2": 28, "3": 23, "4": 27}), or null when unavailable.
+   * Sourced from hole-by-hole scoring (birdies, eagles, bogeys) plus scoring efficiency bonuses.
+   */
+  roundDkPoints: Record<string, number> | null
+  /**
    * DraftKings fantasy point projection for this tournament, or null when unavailable.
    * Sourced from fantasy_projections.fantasyPointsDraftKings (not actual scoring).
    */
@@ -206,10 +212,11 @@ export class FieldRepository extends BaseRepository {
       SELECT
         p.id AS "playerId",
         p."fullName" AS "playerName",
-        p."countryCode" AS "countryCode",
+        COALESCE(p."countryCode", n.iso2) AS "countryCode",
         tf.status::text AS "status"
       FROM tournament_fields tf
       JOIN players p ON p.id = tf."playerId" AND p."deletedAt" IS NULL
+      LEFT JOIN nationalities n ON n.id = p."nationalityId" AND n."deletedAt" IS NULL
       WHERE tf."tournamentId" = ${tournamentId}
       ORDER BY p."fullName" ASC
       LIMIT ${limit}
@@ -231,7 +238,7 @@ export class FieldRepository extends BaseRepository {
         tf.id AS "id",
         p.id AS "playerId",
         p."fullName" AS "playerName",
-        p."countryCode" AS "countryCode",
+        COALESCE(p."countryCode", n.iso2) AS "countryCode",
         p."headshotUrl" AS "headshotUrl",
         ds.operator AS "tour",
         tf.status::text AS "status",
@@ -241,10 +248,11 @@ export class FieldRepository extends BaseRepository {
         tf."finalPosition" AS "position",
         stat."worldRanking" AS "worldRanking",
         hto.dk_fantasy_points AS "dkFantasyPoints",
+        hto.round_dk_points_json AS "roundDkPoints",
         hto.total_strokes AS "totalStrokes",
         hto.score_to_par AS "totalRelativeToPar",
         fp."fantasyPointsDraftKings"::float AS "projection",
-        -- Odds (disabled - requires dedupli cation logic for multiple odds events/quotes per player)
+        -- Odds (disabled - requires deduplication logic for multiple odds events/quotes per player)
         NULL::text AS "odds",
         -- Ownership percentage (null - not available in current schema)
         NULL::float AS "ownershipPercent",
@@ -260,6 +268,8 @@ export class FieldRepository extends BaseRepository {
         MAX(CASE WHEN r."roundNumber" = 4 THEN pr."toPar" END) AS "round4RelToPar"
       FROM tournament_fields tf
       JOIN players p ON p.id = tf."playerId" AND p."deletedAt" IS NULL
+      -- Nationality lookup for ISO 2-letter country code fallback
+      LEFT JOIN nationalities n ON n.id = p."nationalityId" AND n."deletedAt" IS NULL
       -- DFS salaries: source of authoritative tour operator
       -- LEFT JOIN (optional) allows entrants without DFS salary records (no tour data)
       LEFT JOIN dfs_salaries ds
@@ -288,9 +298,9 @@ export class FieldRepository extends BaseRepository {
         ON fp."playerId" = tf."playerId"
         AND fp."tournamentId" = tf."tournamentId"
       WHERE tf."tournamentId" = ${tournamentId}
-      GROUP BY tf.id, p.id, p."fullName", p."countryCode", p."headshotUrl", ds.operator, tf.status, 
+      GROUP BY tf.id, p.id, p."fullName", p."countryCode", n.iso2, p."headshotUrl", ds.operator, tf.status, 
                tf."isAlternate", tf.withdrawn, tf."cutMade", tf."finalPosition", stat."worldRanking", 
-               hto.dk_fantasy_points, hto.total_strokes, hto.score_to_par, fp."fantasyPointsDraftKings",
+               hto.dk_fantasy_points, hto.round_dk_points_json, hto.total_strokes, hto.score_to_par, fp."fantasyPointsDraftKings",
                ds.salary
       ORDER BY p."fullName" ASC
     `)
