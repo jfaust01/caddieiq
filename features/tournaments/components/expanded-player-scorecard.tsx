@@ -69,7 +69,7 @@ export function ExpandedPlayerScorecard({
       data.courseHoles.slice(9, 18).reduce((sum, h) => sum + (h.par || 0), 0)
     : null
 
-  const rounds = ['R1', 'R2', 'R3', 'R4'].filter((_, i) => i < (data.totalRounds || 4))
+  const rounds = ['R1', 'R2', 'R3', 'R4']
 
   return (
     <div className="w-full min-w-0">
@@ -80,8 +80,8 @@ export function ExpandedPlayerScorecard({
           <div className="mb-6">
             <ScorecardHeroHeader
               playerName={data.playerName}
-              headshotUrl={data.headshotUrl}
-              countryCode={data.countryCode}
+              headshotUrl={data.headshotUrl ?? null}
+              countryCode={null}
               position={data.currentPosition}
               totalScore={data.totalToPar}
               totalStrokes={data.totalStrokes}
@@ -91,10 +91,10 @@ export function ExpandedPlayerScorecard({
           {/* Stats Cards */}
           <div className="mb-6">
             <ScorecardStatsCards
-              dkFantasyPoints={data.dkFantasyPoints}
-              dfsSalary={data.dfsSalary}
-              ownership={data.ownershipPercent}
-              averageScore={data.averageScore}
+              dkFantasyPoints={data.totalDkPoints}
+              dfsSalary={data.dfsSalary ?? null}
+              ownership={data.ownershipPercent ?? null}
+              averageScore={null}
             />
           </div>
 
@@ -156,8 +156,8 @@ export function ExpandedPlayerScorecard({
           {/* Hero Header */}
           <ScorecardHeroHeader
             playerName={data.playerName}
-            headshotUrl={data.headshotUrl}
-            countryCode={data.countryCode}
+            headshotUrl={data.headshotUrl ?? null}
+            countryCode={null}
             position={data.currentPosition}
             totalScore={data.totalToPar}
             totalStrokes={data.totalStrokes}
@@ -165,10 +165,10 @@ export function ExpandedPlayerScorecard({
 
           {/* Stats Cards */}
           <ScorecardStatsCards
-            dkFantasyPoints={data.dkFantasyPoints}
-            dfsSalary={data.dfsSalary}
-            ownership={data.ownershipPercent}
-            averageScore={data.averageScore}
+            dkFantasyPoints={data.totalDkPoints}
+            dfsSalary={data.dfsSalary ?? null}
+            ownership={data.ownershipPercent ?? null}
+            averageScore={null}
           />
 
           {/* Segmented Control */}
