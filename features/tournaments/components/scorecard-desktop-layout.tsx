@@ -143,7 +143,7 @@ export function ScorecardDesktopLayout({
       </div>
 
       {/* Round Tabs */}
-      <div className="flex-shrink-0 px-0">
+      <div className="flex-shrink-0 px-0 mt-6">
         <div className="w-[360px] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] grid grid-cols-4">
           {[1, 2, 3, 4].map((round) => (
             <button
