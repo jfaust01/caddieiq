@@ -10,14 +10,14 @@ type DraftKingsMarkProps = {
  * Used throughout tournament UI for consistent branding
  */
 export function DraftKingsMark({
-  className = 'h-4 w-auto',
+  className = 'h-5 w-auto',
 }: DraftKingsMarkProps) {
   return (
     <Image
-      src="/draftkings-logo.svg"
+      src="/draftkings-logo.png"
       alt="DraftKings"
-      width={48}
-      height={32}
+      width={80}
+      height={80}
       className={`inline-block shrink-0 object-contain ${className}`}
     />
   )
