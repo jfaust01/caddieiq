@@ -318,9 +318,9 @@ function PlayerRowCells({
   return (
     <>
       {/* POS */}
-      <td className="w-[40px] sm:w-[64px] min-w-[40px] sm:min-w-[64px] px-1 sm:px-2 align-middle text-center">
+      <td className="w-[36px] sm:w-[64px] min-w-[36px] sm:min-w-[64px] px-0.5 sm:px-2 align-middle text-center">
         <span className={cn(
-          "text-xs sm:text-sm font-semibold tabular-nums",
+          "text-[11px] sm:text-sm font-semibold tabular-nums",
           entrant.finalPosition === 1 ? "text-emerald-300" : "text-foreground"
         )}>
           {positionDisplay}
@@ -328,28 +328,28 @@ function PlayerRowCells({
       </td>
 
       {/* PLAYER */}
-      <td className="w-[115px] sm:w-[300px] min-w-[115px] sm:min-w-[260px] px-1.5 sm:px-3 align-middle text-left">
-        <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
+      <td className="w-[95px] sm:w-[300px] min-w-[95px] sm:min-w-[260px] px-1 sm:px-3 align-middle text-left">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-3">
           {entrant.headshotUrl ? (
             <img
               src={entrant.headshotUrl}
               alt={entrant.playerName}
-              className="h-7 w-7 sm:h-10 sm:w-10 shrink-0 rounded-full border border-white/[0.08] object-cover"
+              className="h-6 w-6 sm:h-10 sm:w-10 shrink-0 rounded-full border border-white/[0.08] object-cover"
             />
           ) : (
-            <div className="flex h-7 w-7 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-[10px] sm:text-xs font-semibold text-white">
+            <div className="flex h-6 w-6 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-[8px] sm:text-xs font-semibold text-white">
               {initials}
             </div>
           )}
           <div className="flex min-w-0 items-center gap-0.5 sm:gap-1">
-            <span className="min-w-0 truncate text-[11px] sm:text-sm font-semibold text-foreground">{entrant.playerName}</span>
-            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-2 sm:h-3 w-auto shrink-0 rounded-[2px]" />}
+            <span className="min-w-0 truncate text-[10px] sm:text-sm font-semibold text-foreground">{entrant.playerName}</span>
+            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-1.5 sm:h-3 w-auto shrink-0 rounded-[1px]" />}
           </div>
         </div>
       </td>
 
       {/* TOTAL */}
-      <td className="w-[65px] sm:w-[92px] min-w-[65px] sm:min-w-[92px] px-1 sm:px-2 align-middle bg-white/[0.012] border-x border-white/[0.035]">
+      <td className="w-[60px] sm:w-[92px] min-w-[60px] sm:min-w-[92px] px-0.5 sm:px-2 align-middle bg-white/[0.012] border-x border-white/[0.035]">
         <TournamentScoreCell 
           primary={entrant.totalStrokes ?? 'E'} 
           secondary={entrant.total ?? undefined}
@@ -638,9 +638,9 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               >
                 <table className="w-full border-collapse">
             <colgroup>
-              <col className="w-[40px] sm:w-[64px]" />
-              <col className="w-[115px] sm:w-[300px]" />
-              <col className="w-[65px] sm:w-[92px]" />
+              <col className="w-[36px] sm:w-[64px]" />
+              <col className="w-[95px] sm:w-[300px]" />
+              <col className="w-[60px] sm:w-[92px]" />
               <col className="w-[62px] sm:w-[82px]" />
               <col className="w-[62px] sm:w-[82px]" />
               <col className="w-[62px] sm:w-[82px]" />
@@ -650,13 +650,13 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
             </colgroup>
             <thead className="sticky top-0 z-10 bg-black/15 backdrop-blur-sm border-b border-white/[0.06]">
               <tr>
-                <th className="w-[40px] sm:w-[64px] min-w-[40px] sm:min-w-[64px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
+                <th className="w-[36px] sm:w-[64px] min-w-[36px] sm:min-w-[64px] px-0.5 sm:px-2 h-12 text-center text-[9px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
                 <th 
-                  className="w-[115px] sm:w-[300px] min-w-[115px] sm:min-w-[260px] px-1.5 sm:px-3 h-12 text-left text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+                  className="w-[95px] sm:w-[300px] min-w-[95px] sm:min-w-[260px] px-1 sm:px-3 h-12 text-left text-[9px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
                 >
                   PLAYER
                 </th>
-                <th className="w-[65px] sm:w-[92px] min-w-[65px] sm:min-w-[92px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">TOTAL</th>
+                <th className="w-[60px] sm:w-[92px] min-w-[60px] sm:min-w-[92px] px-0.5 sm:px-2 h-12 text-center text-[9px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">TOTAL</th>
                 <th className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R1</th>
                 <th className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R2</th>
                 <th className="w-[62px] sm:w-[82px] min-w-[62px] sm:min-w-[82px] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R3</th>
