@@ -164,7 +164,6 @@ export function NineHoleScorecard({
         >
           <div className={`text-left font-semibold text-[#9EA5B1] min-w-0 flex items-center ${isDesktop ? 'px-2 py-2 text-xs' : 'px-1 py-1 text-[10px]'}`}>
             <DraftKingsMark className={isDesktop ? 'h-3 w-auto' : 'h-2.5 w-auto'} />
-            <span className="ml-1">PTS</span>
           </div>
           {holes.map((hole) => (
             <div
