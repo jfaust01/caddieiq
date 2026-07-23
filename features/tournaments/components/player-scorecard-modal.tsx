@@ -76,17 +76,17 @@ export function PlayerScorecardModal({
       <DialogContent 
         className={cn(
           "flex flex-col overflow-hidden p-0 z-50",
-          "bg-black/20 backdrop-blur-xl border border-white/[0.06]",
-          "shadow-[0_20px_64px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          "bg-[#0b1015]/98 backdrop-blur-xl border border-white/[0.10]",
+          "shadow-[0_24px_80px_rgba(0,0,0,0.55)]",
           // Mobile: fixed to edges with margins
           "fixed left-2 right-2 top-2 bottom-2 h-auto w-auto",
           "translate-x-0 translate-y-0",
           "rounded-2xl",
-          // Desktop: centered with fixed positioning
-          "sm:left-1/2 sm:right-auto sm:top-1/2 sm:bottom-auto",
-          "sm:h-[92vh] sm:w-[min(96vw,1700px)]",
-          "sm:-translate-x-1/2 sm:-translate-y-1/2",
-          "sm:rounded-3xl"
+          // Desktop: wide premium workspace
+          "lg:fixed lg:left-1/2 lg:right-auto lg:top-1/2 lg:bottom-auto",
+          "lg:h-[min(88vh,980px)] lg:w-[min(92vw,1520px)]",
+          "lg:-translate-x-1/2 lg:-translate-y-1/2",
+          "lg:rounded-[22px]"
         )}
         showCloseButton={false}
       >
@@ -145,13 +145,13 @@ export function PlayerScorecardModal({
         </div>
 
         {/* Modal Content - Single Vertical Scroll */}
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-white/[0.02] to-transparent">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div className={cn(
             "w-full min-w-0 max-w-full",
             // Mobile: compact padding
             "px-3 py-4",
-            // Desktop: generous padding
-            "sm:px-10 sm:py-10"
+            // Desktop: generous padding for wide layout
+            "lg:px-8 lg:py-6"
           )}>
             <ScorecardErrorBoundaryV2 playerName={selectedPlayer.playerName}>
               <ScorecardLoader

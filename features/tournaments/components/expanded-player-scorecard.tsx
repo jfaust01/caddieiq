@@ -9,6 +9,7 @@ import { ScorecardSegmentedControl } from './scorecard-segmented-control'
 import { ScorecardSidebar } from './scorecard-sidebar'
 import { ScorecardModalLayout } from './scorecard-modal-layout'
 import { ScorecardMobileHero } from './scorecard-mobile-hero'
+import { ScorecardDesktopLayout } from './scorecard-desktop-layout'
 import { NineHoleScorecard } from './nine-hole-scorecard'
 import { ScorecardLegend } from './scorecard-legend'
 import { ScorecardPlayerRoundStats } from './scorecard-player-round-stats'
@@ -74,11 +75,24 @@ export function ExpandedPlayerScorecard({
   const rounds = ['R1', 'R2', 'R3', 'R4']
 
   return (
-    <div className="w-full min-w-0 max-w-full">
-      {/* Container Query Wrapper - Responsive to modal width, not viewport */}
-      <div className="@container/scorecard w-full min-w-0 max-w-full flex flex-col">
-        {/* Narrow Layout: Default stacked layout */}
-        <div className="w-full min-w-0 max-w-full flex flex-col gap-4">
+    <div className="w-full h-full min-w-0 max-w-full flex flex-col">
+      {/* Desktop Layout - lg and above */}
+      <div className="hidden lg:block h-full min-h-0">
+        <ScorecardDesktopLayout
+          data={data}
+          selectedRound={selectedRound}
+          onRoundChange={setSelectedRound}
+          frontNine={frontNine}
+          backNine={backNine}
+          outTotal={outTotal}
+          inTotal={inTotal}
+          totTotal={totTotal}
+          coursePar={coursePar}
+        />
+      </div>
+
+      {/* Mobile Layout - below lg */}
+      <div className="lg:hidden w-full min-w-0 max-w-full flex flex-col gap-4">
           {/* Compact Player Hero with 2-Column Metrics */}
           {/* Compact Player Hero with 2-Column Metrics */}
           <ScorecardMobileHero
@@ -125,7 +139,6 @@ export function ExpandedPlayerScorecard({
             <ScorecardLegend isDesktop={false} />
           </div>
         </div>
-      </div>
     </div>
   )
 }
