@@ -1,11 +1,46 @@
 'use client'
 
+import { cn } from '@/lib/utils'
 import { DraftKingsMark } from './draftkings-mark'
 
 type TournamentScoreCellProps = {
   primary: React.ReactNode
-  secondary?: React.ReactNode
+  secondary?: number | null
   dkPoints?: number | null
+}
+
+/**
+ * Format relative-to-par value for display
+ */
+function formatToPar(value: number | null | undefined): string {
+  if (value == null) {
+    return '—'
+  }
+
+  if (value === 0) {
+    return 'E'
+  }
+
+  return value > 0 ? `+${value}` : `${value}`
+}
+
+/**
+ * Get color class for relative-to-par value
+ */
+function getToParClass(value: number | null | undefined): string {
+  if (value == null) {
+    return 'text-muted-foreground'
+  }
+
+  if (value < 0) {
+    return 'text-emerald-400'
+  }
+
+  if (value > 0) {
+    return 'text-red-400'
+  }
+
+  return 'text-foreground'
 }
 
 /**
@@ -28,13 +63,9 @@ export function TournamentScoreCell({
           {primary}
         </div>
 
-        {/* Row 2: Relative-to-Par Value (larger, bold) */}
-        <div className="flex items-center justify-center text-xl font-bold tabular-nums">
-          {secondary ?? (
-            <span aria-hidden="true" className="invisible">
-              —
-            </span>
-          )}
+        {/* Row 2: Relative-to-Par Value (larger, bold, color-coded) */}
+        <div className={cn('flex items-center justify-center text-xl font-bold tabular-nums', getToParClass(secondary))}>
+          {formatToPar(secondary)}
         </div>
 
         {/* Row 3: DraftKings Logo and Points */}
