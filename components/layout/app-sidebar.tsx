@@ -46,7 +46,7 @@ export function AppSidebar() {
   )
 
   return (
-    <Sidebar collapsible="icon" className="relative border-r border-white/[0.07] bg-[#0b1015] shadow-[inset_-1px_0_0_rgba(255,255,255,0.015)]">
+    <Sidebar collapsible="icon" className="border-r border-white/[0.07] bg-[#0b1015] shadow-[inset_-1px_0_0_rgba(255,255,255,0.015)]">
       {/* Subtle decorative glow */}
       <div
         aria-hidden="true"
