@@ -7,7 +7,6 @@ type TournamentScoreCellProps = {
   primary: React.ReactNode
   secondary?: number | null
   dkPoints?: number | null
-  isTotal?: boolean
 }
 
 /**
@@ -46,37 +45,40 @@ function getToParClass(value: number | null | undefined): string {
 
 /**
  * Reusable score cell for tournament table
- * Uses a consistent three-row grid layout for all columns (TOTAL, R1, R2, R3, R4)
- * Row 1: Primary score (strokes for rounds, total for TOTAL)
- * Row 2: Secondary value (relative-to-par) or invisible spacer
- * Row 3: DraftKings logo and points
+ * Uses a consistent fixed three-row CSS Grid layout for all columns (TOTAL, R1, R2, R3, R4)
+ * - Row 1 (22px): Stroke score (small, muted)
+ * - Row 2 (30px): Relative-to-par value (large, bold, color-coded)
+ * - Row 3 (22px): DraftKings logo and points (small, muted)
+ * All columns share identical internal spacing and alignment.
  */
 export function TournamentScoreCell({
   primary,
   secondary,
   dkPoints,
-  isTotal = false,
 }: TournamentScoreCellProps) {
   return (
-    <div className="flex h-full items-center justify-center">
-      <div className="flex flex-col items-center justify-center gap-0.5">
-        {/* Row 1: Stroke score (small, muted) */}
-        <div className="text-xs font-medium tabular-nums text-muted-foreground">
+    <div className="grid h-[88px] grid-rows-[22px_30px_22px] place-items-center gap-0 w-full">
+      {/* Row 1: Stroke score (22px) */}
+      <div className="flex h-[22px] items-center justify-center">
+        <span className="text-sm font-medium leading-none tabular-nums text-muted-foreground">
           {primary}
-        </div>
+        </span>
+      </div>
 
-        {/* Row 2: Relative-to-Par Value (color-coded, size depends on column type) */}
-        <div className={cn(
-          'font-bold leading-none tabular-nums',
-          isTotal ? 'text-base' : 'text-sm',
+      {/* Row 2: Relative-to-Par Value (30px, bold, color-coded) */}
+      <div className="flex h-[30px] items-center justify-center">
+        <span className={cn(
+          'text-xl font-bold leading-none tabular-nums',
           getToParClass(secondary)
         )}>
           {formatToPar(secondary)}
-        </div>
+        </span>
+      </div>
 
-        {/* Row 3: DraftKings Logo and Points (smallest, muted) */}
-        <div className="mt-1 inline-flex items-center gap-1 text-[11px] tabular-nums text-muted-foreground">
-          <DraftKingsMark className="h-2.5 w-auto opacity-80" />
+      {/* Row 3: DraftKings Logo and Points (22px) */}
+      <div className="flex h-[22px] items-center justify-center">
+        <div className="inline-flex items-center gap-1 whitespace-nowrap text-sm leading-none tabular-nums text-muted-foreground">
+          <DraftKingsMark className="h-3 w-auto shrink-0" />
           <span>{typeof dkPoints === 'number' ? dkPoints.toFixed(1) : '—'}</span>
         </div>
       </div>

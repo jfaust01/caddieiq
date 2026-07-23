@@ -188,20 +188,22 @@ function LeaderboardRow({
   const tour = entrant.tour
 
   return (
-    <tr className="group border-b border-border hover:bg-white/[0.025] transition-colors duration-150 cursor-pointer">
+    <tr className="group border-b border-border hover:bg-white/[0.025] transition-colors duration-150 cursor-pointer h-[88px]">
       {/* POS */}
-      <td className="px-4 py-2.5 text-center align-middle">
-        <span className="text-sm font-semibold tabular-nums text-foreground">
-          {positionDisplay}
-        </span>
+      <td className="px-4 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <span className="text-sm font-semibold tabular-nums text-foreground">
+            {positionDisplay}
+          </span>
+        </div>
       </td>
 
       {/* PLAYER */}
       <td 
-        className="px-3 py-2.5 text-left align-middle"
+        className="px-3 align-middle"
         style={{ width: 'var(--player-column-width, 240px)', minWidth: 'var(--player-column-width, 240px)' }}
       >
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center justify-start gap-3 min-w-0 h-full">
           {/* Headshot Avatar - 40px circular */}
           <Avatar className="h-10 w-10 flex-shrink-0">
             <AvatarImage src={entrant.headshotUrl ?? undefined} alt={entrant.playerName} />
@@ -219,58 +221,53 @@ function LeaderboardRow({
       </td>
 
       {/* TOTAL */}
-      <td className="px-2 sm:px-3 py-2.5 h-full text-center align-middle">
+      <td className="px-2 sm:px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
           primary={entrant.totalStrokes ?? 'E'} 
           secondary={entrant.total ?? undefined}
           dkPoints={entrant.totalDkFantasyPoints}
-          isTotal={true}
         />
       </td>
 
       {/* R1 */}
-      <td className="px-3 py-2.5 h-full text-center align-middle">
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
           primary={entrant.round1 ?? '—'} 
           secondary={entrant.round1RelToPar ?? undefined}
           dkPoints={entrant.round1DkPoints}
-          isTotal={false}
         />
       </td>
 
       {/* R2 */}
-      <td className="px-3 py-2.5 h-full text-center align-middle">
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
           primary={entrant.round2 ?? '—'} 
           secondary={entrant.round2RelToPar ?? undefined}
           dkPoints={entrant.round2DkPoints}
-          isTotal={false}
         />
       </td>
 
       {/* R3 */}
-      <td className="px-3 py-2.5 h-full text-center align-middle">
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
           primary={entrant.round3 ?? '—'} 
           secondary={entrant.round3RelToPar ?? undefined}
           dkPoints={entrant.round3DkPoints}
-          isTotal={false}
         />
       </td>
 
       {/* R4 */}
-      <td className="px-3 py-2.5 h-full text-center align-middle">
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
           primary={entrant.round4 ?? '—'} 
           secondary={entrant.round4RelToPar ?? undefined}
           dkPoints={entrant.round4DkPoints}
-          isTotal={false}
         />
       </td>
 
       {/* DFS - Combined Salary and Ownership */}
-      <td className="border-l border-border/40 px-4 py-2.5 text-center align-middle">
-        <div className="flex flex-col items-center justify-center gap-1">
+      <td className="border-l border-border/40 px-4 align-middle">
+        <div className="flex flex-col items-center justify-center gap-1 h-full">
           <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
             <DraftKingsMark className="h-3 w-auto shrink-0" />
             <span className="text-sm font-semibold tabular-nums text-foreground">
@@ -284,8 +281,12 @@ function LeaderboardRow({
       </td>
 
       {/* ODDS TO WIN */}
-      <td className="border-l border-border/40 px-3 py-2.5 text-center text-sm font-mono tabular-nums text-muted-foreground align-middle">
-        {oddsDisplay}
+      <td className="border-l border-border/40 px-3 align-middle">
+        <div className="flex items-center justify-center h-full">
+          <span className="text-sm font-mono tabular-nums text-muted-foreground">
+            {oddsDisplay}
+          </span>
+        </div>
       </td>
     </tr>
   )
@@ -341,52 +342,47 @@ function PlayerRowCells({
       </td>
 
       {/* TOTAL */}
-      <td className="px-2 sm:px-3 py-2.5 h-full text-center align-middle">
+      <td className="px-2 sm:px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
           primary={entrant.totalStrokes ?? 'E'} 
           secondary={entrant.total ?? undefined}
           dkPoints={entrant.dkFantasyPoints}
-          isTotal={true}
         />
       </td>
 
       {/* R1 */}
-      <td className="px-3 py-2.5 h-full text-center align-middle">
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
           primary={entrant.round1 ?? '—'} 
           secondary={entrant.round1RelToPar ?? undefined}
           dkPoints={entrant.round1DkPoints}
-          isTotal={false}
         />
       </td>
 
       {/* R2 */}
-      <td className="px-3 py-2.5 h-full text-center align-middle">
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
           primary={entrant.round2 ?? '—'} 
           secondary={entrant.round2RelToPar ?? undefined}
           dkPoints={entrant.round2DkPoints}
-          isTotal={false}
         />
       </td>
 
       {/* R3 */}
-      <td className="px-3 py-2.5 h-full text-center align-middle">
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
           primary={entrant.round3 ?? '—'} 
           secondary={entrant.round3RelToPar ?? undefined}
           dkPoints={entrant.round3DkPoints}
-          isTotal={false}
         />
       </td>
 
       {/* R4 */}
-      <td className="px-3 py-2.5 h-full text-center align-middle">
+      <td className="px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
           primary={entrant.round4 ?? '—'} 
           secondary={entrant.round4RelToPar ?? undefined}
           dkPoints={entrant.round4DkPoints}
-          isTotal={false}
         />
       </td>
 
@@ -659,7 +655,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                       }}
                       role="button"
                       tabIndex={0}
-                      className="cursor-pointer border-b border-border hover:bg-white/[0.025] transition-colors duration-150"
+                      className="cursor-pointer border-b border-border hover:bg-white/[0.025] transition-colors duration-150 h-[88px]"
                     >
                       <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
                     </tr>
