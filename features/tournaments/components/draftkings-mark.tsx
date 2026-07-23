@@ -1,5 +1,3 @@
-import Image from 'next/image'
-
 interface DraftKingsMarkProps {
   className?: string
   variant?: 'inline' | 'header'
@@ -20,13 +18,11 @@ export function DraftKingsMark({
   }
 
   return (
-    <Image
+    <img
       src="/draftkings-logo.svg"
       alt="DraftKings"
-      height={16}
-      width={16}
-      className={className || classNames[variant]}
-      unoptimized
+      className={`${className || classNames[variant]} inline-block`}
+      style={{ aspectRatio: '1' }}
     />
   )
 }
