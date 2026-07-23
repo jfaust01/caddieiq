@@ -22,14 +22,11 @@ export function ScorecardModalLayout({
   return (
     <div
       className={cn(
-        'w-[90vw] mx-auto',
-        maxWidth,
+        'relative w-full min-w-0 max-w-full',
         'rounded-3xl',
         'border border-white/[0.06]',
         'bg-gradient-to-br from-white/[0.04] to-white/[0.01]',
-        'backdrop-blur-xl',
-        'shadow-[0_20px_64px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)]',
-        'p-6 sm:p-8',
+        'p-4 sm:p-6 lg:p-8',
         className
       )}
     >

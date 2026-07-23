@@ -78,10 +78,15 @@ export function PlayerScorecardModal({
           "flex flex-col overflow-hidden p-0 z-50",
           "bg-black/20 backdrop-blur-xl border border-white/[0.06]",
           "shadow-[0_20px_64px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)]",
-          // Mobile: nearly full screen
-          "fixed inset-x-2 top-2 bottom-2 w-auto max-w-none rounded-2xl",
-          // Desktop: wide modal
-          "sm:relative sm:inset-auto sm:max-h-[92vh] sm:w-[min(96vw,1700px)] sm:rounded-3xl"
+          // Mobile: fixed to edges with margins
+          "fixed left-2 right-2 top-2 bottom-2 h-auto w-auto",
+          "translate-x-0 translate-y-0",
+          "rounded-2xl",
+          // Desktop: centered with fixed positioning
+          "sm:left-1/2 sm:right-auto sm:top-1/2 sm:bottom-auto",
+          "sm:h-[92vh] sm:w-[min(96vw,1700px)]",
+          "sm:-translate-x-1/2 sm:-translate-y-1/2",
+          "sm:rounded-3xl"
         )}
         showCloseButton={false}
       >
