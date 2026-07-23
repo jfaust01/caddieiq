@@ -85,6 +85,7 @@ function getResolvedWinner(tournament: TournamentSummary, field: TournamentField
     scoreToPar: firstPlaceEntrant.total,
     dkFantasyPoints: firstPlaceEntrant.totalDkFantasyPoints,
     dfsSalary: firstPlaceEntrant.dfsSalary,
+    countryCode: firstPlaceEntrant.countryCode,
   }
 }
 

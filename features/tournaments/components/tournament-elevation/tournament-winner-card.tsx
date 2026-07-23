@@ -2,6 +2,8 @@
 
 import { Award } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { DraftKingsMark } from '../draftkings-mark'
+import { PlayerFlag } from '../player-flag'
 
 interface TournamentWinnerCardProps {
   tournamentWinner: {
@@ -11,6 +13,7 @@ interface TournamentWinnerCardProps {
     scoreToPar: number | null
     dkFantasyPoints: number | null
     dfsSalary: number | null
+    countryCode?: string | null
   } | null
   /** Whether the tournament is completed; if false, shows "TBD" */
   isCompleted?: boolean
@@ -30,6 +33,19 @@ function formatScoreToPar(score: number | null | undefined): string {
 }
 
 /**
+ * Get color class for score to par.
+ * Negative = emerald, positive = red, even = white
+ */
+function getScoreColorClass(score: number | null | undefined): string {
+  if (score === null || score === undefined || !Number.isFinite(score)) {
+    return 'text-white'
+  }
+  if (score < 0) return 'text-emerald-400'
+  if (score > 0) return 'text-red-400'
+  return 'text-white'
+}
+
+/**
  * Format DK fantasy points for display.
  * Examples: 112.5 → 112.5, 112 → 112, null → —
  */
@@ -46,8 +62,9 @@ function formatDkPoints(points: number | null | undefined): string {
 }
 
 /**
- * Tournament Winner Card - displays the official tournament champion with
- * premium styling, including their score relative to par.
+ * Tournament Winner Card - premium hero card displaying the official tournament
+ * champion with horizontal two-column layout (headshot + name/score).
+ * Features emerald accent, subtle glow, and large typography for stats.
  */
 export function TournamentWinnerCard({
   tournamentWinner,
@@ -55,82 +72,110 @@ export function TournamentWinnerCard({
   className,
 }: TournamentWinnerCardProps) {
   const scoreToPar = formatScoreToPar(tournamentWinner?.scoreToPar)
+  const scoreColorClass = getScoreColorClass(tournamentWinner?.scoreToPar)
   const dkPoints = formatDkPoints(tournamentWinner?.dkFantasyPoints)
+  const initials = tournamentWinner?.playerName
+    .split(' ')
+    .slice(0, 2)
+    .map(name => name[0])
+    .join('')
+    .toUpperCase()
 
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-[22px]',
-        'border border-white/[0.10]',
-        'bg-[#101419]',
-        'p-6 md:p-7',
-        'shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_12px_36px_rgba(0,0,0,0.22)]',
+        'relative overflow-hidden rounded-2xl',
+        'border border-white/[0.06]',
+        'bg-gradient-to-br from-white/[0.05] to-white/[0.02]',
+        'backdrop-blur-sm',
+        'p-6 sm:p-7',
+        'shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.08)]',
         className
       )}
     >
-      {/* Top accent line */}
+      {/* Top accent line - emerald gradient */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent"
+        className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"
       />
 
-      {/* Top-right glow */}
+      {/* Subtle top-right glow */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-emerald-500/[0.08] blur-3xl"
+        className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-emerald-500/[0.06] blur-3xl"
       />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col gap-6">
-        {/* Header badge and eyebrow */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10">
-            <Award className="size-6 text-emerald-400" aria-hidden />
+      <div className="relative z-10 flex flex-col gap-4">
+        {/* Header with icon badge and divider */}
+        <div className="flex items-center gap-2.5 pb-3 border-b border-white/[0.05]">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/40 bg-emerald-500/10">
+            <Award className="size-4 text-emerald-400" aria-hidden />
           </div>
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
             Tournament Winner
           </span>
         </div>
 
         {tournamentWinner ? (
           <>
-            {/* Player content */}
-            <div className="flex items-center gap-6">
-              {/* Headshot */}
-              {tournamentWinner.headshotUrl ? (
-                <img
-                  src={tournamentWinner.headshotUrl}
-                  alt={tournamentWinner.playerName}
-                  className="h-24 w-24 shrink-0 rounded-full border border-white/[0.08] object-cover"
-                />
-              ) : (
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-lg font-semibold text-white">
-                  {tournamentWinner.playerName
-                    .split(' ')
-                    .slice(0, 2)
-                    .map(name => name[0])
-                    .join('')
-                    .toUpperCase()}
+            {/* Two-column layout: headshot + player info */}
+            <div className="flex gap-4 sm:gap-6 items-start">
+              {/* LEFT: Headshot */}
+              <div className="shrink-0">
+                {tournamentWinner.headshotUrl ? (
+                  <img
+                    src={tournamentWinner.headshotUrl}
+                    alt={tournamentWinner.playerName}
+                    className="h-24 w-24 sm:h-28 sm:w-28 rounded-full border border-white/[0.12] object-cover shadow-lg"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 sm:h-28 sm:w-28 shrink-0 items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.05] text-sm sm:text-base font-semibold text-white shadow-lg">
+                    {initials}
+                  </div>
+                )}
+              </div>
+
+              {/* RIGHT: Player info and stats */}
+              <div className="flex flex-col gap-3.5 min-w-0 flex-1">
+                {/* Player name with country flag */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white break-words leading-tight">
+                    {tournamentWinner.playerName}
+                  </h3>
+                  {tournamentWinner.countryCode && (
+                    <PlayerFlag
+                      countryCode={tournamentWinner.countryCode}
+                      className="h-4 sm:h-5 w-auto shrink-0"
+                    />
+                  )}
                 </div>
-              )}
 
-              {/* Player info and score */}
-              <div className="flex flex-col gap-5 min-w-0">
-                {/* Player name */}
-                <span className="truncate text-2xl font-semibold tracking-tight text-white md:text-3xl">
-                  {tournamentWinner.playerName}
-                </span>
-
-                {/* Primary score line */}
-                <div className="flex flex-wrap items-baseline gap-3">
-                  <span className="text-4xl font-semibold tabular-nums text-emerald-400">
+                {/* Primary stats row: Score | DK Points */}
+                <div className="flex items-center gap-3 pt-1">
+                  {/* Winning score - large typography */}
+                  <span className={cn(
+                    'text-5xl sm:text-6xl font-black tabular-nums',
+                    scoreColorClass
+                  )}>
                     {scoreToPar}
                   </span>
+
+                  {/* Thin vertical divider */}
+                  <div className="h-10 w-px bg-white/[0.08]" />
+
+                  {/* DraftKings points */}
+                  <div className="flex items-center gap-1.5">
+                    <DraftKingsMark className="h-5 sm:h-6 w-auto" />
+                    <span className="text-3xl sm:text-4xl font-bold tabular-nums text-white">
+                      {dkPoints}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Status badge */}
-                <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-[0.1em] text-white/60">
+                {/* Final badge */}
+                <div className="inline-flex w-fit items-center rounded-full border border-white/[0.12] bg-white/[0.04] px-3 py-1 mt-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
                     Final
                   </span>
                 </div>
@@ -138,13 +183,13 @@ export function TournamentWinnerCard({
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-8 sm:py-10">
             <div className="flex flex-col items-center gap-2">
-              <div className="text-xl font-semibold text-muted-foreground">
+              <div className="text-lg sm:text-xl font-semibold text-white">
                 Winner determined after the final round
               </div>
-              <div className="text-sm text-muted-foreground/70">
-                This card updates automatically when official results are available.
+              <div className="text-xs sm:text-sm text-white/60">
+                This card updates automatically when results are available
               </div>
             </div>
           </div>
