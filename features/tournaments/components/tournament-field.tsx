@@ -37,6 +37,60 @@ import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
 
 /**
+ * Extract numeric position from position display string.
+ * Handles: "1", "T1", "2", "T2", "T3", "WD", "DQ", "MC", "MDF", etc.
+ * Returns the numeric position for top-3 styling, or null for non-numeric.
+ */
+function extractNumericPosition(positionDisplay: string): number | null {
+  if (!positionDisplay) return null
+  
+  // Remove 'T' prefix if present (e.g., "T1" → "1")
+  const numStr = positionDisplay.replace(/^T/, '')
+  const num = parseInt(numStr, 10)
+  
+  // Only return numeric positions 1-3, ignore invalid/non-numeric
+  if (Number.isInteger(num) && num >= 1 && num <= 3) {
+    return num
+  }
+  
+  return null
+}
+
+/**
+ * Get podium styling for positions 1, 2, and 3
+ */
+function getPodiumStyles(position: number | null) {
+  if (position === 1) {
+    return {
+      badge: 'border-amber-400/50 bg-amber-500/15 text-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.12)]',
+      row: 'bg-amber-500/[0.025]',
+      accent: 'bg-amber-400/70',
+      nameHighlight: true,
+    }
+  }
+  
+  if (position === 2) {
+    return {
+      badge: 'border-slate-300/35 bg-slate-300/10 text-slate-200',
+      row: 'bg-slate-300/[0.018]',
+      accent: 'bg-slate-300/55',
+      nameHighlight: false,
+    }
+  }
+  
+  if (position === 3) {
+    return {
+      badge: 'border-orange-500/35 bg-orange-500/10 text-orange-300',
+      row: 'bg-orange-500/[0.018]',
+      accent: 'bg-orange-500/55',
+      nameHighlight: false,
+    }
+  }
+  
+  return null
+}
+
+/**
  * Format ownership percentage as "X% Drafted" or "— Drafted" for missing
  */
 function formatDraftedPercent(
@@ -162,6 +216,9 @@ function LeaderboardRow({
   positionCountMap?: Map<number, number>
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
+  const numericPosition = extractNumericPosition(positionDisplay)
+  const podiumStyles = getPodiumStyles(numericPosition)
+  
   const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : '—'
   const oddsDisplay = formatMissing(entrant.oddsToWin)
   
@@ -182,10 +239,35 @@ function LeaderboardRow({
   const tour = entrant.tour
 
   return (
-    <tr className="group border-b border-border hover:bg-white/[0.025] transition-colors duration-150 cursor-pointer">
+    <tr className={cn(
+      "relative group border-b border-border transition-colors duration-150 cursor-pointer",
+      podiumStyles?.row ?? "hover:bg-white/[0.025]"
+    )}>
+      {/* Accent bar for top 3 */}
+      {podiumStyles && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute inset-y-0 left-0 w-0.5",
+            podiumStyles.accent
+          )}
+        />
+      )}
+      
       {/* POS */}
       <td className="px-2 py-2.5 text-right text-sm font-mono tabular-nums text-white align-middle">
-        {positionDisplay}
+        {podiumStyles ? (
+          <div
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold tabular-nums",
+              podiumStyles.badge
+            )}
+          >
+            {numericPosition}
+          </div>
+        ) : (
+          positionDisplay
+        )}
       </td>
 
       {/* PLAYER */}
@@ -202,7 +284,10 @@ function LeaderboardRow({
           
           {/* Player name + flag (horizontally aligned) */}
           <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
-            <span className="truncate text-sm font-semibold text-foreground">
+            <span className={cn(
+              "truncate text-sm font-semibold",
+              numericPosition === 1 ? "text-white" : "text-foreground"
+            )}>
               {entrant.playerName}
             </span>
             <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0" />
@@ -290,6 +375,9 @@ function PlayerRowCells({
   positionCountMap?: Map<number, number>
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
+  const numericPosition = extractNumericPosition(positionDisplay)
+  const podiumStyles = getPodiumStyles(numericPosition)
+  
   const salaryDisplay = formatMissing(entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null)
   const ownershipDisplay = entrant.ownershipPercent ? `${entrant.ownershipPercent.toFixed(2)}%` : '0.00%'
   const oddsDisplay = formatMissing(entrant.oddsToWin)
@@ -305,7 +393,18 @@ function PlayerRowCells({
     <>
       {/* POS */}
       <td className="px-2 py-2.5 text-right text-xs font-mono tabular-nums text-white align-middle">
-        <span>{positionDisplay}</span>
+        {podiumStyles ? (
+          <div
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold tabular-nums",
+              podiumStyles.badge
+            )}
+          >
+            {numericPosition}
+          </div>
+        ) : (
+          <span>{positionDisplay}</span>
+        )}
       </td>
 
       {/* PLAYER */}
@@ -319,7 +418,10 @@ function PlayerRowCells({
             <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
           </Avatar>
           <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
-            <span className="truncate text-sm font-semibold text-foreground">{entrant.playerName}</span>
+            <span className={cn(
+              "truncate text-sm font-semibold",
+              numericPosition === 1 ? "text-white" : "text-foreground"
+            )}>{entrant.playerName}</span>
             {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0" />}
           </div>
         </div>
@@ -623,6 +725,10 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
             <tbody>
               {filtered.map((entrant) => {
                 const isExpanded = expandedPlayerId === entrant.playerId
+                const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
+                const numericPosition = extractNumericPosition(positionDisplay)
+                const podiumStyles = getPodiumStyles(numericPosition)
+                
                 return (
                   <Fragment key={entrant.playerId}>
                     <tr
@@ -651,8 +757,20 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                       tabIndex={0}
                       aria-expanded={isExpanded}
                       aria-controls={`player-scorecard-${entrant.playerId}`}
-                      className="cursor-pointer hover:bg-muted/40 border-b border-border"
+                      className={cn(
+                        "relative cursor-pointer border-b border-border transition-colors duration-150",
+                        podiumStyles?.row ?? "hover:bg-muted/40"
+                      )}
                     >
+                      {podiumStyles && (
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            "absolute inset-y-0 left-0 w-0.5",
+                            podiumStyles.accent
+                          )}
+                        />
+                      )}
                       <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
                     </tr>
 
