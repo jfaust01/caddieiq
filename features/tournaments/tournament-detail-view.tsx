@@ -140,7 +140,7 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
             <FieldRankingLeaders leaders={field.rankingLeaders} />
           </div>
         }
-        field={<TournamentField field={field} />}
+        field={<TournamentField field={field} tournamentId={tournament.id} />}
         fieldCount={field.size}
       />
     </PageShell>

@@ -304,6 +304,7 @@ interface TournamentFieldProps {
  * all players with live tournament scoring, round-by-round results, and projections.
  */
 export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
+  console.log('[v0] TournamentField mounted with tournamentId:', tournamentId)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
   const [sort, setSort] = useState<SortKey>('pos-asc')
@@ -563,6 +564,12 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                           onClick={(event) => event.stopPropagation()}
                           onKeyDown={(event) => event.stopPropagation()}
                         >
+                          {console.log('[v0] SCORECARD IDENTIFIERS', {
+                            tournamentId,
+                            playerId: entrant.playerId,
+                            playerName: entrant.playerName,
+                            roundNumber: selectedRound,
+                          })}
                           <ScorecardLoader
                             playerId={entrant.playerId}
                             playerName={entrant.playerName}
