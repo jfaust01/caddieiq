@@ -135,9 +135,9 @@ export function ExpandedPlayerScorecard({
           </div>
 
           {/* Desktop Scorecards */}
-          <div className="w-full min-w-0 overflow-x-auto p-3">
-            <div className="grid w-full min-w-0 grid-cols-1 gap-3 lg:grid-cols-2">
-              <div className="w-full min-w-0 overflow-hidden">
+          <div className="w-full min-w-0 overflow-hidden p-3">
+            <div className="grid w-full min-w-0 grid-cols-1 gap-3 xl:grid-cols-2">
+              <div className="w-full min-w-0 max-w-full overflow-hidden">
                 <NineHoleScorecard
                   label="FRONT 9"
                   holes={frontNine}
@@ -146,7 +146,7 @@ export function ExpandedPlayerScorecard({
                   isDesktop
                 />
               </div>
-              <div className="w-full min-w-0 overflow-hidden">
+              <div className="w-full min-w-0 max-w-full overflow-hidden">
                 <NineHoleScorecard
                   label="BACK 9"
                   holes={backNine}
