@@ -163,15 +163,15 @@ export function NineHoleScorecard({
               </td>
               {holes.map((hole) => (
                 <td key={`dk-${hole.holeNumber}`} className="px-2 py-2 text-[#9EA5B1] font-mono text-sm">
-                  {hole.dkPoints !== null ? hole.dkPoints.toFixed(1) : '—'}
+                  {hole.dkPoints !== null && Number.isFinite(hole.dkPoints) ? hole.dkPoints.toFixed(1) : '—'}
                 </td>
               ))}
               <td className="px-2 py-2 text-[#9EA5B1] font-mono text-sm font-semibold bg-[#1a1f26]">
-                {total.dkPoints.toFixed(1)}
+                {total.dkPoints != null && Number.isFinite(total.dkPoints) ? total.dkPoints.toFixed(1) : '—'}
               </td>
               {showTotals && (
                 <td className="px-2 py-2 text-[#9EA5B1] font-mono text-sm font-semibold bg-[#1a1f26]">
-                  {totTotal.dkPoints.toFixed(1)}
+                  {totTotal && totTotal.dkPoints != null && Number.isFinite(totTotal.dkPoints) ? totTotal.dkPoints.toFixed(1) : '—'}
                 </td>
               )}
             </tr>

@@ -102,13 +102,13 @@ export function ScorecardPlayerHeader({
         <div className="w-px h-8 bg-[#343944]"></div>
 
         <div className="flex items-center gap-6">
-          {dfsSalary !== null && (
+          {dfsSalary != null && typeof dfsSalary === 'number' && Number.isFinite(dfsSalary) && (
             <div>
               <div className="text-xs text-[#9EA5B1] mb-1">SALARY</div>
               <div className="font-semibold">${(dfsSalary / 1000).toFixed(1)}k</div>
             </div>
           )}
-          {ownershipPercent !== null && (
+          {ownershipPercent != null && typeof ownershipPercent === 'number' && Number.isFinite(ownershipPercent) && (
             <div>
               <div className="text-xs text-[#9EA5B1] mb-1">OWN</div>
               <div className="font-semibold">{ownershipPercent.toFixed(0)}%</div>

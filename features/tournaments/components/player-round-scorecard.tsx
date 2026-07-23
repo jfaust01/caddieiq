@@ -275,17 +275,17 @@ function ScorecardGrid({
             }`}
             style={{ height: '56px' }}
           >
-            {hole.dkPoints !== null ? hole.dkPoints.toFixed(1) : '—'}
+            {hole.dkPoints !== null && Number.isFinite(hole.dkPoints) ? hole.dkPoints.toFixed(1) : '—'}
           </div>
         ))}
         <div className="w-14 flex items-center justify-center text-lg font-semibold text-[#9EA5B1] bg-[#1a1f26]" style={{ height: '56px' }}>
-          {outTotal.dkPoints.toFixed(1)}
+          {outTotal.dkPoints != null && Number.isFinite(outTotal.dkPoints) ? outTotal.dkPoints.toFixed(1) : '—'}
         </div>
         <div className="w-14 flex items-center justify-center text-lg font-semibold text-[#9EA5B1] bg-[#1a1f26]" style={{ height: '56px' }}>
-          {inTotal.dkPoints.toFixed(1)}
+          {inTotal.dkPoints != null && Number.isFinite(inTotal.dkPoints) ? inTotal.dkPoints.toFixed(1) : '—'}
         </div>
         <div className="w-14 flex items-center justify-center text-lg font-semibold text-[#9EA5B1] bg-[#1a1f26]" style={{ height: '56px' }}>
-          {totTotal.dkPoints.toFixed(1)}
+          {totTotal.dkPoints != null && Number.isFinite(totTotal.dkPoints) ? totTotal.dkPoints.toFixed(1) : '—'}
         </div>
       </div>
     </div>
