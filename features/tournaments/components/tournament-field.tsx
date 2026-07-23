@@ -58,32 +58,24 @@ function extractNumericPosition(positionDisplay: string): number | null {
 
 /**
  * Get podium styling for positions 1, 2, and 3
+ * Uses subtle compact rank badges without row tints or accents
  */
 function getPodiumStyles(position: number | null) {
   if (position === 1) {
     return {
-      badge: 'border-amber-400/50 bg-amber-500/15 text-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.12)]',
-      row: 'bg-amber-500/[0.025]',
-      accent: 'bg-amber-400/70',
-      nameHighlight: true,
+      badge: 'border-amber-400/45 bg-amber-400/[0.07] text-amber-300',
     }
   }
   
   if (position === 2) {
     return {
-      badge: 'border-slate-300/35 bg-slate-300/10 text-slate-200',
-      row: 'bg-slate-300/[0.018]',
-      accent: 'bg-slate-300/55',
-      nameHighlight: false,
+      badge: 'border-slate-300/35 bg-slate-300/[0.06] text-slate-200',
     }
   }
   
   if (position === 3) {
     return {
-      badge: 'border-orange-500/35 bg-orange-500/10 text-orange-300',
-      row: 'bg-orange-500/[0.018]',
-      accent: 'bg-orange-500/55',
-      nameHighlight: false,
+      badge: 'border-orange-400/35 bg-orange-400/[0.06] text-orange-300',
     }
   }
   
@@ -239,27 +231,13 @@ function LeaderboardRow({
   const tour = entrant.tour
 
   return (
-    <tr className={cn(
-      "relative group border-b border-border transition-colors duration-150 cursor-pointer",
-      podiumStyles?.row ?? "hover:bg-white/[0.025]"
-    )}>
-      {/* Accent bar for top 3 */}
-      {podiumStyles && (
-        <span
-          aria-hidden="true"
-          className={cn(
-            "absolute inset-y-0 left-0 w-0.5",
-            podiumStyles.accent
-          )}
-        />
-      )}
-      
+    <tr className="group border-b border-border hover:bg-white/[0.025] transition-colors duration-150 cursor-pointer">
       {/* POS */}
       <td className="px-2 py-2.5 text-right text-sm font-mono tabular-nums text-white align-middle">
         {podiumStyles ? (
           <div
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold tabular-nums",
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold tabular-nums",
               podiumStyles.badge
             )}
           >
@@ -276,7 +254,7 @@ function LeaderboardRow({
         style={{ width: 'var(--player-column-width, 240px)', minWidth: 'var(--player-column-width, 240px)' }}
       >
         <div className="flex items-center gap-3 min-w-0">
-          {/* Headshot Avatar - 40-44px circular */}
+          {/* Headshot Avatar - 40px circular */}
           <Avatar className="h-10 w-10 flex-shrink-0">
             <AvatarImage src={entrant.headshotUrl ?? undefined} alt={entrant.playerName} />
             <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
@@ -284,10 +262,7 @@ function LeaderboardRow({
           
           {/* Player name + flag (horizontally aligned) */}
           <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
-            <span className={cn(
-              "truncate text-sm font-semibold",
-              numericPosition === 1 ? "text-white" : "text-foreground"
-            )}>
+            <span className="truncate text-sm font-semibold text-foreground">
               {entrant.playerName}
             </span>
             <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0" />
@@ -396,7 +371,7 @@ function PlayerRowCells({
         {podiumStyles ? (
           <div
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold tabular-nums",
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold tabular-nums",
               podiumStyles.badge
             )}
           >
@@ -418,10 +393,7 @@ function PlayerRowCells({
             <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
           </Avatar>
           <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
-            <span className={cn(
-              "truncate text-sm font-semibold",
-              numericPosition === 1 ? "text-white" : "text-foreground"
-            )}>{entrant.playerName}</span>
+            <span className="truncate text-sm font-semibold text-foreground">{entrant.playerName}</span>
             {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0" />}
           </div>
         </div>
@@ -725,9 +697,6 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
             <tbody>
               {filtered.map((entrant) => {
                 const isExpanded = expandedPlayerId === entrant.playerId
-                const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
-                const numericPosition = extractNumericPosition(positionDisplay)
-                const podiumStyles = getPodiumStyles(numericPosition)
                 
                 return (
                   <Fragment key={entrant.playerId}>
@@ -757,20 +726,8 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                       tabIndex={0}
                       aria-expanded={isExpanded}
                       aria-controls={`player-scorecard-${entrant.playerId}`}
-                      className={cn(
-                        "relative cursor-pointer border-b border-border transition-colors duration-150",
-                        podiumStyles?.row ?? "hover:bg-muted/40"
-                      )}
+                      className="cursor-pointer border-b border-border hover:bg-muted/40 transition-colors duration-150"
                     >
-                      {podiumStyles && (
-                        <span
-                          aria-hidden="true"
-                          className={cn(
-                            "absolute inset-y-0 left-0 w-0.5",
-                            podiumStyles.accent
-                          )}
-                        />
-                      )}
                       <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
                     </tr>
 
