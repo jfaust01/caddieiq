@@ -270,7 +270,7 @@ function PlayerRowCells({
 
       {/* PLAYER column - scrolls normally with table */}
       <td 
-        className="bg-background px-2 sm:px-3 py-3 text-left align-middle min-w-0"
+        className="px-2 sm:px-3 py-3 text-left align-middle min-w-0"
         style={{ width: 'var(--player-column-width, 220px)', minWidth: 'var(--player-column-width, 220px)' }}
       >
         <div className="flex items-center gap-2 min-w-0">
