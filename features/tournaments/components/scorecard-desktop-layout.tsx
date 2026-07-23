@@ -164,8 +164,8 @@ export function ScorecardDesktopLayout({
 
       {/* Main Content Grid */}
       <div className="min-h-0 flex-1 overflow-y-auto mt-5">
-        <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_310px]">
-          {/* LEFT: Scorecards */}
+        <div className="min-w-0">
+          {/* Scorecards */}
           <div className="min-w-0 flex flex-col gap-4">
             {/* Front 9 and Back 9 Side by Side */}
             <div className="grid min-w-0 grid-cols-2 gap-4">
@@ -201,57 +201,6 @@ export function ScorecardDesktopLayout({
               <StatSegment label="Fairways" value="9/14" />
               <StatSegment label="GIR" value="14/18" color="emerald" />
               <StatSegment label="Putts" value="29" />
-            </div>
-          </div>
-
-          {/* RIGHT: Sidebar */}
-          <div className="min-w-0 flex flex-col gap-4">
-            {/* Round Summary Card */}
-            <div className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-white/60 mb-4">
-                Round Summary
-              </h3>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-white">0</div>
-                  <div className="text-xs text-white/60">Eagles</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-emerald-400">5</div>
-                  <div className="text-xs text-white/60">Birdies</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-white">11</div>
-                  <div className="text-xs text-white/60">Pars</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-red-500">1</div>
-                  <div className="text-xs text-white/60">Bogeys</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Hole Highlights Card */}
-            <div className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-white/60 mb-3">
-                Hole Highlights
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span className="text-white">Birdie</span>
-                  </div>
-                  <span className="text-white/60">Hole 2</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span className="text-white">Birdie</span>
-                  </div>
-                  <span className="text-white/60">Hole 6</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
