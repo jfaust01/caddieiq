@@ -39,13 +39,19 @@ import { cn } from '@/lib/utils'
 /**
  * Format ownership percentage as "X% Drafted" or "— Drafted" for missing
  */
-function formatDraftedPercent(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) {
+function formatDraftedPercent(
+  value: number | null | undefined
+): string {
+  if (
+    value == null ||
+    typeof value !== 'number' ||
+    !Number.isFinite(value)
+  ) {
     return '— Drafted'
   }
 
   // Handle both decimal (0-1) and percentage (0-100) formats
-  const percent = value <= 1 ? value * 100 : value
+  const percent = value > 0 && value <= 1 ? value * 100 : value
 
   return `${Math.round(percent)}% Drafted`
 }
