@@ -188,7 +188,7 @@ function LeaderboardRow({
   const tour = entrant.tour
 
   return (
-    <tr className="group border-b border-border hover:bg-white/[0.025] transition-colors duration-150 cursor-pointer h-[88px]">
+    <tr className="group border-b border-border hover:bg-white/[0.025] transition-colors duration-150 cursor-pointer h-[82px]">
       {/* POS */}
       <td className="px-4 align-middle">
         <div className="flex h-full items-center justify-center">
@@ -655,7 +655,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                       }}
                       role="button"
                       tabIndex={0}
-                      className="cursor-pointer border-b border-border hover:bg-white/[0.025] transition-colors duration-150 h-[88px]"
+                      className="cursor-pointer border-b border-border hover:bg-white/[0.025] transition-colors duration-150 h-[82px]"
                     >
                       <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
                     </tr>
