@@ -72,8 +72,10 @@ export function ScoreCell({
         {mainDisplay}
       </div>
 
-      {/* Line 2: Relative to Par (medium, color-coded) - only for rounds, not total */}
-      {!isTotalEmphasis && (
+      {/* Line 2: Relative to Par (medium, color-coded) - visible for rounds, spacer for total */}
+      {isTotalEmphasis ? (
+        <div aria-hidden="true" className="h-4" />
+      ) : (
         <div
           className={cn('text-xs font-mono tabular-nums leading-none', getRelToParColor(relativeToPar))}
         >
