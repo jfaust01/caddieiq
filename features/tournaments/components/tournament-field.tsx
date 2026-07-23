@@ -211,11 +211,11 @@ function LeaderboardRow({
           </Avatar>
           
           {/* Player name + flag (horizontally aligned) */}
-          <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
-            <span className="truncate text-sm font-semibold text-foreground">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="min-w-0 truncate text-sm font-semibold text-foreground">
               {entrant.playerName}
             </span>
-            <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0" />
+            <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-auto shrink-0 rounded-[2px]" />
           </div>
         </div>
       </td>
@@ -342,8 +342,8 @@ function PlayerRowCells({
             </div>
           )}
           <div className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate text-sm font-semibold text-foreground">{entrant.playerName}</span>
-            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0 rounded-[2px]" />}
+            <span className="min-w-0 truncate text-sm font-semibold text-foreground">{entrant.playerName}</span>
+            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-auto shrink-0 rounded-[2px]" />}
           </div>
         </div>
       </td>
