@@ -83,59 +83,72 @@ export function ExpandedPlayerScorecard({
   }
 
   return (
-    <div className="bg-[#0F1117] text-white w-full min-w-0 max-w-full overflow-hidden">
+    <div className="w-full min-w-0 max-w-full overflow-hidden">
       {/* Desktop Layout */}
       <div className="hidden lg:block w-full min-w-0">
-        <div className="bg-[#151922] border border-[#343944] rounded-lg overflow-hidden w-full min-w-0">
-          {/* Desktop Header */}
-          <div className="w-full min-w-0 overflow-hidden">
-            <ScorecardPlayerHeader
-              playerName={data.playerName}
-              headshotUrl={data.headshotUrl}
-              tour={data.tour}
-              position={data.currentPosition}
-              scoreToPar={data.totalToPar}
-              round1={data.round1Score}
-              round2={data.round2Score}
-              round3={data.round3Score}
-              round4={data.round4Score}
-              dfsSalary={data.dfsSalary}
-              ownershipPercent={data.ownershipPercent}
-              isDesktop
-            />
-          </div>
-
-          {/* Desktop Round Selector */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#343944] min-w-0 overflow-hidden">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-sm font-medium text-[#9EA5B1]">Round</span>
-              <select
-                value={selectedRound}
-                onChange={(e) => setSelectedRound(Number(e.target.value))}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-[#1a1f26] border border-[#343944] text-white rounded px-3 py-1 text-sm"
-              >
-                {[1, 2, 3, 4].map((r) => (
-                  <option key={r} value={r}>
-                    Round {r}
-                  </option>
-                ))}
-              </select>
+        <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#101419] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_20px_40px_rgba(0,0,0,0.30)] w-full min-w-0">
+          {/* Top-right glow accent */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-32 -top-32 h-64 w-64 rounded-full bg-emerald-500/[0.05] blur-3xl"
+          />
+          {/* Top accent line */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-32 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent"
+          />
+          <div className="relative z-10">
+            {/* Desktop Header */}
+            <div className="w-full min-w-0 overflow-hidden border-b border-white/[0.055]">
+              <ScorecardPlayerHeader
+                playerName={data.playerName}
+                headshotUrl={data.headshotUrl}
+                tour={data.tour}
+                position={data.currentPosition}
+                scoreToPar={data.totalToPar}
+                round1={data.round1Score}
+                round2={data.round2Score}
+                round3={data.round3Score}
+                round4={data.round4Score}
+                dfsSalary={data.dfsSalary}
+                ownershipPercent={data.ownershipPercent}
+                totalStrokes={data.totalStrokes}
+                dkFantasyPoints={data.dkFantasyPoints}
+                isDesktop
+              />
             </div>
-            <div className="flex items-center gap-2 text-xs text-[#9EA5B1] flex-shrink-1 min-w-0 overflow-hidden">
-              <span className="truncate">{data.courseName}</span>
-              <span className="flex-shrink-0">•</span>
-              <span className="flex-shrink-0">Par {coursePar || '—'}</span>
-              <span className="flex-shrink-0">•</span>
-              <span className="flex-shrink-0">{data.courseYardage?.toLocaleString() || '—'} yds</span>
-              <button className="p-1 hover:bg-[#222836] rounded transition-colors flex-shrink-0">
-                <Info className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
 
-          {/* Desktop Scorecards */}
-          <div className="w-full min-w-0 overflow-hidden p-3">
+            {/* Desktop Round Selector */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.055] min-w-0 overflow-hidden bg-white/[0.01]">
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <span className="text-sm font-medium text-muted-foreground">Round</span>
+                <select
+                  value={selectedRound}
+                  onChange={(e) => setSelectedRound(Number(e.target.value))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-white/[0.05] border border-white/[0.08] text-white rounded-lg px-3 py-2 text-sm hover:bg-white/[0.08] transition-colors"
+                >
+                  {[1, 2, 3, 4].map((r) => (
+                    <option key={r} value={r}>
+                      Round {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground flex-shrink-1 min-w-0 overflow-hidden">
+                <span className="truncate font-medium">{data.courseName}</span>
+                <span className="flex-shrink-0 text-muted-foreground/50">•</span>
+                <span className="flex-shrink-0">Par {coursePar || '—'}</span>
+                <span className="flex-shrink-0 text-muted-foreground/50">•</span>
+                <span className="flex-shrink-0">{data.courseYardage?.toLocaleString() || '—'} yds</span>
+                <button className="p-1 hover:bg-white/[0.08] rounded-lg transition-colors flex-shrink-0 ml-2">
+                  <Info className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Desktop Scorecards */}
+            <div className="w-full min-w-0 overflow-hidden p-6">
             <div className="grid w-full min-w-0 grid-cols-1 gap-3 xl:grid-cols-2">
               <div className="w-full min-w-0 max-w-full overflow-hidden">
                 <NineHoleScorecard
@@ -159,18 +172,24 @@ export function ExpandedPlayerScorecard({
             </div>
           </div>
 
-          {/* Desktop Legend */}
-          <div className="border-t border-[#343944] px-4 py-3 w-full min-w-0 overflow-hidden">
-            <ScorecardLegend isDesktop />
+            {/* Desktop Legend */}
+            <div className="border-t border-white/[0.055] px-6 py-4 w-full min-w-0 overflow-hidden">
+              <ScorecardLegend isDesktop />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Mobile Layout */}
       <div className="lg:hidden w-full min-w-0 overflow-hidden">
-        <div className="bg-[#151922] border border-[#343944] rounded-lg overflow-hidden w-full min-w-0">
+        <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#101419] w-full min-w-0">
+          {/* Top-right glow accent */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-24 -top-24 h-48 w-48 rounded-full bg-emerald-500/[0.04] blur-3xl"
+          />
           {/* Mobile Sticky Header */}
-          <div className="sticky top-0 z-20 bg-[#151922] border-b border-[#343944] px-3 py-2 flex items-center justify-between flex-shrink-0">
+          <div className="sticky top-0 z-20 bg-black/40 backdrop-blur-sm border-b border-white/[0.055] px-4 py-3 flex items-center justify-between flex-shrink-0">
             <button
               onClick={handlePreviousPlayer}
               className="p-1 hover:bg-[#222836] rounded transition-colors flex-shrink-0"

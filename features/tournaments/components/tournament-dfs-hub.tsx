@@ -1,13 +1,14 @@
 'use client'
 
-import type { TournamentField } from '@/features/tournaments/types'
+import type { TournamentField, TournamentSummary } from '@/features/tournaments/types'
 import type { DfsValueField } from '@/lib/dfs-value'
 import { CompactLeaderboard } from './compact-leaderboard'
 import { CompactDfsSummary } from './compact-dfs-summary'
 import { TournamentDfsLeaderboards } from './tournament-dfs-leaderboards'
+import { TopDkScorerCard } from './tournament-elevation/top-dk-scorer-card'
 
 interface TournamentDfsHubProps {
-  tournament: { id: string }
+  tournament: TournamentSummary
   field: TournamentField
   dfsField: DfsValueField | null
 }
@@ -33,6 +34,9 @@ export function TournamentDfsHub({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Top DFS Scorer Card */}
+      <TopDkScorerCard topDkScorer={tournament.topDkScorer} />
+
       {/* Morning Brief - implied through trending/value indicators */}
       {/* Trending (Top Ranked Players) */}
       <div>
