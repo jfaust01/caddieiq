@@ -64,7 +64,7 @@ export function TournamentScoreCell({
         </div>
 
         {/* Row 2: Relative-to-Par Value (larger, bold, color-coded) */}
-        <div className={cn('flex items-center justify-center text-xl font-bold tabular-nums', getToParClass(secondary))}>
+        <div className={cn('flex items-center justify-center text-lg font-bold tabular-nums', getToParClass(secondary))}>
           {formatToPar(secondary)}
         </div>
 
