@@ -28,18 +28,6 @@ export function NineHoleScorecard({
   totTotal,
   isDesktop = true,
 }: NineHoleScorecardProps) {
-  const formatToPar = (value: number) => {
-    if (value === 0) return 'E'
-    return (value > 0 ? '+' : '') + value
-  }
-
-  const getStatusColor = (value: number | null) => {
-    if (value === null) return 'text-white'
-    if (value < 0) return 'text-[#22C55E]'
-    if (value === 0) return 'text-white'
-    return 'text-[#EF4444]'
-  }
-
   const showTotals = label === 'BACK 9' && totTotal
 
   const cellClassMobile = 'px-1 py-1 text-[11px]'
@@ -167,35 +155,7 @@ export function NineHoleScorecard({
           )}
         </div>
 
-        {/* STATUS Row */}
-        <div
-          className="w-full grid border-b border-[#343944] hover:bg-[#0F1117] transition-colors"
-          style={{ gridTemplateColumns: isDesktop ? gridColsDesktop : gridColsTablet }}
-        >
-          <div className={`text-left font-semibold text-[#9EA5B1] min-w-0 ${isDesktop ? 'px-2 py-2 text-xs' : 'px-1 py-1 text-[10px]'}`}>
-            STATUS
-          </div>
-          {holes.map((hole) => (
-            <div
-              key={`status-${hole.holeNumber}`}
-              className={`font-mono font-semibold text-center min-w-0 tabular-nums ${getStatusColor(hole.toPar)} ${isDesktop ? 'px-1 py-2 text-sm' : 'px-0.5 py-1 text-xs'}`}
-            >
-              {hole.toPar !== null ? formatToPar(hole.toPar) : '—'}
-            </div>
-          ))}
-          <div
-            className={`font-mono font-semibold bg-[#1a1f26] text-center min-w-0 tabular-nums ${getStatusColor(total.toPar)} ${isDesktop ? 'px-1 py-2 text-sm' : 'px-0.5 py-1 text-xs'}`}
-          >
-            {formatToPar(total.toPar)}
-          </div>
-          {showTotals && (
-            <div
-              className={`font-mono font-semibold bg-[#1a1f26] text-center min-w-0 tabular-nums ${getStatusColor(totTotal.toPar)} ${isDesktop ? 'px-1 py-2 text-sm' : 'px-0.5 py-1 text-xs'}`}
-            >
-              {formatToPar(totTotal.toPar)}
-            </div>
-          )}
-        </div>
+
 
         {/* DK PTS Row */}
         <div

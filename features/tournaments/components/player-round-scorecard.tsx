@@ -106,18 +106,6 @@ function ScorecardGrid({
   inTotal,
   totTotal,
 }: ScorecardGridProps) {
-  const formatToPar = (value: number) => {
-    if (value === 0) return 'E'
-    return (value > 0 ? '+' : '') + value
-  }
-
-  const getStatusTextColor = (value: number | null) => {
-    if (value === null) return 'text-white'
-    if (value < 0) return 'text-[#22C55E]' // Green for under par
-    if (value === 0) return 'text-white'
-    return 'text-[#EF4444]' // Red for over par
-  }
-
   const getScoringBadgeType = (score: number | null, par: number | null) => {
     if (score === null || par === null) return null
     const diff = score - par
@@ -236,32 +224,7 @@ function ScorecardGrid({
         </div>
       </div>
 
-      {/* STATUS row */}
-      <div className="flex gap-0">
-        <div className="w-16 flex items-center justify-center text-lg font-medium text-[#9EA5B1] bg-[#1a1f26] border-b" style={{ borderColor: '#2a3038', height: '56px' }}>
-          STATUS
-        </div>
-        {holes.map((hole, i) => (
-          <div
-            key={`status-${hole.holeNumber}`}
-            className={`w-12 flex items-center justify-center text-lg font-semibold border-b ${getStatusTextColor(hole.toPar)} ${
-              i === 17 ? 'bg-[#0a0d11]' : 'bg-[#151922]'
-            }`}
-            style={{ borderColor: '#2a3038', height: '56px' }}
-          >
-            {hole.toPar !== null ? formatToPar(hole.toPar) : '—'}
-          </div>
-        ))}
-        <div className={`w-14 flex items-center justify-center text-lg font-semibold bg-[#1a1f26] border-b ${getStatusTextColor(outTotal.toPar)}`} style={{ borderColor: '#2a3038', height: '56px' }}>
-          {formatToPar(outTotal.toPar)}
-        </div>
-        <div className={`w-14 flex items-center justify-center text-lg font-semibold bg-[#1a1f26] border-b ${getStatusTextColor(inTotal.toPar)}`} style={{ borderColor: '#2a3038', height: '56px' }}>
-          {formatToPar(inTotal.toPar)}
-        </div>
-        <div className={`w-14 flex items-center justify-center text-lg font-semibold bg-[#1a1f26] border-b ${getStatusTextColor(totTotal.toPar)}`} style={{ borderColor: '#2a3038', height: '56px' }}>
-          {formatToPar(totTotal.toPar)}
-        </div>
-      </div>
+
 
       {/* DK PTS row */}
       <div className="flex gap-0">
