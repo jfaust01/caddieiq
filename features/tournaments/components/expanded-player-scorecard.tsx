@@ -10,6 +10,7 @@ import { ScorecardSidebar } from './scorecard-sidebar'
 import { ScorecardModalLayout } from './scorecard-modal-layout'
 import { NineHoleScorecard } from './nine-hole-scorecard'
 import { ScorecardLegend } from './scorecard-legend'
+import { ScorecardPlayerRoundStats } from './scorecard-player-round-stats'
 import { cn } from '@/lib/utils'
 
 interface ExpandedPlayerScorecardProps {
@@ -21,6 +22,30 @@ interface ExpandedPlayerScorecardProps {
   }>
   currentPlayerIndex?: number
   onPlayerChange?: (index: number) => void
+}
+
+function StatCard({
+  label,
+  value,
+  accent = 'default',
+}: {
+  label: string
+  value: string | number
+  accent?: 'default' | 'emerald'
+}) {
+  const isNegative = typeof value === 'number' && value < 0
+  const accentClass = accent === 'emerald' ? 'text-emerald-400' : isNegative ? 'text-emerald-400' : 'text-white'
+
+  return (
+    <div className="rounded-lg border border-white/[0.08] bg-gradient-to-br from-white/[0.05] to-white/[0.02] px-6 py-4 text-center min-w-fit">
+      <div className="text-xs font-semibold uppercase tracking-wider text-white/60 mb-2">
+        {label}
+      </div>
+      <div className={cn('text-2xl font-bold tabular-nums', accentClass)}>
+        {value}
+      </div>
+    </div>
+  )
 }
 
 export function ExpandedPlayerScorecard({
@@ -74,10 +99,11 @@ export function ExpandedPlayerScorecard({
   return (
     <div className="w-full min-w-0">
       {/* Desktop Layout */}
-      <div className="hidden lg:block w-full min-w-0">
-        <ScorecardModalLayout>
-          {/* Hero Header */}
-          <div className="mb-6">
+      <div className="hidden lg:block w-full min-w-0 space-y-8">
+        {/* TOP: Hero Header */}
+        <div className="flex items-start justify-between gap-8">
+          {/* Left: Player Info */}
+          <div className="flex-1 min-w-0">
             <ScorecardHeroHeader
               playerName={data.playerName}
               headshotUrl={data.headshotUrl ?? null}
@@ -88,29 +114,30 @@ export function ExpandedPlayerScorecard({
             />
           </div>
 
-          {/* Stats Cards */}
-          <div className="mb-6">
-            <ScorecardStatsCards
-              dkFantasyPoints={data.totalDkPoints}
-              dfsSalary={data.dfsSalary ?? null}
-              ownership={data.ownershipPercent ?? null}
-              averageScore={null}
-            />
+          {/* Right: Stats Cards (Score, Position, DK Points, Strokes) */}
+          <div className="flex-shrink-0 flex gap-4">
+            <StatCard label="Score" value={data.totalToPar ?? '—'} accent="emerald" />
+            <StatCard label="Position" value={data.currentPosition ? `${data.currentPosition}` : '—'} />
+            <StatCard label="DK Points" value={data.totalDkPoints ?? '—'} />
+            <StatCard label="Strokes" value={data.totalStrokes ?? '—'} />
           </div>
+        </div>
 
-          {/* Segmented Control */}
-          <div className="mb-6 flex justify-center">
-            <ScorecardSegmentedControl
-              rounds={rounds}
-              activeRound={`R${selectedRound}`}
-              onRoundChange={(round) => setSelectedRound(Number(round[1]))}
-            />
-          </div>
+        {/* Round Selector */}
+        <div className="flex justify-center">
+          <ScorecardSegmentedControl
+            rounds={rounds}
+            activeRound={`R${selectedRound}`}
+            onRoundChange={(round) => setSelectedRound(Number(round[1]))}
+          />
+        </div>
 
-          {/* Two-Column Layout: Scorecard + Sidebar */}
-          <div className="grid grid-cols-3 gap-6">
-            {/* Main Scorecard Column (75%) */}
-            <div className="col-span-2 space-y-4">
+        {/* BODY: Two-Column Layout (70% Scorecards + 30% Stats) */}
+        <div className="grid grid-cols-7 gap-8">
+          {/* Left Column: Scorecards (70%) */}
+          <div className="col-span-5 space-y-6">
+            {/* Front 9 and Back 9 Side-by-Side */}
+            <div className="grid grid-cols-2 gap-6">
               <NineHoleScorecard
                 label="FRONT 9"
                 holes={frontNine}
@@ -128,26 +155,20 @@ export function ExpandedPlayerScorecard({
               />
             </div>
 
-            {/* Sidebar Column (25%) */}
-            <div className="col-span-1">
-              <ScorecardSidebar
-                items={[
-                  { label: 'Course', value: data.courseName },
-                  { label: 'Par', value: coursePar },
-                  { label: 'Yardage', value: data.courseYardage?.toLocaleString() || null, unit: ' yds' },
-                  { label: 'Round', value: `Round ${selectedRound}` },
-                  { label: 'Front 9', value: outTotal.strokes, highlight: false },
-                  { label: 'Back 9', value: inTotal.strokes, highlight: false },
-                ]}
-              />
+            {/* Legend */}
+            <div className="pt-4 border-t border-white/[0.05]">
+              <ScorecardLegend isDesktop />
             </div>
           </div>
 
-          {/* Legend */}
-          <div className="mt-6 pt-6 border-t border-white/[0.05]">
-            <ScorecardLegend isDesktop />
+          {/* Right Column: Round Summary (30%) */}
+          <div className="col-span-2">
+            <ScorecardPlayerRoundStats
+              holes={allHoles}
+              courseHoles={data.courseHoles}
+            />
           </div>
-        </ScorecardModalLayout>
+        </div>
       </div>
 
       {/* Mobile Layout */}

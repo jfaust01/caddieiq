@@ -75,7 +75,7 @@ export function PlayerScorecardModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         className={cn(
-          "flex max-h-[calc(100vh-32px)] w-[min(1400px,calc(100vw-32px))] max-w-none flex-col overflow-hidden p-0 z-50",
+          "flex max-h-[92vh] w-[min(96vw,1700px)] max-w-none flex-col overflow-hidden p-0 z-50",
           "bg-black/20 backdrop-blur-xl border border-white/[0.06]",
           "md:rounded-3xl rounded-2xl",
           "shadow-[0_20px_64px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)]"
@@ -132,7 +132,7 @@ export function PlayerScorecardModal({
 
         {/* Modal Content with Premium Scrolling */}
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-white/[0.02] to-transparent">
-          <div className="p-4 sm:p-6 lg:p-8">
+          <div className="p-10 lg:p-10">
             <ScorecardErrorBoundaryV2 playerName={selectedPlayer.playerName}>
               <ScorecardLoader
                 playerId={selectedPlayer.playerId}
