@@ -318,9 +318,12 @@ function PlayerRowCells({
   return (
     <>
       {/* POS */}
-      <td className="px-4 align-middle">
+      <td className="px-3 align-middle">
         <div className="flex h-full items-center justify-center">
-          <span className="text-sm font-semibold tabular-nums text-foreground">
+          <span className={cn(
+            "text-sm font-semibold tabular-nums",
+            entrant.finalPosition === 1 ? "text-emerald-300" : "text-foreground"
+          )}>
             {positionDisplay}
           </span>
         </div>
@@ -331,20 +334,27 @@ function PlayerRowCells({
         className="px-3 align-middle"
         style={{ width: 'var(--player-column-width, 240px)', minWidth: 'var(--player-column-width, 240px)' }}
       >
-        <div className="flex items-center justify-start gap-3 min-w-0 h-full">
-          <Avatar className="h-10 w-10 flex-shrink-0">
-            <AvatarImage src={entrant.headshotUrl || ''} alt={entrant.playerName} />
-            <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
-            <span className="truncate text-sm font-semibold text-foreground">{entrant.playerName}</span>
-            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0" />}
+        <div className="flex items-center justify-start gap-2.5 min-w-0 h-full">
+          {entrant.headshotUrl ? (
+            <img
+              src={entrant.headshotUrl}
+              alt={entrant.playerName}
+              className="h-9 w-9 shrink-0 rounded-full border border-white/[0.08] object-cover"
+            />
+          ) : (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-xs font-semibold text-white">
+              {initials}
+            </div>
+          )}
+          <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
+            <span className="truncate text-sm font-semibold tracking-tight text-white">{entrant.playerName}</span>
+            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-[18px] shrink-0 rounded-[2px]" />}
           </div>
         </div>
       </td>
 
       {/* TOTAL */}
-      <td className="px-2 sm:px-3 align-middle w-[108px] min-w-[108px]">
+      <td className="px-2 sm:px-3 align-middle w-[92px] min-w-[92px] bg-white/[0.012] border-x border-white/[0.035]">
         <TournamentScoreCell 
           primary={entrant.totalStrokes ?? 'E'} 
           secondary={entrant.total ?? undefined}
@@ -353,7 +363,7 @@ function PlayerRowCells({
       </td>
 
       {/* R1 */}
-      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+      <td className="px-3 align-middle w-[82px] min-w-[82px]">
         <TournamentScoreCell 
           primary={entrant.round1 ?? '—'} 
           secondary={entrant.round1RelToPar ?? undefined}
@@ -362,7 +372,7 @@ function PlayerRowCells({
       </td>
 
       {/* R2 */}
-      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+      <td className="px-3 align-middle w-[82px] min-w-[82px]">
         <TournamentScoreCell 
           primary={entrant.round2 ?? '—'} 
           secondary={entrant.round2RelToPar ?? undefined}
@@ -371,7 +381,7 @@ function PlayerRowCells({
       </td>
 
       {/* R3 */}
-      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+      <td className="px-3 align-middle w-[82px] min-w-[82px]">
         <TournamentScoreCell 
           primary={entrant.round3 ?? '—'} 
           secondary={entrant.round3RelToPar ?? undefined}
@@ -380,7 +390,7 @@ function PlayerRowCells({
       </td>
 
       {/* R4 */}
-      <td className="px-3 align-middle w-[108px] min-w-[108px]">
+      <td className="px-3 align-middle w-[82px] min-w-[82px]">
         <TournamentScoreCell 
           primary={entrant.round4 ?? '—'} 
           secondary={entrant.round4RelToPar ?? undefined}
@@ -389,24 +399,24 @@ function PlayerRowCells({
       </td>
 
       {/* DFS */}
-      <td className="border-l border-border/40 px-4 align-middle">
+      <td className="border-l border-white/[0.055] px-4 align-middle bg-orange-500/[0.012] w-[126px] min-w-[126px]">
         <div className="flex flex-col items-center justify-center gap-1 h-full">
           <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
             <DraftKingsMark className="h-3 w-auto shrink-0" />
-            <span className="text-sm font-semibold tabular-nums text-foreground">
+            <span className="text-sm font-semibold tabular-nums text-white">
               {salaryDisplay}
             </span>
           </div>
-          <div className="whitespace-nowrap text-xs tabular-nums text-muted-foreground/70">
+          <div className="whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
             {formatDraftedPercent(entrant.ownershipPercent)}
           </div>
         </div>
       </td>
 
       {/* ODDS TO WIN */}
-      <td className="border-l border-border/40 px-3 align-middle">
+      <td className="border-l border-white/[0.045] px-3 align-middle w-[80px] min-w-[80px]">
         <div className="flex items-center justify-center h-full">
-          <span className="text-sm font-mono tabular-nums text-muted-foreground">
+          <span className="text-sm font-mono tabular-nums text-foreground">
             {oddsDisplay}
           </span>
         </div>
@@ -602,36 +612,52 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
         />
       ) : (
         <div className="w-full min-w-0 tournament-table-container" style={{ '--player-column-width': playerColumnWidth || '220px' } as React.CSSProperties}>
-          <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1">
-            <span>Scroll for more →</span>
-          </div>
-          <div
-            ref={scrollContainerRef}
-            className={cn('w-full min-w-0 overflow-x-auto border rounded-md select-none', styles.scrollContainer)}
-            style={{ userSelect: 'none' }}
-          >
-            <table className="w-full min-w-max text-sm border-collapse">
-            <thead className="sticky top-0 z-10 bg-background/95 backdrop-blur">
-              <tr className="border-b border-border">
-                <th className="px-2 py-2.5 text-right text-xs font-semibold uppercase tabular-nums text-muted-foreground/80">POS</th>
+          {/* Premium table wrapper */}
+          <div className="relative overflow-hidden rounded-[20px] border border-white/[0.09] bg-[#101419] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_12px_36px_rgba(0,0,0,0.20)]">
+            {/* Top-right glow */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-emerald-500/[0.04] blur-3xl"
+            />
+
+            {/* Top accent line */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/35 to-transparent"
+            />
+
+            {/* Table content */}
+            <div className="relative z-10">
+              <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1 px-6 pt-6">
+                <span>Scroll for more →</span>
+              </div>
+              <div
+                ref={scrollContainerRef}
+                className={cn('w-full min-w-0 overflow-x-auto select-none', styles.scrollContainer)}
+                style={{ userSelect: 'none' }}
+              >
+                <table className="w-full min-w-max text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-black/15 backdrop-blur-sm border-b border-white/[0.06]">
+              <tr>
+                <th className="px-2 h-12 text-right text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
                 <th 
-                  className="px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase"
+                  className="px-2 sm:px-3 h-12 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
                   style={{ width: 'var(--player-column-width, 240px)', minWidth: 'var(--player-column-width, 240px)' }}
                 >
                   PLAYER
                 </th>
-                <th className="px-2 sm:px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums">TOTAL</th>
-                <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums">R1</th>
-                <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums">R2</th>
-                <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums">R3</th>
-                <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums">R4</th>
-                <th className="border-l border-border/40 px-4 py-2.5 text-center text-xs font-semibold uppercase">
+                <th className="px-2 sm:px-3 h-12 text-center text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">TOTAL</th>
+                <th className="px-3 h-12 text-center text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R1</th>
+                <th className="px-3 h-12 text-center text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R2</th>
+                <th className="px-3 h-12 text-center text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R3</th>
+                <th className="px-3 h-12 text-center text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R4</th>
+                <th className="border-l border-white/[0.055] px-4 h-12 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   <div className="inline-flex items-center justify-center gap-1.5">
                     <DraftKingsMark className="h-3 w-auto" />
                     <span>DFS</span>
                   </div>
                 </th>
-                <th className="border-l border-border/40 px-3 py-2.5 text-center text-xs font-semibold uppercase tabular-nums text-muted-foreground/80">
+                <th className="border-l border-white/[0.055] px-3 h-12 text-center text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -661,15 +687,17 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                       }}
                       role="button"
                       tabIndex={0}
-                      className="cursor-pointer border-b border-border hover:bg-white/[0.025] transition-colors duration-150 h-[82px]"
+                      className="cursor-pointer h-[72px] border-b border-white/[0.055] bg-transparent transition-colors duration-150 hover:bg-white/[0.025]"
                     >
                       <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
                     </tr>
               ))}
             </tbody>
           </table>
+              </div>
+            </div>
           </div>
-          <div className="text-xs text-muted-foreground italic">
+          <div className="text-xs text-muted-foreground italic mt-2">
             Final DraftKings points are unavailable for this tournament.
           </div>
         </div>
