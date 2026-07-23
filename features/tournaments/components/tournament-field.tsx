@@ -198,7 +198,7 @@ function LeaderboardRow({
       </td>
 
       {/* TOTAL - Three-line score cell with tournament strokes, rel-to-par, and DK points */}
-      <td className="px-2 sm:px-3 py-0 text-center align-middle">
+      <td className="px-2 sm:px-3 py-0 h-full text-center align-middle">
         <TournamentScoreCell 
           primary={entrant.totalStrokes ?? 'E'} 
           secondary={entrant.total === 0 ? 'E' : entrant.total ? `${entrant.total > 0 ? '+' : ''}${entrant.total}` : undefined}
@@ -207,7 +207,7 @@ function LeaderboardRow({
       </td>
 
       {/* R1 - Three-line score cell */}
-      <td className="px-3 py-0 text-center align-middle">
+      <td className="px-3 py-0 h-full text-center align-middle">
         <TournamentScoreCell 
           primary={entrant.round1 ?? '—'} 
           secondary={entrant.round1RelToPar === 0 ? 'E' : entrant.round1RelToPar ? `${entrant.round1RelToPar > 0 ? '+' : ''}${entrant.round1RelToPar}` : undefined}
@@ -216,7 +216,7 @@ function LeaderboardRow({
       </td>
 
       {/* R2 - Three-line score cell */}
-      <td className="px-3 py-0 text-center align-middle">
+      <td className="px-3 py-0 h-full text-center align-middle">
         <TournamentScoreCell 
           primary={entrant.round2 ?? '—'} 
           secondary={entrant.round2RelToPar === 0 ? 'E' : entrant.round2RelToPar ? `${entrant.round2RelToPar > 0 ? '+' : ''}${entrant.round2RelToPar}` : undefined}
@@ -225,7 +225,7 @@ function LeaderboardRow({
       </td>
 
       {/* R3 - Three-line score cell */}
-      <td className="px-3 py-0 text-center align-middle">
+      <td className="px-3 py-0 h-full text-center align-middle">
         <TournamentScoreCell 
           primary={entrant.round3 ?? '—'} 
           secondary={entrant.round3RelToPar === 0 ? 'E' : entrant.round3RelToPar ? `${entrant.round3RelToPar > 0 ? '+' : ''}${entrant.round3RelToPar}` : undefined}
@@ -234,7 +234,7 @@ function LeaderboardRow({
       </td>
 
       {/* R4 - Three-line score cell */}
-      <td className="px-3 py-0 text-center align-middle">
+      <td className="px-3 py-0 h-full text-center align-middle">
         <TournamentScoreCell 
           primary={entrant.round4 ?? '—'} 
           secondary={entrant.round4RelToPar === 0 ? 'E' : entrant.round4RelToPar ? `${entrant.round4RelToPar > 0 ? '+' : ''}${entrant.round4RelToPar}` : undefined}
@@ -311,7 +311,7 @@ function PlayerRowCells({
       </td>
 
       {/* TOTAL column */}
-      <td className="px-2 sm:px-3 py-0 text-center align-middle">
+      <td className="px-2 sm:px-3 py-0 h-full text-center align-middle">
         <TournamentScoreCell 
           primary={entrant.totalStrokes ?? 'E'} 
           secondary={entrant.total === 0 ? 'E' : entrant.total ? `${entrant.total > 0 ? '+' : ''}${entrant.total}` : undefined}
@@ -320,7 +320,7 @@ function PlayerRowCells({
       </td>
 
       {/* R1 - Three-line score cell */}
-      <td className="px-3 py-0 text-center align-middle">
+      <td className="px-3 py-0 h-full text-center align-middle">
         <TournamentScoreCell 
           primary={entrant.round1 ?? '—'} 
           secondary={entrant.round1RelToPar === 0 ? 'E' : entrant.round1RelToPar ? `${entrant.round1RelToPar > 0 ? '+' : ''}${entrant.round1RelToPar}` : undefined}
@@ -329,7 +329,7 @@ function PlayerRowCells({
       </td>
 
       {/* R2 - Three-line score cell */}
-      <td className="px-3 py-0 text-center align-middle">
+      <td className="px-3 py-0 h-full text-center align-middle">
         <TournamentScoreCell 
           primary={entrant.round2 ?? '—'} 
           secondary={entrant.round2RelToPar === 0 ? 'E' : entrant.round2RelToPar ? `${entrant.round2RelToPar > 0 ? '+' : ''}${entrant.round2RelToPar}` : undefined}
@@ -338,7 +338,7 @@ function PlayerRowCells({
       </td>
 
       {/* R3 - Three-line score cell */}
-      <td className="px-3 py-0 text-center align-middle">
+      <td className="px-3 py-0 h-full text-center align-middle">
         <TournamentScoreCell 
           primary={entrant.round3 ?? '—'} 
           secondary={entrant.round3RelToPar === 0 ? 'E' : entrant.round3RelToPar ? `${entrant.round3RelToPar > 0 ? '+' : ''}${entrant.round3RelToPar}` : undefined}
@@ -347,7 +347,7 @@ function PlayerRowCells({
       </td>
 
       {/* R4 - Three-line score cell */}
-      <td className="px-3 py-0 text-center align-middle">
+      <td className="px-3 py-0 h-full text-center align-middle">
         <TournamentScoreCell 
           primary={entrant.round4 ?? '—'} 
           secondary={entrant.round4RelToPar === 0 ? 'E' : entrant.round4RelToPar ? `${entrant.round4RelToPar > 0 ? '+' : ''}${entrant.round4RelToPar}` : undefined}
