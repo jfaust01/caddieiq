@@ -53,7 +53,7 @@ export function ScorecardDesktopLayout({
     <div className="flex h-full min-h-0 flex-col gap-0">
       {/* Hero Header */}
       <div className="flex-shrink-0 border-b border-white/[0.07]">
-        <div className="grid items-center gap-8 lg:grid-cols-[minmax(420px,1.1fr)_minmax(680px,1.6fr)] pb-8 pt-6">
+        <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] pb-8 pt-6">
           {/* LEFT: Player Identity */}
           <div className="flex min-w-0 items-center gap-6">
             <Avatar className="h-32 w-32 shrink-0 border border-white/[0.10]">
@@ -94,11 +94,11 @@ export function ScorecardDesktopLayout({
           </div>
 
           {/* RIGHT: Summary Stat Cards */}
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-4 gap-2 min-w-0">
             {/* Total Score */}
-            <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-4 py-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-              <span className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">
-                Total Score
+            <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-3 py-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">
+                Score
               </span>
               <div className={cn('text-2xl font-semibold tabular-nums', getToParColor(data.totalToPar))}>
                 {formatToParDisplay(data.totalToPar)}
@@ -107,7 +107,7 @@ export function ScorecardDesktopLayout({
             </div>
 
             {/* Position */}
-            <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-4 py-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+            <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-3 py-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
               <span className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">
                 Position
               </span>
@@ -118,9 +118,9 @@ export function ScorecardDesktopLayout({
             </div>
 
             {/* DK Points */}
-            <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-4 py-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-              <span className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">
-                DK Points
+            <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-3 py-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">
+                DK Pts
               </span>
               <div className="text-2xl font-semibold text-orange-400 tabular-nums">
                 {data.totalDkPoints?.toFixed(1) ?? '—'}
@@ -129,7 +129,7 @@ export function ScorecardDesktopLayout({
             </div>
 
             {/* Total Strokes */}
-            <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-4 py-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+            <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] px-3 py-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
               <span className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1 truncate max-w-full">
                 Strokes
               </span>
