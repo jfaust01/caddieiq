@@ -68,11 +68,14 @@ export function PlayerScorecardModal({
     return null
   }
 
+  // Early return for testing modal visibility
+  if (!isOpen) return null
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         className={cn(
-          "flex max-h-[calc(100vh-48px)] w-[min(1280px,calc(100vw-48px))] max-w-none flex-col overflow-hidden p-0",
+          "flex max-h-[calc(100vh-48px)] w-[min(1280px,calc(100vw-48px))] max-w-none flex-col overflow-hidden p-0 z-50",
           "md:rounded-lg rounded-none"
         )}
         showCloseButton={false}
