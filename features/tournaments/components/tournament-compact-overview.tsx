@@ -12,6 +12,98 @@ interface TournamentCompactOverviewProps {
 }
 
 /**
+ * Normalize tournament completion status to handle various terminal states.
+ */
+function isTournamentCompleted(
+  status: string | null | undefined
+): boolean {
+  const normalized = status?.trim().toLowerCase()
+  return [
+    'completed',
+    'complete',
+    'final',
+    'finished',
+    'closed',
+  ].includes(normalized ?? '')
+}
+
+/**
+ * Extract numeric position from various position formats.
+ * Examples: 1 → 1, "1" → 1, "T1" → 1, "T5" → 5
+ */
+function getNumericPosition(
+  position: number | string | null | undefined
+): number | null {
+  if (typeof position === 'number' && Number.isFinite(position)) {
+    return position
+  }
+
+  if (typeof position === 'string') {
+    const match = position.trim().toUpperCase().match(/^T?(\d+)$/)
+    return match ? Number(match[1]) : null
+  }
+
+  return null
+}
+
+/**
+ * Get the tournament winner from authoritative completed leaderboard data.
+ * When tournament is completed and has a valid first-place entrant,
+ * return their details for the winner card.
+ */
+function getResolvedWinner(tournament: TournamentSummary, field: TournamentField) {
+  const isCompleted = isTournamentCompleted(tournament.status)
+
+  if (!isCompleted || field.size === 0 || field.entrants.length === 0) {
+    return tournament.tournamentWinner
+  }
+
+  // Prefer authoritative provider-supplied winner
+  if (tournament.tournamentWinner) {
+    return tournament.tournamentWinner
+  }
+
+  // Find first-place entrant from canonical leaderboard, excluding withdrawn/DQ players
+  const firstPlaceEntrant = field.entrants.find(
+    entrant =>
+      getNumericPosition(entrant.position) === 1 &&
+      !['WD', 'DQ', 'MC', 'MDF'].includes(
+        String(entrant.status ?? '').toUpperCase()
+      ) &&
+      !entrant.withdrawn
+  )
+
+  if (!firstPlaceEntrant) {
+    return null
+  }
+
+  // Log diagnostic info temporarily
+  console.log('[v0] TOURNAMENT WINNER DEBUG', {
+    rawStatus: tournament.status,
+    isCompleted,
+    authoritativeWinner: tournament.tournamentWinner,
+    firstLeaderboardEntry: field.entrants[0],
+    resolvedWinner: {
+      playerId: firstPlaceEntrant.playerId,
+      playerName: firstPlaceEntrant.playerName,
+      position: firstPlaceEntrant.position,
+      total: firstPlaceEntrant.total,
+      totalStrokes: firstPlaceEntrant.totalStrokes,
+    },
+  })
+
+  // Construct winner data from first-place entrant
+  return {
+    playerId: firstPlaceEntrant.playerId,
+    playerName: firstPlaceEntrant.playerName,
+    headshotUrl: firstPlaceEntrant.headshotUrl,
+    scoreToPar: firstPlaceEntrant.total,
+    dkFantasyPoints: firstPlaceEntrant.totalDkFantasyPoints,
+    dfsSalary: firstPlaceEntrant.dfsSalary,
+  }
+}
+
+/**
  * Tournament overview displaying event metadata and field information.
  */
 export function TournamentCompactOverview({
@@ -21,6 +113,7 @@ export function TournamentCompactOverview({
 }: TournamentCompactOverviewProps) {
   const tournamentId = tournament.id
   const hasField = field.size > 0
+  const resolvedWinner = getResolvedWinner(tournament, field)
 
   return (
     <div className="flex flex-col gap-6 min-w-0">
@@ -33,8 +126,8 @@ export function TournamentCompactOverview({
       {hasField && (
         <div className="border-t border-border pt-6">
           <TournamentWinnerCard
-            tournamentWinner={tournament.tournamentWinner}
-            isCompleted={tournament.status === 'COMPLETED'}
+            tournamentWinner={resolvedWinner}
+            isCompleted={isTournamentCompleted(tournament.status)}
           />
 
           {/* Footnote */}
