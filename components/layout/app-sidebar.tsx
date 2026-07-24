@@ -65,7 +65,7 @@ export function AppSidebar() {
             width={48}
             height={48}
             priority
-            className="h-12 w-12 shrink-0"
+            className="h-12 w-12 shrink-0 rounded-[10px]"
           />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <div className="text-base font-semibold tracking-tight text-white">
