@@ -1,7 +1,8 @@
 'use client'
 
 import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
-import { EventDetailsPills } from './event-details-pills'
+import type { WeatherIntelligence } from '@/lib/weather-intelligence'
+import { TournamentIntelligence } from './tournament-intelligence'
 import { TournamentField } from './tournament-field'
 import { TournamentWinnerCard } from './tournament-elevation/tournament-winner-card'
 
@@ -9,6 +10,7 @@ interface TournamentCompactOverviewProps {
   tournament: TournamentSummary
   field: TournamentField
   fieldReport?: { cutLine?: string; averageScore?: number } | null
+  weather?: WeatherIntelligence | null
 }
 
 /**
@@ -96,6 +98,7 @@ export function TournamentCompactOverview({
   tournament,
   field,
   fieldReport,
+  weather,
 }: TournamentCompactOverviewProps) {
   const tournamentId = tournament.id
   const hasField = field.size > 0
@@ -103,9 +106,13 @@ export function TournamentCompactOverview({
 
   return (
     <div className="flex flex-col gap-6 min-w-0">
-      {/* Event Details Pills */}
+      {/* Status-adaptive fantasy intelligence cards */}
       <div className="min-w-0">
-        <EventDetailsPills tournament={tournament} />
+        <TournamentIntelligence
+          tournament={tournament}
+          field={field}
+          weather={weather}
+        />
       </div>
 
       {/* Winner Card - displayed above Field section */}

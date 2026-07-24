@@ -110,7 +110,7 @@ export async function TournamentDetailView({ tournament }: TournamentDetailViewP
 
       {fieldReport ? <TournamentFieldBanner report={fieldReport} /> : null}
 
-      <TournamentIntelligence />
+      <TournamentIntelligence tournament={tournament} field={field} weather={weather} />
 
       {field.size > 0 ? <TournamentDfsLeaderboards field={dfsField} /> : null}
 

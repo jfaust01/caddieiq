@@ -95,6 +95,7 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
             tournament={tournament}
             field={field}
             fieldReport={fieldReport}
+            weather={weather}
           />
         }
         additionalTabs={[
