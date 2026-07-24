@@ -608,19 +608,18 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
         />
       ) : (
         <div className="w-full min-w-0 tournament-table-container" style={{ '--player-column-width': playerColumnWidth || '220px' } as React.CSSProperties}>
-          {/* Premium table wrapper */}
-          <div className="relative overflow-hidden rounded-[20px] border border-white/[0.09] bg-[#101419] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_12px_36px_rgba(0,0,0,0.20)]">
-            {/* Top-right glow */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-emerald-500/[0.04] blur-3xl"
-            />
-
-            {/* Top accent line */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/35 to-transparent"
-            />
+          {/* Premium table wrapper. NOTE: no overflow-hidden here so the
+              sticky table header can pin to the top of the page. Decorative
+              layers are clipped by an inner absolute layer instead. */}
+          <div className="relative rounded-[20px] border border-white/[0.09] bg-[#101419] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_12px_36px_rgba(0,0,0,0.20)]">
+            {/* Decorative clip layer (rounded) — keeps glow/accent inside the
+                card corners without creating a clipping context for the table */}
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[20px]">
+              {/* Top-right glow */}
+              <div className="absolute -right-24 -top-24 h-56 w-56 rounded-full bg-emerald-500/[0.04] blur-3xl" />
+              {/* Top accent line */}
+              <div className="absolute inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/35 to-transparent" />
+            </div>
 
             {/* Table content */}
             <div className="relative z-10">
@@ -629,7 +628,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               </div>
               <div
                 ref={scrollContainerRef}
-                className={cn('overflow-x-auto select-none', styles.scrollContainer)}
+                className={cn('overflow-x-auto sm:overflow-x-visible select-none', styles.scrollContainer)}
                 style={{ userSelect: 'none', maxWidth: '100%' }}
               >
                 <table className="w-max table-fixed border-collapse sm:w-full">
@@ -644,7 +643,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               <col className="w-[126px]" />
               <col className="w-[80px]" />
             </colgroup>
-            <thead className="sticky top-0 z-10 bg-[#101419] border-b border-white/[0.06]">
+            <thead className="sticky top-[95px] z-20 bg-[#101419] border-b border-white/[0.06]">
               <tr>
                 <th className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
                 <th 
