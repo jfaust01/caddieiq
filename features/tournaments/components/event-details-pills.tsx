@@ -1,12 +1,38 @@
 'use client'
 
+import {
+  Award,
+  CalendarDays,
+  CircleDollarSign,
+  Flag,
+  Gauge,
+  Globe,
+  Scissors,
+  Target,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react'
+
 import type { TournamentSummary } from '@/features/tournaments/types'
-import { formatPurse, formatDkTotal, textDisplay } from '@/features/tournaments/utils/format'
+import { formatPurse, formatDkTotal } from '@/features/tournaments/utils/format'
 import { DraftKingsMark } from './draftkings-mark'
 
 interface EventDetailsPill {
   label: string
   value: string
+}
+
+/** Premium icon per fact label; falls back to a neutral target mark. */
+const PILL_ICONS: Record<string, LucideIcon> = {
+  Tour: Trophy,
+  Season: CalendarDays,
+  Par: Flag,
+  Yardage: Gauge,
+  Purse: CircleDollarSign,
+  'Cut Rule': Scissors,
+  'Cut Line': Target,
+  'FedEx Points': Award,
+  'World Ranking Points': Globe,
 }
 
 /**
@@ -85,25 +111,57 @@ export function EventDetailsPills({ tournament }: { tournament: TournamentSummar
   }
 
   return (
-    <div className="flex flex-wrap gap-3">
-      {filteredPills.map((pill) => (
-        <div
-          key={pill.label}
-          className="flex flex-col gap-1 rounded-md border border-border bg-muted/40 px-3 py-2.5"
-        >
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-            {pill.label === 'DKTotal' ? (
-              <>
-                <DraftKingsMark className="h-3 w-auto" />
-                <span>TOTAL</span>
-              </>
-            ) : (
-              pill.label
-            )}
-          </span>
-          <span className="text-sm font-semibold text-foreground">{pill.value}</span>
-        </div>
-      ))}
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 lg:gap-6">
+      {filteredPills.map((pill) => {
+        const isDkTotal = pill.label === 'DKTotal'
+        const Icon = PILL_ICONS[pill.label] ?? Target
+
+        return (
+          <div
+            key={pill.label}
+            className="group relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[#0D1318] p-7 shadow-[0_12px_40px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.04)] transition-all duration-[250ms] hover:-translate-y-0.5 hover:border-emerald-400/25 hover:shadow-[0_18px_50px_rgba(0,0,0,0.35),0_0_40px_rgba(16,185,129,0.08)]"
+          >
+            {/* Top accent line */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"
+            />
+            {/* Top-right emerald glow */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-emerald-500/[0.06] blur-3xl transition-all duration-[250ms] group-hover:bg-emerald-500/[0.10]"
+            />
+            {/* Faint radial lighting */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_85%_-10%,rgba(16,185,129,0.05),transparent_60%)]"
+            />
+
+            {/* Content */}
+            <div className="relative flex flex-col items-center gap-4 text-center">
+              {/* Icon tile */}
+              <div className="flex size-14 items-center justify-center rounded-[18px] border border-emerald-400/30 bg-emerald-400/[0.06] shadow-[0_0_20px_rgba(16,185,129,0.12),inset_0_1px_0_rgba(255,255,255,0.05)]">
+                {isDkTotal ? (
+                  <DraftKingsMark className="h-6 w-auto" />
+                ) : (
+                  <Icon className="size-6 text-emerald-400" aria-hidden />
+                )}
+              </div>
+
+              {/* Label */}
+              <span className="text-[13px] font-bold uppercase tracking-[0.12em] text-emerald-400">
+                {isDkTotal ? 'DK Total' : pill.label}
+              </span>
+
+              {/* Divider */}
+              <div aria-hidden="true" className="h-px w-full bg-white/[0.06]" />
+
+              {/* Value */}
+              <span className="text-2xl font-bold text-white">{pill.value}</span>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
