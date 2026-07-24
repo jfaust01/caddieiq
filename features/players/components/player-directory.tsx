@@ -13,6 +13,8 @@ import { PlayerSearch } from '@/features/players/components/player-search'
 import { PlayerSkeleton } from '@/features/players/components/player-skeleton'
 import { ViewToggle } from '@/features/players/components/view-toggle'
 import { PlayersFantasyTable } from '@/features/players/components/players-fantasy-table/players-fantasy-table'
+import { PlayersTableToolbar } from '@/features/players/components/players-fantasy-table/players-table-toolbar'
+import { PlayersTableFooter } from '@/features/players/components/players-fantasy-table/players-table-footer'
 import { PLAYERS_PAGE_SIZE, usePlayers } from '@/features/players/hooks/use-players'
 
 function ResultSummary({
@@ -112,13 +114,32 @@ export function PlayerDirectory() {
           ))}
         </div>
       ) : view === 'table' ? (
-        <PlayersFantasyTable
-          players={result.items}
-          onPlayerClick={(playerId) => {
-            // Navigate to player detail page
-            window.location.href = `/players/${playerId}`
-          }}
-        />
+        <div className="flex flex-col gap-4 border rounded-xl bg-[#0D1117] overflow-hidden" style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}>
+          <div className="px-4 pt-4">
+            <PlayersTableToolbar
+              searchPlaceholder="Search players..."
+              onSearch={setSearch}
+            />
+          </div>
+          <PlayersFantasyTable
+            players={result.items}
+            onPlayerClick={(playerId) => {
+              window.location.href = `/players/${playerId}`
+            }}
+            className="border-0 rounded-none shadow-none"
+          />
+          <PlayersTableFooter
+            currentPage={result.page}
+            totalPages={result.totalPages}
+            pageSize={PLAYERS_PAGE_SIZE}
+            totalItems={result.total}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              // Update page size (implement in hook if needed)
+              setPage(1)
+            }}
+          />
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
           {result.items.map((player) => (

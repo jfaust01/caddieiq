@@ -15,8 +15,8 @@ interface PlayersFantasyTableProps {
 
 /**
  * Fantasy table displaying players with position, name, flag, and headshot.
+ * Redesigned UI to match reference design with proper layout, spacing, and density.
  * Only shows columns with real data available (never fabricates metrics).
- * Rows are clickable, with proper keyboard navigation support.
  */
 export function PlayersFantasyTable({
   players,
@@ -35,25 +35,29 @@ export function PlayersFantasyTable({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-2xl border',
-        'bg-[#0D1117] shadow-lg',
-        'before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-emerald-400/20 before:to-transparent before:pointer-events-none',
+        'relative overflow-hidden rounded-xl border',
+        'bg-[#0D1117] shadow-sm',
         className,
       )}
       style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}
     >
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
+        <table className="w-full table-fixed border-collapse">
+          <colgroup>
+            <col className="w-12" />
+            <col className="flex-1" />
+          </colgroup>
+
           {/* Header */}
           <thead>
             <tr
-              className="h-12 border-b bg-[#101619]"
+              className="sticky top-0 z-40 h-11 border-b bg-[#101619]"
               style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}
             >
-              <th className="w-12 px-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground/80">
+              <th className="px-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 border-r" style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}>
                 POS
               </th>
-              <th className="flex-1 px-4 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground/80 border-r" style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}>
+              <th className="px-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
                 PLAYER
               </th>
             </tr>
@@ -64,7 +68,7 @@ export function PlayersFantasyTable({
             {players.map((player, idx) => (
               <tr
                 key={player.id}
-                className="h-16 border-b bg-[#0D1117] transition-colors hover:bg-[#0F1419] cursor-pointer group"
+                className="h-14 border-b bg-[#0D1117] transition-colors hover:bg-[#0F1419] cursor-pointer group"
                 style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}
                 onClick={() => onPlayerClick?.(player.id)}
                 role="button"
@@ -76,15 +80,15 @@ export function PlayersFantasyTable({
                 }}
               >
                 {/* Position */}
-                <td className="w-12 px-3 text-center text-sm font-medium text-foreground border-r" style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}>
+                <td className="px-3 text-center text-sm font-medium text-foreground border-r" style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}>
                   {idx + 1}
                 </td>
 
                 {/* Player cell: headshot, name, flag */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-2">
                   <div className="flex items-center gap-3 min-w-0">
-                    <PlayerHeadshot player={player} className="h-10 w-10 shrink-0 rounded-full" />
-                    <div className="flex items-center gap-2 min-w-0">
+                    <PlayerHeadshot player={player} className="h-9 w-9 shrink-0 rounded-full" />
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <Link
                         href={`/players/${player.id}`}
                         className="truncate text-sm font-medium text-foreground hover:underline focus-visible:underline outline-none"
@@ -93,7 +97,7 @@ export function PlayersFantasyTable({
                         {player.fullName}
                       </Link>
                       {player.nationality && (
-                        <CountryFlag nationality={player.nationality} />
+                        <CountryFlag nationality={player.nationality} className="shrink-0" />
                       )}
                     </div>
                   </div>

@@ -44,20 +44,21 @@ export function PlayersTableFooter({
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-4 px-4 py-3 h-16',
-        'border-t',
+        'flex items-center justify-between gap-4 px-4 py-3',
+        'border-t bg-[#0D1117]',
+        'text-xs text-muted-foreground/80',
         className,
       )}
       style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}
     >
       {/* Left: Rows per page */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Rows per page:</span>
+        <span className="text-xs text-muted-foreground/70">Rows per page:</span>
         <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-          <SelectTrigger className="w-16 h-8 text-xs">
+          <SelectTrigger className="w-14 h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-[#0D1117]">
             <SelectItem value="10">10</SelectItem>
             <SelectItem value="25">25</SelectItem>
             <SelectItem value="50">50</SelectItem>
@@ -67,16 +68,14 @@ export function PlayersTableFooter({
       </div>
 
       {/* Center: Page info */}
-      <span className="text-xs text-muted-foreground">
-        Showing <span className="font-medium">{start}</span>–
-        <span className="font-medium">{end}</span> of{' '}
-        <span className="font-medium">{totalItems}</span>
+      <span className="text-xs text-muted-foreground/80">
+        {start}–{end} of {totalItems}
       </span>
 
       {/* Right: Navigation */}
       <div className="flex items-center gap-1">
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
@@ -85,11 +84,11 @@ export function PlayersTableFooter({
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-xs text-muted-foreground px-2">
+        <span className="text-xs text-muted-foreground/80 px-2">
           {currentPage} / {totalPages}
         </span>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
