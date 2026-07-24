@@ -1,6 +1,6 @@
 'use client'
 
-import type React from 'react'
+import React from 'react'
 
 import { useDragScroll } from '@/features/tournaments/hooks/use-drag-scroll'
 import { usePlayerColumnWidth } from '@/features/tournaments/hooks/use-player-column-width'
@@ -360,6 +360,16 @@ export function FantasyPlayerTable({
   const scrollContainerRef = useDragScroll({ dragThreshold: 5 })
   const playerColumnWidth = usePlayerColumnWidth(allEntrants, '.tournament-table-container')
   const positionCountMap = buildPositionCountMap(allEntrants)
+  
+  // Track whether the table has been scrolled horizontally to hide the scroll hint.
+  const [hasScrolled, setHasScrolled] = React.useState(false)
+  
+  const handleTableScroll = React.useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget
+    if (target.scrollLeft > 0 && !hasScrolled) {
+      setHasScrolled(true)
+    }
+  }, [hasScrolled])
 
   return (
     <div
@@ -375,11 +385,15 @@ export function FantasyPlayerTable({
 
         {/* Table content */}
         <div className="relative z-10">
-          <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1 px-6 pt-6">
-            <span>Scroll for more →</span>
-          </div>
+          {/* Mobile scroll hint — hidden after first scroll */}
+          {!hasScrolled && (
+            <div className="sm:hidden text-xs text-muted-foreground mb-2 flex items-center gap-1 px-6 pt-6 transition-opacity duration-300">
+              <span>Scroll for more →</span>
+            </div>
+          )}
           <div
             ref={scrollContainerRef}
+            onScroll={handleTableScroll}
             className={cn('overflow-x-auto sm:overflow-x-visible select-none', styles.scrollContainer)}
             style={{ userSelect: 'none', maxWidth: '100%' }}
           >
