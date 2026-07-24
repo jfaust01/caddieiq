@@ -403,7 +403,7 @@ export function FantasyPlayerTable({
                   <col key={col.id} className={col.colClassName} />
                 ))}
               </colgroup>
-              <thead className={cn('sticky top-0 z-30 bg-[#0D1117]/80 backdrop-blur-md border-b border-white/[0.06]',
+              <thead className={cn('sticky top-[94px] z-30 bg-[#0D1117]/80 backdrop-blur-md border-b border-white/[0.06]',
                 'before:content-[\'\'] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:pointer-events-none',
                 phase === 'scheduled' ? 'before:bg-gradient-to-r before:from-transparent before:via-emerald-400/50 before:to-transparent' : 
                 phase === 'live' ? 'before:bg-gradient-to-r before:from-transparent before:via-amber-400/50 before:to-transparent' : 
