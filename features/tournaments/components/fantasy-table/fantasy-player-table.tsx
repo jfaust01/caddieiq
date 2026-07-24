@@ -113,17 +113,15 @@ export function FantasyPlayerTable({
 
           {/* Table scroll area — sticky header needs to be here */}
           <FantasyTableScrollArea hasScrolled={hasScrolled} onScroll={handleTableScroll}>
-            <div ref={scrollContainerRef} className={cn('overflow-x-auto sm:overflow-x-visible select-none', styles.scrollContainer)} style={{ userSelect: 'none', maxWidth: '100%' }}>
-              <table className="w-max table-fixed border-collapse sm:w-full">
-                <colgroup>
-                  {columns.map((col) => (
-                    <col key={col.id} className={col.colClassName} />
-                  ))}
-                </colgroup>
-                <FantasyTableHeader columns={columns} fieldSize={fieldSize} phase={phase} />
-                <FantasyTableBody entrants={entrants} phase={phase} dfsByPlayer={dfsByPlayer} positionCountMap={positionCountMap} onRowClick={onRowClick} />
-              </table>
-            </div>
+            <table ref={scrollContainerRef} className="w-max table-fixed border-collapse sm:w-full">
+              <colgroup>
+                {columns.map((col) => (
+                  <col key={col.id} className={col.colClassName} />
+                ))}
+              </colgroup>
+              <FantasyTableHeader columns={columns} fieldSize={fieldSize} phase={phase} />
+              <FantasyTableBody entrants={entrants} phase={phase} dfsByPlayer={dfsByPlayer} positionCountMap={positionCountMap} onRowClick={onRowClick} />
+            </table>
           </FantasyTableScrollArea>
 
           {/* Footer separator */}
