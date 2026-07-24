@@ -33,8 +33,8 @@ export function ScoreLiveRowCells({
   return (
     <>
       {/* POS */}
-      <td className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 align-middle text-center">
-        <span className="text-sm font-semibold tabular-nums text-foreground">{positionDisplay}</span>
+      <td className="w-[54px] sm:w-[64px] min-w-[54px] sm:min-w-[64px] px-1 sm:px-2 align-middle text-center border-r" style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}>
+        <span className="text-sm font-medium tabular-nums text-white">{positionDisplay}</span>
       </td>
 
       {/* PLAYER */}

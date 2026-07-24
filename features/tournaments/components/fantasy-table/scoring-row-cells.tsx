@@ -40,8 +40,8 @@ export function ScoringRowCells({
   return (
     <>
       {/* POS */}
-      <td className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 align-middle text-center">
-        <span className={cn('text-sm font-semibold tabular-nums', isWinner ? 'text-emerald-300' : 'text-foreground')}>
+      <td className="w-[54px] sm:w-[64px] min-w-[54px] sm:min-w-[64px] px-1 sm:px-2 align-middle text-center border-r" style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}>
+        <span className={cn('text-sm font-medium tabular-nums', isWinner ? 'text-emerald-300' : 'text-white')}>
           {positionDisplay}
         </span>
       </td>

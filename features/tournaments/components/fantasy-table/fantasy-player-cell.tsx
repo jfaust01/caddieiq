@@ -17,26 +17,26 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
     .slice(0, 2)
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       {entrant.headshotUrl ? (
         <img
           src={entrant.headshotUrl || '/placeholder.svg'}
           alt={entrant.playerName}
-          className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-full border border-white/[0.08] object-cover"
+          className="h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] shrink-0 rounded-full border border-white/[0.12] object-cover"
         />
       ) : (
-        <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-[9px] sm:text-xs font-semibold text-white">
+        <div className="flex h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] shrink-0 items-center justify-center rounded-full border border-white/[0.12] bg-[#1a1f26] text-[10px] sm:text-xs font-medium text-muted-foreground/70">
           {initials}
         </div>
       )}
-      <div className="flex min-w-0 items-center gap-1">
-        <span className="min-w-0 truncate text-xs sm:text-sm font-semibold text-foreground">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="min-w-0 truncate text-sm font-medium text-foreground">
           {entrant.playerName}
         </span>
         {entrant.countryCode && (
           <PlayerFlag
             countryCode={entrant.countryCode}
-            className="h-3.5 sm:h-5 w-auto shrink-0 rounded-[2px]"
+            className="h-[16px] sm:h-[18px] w-auto shrink-0 rounded-[2px]"
           />
         )}
       </div>

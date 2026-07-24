@@ -31,6 +31,13 @@ export function FantasyPlayerRow({
 }: FantasyPlayerRowProps) {
   const isScheduled = phase === 'scheduled'
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onRowClick(entrant.playerId)
+    }
+  }
+
   return (
     <tr
       onClick={(event) => {
@@ -41,10 +48,14 @@ export function FantasyPlayerRow({
         if (interactiveElement) return
         onRowClick(entrant.playerId)
       }}
+      onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
-      className="h-[68px] border-b border-white/[0.045] bg-transparent transition-colors duration-100 hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/[0.2]"
-      style={{ cursor: 'pointer' }}
+      className="h-[68px] border-b transition-colors duration-150 bg-[#0D1117] hover:bg-[#0F1419] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400/50"
+      style={{ 
+        cursor: 'pointer',
+        borderColor: 'rgba(130, 155, 168, 0.12)',
+      }}
     >
       {isScheduled ? (
         <FantasyRowCells entrant={entrant} dfsResult={dfsResult} rank={index + 1} />
