@@ -25,16 +25,29 @@ export function FantasyLiveEnhancedRowCells({
   const oddsDisplay = formatMissing(entrant.oddsToWin)
   
   // Analytics scores (0-100) - render with FantasyMetricCell
-  const aiRating = entrant.rankingScore ?? null // Overall rating proxy
-  const formScore = entrant.formScore ?? null // Recent form
+  const aiRating = entrant.rankingScore ?? null // Overall rating (CaddieIQ ranking score)
+  const formScore = entrant.formScore ?? null // Recent form trend
   const fantasyScore = entrant.fantasyScore ?? null // Fantasy production / value
   const ownership = entrant.ownershipPercent ?? null // Ownership %
   
-  // Placeholder metrics (would be populated with real data in Phase 2)
-  const courseFit = null // Would come from course intelligence
-  const leverage = null // Would be calculated from ownership patterns
-  const projectedPts = null // Would be projected from form
-  const ceiling = null // Would be estimated from rankings
+  // Derived metrics (Phase 2 calculations)
+  // Course Fit: estimated from ranking vs field (future: would use actual course intelligence)
+  const courseFit = entrant.rankingScore ? Math.max(20, Math.min(80, entrant.rankingScore + 10)) : null
+  
+  // Leverage: inverse of ownership (low owned = high leverage)
+  const leverage = ownership != null ? Math.max(0, 100 - ownership) : null
+  
+  // Projected Points: estimated from form score and fantasy production
+  const projectedPts = 
+    formScore != null && fantasyScore != null
+      ? Math.round((formScore * 0.6 + fantasyScore * 0.4) / 10)
+      : null
+  
+  // Ceiling: estimated from ranking (higher rank = higher ceiling)
+  const ceiling = 
+    aiRating != null
+      ? Math.round((aiRating / 100) * 250 + 50) // Scale to realistic ceiling range
+      : null
 
   return (
     <>
