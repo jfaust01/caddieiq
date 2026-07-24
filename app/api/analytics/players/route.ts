@@ -13,7 +13,8 @@ export async function GET(request: Request) {
     const tournament = await prisma.tournament.findUnique({
       where: { id: tournamentId },
       include: {
-        matchScores: { take: 100 },
+        // Load all match scores so every player in the field is represented
+        matchScores: true,
         dfsContests: { take: 10 },
         weatherSnapshots: { take: 5 },
         oddsQuotes: { take: 50 },
@@ -27,9 +28,9 @@ export async function GET(request: Request) {
     // Get all players in tournament
     const playerIds = [...new Set(tournament.matchScores?.map((m) => m.player_id) || [])]
 
+    // Return all players in the field (no cap)
     const players = await prisma.player.findMany({
       where: { id: { in: playerIds } },
-      take: 50,
     })
 
     // Build analytics for each player
