@@ -226,14 +226,58 @@ const liveColumns: ColumnDescriptor[] = [
   oddsScoringColumn,
 ]
 
+/**
+ * Completed (finished) columns for fantasy recap and analysis.
+ * Mobile priority: Position, Player, Total DK Points, Final Score visible first.
+ * Salary, Value, Ownership, Result, Odds available via horizontal scroll.
+ */
+const totalDkColumn: ColumnDescriptor = {
+  id: 'totalDk',
+  label: 'Total DK',
+  headerKind: 'dk',
+  tooltip: 'Final fantasy points earned in this tournament',
+  colClassName: 'w-[120px]',
+  thClassName: `w-[120px] min-w-[120px] max-w-[120px] border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+const finalScoreColumn: ColumnDescriptor = {
+  id: 'score',
+  label: 'Score',
+  tooltip: 'Final tournament score relative to par',
+  colClassName: 'w-[92px]',
+  thClassName: `w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 ${TH_CENTER_NUM}`,
+}
+const salaryCompletedColumn: ColumnDescriptor = {
+  id: 'salary',
+  label: 'Salary',
+  headerKind: 'dk',
+  colClassName: 'w-[110px]',
+  thClassName: `w-[110px] min-w-[110px] max-w-[110px] border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+}
+const valueColumn: ColumnDescriptor = {
+  id: 'value',
+  label: 'PTS/$1K',
+  tooltip: 'Fantasy points per $1,000 of salary (value efficiency)',
+  colClassName: 'w-[96px]',
+  thClassName: `w-[96px] min-w-[96px] max-w-[96px] border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
+}
+const ownershipCompletedColumn: ColumnDescriptor = {
+  id: 'ownership',
+  label: 'Owned %',
+  tooltip: 'DFS ownership percentage',
+  colClassName: 'w-[92px]',
+  thClassName: `w-[92px] min-w-[92px] max-w-[92px] border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
+}
+
 const completedColumns: ColumnDescriptor[] = [
   posColumn,
   scoringPlayerColumn,
-  totalColumn,
-  ...roundColumns,
-  dfsColumn,
-  oddsScoringColumn,
+  totalDkColumn,
+  finalScoreColumn,
+  salaryCompletedColumn,
+  valueColumn,
+  ownershipCompletedColumn,
   resultColumn,
+  oddsScoringColumn,
 ]
 
 // ---------------------------------------------------------------------------

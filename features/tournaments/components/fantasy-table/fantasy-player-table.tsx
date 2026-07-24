@@ -17,11 +17,11 @@ import { FantasyPlayerCell } from './fantasy-player-cell'
 import { FantasyMetricCell } from './fantasy-metric-cell'
 import { MetricEmptyState } from './metric-empty-state'
 import {
-  TIER_BADGE_CLASS,
-  courseFitScore,
-  finishResult,
-  formatDraftedPercent,
   formatMissing,
+  formatDraftedPercent,
+  finishResult,
+  calculateFinalValue,
+  courseFitScore,
 } from './helpers'
 import styles from '../tournament-field.module.css'
 
@@ -206,7 +206,10 @@ function ScoreLiveRowCells({
 }
 
 /**
- * Scoring (completed) row cells: pos · player · total · R1–R4 · DFS · odds · result.
+ * Completed (finished) row cells: pos · player · total DK · score · salary ·
+ * value (PTS/$1K) · ownership % · result · odds. Recap table for analyzing
+ * final tournament and fantasy results. Mobile priority: Position, Player,
+ * Total DK, Score visible first.
  */
 function ScoringRowCells({
   entrant,
@@ -218,6 +221,8 @@ function ScoringRowCells({
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap ?? new Map())
   const salaryDisplay = formatMissing(entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null)
   const oddsDisplay = formatMissing(entrant.oddsToWin)
+  const ownershipDisplay = formatDraftedPercent(entrant.ownershipPercent)
+  const finalValue = calculateFinalValue(entrant.totalDkFantasyPoints, entrant.dfsSalary)
 
   const isTie = entrant.position != null && (positionCountMap?.get(entrant.position) ?? 0) > 1
   const result = finishResult(entrant, isTie)
@@ -237,59 +242,62 @@ function ScoringRowCells({
         <FantasyPlayerCell entrant={entrant} />
       </td>
 
-      {/* TOTAL */}
-      <td className="w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 align-middle bg-white/[0.012] border-x border-white/[0.035]">
-        <TournamentScoreCell
-          primary={entrant.totalStrokes ?? 'E'}
-          secondary={entrant.total ?? undefined}
-          dkPoints={entrant.dkFantasyPoints}
-        />
-      </td>
-
-
-
-      {/* R1 */}
-      <td className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 align-middle">
-        <TournamentScoreCell primary={entrant.round1 ?? '—'} secondary={entrant.round1RelToPar ?? undefined} dkPoints={entrant.round1DkPoints} />
-      </td>
-
-      {/* R2 */}
-      <td className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 align-middle">
-        <TournamentScoreCell primary={entrant.round2 ?? '—'} secondary={entrant.round2RelToPar ?? undefined} dkPoints={entrant.round2DkPoints} />
-      </td>
-
-      {/* R3 */}
-      <td className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 align-middle">
-        <TournamentScoreCell primary={entrant.round3 ?? '—'} secondary={entrant.round3RelToPar ?? undefined} dkPoints={entrant.round3DkPoints} />
-      </td>
-
-      {/* R4 */}
-      <td className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 align-middle">
-        <TournamentScoreCell primary={entrant.round4 ?? '—'} secondary={entrant.round4RelToPar ?? undefined} dkPoints={entrant.round4DkPoints} />
-      </td>
-
-      {/* DFS */}
-      <td className="w-[126px] min-w-[126px] max-w-[126px] border-l border-white/[0.055] px-2 sm:px-4 align-middle bg-orange-500/[0.012]">
-        <div className="flex flex-col items-center justify-center gap-1 h-full">
-          <div className="inline-flex items-center gap-1 whitespace-nowrap">
-            <DraftKingsMark className="h-3 w-auto shrink-0" />
-            <span className="text-sm font-semibold tabular-nums text-white">{salaryDisplay}</span>
-          </div>
-          <div className="whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
-            {formatDraftedPercent(entrant.ownershipPercent)}
-          </div>
+      {/* TOTAL DK */}
+      <td className="w-[120px] min-w-[120px] max-w-[120px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center">
+          {entrant.totalDkFantasyPoints == null ? (
+            <MetricEmptyState />
+          ) : (
+            <span className="text-sm font-semibold tabular-nums text-white">{entrant.totalDkFantasyPoints}</span>
+          )}
         </div>
       </td>
 
-      {/* ODDS TO WIN */}
-      <td className="w-[80px] min-w-[80px] max-w-[80px] border-l border-white/[0.045] px-1 sm:px-3 align-middle">
-        <div className="flex items-center justify-center h-full">
-          <span className="text-sm font-mono tabular-nums text-foreground">{oddsDisplay}</span>
+      {/* FINAL SCORE */}
+      <td className="w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 align-middle bg-white/[0.012]">
+        <div className="flex h-full items-center justify-center">
+          <span className="text-sm font-semibold tabular-nums text-foreground">
+            {entrant.totalStrokes ? `${entrant.totalStrokes}` : '—'} {entrant.total !== undefined && entrant.total !== null ? `(${entrant.total > 0 ? '+' : ''}${entrant.total})` : ''}
+          </span>
+        </div>
+      </td>
+
+      {/* SALARY */}
+      <td className="w-[110px] min-w-[110px] max-w-[110px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center gap-1 whitespace-nowrap">
+          {entrant.dfsSalary ? (
+            <>
+              <DraftKingsMark className="h-3 w-auto shrink-0" />
+              <span className="text-sm font-semibold tabular-nums text-white">{salaryDisplay}</span>
+            </>
+          ) : (
+            <MetricEmptyState />
+          )}
+        </div>
+      </td>
+
+      {/* VALUE (PTS/$1K) */}
+      <td className="w-[96px] min-w-[96px] max-w-[96px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
+        <div className="flex h-full items-center justify-center">
+          {finalValue == null ? (
+            <MetricEmptyState />
+          ) : (
+            <span className="text-sm font-semibold tabular-nums text-sky-300">{finalValue}</span>
+          )}
+        </div>
+      </td>
+
+      {/* OWNERSHIP % */}
+      <td className="w-[92px] min-w-[92px] max-w-[92px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <span className="text-sm font-semibold tabular-nums text-muted-foreground">
+            {entrant.ownershipPercent == null ? '—' : `${Math.round(entrant.ownershipPercent)}%`}
+          </span>
         </div>
       </td>
 
       {/* RESULT */}
-      <td className="w-[88px] min-w-[88px] max-w-[88px] border-l border-white/[0.045] px-1 sm:px-3 align-middle">
+      <td className="w-[88px] min-w-[88px] max-w-[88px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <div className="flex items-center justify-center h-full">
           <span
             className={cn(
@@ -303,6 +311,13 @@ function ScoringRowCells({
           >
             {result}
           </span>
+        </div>
+      </td>
+
+      {/* ODDS */}
+      <td className="w-[80px] min-w-[80px] max-w-[80px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+        <div className="flex items-center justify-center h-full">
+          <span className="text-sm font-mono tabular-nums text-foreground">{oddsDisplay}</span>
         </div>
       </td>
     </>

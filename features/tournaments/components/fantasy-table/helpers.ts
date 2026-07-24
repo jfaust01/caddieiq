@@ -59,3 +59,14 @@ export function courseFitScore(result: DfsValueResult | undefined): number | nul
   const fit = result.contributions.find((c) => c.key === 'courseFit')
   return fit && fit.status === 'scored' && fit.score != null ? Math.round(fit.score) : null
 }
+
+/**
+ * Calculate final value as DK points per $1,000 of salary.
+ * Only calculated when both authoritative DK points and salary are available.
+ * Returns null if either value is missing or zero.
+ */
+export function calculateFinalValue(dkPoints: number | null | undefined, salary: number | null | undefined): number | null {
+  if (dkPoints == null || salary == null || salary === 0) return null
+  if (!Number.isFinite(dkPoints) || !Number.isFinite(salary)) return null
+  return Math.round((dkPoints / salary) * 1000 * 100) / 100
+}
