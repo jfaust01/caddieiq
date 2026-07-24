@@ -136,7 +136,7 @@ function ScoringRowCells({
   positionCountMap?: Map<number, number>
   phase: TablePhase
 }) {
-  const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
+  const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap ?? new Map())
   const salaryDisplay = formatMissing(entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null)
   const oddsDisplay = formatMissing(entrant.oddsToWin)
 
@@ -165,7 +165,6 @@ function ScoringRowCells({
           primary={entrant.totalStrokes ?? 'E'}
           secondary={entrant.total ?? undefined}
           dkPoints={entrant.dkFantasyPoints}
-          isMobile
         />
       </td>
 
