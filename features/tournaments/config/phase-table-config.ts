@@ -179,13 +179,50 @@ const resultColumn: ColumnDescriptor = {
   thClassName: `w-[88px] min-w-[88px] max-w-[88px] border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
+/**
+ * Live (in-progress) columns for real-time fantasy tracking.
+ * Mobile priority: Position, Player, Live DK, Tournament Score visible first.
+ * Through, Today, Salary, Ownership, Odds available via horizontal scroll.
+ * Unsupported columns (Birdies, Eagles, Position Change) omitted entirely.
+ */
+const liveColumn: ColumnDescriptor = {
+  id: 'liveDk',
+  label: 'Live DK',
+  headerKind: 'dk',
+  colClassName: 'w-[120px]',
+  thClassName: `w-[120px] min-w-[120px] max-w-[120px] border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+const todayColumn: ColumnDescriptor = {
+  id: 'today',
+  label: 'Today',
+  tooltip: 'Current round score relative to par',
+  colClassName: 'w-[76px]',
+  thClassName: `w-[76px] min-w-[76px] max-w-[76px] border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
+}
+const salaryLiveColumn: ColumnDescriptor = {
+  id: 'salary',
+  label: 'Salary',
+  headerKind: 'dk',
+  colClassName: 'w-[110px]',
+  thClassName: `w-[110px] min-w-[110px] max-w-[110px] border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+}
+const draftedColumn: ColumnDescriptor = {
+  id: 'drafted',
+  label: 'Drafted %',
+  tooltip: 'DFS ownership percentage',
+  colClassName: 'w-[92px]',
+  thClassName: `w-[92px] min-w-[92px] max-w-[92px] border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
+}
+
 const liveColumns: ColumnDescriptor[] = [
   posColumn,
   scoringPlayerColumn,
+  liveColumn,
   totalColumn,
   thruColumn,
-  ...roundColumns,
-  dfsColumn,
+  todayColumn,
+  salaryLiveColumn,
+  draftedColumn,
   oddsScoringColumn,
 ]
 
