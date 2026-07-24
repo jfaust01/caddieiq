@@ -43,12 +43,12 @@ export function ScoreLiveRowCells({
       </td>
 
       {/* LIVE DK */}
-      <td className="w-[120px] min-w-[120px] max-w-[120px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <td className="w-[130px] min-w-[130px] max-w-[130px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <div className="flex h-full items-center justify-center">
           {entrant.totalDkFantasyPoints == null ? (
             <MetricEmptyState />
           ) : (
-            <span className="text-sm font-semibold tabular-nums text-white">{entrant.totalDkFantasyPoints}</span>
+            <span className="text-sm font-semibold tabular-nums text-emerald-100">{entrant.totalDkFantasyPoints}</span>
           )}
         </div>
       </td>
@@ -77,12 +77,12 @@ export function ScoreLiveRowCells({
       </td>
 
       {/* SALARY */}
-      <td className="w-[110px] min-w-[110px] max-w-[110px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <div className="flex h-full items-center justify-center gap-1 whitespace-nowrap">
+      <td className="w-[115px] min-w-[115px] max-w-[115px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center gap-1.5 whitespace-nowrap">
           {entrant.dfsSalary ? (
             <>
               <DraftKingsMark className="h-3 w-auto shrink-0" />
-              <span className="text-sm font-semibold tabular-nums text-white">{salaryDisplay}</span>
+              <span className="text-sm font-medium tabular-nums text-foreground">{salaryDisplay}</span>
             </>
           ) : (
             <MetricEmptyState />
@@ -91,16 +91,16 @@ export function ScoreLiveRowCells({
       </td>
 
       {/* DRAFTED % */}
-      <td className="w-[92px] min-w-[92px] max-w-[92px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
+      <td className="w-[110px] min-w-[110px] max-w-[110px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
         <div className="flex h-full items-center justify-center">
-          <span className="text-sm font-semibold tabular-nums text-muted-foreground">{draftedDisplay}</span>
+          <span className="text-sm font-medium tabular-nums text-foreground/60">{draftedDisplay}</span>
         </div>
       </td>
 
       {/* ODDS */}
-      <td className="w-[80px] min-w-[80px] max-w-[80px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <td className="w-[95px] min-w-[95px] max-w-[95px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
         <div className="flex h-full items-center justify-center">
-          <span className="text-sm font-mono tabular-nums text-foreground">{oddsDisplay}</span>
+          <span className="text-sm font-medium tabular-nums text-foreground/60">{oddsDisplay}</span>
         </div>
       </td>
     </>

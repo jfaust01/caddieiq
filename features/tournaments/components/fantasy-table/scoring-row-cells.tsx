@@ -57,27 +57,37 @@ export function ScoringRowCells({
           {entrant.totalDkFantasyPoints == null ? (
             <MetricEmptyState />
           ) : (
-            <span className="text-sm font-semibold tabular-nums text-white">{entrant.totalDkFantasyPoints}</span>
+            <span className="text-sm font-semibold tabular-nums text-emerald-100">{entrant.totalDkFantasyPoints}</span>
           )}
         </div>
       </td>
 
       {/* FINAL SCORE */}
-      <td className="w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 align-middle bg-white/[0.012]">
+      <td className="w-[125px] min-w-[125px] max-w-[125px] px-1 sm:px-2 align-middle">
         <div className="flex h-full items-center justify-center">
-          <span className="text-sm font-semibold tabular-nums text-foreground">
-            {entrant.totalStrokes ? `${entrant.totalStrokes}` : '—'} {entrant.total !== undefined && entrant.total !== null ? `(${entrant.total > 0 ? '+' : ''}${entrant.total})` : ''}
-          </span>
+          <div className="flex flex-col items-center justify-center gap-1">
+            <span className="text-sm font-medium tabular-nums text-foreground">
+              {entrant.totalStrokes ?? '—'}
+            </span>
+            {entrant.total !== undefined && entrant.total !== null && (
+              <span className={cn(
+                'text-xs font-medium tabular-nums',
+                entrant.total < 0 ? 'text-emerald-200' : entrant.total > 0 ? 'text-rose-200' : 'text-foreground'
+              )}>
+                ({entrant.total > 0 ? '+' : ''}{entrant.total})
+              </span>
+            )}
+          </div>
         </div>
       </td>
 
       {/* SALARY */}
-      <td className="w-[110px] min-w-[110px] max-w-[110px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <div className="flex h-full items-center justify-center gap-1 whitespace-nowrap">
+      <td className="w-[115px] min-w-[115px] max-w-[115px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center gap-1.5 whitespace-nowrap">
           {entrant.dfsSalary ? (
             <>
               <DraftKingsMark className="h-3 w-auto shrink-0" />
-              <span className="text-sm font-semibold tabular-nums text-white">{salaryDisplay}</span>
+              <span className="text-sm font-medium tabular-nums text-foreground">{salaryDisplay}</span>
             </>
           ) : (
             <MetricEmptyState />
@@ -86,36 +96,36 @@ export function ScoringRowCells({
       </td>
 
       {/* VALUE (PTS/$1K) */}
-      <td className="w-[96px] min-w-[96px] max-w-[96px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
+      <td className="w-[115px] min-w-[115px] max-w-[115px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
         <div className="flex h-full items-center justify-center">
           {finalValue == null ? (
             <MetricEmptyState />
           ) : (
-            <span className="text-sm font-semibold tabular-nums text-sky-300">{finalValue}</span>
+            <span className="text-sm font-semibold tabular-nums text-emerald-200">{finalValue}</span>
           )}
         </div>
       </td>
 
       {/* OWNERSHIP % */}
-      <td className="w-[92px] min-w-[92px] max-w-[92px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
+      <td className="w-[110px] min-w-[110px] max-w-[110px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
         <div className="flex h-full items-center justify-center">
-          <span className="text-sm font-semibold tabular-nums text-muted-foreground">
+          <span className="text-sm font-medium tabular-nums text-foreground/60">
             {entrant.ownershipPercent == null ? '—' : `${Math.round(entrant.ownershipPercent)}%`}
           </span>
         </div>
       </td>
 
       {/* RESULT */}
-      <td className="w-[88px] min-w-[88px] max-w-[88px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <td className="w-[90px] min-w-[90px] max-w-[90px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
         <div className="flex items-center justify-center h-full">
           <span
             className={cn(
-              'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold tabular-nums',
+              'inline-flex items-center rounded-[8px] px-2.5 py-1 text-xs font-medium tabular-nums',
               result === 'Won'
-                ? 'bg-emerald-500/15 text-emerald-300'
+                ? 'bg-emerald-500/20 text-emerald-200'
                 : result === 'MC' || result === 'WD' || result === 'DQ'
-                  ? 'bg-rose-500/10 text-rose-300'
-                  : 'bg-white/[0.06] text-foreground',
+                  ? 'bg-rose-500/15 text-rose-200'
+                  : 'bg-white/[0.08] text-white/70',
             )}
           >
             {result}
@@ -124,9 +134,9 @@ export function ScoringRowCells({
       </td>
 
       {/* ODDS */}
-      <td className="w-[80px] min-w-[80px] max-w-[80px] border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <td className="w-[95px] min-w-[95px] max-w-[95px] border-l border-white/[0.055] px-1 sm:px-2 align-middle">
         <div className="flex items-center justify-center h-full">
-          <span className="text-sm font-mono tabular-nums text-foreground">{oddsDisplay}</span>
+          <span className="text-sm font-medium tabular-nums text-foreground/60">{oddsDisplay}</span>
         </div>
       </td>
     </>

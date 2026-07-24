@@ -47,7 +47,7 @@ export function FantasyRowCells({
           {salaryDisplay ? (
             <>
               <DraftKingsMark className="h-3 w-auto shrink-0" />
-              <span className="text-sm font-semibold tabular-nums text-foreground">{salaryDisplay}</span>
+              <span className="text-sm font-medium tabular-nums text-foreground">{salaryDisplay}</span>
             </>
           ) : (
             <MetricEmptyState />
@@ -75,7 +75,7 @@ export function FantasyRowCells({
 
       {/* RECENT FORM */}
       <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
-        <FantasyMetricCell value={formScore ?? null} meterTone="bg-amber-400/70" valueClassName="text-amber-300" />
+        <FantasyMetricCell value={formScore ?? null} meterTone="bg-amber-400/60" valueClassName="text-amber-200" isSemibold={true} />
       </td>
 
       {/* TEE TIME */}
@@ -91,7 +91,7 @@ export function FantasyRowCells({
 
       {/* COURSE FIT */}
       <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
-        <FantasyMetricCell value={fit} meterTone="bg-sky-400/70" valueClassName="text-foreground" />
+        <FantasyMetricCell value={fit} meterTone="bg-sky-400/60" valueClassName="text-sky-100" />
       </td>
     </>
   )
