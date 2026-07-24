@@ -1,11 +1,8 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+'use client'
+
+import { useMemo } from 'react'
+import type { FieldEntrant } from '@/features/tournaments/types'
+import { FantasyPlayerTable } from '@/features/tournaments/components/fantasy-table/fantasy-player-table'
 
 interface LeaderboardTabProps {
   tournament: any
@@ -14,38 +11,76 @@ interface LeaderboardTabProps {
 export function LeaderboardTab({ tournament }: LeaderboardTabProps) {
   const matchScores = tournament.matchScores || []
 
+  // Determine tournament phase based on dates
+  const now = new Date()
+  const startDate = new Date(tournament.startDate)
+  const endDate = new Date(tournament.endDate)
+  
+  let phase: 'scheduled' | 'live' | 'completed'
+  if (now < startDate) {
+    phase = 'scheduled'
+  } else if (now <= endDate) {
+    phase = 'live'
+  } else {
+    phase = 'completed'
+  }
+
+  // Transform match scores to FieldEntrant format for the fantasy table
+  const entrants: FieldEntrant[] = useMemo(() => {
+    return matchScores.map((score: any) => ({
+      playerId: score.player.id,
+      playerName: `${score.player.firstName} ${score.player.lastName}`,
+      countryCode: score.player.countryCode || null,
+      headshotUrl: score.player.headshotUrl || null,
+      // Scoring data
+      position: score.position || null,
+      status: score.status || null,
+      cutMade: score.cutMade !== false,
+      totalStrokes: score.score,
+      total: null, // Relative to par - would need to be calculated
+      dkFantasyPoints: score.dkFantasyPoints || null,
+      totalDkFantasyPoints: score.dkFantasyPoints || null,
+      round1: score.round1Score || null,
+      round2: score.round2Score || null,
+      round3: score.round3Score || null,
+      round4: score.round4Score || null,
+      round1DkPoints: null,
+      round2DkPoints: null,
+      round3DkPoints: null,
+      round4DkPoints: null,
+      round1RelToPar: null,
+      round2RelToPar: null,
+      round3RelToPar: null,
+      round4RelToPar: null,
+      // Pre-tournament data (Scheduled phase)
+      dfsSalary: score.dfsSalary || null,
+      oddsToWin: score.oddsToWin || null,
+      worldRanking: score.worldRanking || null,
+      formScore: score.formScore || null,
+      startingTime: score.startingTime || null,
+      ownershipPercent: score.ownershipPercent || null,
+      // Live data
+      thruHole: score.thruHole || null,
+      roundScore: score.roundScore || null,
+    }))
+  }, [matchScores])
+
+  // Empty DFS lookups map (no value model data available in historical view)
+  const dfsByPlayer = useMemo(() => new Map(), [])
+
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-12">Pos</TableHead>
-            <TableHead>Player</TableHead>
-            <TableHead className="text-right">Score</TableHead>
-            <TableHead className="text-right">R1</TableHead>
-            <TableHead className="text-right">R2</TableHead>
-            <TableHead className="text-right">R3</TableHead>
-            <TableHead className="text-right">R4</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {matchScores.map((score: any, idx: number) => (
-            <TableRow key={score.id} className={idx % 2 === 0 ? 'bg-card/50' : ''}>
-              <TableCell className="font-medium">{score.position || idx + 1}</TableCell>
-              <TableCell>
-                <a href={`/historical/players/${score.player.id}`} className="hover:underline">
-                  {score.player.firstName} {score.player.lastName}
-                </a>
-              </TableCell>
-              <TableCell className="text-right font-semibold">{score.score}</TableCell>
-              <TableCell className="text-right text-sm">{score.round1Score || '-'}</TableCell>
-              <TableCell className="text-right text-sm">{score.round2Score || '-'}</TableCell>
-              <TableCell className="text-right text-sm">{score.round3Score || '-'}</TableCell>
-              <TableCell className="text-right text-sm">{score.round4Score || '-'}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="tournament-table-container">
+      <FantasyPlayerTable
+        phase={phase}
+        entrants={entrants}
+        allEntrants={entrants}
+        fieldSize={entrants.length}
+        dfsByPlayer={dfsByPlayer}
+        onRowClick={(playerId) => {
+          // Open player scorecard modal - would be handled by parent or modal context
+          console.log('Opening scorecard for player:', playerId)
+        }}
+      />
     </div>
   )
 }
