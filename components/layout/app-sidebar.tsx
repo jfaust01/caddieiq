@@ -33,7 +33,6 @@ const navItemClasses = {
   base: 'group relative flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all duration-150',
   inactive: 'text-muted-foreground hover:bg-white/[0.035] hover:text-foreground',
   active: 'border border-emerald-400/15 bg-emerald-400/[0.10] text-emerald-200 font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]',
-  activeAccent: 'absolute inset-y-2 left-0 w-[2px] rounded-full bg-emerald-400/75',
 }
 
 export function AppSidebar() {
@@ -95,7 +94,6 @@ export function AppSidebar() {
                         )}
                         render={
                           <Link href={item.href} className="flex items-center gap-3 w-full">
-                            {active && <span aria-hidden="true" className={navItemClasses.activeAccent} />}
                             <item.icon className="h-5 w-5 flex-shrink-0" />
                             <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                           </Link>
@@ -126,7 +124,6 @@ export function AppSidebar() {
                   )}
                   render={
                     <Link href={item.href} className="flex items-center gap-3 w-full">
-                      {active && <span aria-hidden="true" className={navItemClasses.activeAccent} />}
                       <item.icon className="h-5 w-5 flex-shrink-0" />
                       <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                     </Link>
