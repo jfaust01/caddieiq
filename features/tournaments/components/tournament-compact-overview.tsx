@@ -115,18 +115,12 @@ export function TournamentCompactOverview({
             tournamentWinner={resolvedWinner}
             isCompleted={isTournamentCompleted(tournament.status)}
           />
-
-          {/* Footnote */}
-          <div className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
-            <div className="mt-0.5 shrink-0 text-muted-foreground/60">ℹ</div>
-            <p>Stats update automatically when official results and scoring are available.</p>
-          </div>
         </div>
       )}
 
       {/* Field Section */}
       {hasField && (
-        <div className="pt-2 border-t border-border min-w-0">
+        <div className="min-w-0">
           <div className="min-w-0">
             <TournamentField field={field} tournamentId={tournamentId} />
           </div>

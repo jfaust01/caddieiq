@@ -75,71 +75,95 @@ export function PlayerScorecardModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         className={cn(
-          "flex max-h-[calc(100vh-48px)] w-[min(1280px,calc(100vw-48px))] max-w-none flex-col overflow-hidden p-0 z-50",
-          "md:rounded-lg rounded-none"
+          "flex flex-col overflow-hidden p-0 z-50",
+          "bg-[#0b1015]/98 backdrop-blur-xl border border-white/[0.10]",
+          "shadow-[0_24px_80px_rgba(0,0,0,0.55)]",
+          // Remove dialog's default max-width constraint
+          "!max-w-none",
+          // Mobile: fixed to edges with margins
+          "fixed left-2 right-2 top-2 bottom-2 h-auto w-auto",
+          "translate-x-0 translate-y-0",
+          "rounded-2xl",
+          // Desktop: wide premium workspace
+          "lg:fixed lg:left-1/2 lg:right-auto lg:top-1/2 lg:bottom-auto",
+          "lg:h-[min(88vh,980px)] lg:w-[min(92vw,1520px)]",
+          "lg:-translate-x-1/2 lg:-translate-y-1/2",
+          "lg:rounded-[22px]"
         )}
         showCloseButton={false}
       >
-        {/* Modal Header */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-background px-6 py-4">
-          <div className="flex items-center justify-between flex-1">
-            <div className="flex items-center gap-4 min-w-0">
-              {/* Previous Button */}
-              <button
-                onClick={handlePreviousPlayer}
-                disabled={!canGoPrevious}
-                className={cn(
-                  "flex-shrink-0 p-1 rounded transition-colors",
-                  canGoPrevious
-                    ? "hover:bg-muted cursor-pointer"
-                    : "opacity-40 cursor-not-allowed"
-                )}
-                aria-label="Previous player"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+        {/* Modal Header - Mobile Compact / Desktop Premium */}
+        <div className={cn(
+          "flex-shrink-0 sticky top-0 z-20 bg-gradient-to-b from-black/60 to-transparent backdrop-blur-md border-b border-white/[0.05] flex items-center justify-between",
+          // Mobile: compact 56px header
+          "h-14 px-3 py-0",
+          // Desktop: larger 64px header
+          "sm:h-16 sm:px-6 sm:py-4"
+        )}>
+          <div className="flex items-center gap-1.5 sm:gap-4 min-w-0 flex-1">
+            {/* Previous Button - 44px touch target */}
+            <button
+              onClick={handlePreviousPlayer}
+              disabled={!canGoPrevious}
+              className={cn(
+                "flex-shrink-0 flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-lg transition-colors",
+                canGoPrevious
+                  ? "hover:bg-white/[0.08] cursor-pointer text-white"
+                  : "opacity-30 cursor-not-allowed text-white/50"
+              )}
+              aria-label="Previous player"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
 
-              {/* Player Info */}
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-semibold truncate">
-                  {selectedPlayer.playerName}
-                </h2>
-              </div>
-
-              {/* Next Button */}
-              <button
-                onClick={handleNextPlayer}
-                disabled={!canGoNext}
-                className={cn(
-                  "flex-shrink-0 p-1 rounded transition-colors",
-                  canGoNext
-                    ? "hover:bg-muted cursor-pointer"
-                    : "opacity-40 cursor-not-allowed"
-                )}
-                aria-label="Next player"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
+            {/* Player Name - Centered */}
+            <div className="min-w-0 flex-1 text-center">
+              <h2 className="text-sm sm:text-base font-bold truncate text-white">
+                {selectedPlayer.playerName}
+              </h2>
             </div>
 
-            {/* Close Button */}
-            <DialogClose className="flex-shrink-0 p-1 rounded hover:bg-muted transition-colors ml-2">
-              <X className="h-5 w-5" />
-              <span className="sr-only">Close modal</span>
-            </DialogClose>
+            {/* Next Button - 44px touch target */}
+            <button
+              onClick={handleNextPlayer}
+              disabled={!canGoNext}
+              className={cn(
+                "flex-shrink-0 flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-lg transition-colors",
+                canGoNext
+                  ? "hover:bg-white/[0.08] cursor-pointer text-white"
+                  : "opacity-30 cursor-not-allowed text-white/50"
+              )}
+              aria-label="Next player"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
           </div>
+
+          {/* Close Button - 44px touch target */}
+          <DialogClose className="flex-shrink-0 flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-lg hover:bg-white/[0.08] transition-colors ml-1 sm:ml-2 text-white">
+            <X className="h-5 w-5" />
+            <span className="sr-only">Close modal</span>
+          </DialogClose>
         </div>
 
-        {/* Modal Content with Scrolling */}
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <ScorecardErrorBoundaryV2 playerName={selectedPlayer.playerName}>
-            <ScorecardLoader
-              playerId={selectedPlayer.playerId}
-              playerName={selectedPlayer.playerName}
-              tournamentId={tournamentId}
-              roundNumber={selectedRound}
-            />
-          </ScorecardErrorBoundaryV2>
+        {/* Modal Content - Single Vertical Scroll */}
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div className={cn(
+            "w-full min-w-0 max-w-full",
+            // Mobile: compact padding
+            "px-3 py-4",
+            // Desktop: generous padding for wide layout
+            "lg:px-8 lg:py-6"
+          )}>
+            <ScorecardErrorBoundaryV2 playerName={selectedPlayer.playerName}>
+              <ScorecardLoader
+                playerId={selectedPlayer.playerId}
+                playerName={selectedPlayer.playerName}
+                tournamentId={tournamentId}
+                roundNumber={selectedRound}
+              />
+            </ScorecardErrorBoundaryV2>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

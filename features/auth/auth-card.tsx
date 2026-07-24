@@ -1,5 +1,7 @@
 import type { ReactNode } from "react"
 
+import Image from "next/image"
+
 import {
   Card,
   CardContent,
@@ -19,10 +21,15 @@ export function AuthCard({ title, description, children }: AuthCardProps) {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center bg-surface px-4 py-10">
       <div className="flex w-full max-w-sm flex-col gap-6">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-base font-bold text-primary-foreground">
-            CQ
-          </span>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Image
+            src="/caddieiq-logo.png"
+            alt={`${siteConfig.name} logo`}
+            width={64}
+            height={64}
+            priority
+            className="size-16"
+          />
           <div className="flex flex-col gap-0.5">
             <span className="text-lg font-semibold tracking-tight">
               {siteConfig.name}

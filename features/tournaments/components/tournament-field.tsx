@@ -1,10 +1,9 @@
 'use client'
 
-import { Users, X } from 'lucide-react'
+import { Search, Users, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
-import { SearchBar } from '@/components/shared/search-bar'
 import { useDragScroll } from '@/features/tournaments/hooks/use-drag-scroll'
 import { usePlayerColumnWidth } from '@/features/tournaments/hooks/use-player-column-width'
 import styles from './tournament-field.module.css'
@@ -41,6 +40,32 @@ import { buildPositionCountMap, formatPositionWithStatusPriority } from '@/featu
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
+
+/**
+ * Premium filter-dropdown styling (visual only) matching the Tournament
+ * Winner / Scorecard / Analytics card design language. Scoped to this page —
+ * shared Select primitives are left untouched. `!` utilities override the
+ * primitive's conflicting height/radius/bg/text defaults.
+ */
+const premiumTriggerClass = cn(
+  '!h-[60px] w-full !rounded-[22px] !border-[#2A2F36] !bg-[#111418] !px-[22px] !text-lg !font-semibold !text-white',
+  'relative overflow-hidden transition-all duration-[250ms]',
+  'hover:-translate-y-px hover:!border-white/25 hover:shadow-[0_10px_28px_rgba(0,0,0,0.28)]',
+  'data-[popup-open]:!border-[#34D17A] data-[popup-open]:shadow-[0_0_0_3px_rgba(52,209,122,0.15),0_10px_30px_rgba(16,185,129,0.12)]',
+  // Chevron: 20px, muted gray
+  '[&>svg]:!size-5 [&>svg]:text-muted-foreground',
+  'lg:w-[240px]',
+)
+
+const premiumContentClass = cn(
+  '!rounded-[22px] border border-white/[0.08] !bg-[#0D1318]/95 p-2 !shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-0 backdrop-blur-xl',
+)
+
+const premiumItemClass = cn(
+  'rounded-[14px] px-3 py-2.5 text-base font-medium text-foreground/90',
+  'data-[highlighted]:!bg-emerald-500/15 data-[highlighted]:!text-emerald-50',
+  'data-[selected]:!bg-emerald-500/10 data-[selected]:!text-emerald-400',
+)
 
 /**
  * Format ownership percentage as "X% Drafted" or "— Drafted" for missing
@@ -343,7 +368,7 @@ function PlayerRowCells({
           )}
           <div className="flex min-w-0 items-center gap-1">
             <span className="min-w-0 truncate text-sm sm:text-sm font-semibold text-foreground">{entrant.playerName}</span>
-            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-3 sm:h-3 w-auto shrink-0 rounded-[2px]" />}
+            {entrant.countryCode && <PlayerFlag countryCode={entrant.countryCode} className="h-4 sm:h-5 w-auto shrink-0 rounded-[2px]" />}
           </div>
         </div>
       </td>
@@ -554,23 +579,51 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
     <div className="flex flex-col gap-4">
       <FieldAnalyticsSummary summary={field.analyticsSummary} />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <SearchBar
-          placeholder="Search players by name..."
-          onSearch={(value) => setQuery(value)}
-          className="sm:flex-1"
-        />
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto">
+      {/* Premium search + filter controls (visual redesign only).
+          Layout: mobile stacks vertically (16px gap), tablet keeps search on
+          its own row with filters in two equal columns, desktop is a single
+          row where search grows and dropdowns stay fixed width (240px). */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-5">
+        {/* Search input */}
+        <div className="group relative h-[60px] w-full overflow-hidden rounded-[22px] border border-[#2B3138] bg-[#111418] transition-all duration-[250ms] hover:-translate-y-px hover:border-white/20 hover:shadow-[0_10px_28px_rgba(0,0,0,0.28)] focus-within:-translate-y-px focus-within:border-[#34D17A] focus-within:shadow-[0_0_0_3px_rgba(52,209,122,0.15),0_10px_30px_rgba(16,185,129,0.12)] lg:flex-1">
+          {/* Upper-right emerald glow */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-emerald-500/[0.05] opacity-0 blur-3xl transition-opacity duration-[250ms] group-hover:opacity-100 group-focus-within:opacity-100"
+          />
+          {/* Soft top highlight */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
+          {/* Faint radial texture */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_90%_-10%,rgba(16,185,129,0.04),transparent_60%)]"
+          />
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-6 top-1/2 size-[22px] -translate-y-1/2 text-muted-foreground transition-colors duration-[250ms] group-focus-within:text-emerald-400"
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search players by name..."
+            aria-label="Search players by name"
+            className="relative h-full w-full bg-transparent pl-[3.75rem] pr-6 text-xl font-semibold text-white outline-none placeholder:font-normal placeholder:text-[#7D848D]"
+          />
+        </div>
+
+        {/* Filter dropdowns */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:flex lg:gap-5">
           <Select
             value={statusFilter}
             onValueChange={(value) => setStatusFilter(value as FieldEntryStatus | 'ALL')}
           >
-            <SelectTrigger aria-label="Filter by status" className="w-full sm:w-40">
+            <SelectTrigger aria-label="Filter by status" className={premiumTriggerClass}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={premiumContentClass}>
               {statusOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem key={option.value} value={option.value} className={premiumItemClass}>
                   {option.label}
                 </SelectItem>
               ))}
@@ -580,12 +633,12 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
             value={sort}
             onValueChange={(value) => setSort(value as SortKey)}
           >
-            <SelectTrigger aria-label="Sort players" className="w-full sm:w-40">
+            <SelectTrigger aria-label="Sort players" className={premiumTriggerClass}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={premiumContentClass}>
               {SORT_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem key={option.value} value={option.value} className={premiumItemClass}>
                   {option.label}
                 </SelectItem>
               ))}
@@ -594,10 +647,8 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {filtered.length === field.size
-          ? `${field.size} ${field.size === 1 ? 'player' : 'players'} in the field`
-          : `${filtered.length} of ${field.size} players`}
+      <p className="text-[11px] italic text-muted-foreground">
+        Stats update automatically when official results and scoring are available.
       </p>
 
       {filtered.length === 0 ? (
@@ -608,19 +659,19 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
         />
       ) : (
         <div className="w-full min-w-0 tournament-table-container" style={{ '--player-column-width': playerColumnWidth || '220px' } as React.CSSProperties}>
-          {/* Premium table wrapper */}
-          <div className="relative overflow-hidden rounded-[20px] border border-white/[0.09] bg-[#101419] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_12px_36px_rgba(0,0,0,0.20)]">
-            {/* Top-right glow */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-emerald-500/[0.04] blur-3xl"
-            />
-
-            {/* Top accent line */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/35 to-transparent"
-            />
+          {/* Premium table wrapper. Uses overflow-clip (NOT overflow-hidden) so
+              the rounded corners clip the table's square edges WITHOUT creating
+              a scroll container — this keeps the sticky header able to pin to
+              the top of the page. */}
+          <div className="relative overflow-clip rounded-[20px] border border-white/[0.09] bg-[#101419] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_12px_36px_rgba(0,0,0,0.20)]">
+            {/* Decorative clip layer (rounded) — keeps glow/accent inside the
+                card corners without creating a clipping context for the table */}
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[20px]">
+              {/* Top-right glow */}
+              <div className="absolute -right-24 -top-24 h-56 w-56 rounded-full bg-emerald-500/[0.04] blur-3xl" />
+              {/* Top accent line */}
+              <div className="absolute inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/35 to-transparent" />
+            </div>
 
             {/* Table content */}
             <div className="relative z-10">
@@ -629,7 +680,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               </div>
               <div
                 ref={scrollContainerRef}
-                className={cn('overflow-x-auto overflow-y-hidden select-none', styles.scrollContainer)}
+                className={cn('overflow-x-auto sm:overflow-x-visible select-none', styles.scrollContainer)}
                 style={{ userSelect: 'none', maxWidth: '100%' }}
               >
                 <table className="w-max table-fixed border-collapse sm:w-full">
@@ -644,13 +695,13 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               <col className="w-[126px]" />
               <col className="w-[80px]" />
             </colgroup>
-            <thead className="sticky top-0 z-10 bg-black/15 backdrop-blur-sm border-b border-white/[0.06]">
+            <thead className="sticky top-0 sm:top-[94px] z-20 bg-[#101419] border-b border-white/[0.06]">
               <tr>
                 <th className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
                 <th 
                   className="w-[calc(100vw-256px)] min-w-[190px] max-w-[240px] sm:w-[300px] sm:min-w-[260px] sm:max-w-none px-2 sm:px-3 h-12 text-left text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
                 >
-                  PLAYER
+                  Players ({field.size})
                 </th>
                 <th className="w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">TOTAL</th>
                 <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R1</th>
