@@ -701,7 +701,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                 <th 
                   className="w-[calc(100vw-256px)] min-w-[190px] max-w-[240px] sm:w-[300px] sm:min-w-[260px] sm:max-w-none px-2 sm:px-3 h-12 text-left text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
                 >
-                  PLAYER
+                  Players ({field.size})
                 </th>
                 <th className="w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">TOTAL</th>
                 <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R1</th>
