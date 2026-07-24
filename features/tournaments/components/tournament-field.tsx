@@ -39,6 +39,8 @@ import { DraftKingsMark, DKLabel } from '@/features/tournaments/components/draft
 import { buildPositionCountMap, formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
+import type { DfsValueField, DfsValueResult, DfsValueTier } from '@/lib/dfs-value'
+import { TIER_LABEL } from '@/lib/dfs-value'
 import { cn } from '@/lib/utils'
 
 /**
@@ -127,6 +129,164 @@ const STATUS_ORDER: Record<FieldEntryStatus, number> = {
 
 // Tournament DFS table has 9 visible columns: POS, PLAYER, TOTAL, R1, R2, R3, R4, DFS, ODDS
 const VISIBLE_COLUMN_COUNT = 9
+
+/**
+ * Which table layout to show. Pre-tournament (SCHEDULED) events have no round
+ * scores yet, so they get a fantasy lineup-building table; live/completed
+ * events keep the round-by-round scoring table.
+ */
+type TablePhase = 'pre' | 'scoring'
+
+function classifyPhase(status: string | null | undefined): TablePhase {
+  const s = (status ?? '').trim().toLowerCase()
+  // Anything that has (or will have) round scores uses the scoring layout.
+  const scoring = ['active', 'in_progress', 'in progress', 'live', 'completed', 'complete', 'final', 'finished']
+  if (scoring.some((k) => s.includes(k))) return 'scoring'
+  return 'pre'
+}
+
+/** Emerald→red accent per DFS value tier (badge styling only). */
+const TIER_BADGE_CLASS: Record<DfsValueTier, string> = {
+  A_PLUS: 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300',
+  A: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-300',
+  B_PLUS: 'border-sky-400/25 bg-sky-500/10 text-sky-300',
+  B: 'border-sky-400/20 bg-sky-500/[0.08] text-sky-300',
+  C: 'border-amber-400/25 bg-amber-500/10 text-amber-300',
+  D: 'border-rose-400/25 bg-rose-500/10 text-rose-300',
+}
+
+/** Read the 0–100 Course Fit signal from a DFS value result, or null. */
+function courseFitScore(result: DfsValueResult | undefined): number | null {
+  if (!result) return null
+  const fit = result.contributions.find((c) => c.key === 'courseFit')
+  return fit && fit.status === 'scored' && fit.score != null ? Math.round(fit.score) : null
+}
+
+/** Small colored bar (0–100) used behind rating/fit numbers. */
+function ScoreMeter({ value, tone }: { value: number | null; tone: string }) {
+  return (
+    <div className="mt-1 h-1 w-12 overflow-hidden rounded-full bg-white/[0.08]">
+      {value != null && (
+        <div className={cn('h-full rounded-full', tone)} style={{ width: `${Math.max(4, Math.min(100, value))}%` }} />
+      )}
+    </div>
+  )
+}
+
+/**
+ * Fantasy (pre-tournament) row cells: rank · player · CaddieIQ rating ·
+ * course fit · DFS value tier · DK salary · projected ownership · odds. Every
+ * value is authoritative; missing data renders an em-dash.
+ */
+function FantasyRowCells({
+  entrant,
+  dfsResult,
+  rank,
+}: {
+  entrant: FieldEntrant
+  dfsResult: DfsValueResult | undefined
+  rank: number
+}) {
+  const initials = entrant.playerName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  const rating = entrant.fantasyScore
+  const fit = courseFitScore(dfsResult)
+  const tier = dfsResult?.tier ?? null
+  const valueScore = dfsResult?.score ?? null
+  const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : '—'
+  const ownDisplay = entrant.ownershipPercent == null ? '—' : `${Math.round(entrant.ownershipPercent)}%`
+  const oddsDisplay = formatMissing(entrant.oddsToWin)
+
+  return (
+    <>
+      {/* RANK */}
+      <td className="px-1 sm:px-2 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <span className="text-sm font-semibold tabular-nums text-muted-foreground">{rank}</span>
+        </div>
+      </td>
+
+      {/* PLAYER */}
+      <td className="px-2 sm:px-3 align-middle">
+        <div className="flex items-center justify-start gap-3 min-w-0 h-full">
+          <Avatar className="h-10 w-10 flex-shrink-0">
+            <AvatarImage src={entrant.headshotUrl ?? undefined} alt={entrant.playerName} />
+            <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="min-w-0 truncate text-sm font-semibold text-foreground">{entrant.playerName}</span>
+            <PlayerFlag countryCode={entrant.countryCode} className="h-3 w-auto shrink-0 rounded-[2px]" />
+          </div>
+        </div>
+      </td>
+
+      {/* CADDIEIQ RATING */}
+      <td className="px-1 sm:px-2 align-middle">
+        <div className="flex h-full flex-col items-center justify-center">
+          <span className={cn('text-sm font-semibold tabular-nums', rating == null ? 'text-muted-foreground' : 'text-emerald-300')}>
+            {rating == null ? '—' : Math.round(rating)}
+          </span>
+          <ScoreMeter value={rating} tone="bg-emerald-400/70" />
+        </div>
+      </td>
+
+      {/* COURSE FIT */}
+      <td className="px-1 sm:px-2 align-middle">
+        <div className="flex h-full flex-col items-center justify-center">
+          <span className={cn('text-sm font-semibold tabular-nums', fit == null ? 'text-muted-foreground' : 'text-foreground')}>
+            {fit == null ? '—' : fit}
+          </span>
+          <ScoreMeter value={fit} tone="bg-sky-400/70" />
+        </div>
+      </td>
+
+      {/* DFS VALUE */}
+      <td className="border-l border-border/40 px-1 sm:px-2 align-middle">
+        <div className="flex h-full flex-col items-center justify-center gap-1">
+          {tier ? (
+            <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-bold', TIER_BADGE_CLASS[tier])}>
+              {TIER_LABEL[tier]}
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground">—</span>
+          )}
+          {valueScore != null && (
+            <span className="text-[11px] tabular-nums text-muted-foreground/70">{valueScore}/100</span>
+          )}
+        </div>
+      </td>
+
+      {/* DK SALARY */}
+      <td className="px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center gap-1.5 whitespace-nowrap">
+          <DraftKingsMark className="h-3 w-auto shrink-0" />
+          <span className="text-sm font-semibold tabular-nums text-foreground">{salaryDisplay}</span>
+        </div>
+      </td>
+
+      {/* PROJ OWNERSHIP */}
+      <td className="border-l border-border/40 px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <span className={cn('text-sm font-semibold tabular-nums', entrant.ownershipPercent == null ? 'text-muted-foreground' : 'text-foreground')}>
+            {ownDisplay}
+          </span>
+        </div>
+      </td>
+
+      {/* ODDS */}
+      <td className="border-l border-border/40 px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <span className="text-sm font-mono tabular-nums text-muted-foreground">{oddsDisplay}</span>
+        </div>
+      </td>
+    </>
+  )
+}
 
 /**
  * Format a number as "—" if null/undefined, else return the value
@@ -451,16 +611,22 @@ function PlayerRowCells({
 interface TournamentFieldProps {
   field: TournamentField
   tournamentId: string
+  /** Tournament status string; drives the pre-tournament vs scoring table. */
+  status?: string | null
+  /** DFS Value Model field, used for the pre-tournament fantasy columns. */
+  dfsField?: DfsValueField | null
 }
 
 /**
  * Tournament Field leaderboard: a searchable, sortable, paginated table showing
  * all players with live tournament scoring, round-by-round results, and projections.
  */
-export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
+export function TournamentField({ field, tournamentId, status, dfsField }: TournamentFieldProps) {
+  const phase = classifyPhase(status)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
   const [sort, setSort] = useState<SortKey>('pos-asc')
+  const [chip, setChip] = useState<string>('all')
   const [selectedScorecardPlayer, setSelectedScorecardPlayer] = useState<string | null>(null)
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
   const [selectedRound, setSelectedRound] = useState<number>(1)
@@ -482,7 +648,29 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
     ]
   }, [field.entrants])
 
-  const filtered = useMemo(() => {
+  // DFS Value Model lookups for the pre-tournament fantasy table.
+  const dfsByPlayer = useMemo(() => {
+    const map = new Map<string, DfsValueResult>()
+    for (const p of dfsField?.players ?? []) map.set(p.playerId, p)
+    return map
+  }, [dfsField])
+
+  // Player ids on the model's "Value Plays" board (salary-efficient targets).
+  const valuePlayIds = useMemo(() => {
+    const board = dfsField?.boards.find((b) => b.key === 'valuePlays')
+    return new Set((board?.entries ?? []).map((e) => e.playerId))
+  }, [dfsField])
+
+  // Top-rated ids: the 20 highest CaddieIQ fantasy scores actually present.
+  const topRatedIds = useMemo(() => {
+    const rated = field.entrants
+      .filter((e) => e.fantasyScore != null)
+      .sort((a, b) => (b.fantasyScore ?? 0) - (a.fantasyScore ?? 0))
+      .slice(0, 20)
+    return new Set(rated.map((e) => e.playerId))
+  }, [field.entrants])
+
+  const baseFiltered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     const result = field.entrants.filter((entrant) => {
       const matchesQuery =
@@ -490,6 +678,18 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
       const matchesStatus = statusFilter === 'ALL' || entrant.status === statusFilter
       return matchesQuery && matchesStatus
     })
+
+    // Pre-tournament there are no positions/scores, so the position/total sort
+    // keys are meaningless — default to CaddieIQ fantasy rating (high → low).
+    const posLikeSort = ['pos-asc', 'pos-desc', 'total-asc', 'total-desc'].includes(sort)
+    if (phase === 'pre' && posLikeSort) {
+      result.sort((a, b) => {
+        const ra = a.fantasyScore ?? -Infinity
+        const rb = b.fantasyScore ?? -Infinity
+        return rb !== ra ? rb - ra : a.playerName.localeCompare(b.playerName)
+      })
+      return result
+    }
 
     result.sort((a, b) => {
       // Position sorting (default)
@@ -559,7 +759,71 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
       return 0
     })
     return result
-  }, [field.entrants, query, statusFilter, sort])
+  }, [field.entrants, query, statusFilter, sort, phase])
+
+  // Status-aware fantasy filter chips. Each predicate reads only authoritative
+  // fields; counts are computed over the current search/status result so a
+  // chip that would match nothing is disabled.
+  const chipDefs = useMemo(() => {
+    const defs =
+      phase === 'pre'
+        ? [
+            { id: 'all', label: 'All', predicate: () => true },
+            {
+              id: 'elite',
+              label: 'Elite Plays',
+              predicate: (e: FieldEntrant) => {
+                const t = dfsByPlayer.get(e.playerId)?.tier
+                return t === 'A_PLUS' || t === 'A'
+              },
+            },
+            { id: 'value', label: 'Value Plays', predicate: (e: FieldEntrant) => valuePlayIds.has(e.playerId) },
+            { id: 'toprated', label: 'Top Rated', predicate: (e: FieldEntrant) => topRatedIds.has(e.playerId) },
+            {
+              id: 'chalk',
+              label: 'Chalk',
+              predicate: (e: FieldEntrant) => e.ownershipPercent != null && e.ownershipPercent >= 20,
+            },
+            {
+              id: 'longshots',
+              label: 'Longshots',
+              predicate: (e: FieldEntrant) => {
+                const n = parseOdds(e.oddsToWin)
+                return n !== Number.MAX_VALUE && n >= 5000
+              },
+            },
+          ]
+        : [
+            { id: 'all', label: 'All', predicate: () => true },
+            { id: 'made', label: 'Made Cut', predicate: (e: FieldEntrant) => e.cutMade === true },
+            {
+              id: 'missed',
+              label: 'Missed Cut',
+              predicate: (e: FieldEntrant) => e.cutMade === false || e.status === 'CUT',
+            },
+            {
+              id: 'top20',
+              label: 'Top 20',
+              predicate: (e: FieldEntrant) => e.position != null && e.position <= 20,
+            },
+            {
+              id: 'leaders',
+              label: 'Leaders',
+              predicate: (e: FieldEntrant) => e.position != null && e.position <= 5,
+            },
+          ]
+    return defs.map((d) => ({
+      ...d,
+      count: d.id === 'all' ? baseFiltered.length : baseFiltered.filter(d.predicate).length,
+    }))
+  }, [phase, baseFiltered, dfsByPlayer, valuePlayIds, topRatedIds])
+
+  // Apply the active chip. Falls back to "all" if the chip has no matches.
+  const filtered = useMemo(() => {
+    const active = chipDefs.find((c) => c.id === chip)
+    if (!active || active.id === 'all') return baseFiltered
+    return baseFiltered.filter(active.predicate)
+  }, [baseFiltered, chipDefs, chip])
 
   // Build position count map for tie detection
   const positionCountMap = useMemo(() => buildPositionCountMap(field.entrants), [field.entrants])
@@ -651,6 +915,44 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
         Stats update automatically when official results and scoring are available.
       </p>
 
+      {/* Status-aware fantasy filter chips */}
+      <div
+        className="flex flex-nowrap gap-2 overflow-x-auto pb-1 lg:flex-wrap"
+        role="group"
+        aria-label="Quick filters"
+      >
+        {chipDefs.map((c) => {
+          const isActive = chip === c.id
+          const isDisabled = c.id !== 'all' && c.count === 0
+          return (
+            <button
+              key={c.id}
+              type="button"
+              disabled={isDisabled}
+              aria-pressed={isActive}
+              onClick={() => setChip(c.id)}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-all duration-200',
+                isActive
+                  ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-200 shadow-[0_0_0_1px_rgba(52,209,122,0.15)]'
+                  : 'border-white/[0.09] bg-white/[0.02] text-muted-foreground hover:border-white/20 hover:text-foreground',
+                isDisabled && 'cursor-not-allowed opacity-40 hover:border-white/[0.09] hover:text-muted-foreground',
+              )}
+            >
+              <span>{c.label}</span>
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-0.5 text-[11px] tabular-nums',
+                  isActive ? 'bg-emerald-500/20 text-emerald-100' : 'bg-white/[0.06] text-muted-foreground/80',
+                )}
+              >
+                {c.count}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
       {filtered.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -684,51 +986,120 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                 style={{ userSelect: 'none', maxWidth: '100%' }}
               >
                 <table className="w-max table-fixed border-collapse sm:w-full">
-            <colgroup>
-              <col className="w-[52px]" />
-              <col className="w-[calc(100vw-256px)] sm:w-[300px]" />
-              <col className="w-[92px]" />
-              <col className="w-[82px]" />
-              <col className="w-[82px]" />
-              <col className="w-[82px]" />
-              <col className="w-[82px]" />
-              <col className="w-[126px]" />
-              <col className="w-[80px]" />
-            </colgroup>
+            {phase === 'pre' ? (
+              <colgroup>
+                <col className="w-[48px]" />
+                <col className="w-[calc(100vw-256px)] sm:w-[280px]" />
+                <col className="w-[88px]" />
+                <col className="w-[88px]" />
+                <col className="w-[104px]" />
+                <col className="w-[110px]" />
+                <col className="w-[92px]" />
+                <col className="w-[88px]" />
+              </colgroup>
+            ) : (
+              <colgroup>
+                <col className="w-[52px]" />
+                <col className="w-[calc(100vw-256px)] sm:w-[300px]" />
+                <col className="w-[92px]" />
+                <col className="w-[82px]" />
+                <col className="w-[82px]" />
+                <col className="w-[82px]" />
+                <col className="w-[82px]" />
+                <col className="w-[126px]" />
+                <col className="w-[80px]" />
+              </colgroup>
+            )}
             <thead className="sticky top-0 sm:top-[94px] z-20 bg-[#101419] border-b border-white/[0.06]">
-              <tr>
-                <th className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
-                <th 
-                  className="w-[calc(100vw-256px)] min-w-[190px] max-w-[240px] sm:w-[300px] sm:min-w-[260px] sm:max-w-none px-2 sm:px-3 h-12 text-left text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
-                >
-                  Players ({field.size})
-                </th>
-                <th className="w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">TOTAL</th>
-                <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R1</th>
-                <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R2</th>
-                <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R3</th>
-                <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R4</th>
-                <th className="w-[126px] min-w-[126px] max-w-[126px] border-l border-white/[0.055] px-2 sm:px-4 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  <div className="inline-flex items-center justify-center gap-1 sm:gap-1.5">
-                    <DraftKingsMark className="h-3 w-auto" />
-                    <span>DFS</span>
-                  </div>
-                </th>
-                <th className="w-[80px] min-w-[80px] max-w-[80px] border-l border-white/[0.055] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-help">ODDS</span>
-                      </TooltipTrigger>
-                      <TooltipContent>Betting Odds to Win Tournament</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </th>
-              </tr>
+              {phase === 'pre' ? (
+                <tr>
+                  <th className="px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">#</th>
+                  <th className="px-2 sm:px-3 h-12 text-left text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Players ({field.size})
+                  </th>
+                  <th className="px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild><span className="cursor-help">CaddieIQ</span></TooltipTrigger>
+                        <TooltipContent>CaddieIQ fantasy production rating (0–100)</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </th>
+                  <th className="px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild><span className="cursor-help">Fit</span></TooltipTrigger>
+                        <TooltipContent>Course Fit signal from the DFS Value Model (0–100)</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </th>
+                  <th className="border-l border-white/[0.055] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild><span className="cursor-help">Value</span></TooltipTrigger>
+                        <TooltipContent>DFS Value tier — projected quality relative to salary</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </th>
+                  <th className="px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    <div className="inline-flex items-center justify-center gap-1 sm:gap-1.5">
+                      <DraftKingsMark className="h-3 w-auto" />
+                      <span>Salary</span>
+                    </div>
+                  </th>
+                  <th className="border-l border-white/[0.055] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild><span className="cursor-help">Proj Own</span></TooltipTrigger>
+                        <TooltipContent>Projected DFS ownership percentage</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </th>
+                  <th className="border-l border-white/[0.055] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild><span className="cursor-help">Odds</span></TooltipTrigger>
+                        <TooltipContent>Betting Odds to Win Tournament</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </th>
+                </tr>
+              ) : (
+                <tr>
+                  <th className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
+                  <th 
+                    className="w-[calc(100vw-256px)] min-w-[190px] max-w-[240px] sm:w-[300px] sm:min-w-[260px] sm:max-w-none px-2 sm:px-3 h-12 text-left text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+                  >
+                    Players ({field.size})
+                  </th>
+                  <th className="w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">TOTAL</th>
+                  <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R1</th>
+                  <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R2</th>
+                  <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R3</th>
+                  <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R4</th>
+                  <th className="w-[126px] min-w-[126px] max-w-[126px] border-l border-white/[0.055] px-2 sm:px-4 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    <div className="inline-flex items-center justify-center gap-1 sm:gap-1.5">
+                      <DraftKingsMark className="h-3 w-auto" />
+                      <span>DFS</span>
+                    </div>
+                  </th>
+                  <th className="w-[80px] min-w-[80px] max-w-[80px] border-l border-white/[0.055] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help">ODDS</span>
+                        </TooltipTrigger>
+                        <TooltipContent>Betting Odds to Win Tournament</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </th>
+                </tr>
+              )}
             </thead>
             <tbody>
-              {filtered.map((entrant) => (
+              {filtered.map((entrant, index) => (
                     <tr
+                      key={entrant.playerId}
                       onClick={(event) => {
                         const target = event.target as HTMLElement
                         // Prevent modal open if clicking on interactive elements
@@ -746,7 +1117,15 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
                       tabIndex={0}
                       className="cursor-pointer h-[72px] border-b border-white/[0.055] bg-transparent transition-colors duration-150 hover:bg-white/[0.025]"
                     >
-                      <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
+                      {phase === 'pre' ? (
+                        <FantasyRowCells
+                          entrant={entrant}
+                          dfsResult={dfsByPlayer.get(entrant.playerId)}
+                          rank={index + 1}
+                        />
+                      ) : (
+                        <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
+                      )}
                     </tr>
               ))}
             </tbody>
@@ -755,7 +1134,9 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
             </div>
           </div>
           <div className="text-xs text-muted-foreground italic mt-2">
-            Final DraftKings points are unavailable for this tournament.
+            {phase === 'pre'
+              ? 'Fantasy ratings, course fit, and value reflect the DFS Value Model; blanks mean the platform holds no signal yet.'
+              : 'Final DraftKings points are shown when official results are available.'}
           </div>
         </div>
       )}

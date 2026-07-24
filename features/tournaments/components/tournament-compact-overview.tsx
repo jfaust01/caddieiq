@@ -142,7 +142,12 @@ export function TournamentCompactOverview({
       {hasField && (
         <div className="min-w-0">
           <div className="min-w-0">
-            <TournamentField field={field} tournamentId={tournamentId} />
+            <TournamentField
+              field={field}
+              tournamentId={tournamentId}
+              status={tournament.status}
+              dfsField={dfsField}
+            />
           </div>
         </div>
       )}
