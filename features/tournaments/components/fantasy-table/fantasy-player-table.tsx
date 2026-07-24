@@ -14,6 +14,7 @@ import { FantasyTableScrollArea } from './fantasy-table-scroll-area'
 import { FantasyTableHeader } from './fantasy-table-header'
 import { FantasyTableBody } from './fantasy-table-body'
 import { FantasyTableFooter } from './fantasy-table-footer'
+import { PaginationFooter } from './pagination-footer'
 import styles from '../tournament-field.module.css'
 
 export interface FantasyPlayerTableProps {
@@ -30,6 +31,12 @@ export interface FantasyPlayerTableProps {
   onRowClick: (playerId: string) => void
   /** Optional: table toolbar component to render inside the shell. */
   toolbar?: React.ReactNode
+  /** Pagination props */
+  currentPage?: number
+  onPageChange?: (page: number) => void
+  pageSize?: number
+  onPageSizeChange?: (size: number) => void
+  totalItems?: number
 }
 
 /**
@@ -53,6 +60,11 @@ export function FantasyPlayerTable({
   dfsByPlayer,
   onRowClick,
   toolbar,
+  currentPage = 1,
+  onPageChange,
+  pageSize = 25,
+  onPageSizeChange,
+  totalItems,
 }: FantasyPlayerTableProps) {
   const config = phaseTableConfig[phase]
   const { columns, footnote } = config
@@ -120,6 +132,17 @@ export function FantasyPlayerTable({
           <div className="border-t" style={{ borderColor: 'rgba(120, 150, 165, 0.12)' }} />
         </div>
       </div>
+
+      {/* Pagination footer */}
+      {onPageChange && onPageSizeChange && totalItems !== undefined && (
+        <PaginationFooter
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
+      )}
 
       {/* Table footnote */}
       <div className="px-4 py-3">

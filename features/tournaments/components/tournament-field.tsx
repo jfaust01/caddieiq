@@ -1,7 +1,7 @@
 'use client'
 
 import { Users } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
@@ -58,6 +58,8 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
   const [chip, setChip] = useState<string>('all')
   const [selectedScorecardPlayer, setSelectedScorecardPlayer] = useState<string | null>(null)
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
 
   // Status options limited to those actually present in this field.
   const statusOptions = useMemo<StatusOption[]>(() => {
@@ -253,6 +255,18 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
     return baseFiltered.filter((e) => active.predicate(e, filterContext))
   }, [baseFiltered, config.filters, chip, filterContext])
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [query, statusFilter, sort, chip])
+
+  // Calculate paginated results
+  const paginatedEntrants = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    const end = start + pageSize
+    return filtered.slice(start, end)
+  }, [filtered, currentPage, pageSize])
+
   // Field genuinely empty (nothing imported yet).
   if (field.size === 0) {
     return (
@@ -298,11 +312,19 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
       ) : (
         <FantasyPlayerTable
           phase={phase}
-          entrants={filtered}
+          entrants={paginatedEntrants}
           allEntrants={field.entrants}
           fieldSize={field.size}
           dfsByPlayer={dfsByPlayer}
           toolbar={toolbar}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalItems={filtered.length}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize)
+            setCurrentPage(1)
+          }}
           onRowClick={(playerId) => {
             setSelectedScorecardPlayer(playerId)
             setIsScorecardModalOpen(true)
