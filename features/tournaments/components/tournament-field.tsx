@@ -643,7 +643,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               <col className="w-[126px]" />
               <col className="w-[80px]" />
             </colgroup>
-            <thead className="sticky top-[95px] z-20 bg-[#101419] border-b border-white/[0.06]">
+            <thead className="sticky top-[94px] z-20 bg-[#101419] border-b border-white/[0.06]">
               <tr>
                 <th className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
                 <th 
