@@ -111,16 +111,16 @@ export function TournamentCompactOverview({
       {/* Winner Card - displayed above Field section */}
       {hasField && (
         <div className="border-t border-border pt-6">
+          {/* Footnote */}
+          <div className="mb-3 flex items-start gap-2 text-[11px] italic text-muted-foreground">
+            <div className="mt-0.5 shrink-0 text-muted-foreground/60">ℹ</div>
+            <p>Stats update automatically when official results and scoring are available.</p>
+          </div>
+
           <TournamentWinnerCard
             tournamentWinner={resolvedWinner}
             isCompleted={isTournamentCompleted(tournament.status)}
           />
-
-          {/* Footnote */}
-          <div className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
-            <div className="mt-0.5 shrink-0 text-muted-foreground/60">ℹ</div>
-            <p>Stats update automatically when official results and scoring are available.</p>
-          </div>
         </div>
       )}
 
