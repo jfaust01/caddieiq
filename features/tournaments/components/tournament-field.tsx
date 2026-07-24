@@ -629,8 +629,8 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               </div>
               <div
                 ref={scrollContainerRef}
-                className={cn('overflow-x-auto overflow-y-hidden select-none', styles.scrollContainer)}
-                style={{ userSelect: 'none', maxWidth: '100%' }}
+                className={cn('overflow-x-auto overflow-y-auto select-none', styles.scrollContainer)}
+                style={{ userSelect: 'none', maxWidth: '100%', maxHeight: 'calc(100vh - 220px)' }}
               >
                 <table className="w-max table-fixed border-collapse sm:w-full">
             <colgroup>
@@ -644,7 +644,7 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               <col className="w-[126px]" />
               <col className="w-[80px]" />
             </colgroup>
-            <thead className="sticky top-0 z-10 bg-black/15 backdrop-blur-sm border-b border-white/[0.06]">
+            <thead className="sticky top-0 z-10 bg-[#101419] border-b border-white/[0.06]">
               <tr>
                 <th className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">POS</th>
                 <th 
