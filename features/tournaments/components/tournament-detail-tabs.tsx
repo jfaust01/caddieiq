@@ -39,7 +39,9 @@ export function TournamentDetailTabs({
         <TabsTrigger 
           value="leaderboard"
           className={cn(
-            'rounded-none py-2 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0 data-[state=active]:bg-emerald-500/15 data-[state=active]:text-emerald-300 data-[state=inactive]:text-white/60 data-[state=inactive]:hover:text-white'
+            'rounded-none py-2 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0',
+            'text-white/60 hover:text-white',
+            'data-active:bg-emerald-500/15 data-active:text-emerald-300 dark:data-active:bg-emerald-500/15 dark:data-active:border-transparent'
           )}
         >
           Leaderboard
@@ -51,7 +53,8 @@ export function TournamentDetailTabs({
             disabled={tab.disabled ?? false}
             className={cn(
               'rounded-none py-2 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0',
-              'data-[state=active]:bg-emerald-500/15 data-[state=active]:text-emerald-300 data-[state=inactive]:text-white/60 data-[state=inactive]:hover:text-white'
+              'text-white/60 hover:text-white',
+              'data-active:bg-emerald-500/15 data-active:text-emerald-300 dark:data-active:bg-emerald-500/15 dark:data-active:border-transparent'
             )}
           >
             {tab.label}
