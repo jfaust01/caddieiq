@@ -608,10 +608,11 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
         />
       ) : (
         <div className="w-full min-w-0 tournament-table-container" style={{ '--player-column-width': playerColumnWidth || '220px' } as React.CSSProperties}>
-          {/* Premium table wrapper. NOTE: no overflow-hidden here so the
-              sticky table header can pin to the top of the page. Decorative
-              layers are clipped by an inner absolute layer instead. */}
-          <div className="relative rounded-[20px] border border-white/[0.09] bg-[#101419] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_12px_36px_rgba(0,0,0,0.20)]">
+          {/* Premium table wrapper. Uses overflow-clip (NOT overflow-hidden) so
+              the rounded corners clip the table's square edges WITHOUT creating
+              a scroll container — this keeps the sticky header able to pin to
+              the top of the page. */}
+          <div className="relative overflow-clip rounded-[20px] border border-white/[0.09] bg-[#101419] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_12px_36px_rgba(0,0,0,0.20)]">
             {/* Decorative clip layer (rounded) — keeps glow/accent inside the
                 card corners without creating a clipping context for the table */}
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[20px]">
