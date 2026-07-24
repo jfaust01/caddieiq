@@ -629,8 +629,8 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
               </div>
               <div
                 ref={scrollContainerRef}
-                className={cn('overflow-x-auto overflow-y-auto select-none', styles.scrollContainer)}
-                style={{ userSelect: 'none', maxWidth: '100%', maxHeight: 'calc(100vh - 220px)' }}
+                className={cn('overflow-x-auto select-none', styles.scrollContainer)}
+                style={{ userSelect: 'none', maxWidth: '100%' }}
               >
                 <table className="w-max table-fixed border-collapse sm:w-full">
             <colgroup>
