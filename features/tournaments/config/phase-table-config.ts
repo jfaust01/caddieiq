@@ -307,55 +307,35 @@ const scheduledFilters: FilterDescriptor[] = [
     available: (ctx) => ctx.valuePlayIds.size > 0,
     predicate: (e, ctx) => ctx.valuePlayIds.has(e.playerId),
   },
+  // Leverage: not backed by real data in current schema — hidden
+  // Cash Game: not backed by real data — hidden
+  // GPP: not backed by real data — hidden
   {
     id: 'toprated',
-    label: 'Top Rated',
+    label: 'Top 20',
     available: (ctx) => ctx.topRatedIds.size > 0,
     predicate: (e, ctx) => ctx.topRatedIds.has(e.playerId),
   },
-  {
-    id: 'chalk',
-    label: 'Chalk',
-    available: hasOwnership,
-    predicate: (e) => e.ownershipPercent != null && e.ownershipPercent >= 20,
-  },
-  {
-    id: 'longshots',
-    label: 'Longshots',
-    available: hasOdds,
-    predicate: (e) => {
-      const n = parseOdds(e.oddsToWin)
-      return n !== Number.MAX_VALUE && n >= 5000
-    },
-  },
+  // My Lineup: not backed by real data — hidden
 ]
 
 const liveFilters: FilterDescriptor[] = [
   allPlayersFilter,
-  {
-    id: 'topdk',
-    label: 'Top DK',
-    available: (ctx) => ctx.topLiveDkIds.size > 0,
-    predicate: (e, ctx) => ctx.topLiveDkIds.has(e.playerId),
-  },
-  {
-    id: 'leaders',
-    label: 'Leaders',
-    available: hasPosition,
-    predicate: (e) => e.position != null && e.position <= 5,
-  },
-  {
-    id: 'top20',
-    label: 'Top 20',
-    available: hasPosition,
-    predicate: (e) => e.position != null && e.position <= 20,
-  },
+  // Hot, Risers, Fallers: not backed by real scoring velocity data — hidden
+  // Near Cut, On Bubble: complex cut-line calculations not in schema — hidden
   {
     id: 'making',
     label: 'Making Cut',
     available: hasCutFlag,
     predicate: (e) => e.cutMade === true,
   },
+  {
+    id: 'topdk',
+    label: 'Top DK',
+    available: (ctx) => ctx.topLiveDkIds.size > 0,
+    predicate: (e, ctx) => ctx.topLiveDkIds.has(e.playerId),
+  },
+  // My Lineup: not backed by real data — hidden
 ]
 
 const completedFilters: FilterDescriptor[] = [
@@ -368,22 +348,10 @@ const completedFilters: FilterDescriptor[] = [
       e.position != null && e.position <= 10 && e.status !== 'CUT' && e.cutMade !== false,
   },
   {
-    id: 'topdk',
-    label: 'Top DK',
-    available: (ctx) => ctx.topFinalDkIds.size > 0,
-    predicate: (e, ctx) => ctx.topFinalDkIds.has(e.playerId),
-  },
-  {
     id: 'bestvalue',
     label: 'Best Value',
     available: (ctx) => ctx.topValueIds.size > 0,
     predicate: (e, ctx) => ctx.topValueIds.has(e.playerId),
-  },
-  {
-    id: 'highowned',
-    label: 'High Owned',
-    available: hasOwnership,
-    predicate: (e) => e.ownershipPercent != null && e.ownershipPercent >= 20,
   },
   {
     id: 'lowowned',
@@ -392,11 +360,24 @@ const completedFilters: FilterDescriptor[] = [
     predicate: (e) => e.ownershipPercent != null && e.ownershipPercent < 10,
   },
   {
+    id: 'highowned',
+    label: 'High Owned',
+    available: hasOwnership,
+    predicate: (e) => e.ownershipPercent != null && e.ownershipPercent >= 20,
+  },
+  {
     id: 'missed',
     label: 'Missed Cut',
     available: hasCutFlag,
     predicate: (e) => e.cutMade === false || e.status === 'CUT',
   },
+  {
+    id: 'topdk',
+    label: 'Top DK',
+    available: (ctx) => ctx.topFinalDkIds.size > 0,
+    predicate: (e, ctx) => ctx.topFinalDkIds.has(e.playerId),
+  },
+  // My Lineup: not backed by real data — hidden
 ]
 
 // ---------------------------------------------------------------------------

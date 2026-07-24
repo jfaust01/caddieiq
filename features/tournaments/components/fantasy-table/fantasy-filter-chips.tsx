@@ -41,19 +41,19 @@ export function FantasyFilterChips({
             aria-pressed={isActive}
             onClick={() => onSelect(c.id)}
             className={cn(
-              'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-all duration-200',
+              'inline-flex shrink-0 items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-all duration-200 h-8',
               isActive
                 ? accent.chipActive
-                : 'border-white/[0.09] bg-white/[0.02] text-muted-foreground hover:border-white/20 hover:text-foreground',
+                : 'border-white/[0.1] bg-white/[0.03] text-muted-foreground hover:border-white/15 hover:text-foreground',
               isDisabled &&
-                'cursor-not-allowed opacity-40 hover:border-white/[0.09] hover:text-muted-foreground',
+                'cursor-not-allowed opacity-35 hover:border-white/[0.1] hover:text-muted-foreground',
             )}
           >
-            <span>{c.label}</span>
+            <span className="leading-tight">{c.label}</span>
             <span
               className={cn(
-                'rounded-full px-1.5 py-0.5 text-[11px] tabular-nums',
-                isActive ? accent.chipCount : 'bg-white/[0.06] text-muted-foreground/80',
+                'inline-flex items-center justify-center rounded-md px-1 py-0.5 text-[10px] font-bold tabular-nums leading-none',
+                isActive ? accent.chipCount : 'bg-white/[0.08] text-muted-foreground/70',
               )}
             >
               {c.count}

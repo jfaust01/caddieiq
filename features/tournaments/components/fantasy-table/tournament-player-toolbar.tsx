@@ -12,28 +12,26 @@ import type { SortKey, SortOption } from '@/features/tournaments/config/phase-ta
 import { cn } from '@/lib/utils'
 
 /**
- * Premium filter-dropdown styling (visual only) matching the Tournament
- * Winner / Scorecard / Analytics card design language. Scoped here — shared
- * Select primitives are untouched. `!` utilities override the primitive's
- * conflicting height/radius/bg/text defaults.
+ * Compact CaddieIQ Input style: 44px height, 14–16px radius, thin border,
+ * dark glass, subtle focus glow. `!` utilities override Select primitive
+ * defaults.
  */
-const premiumTriggerClass = cn(
-  '!h-[60px] w-full !rounded-[22px] !border-[#2A2F36] !bg-[#111418] !px-[22px] !text-lg !font-semibold !text-white',
-  'relative overflow-hidden transition-all duration-[250ms]',
-  'hover:-translate-y-px hover:!border-white/25 hover:shadow-[0_10px_28px_rgba(0,0,0,0.28)]',
-  'data-[popup-open]:!border-[#34D17A] data-[popup-open]:shadow-[0_0_0_3px_rgba(52,209,122,0.15),0_10px_30px_rgba(16,185,129,0.12)]',
-  '[&>svg]:!size-5 [&>svg]:text-muted-foreground',
-  'lg:w-[240px]',
+const compactTriggerClass = cn(
+  '!h-11 w-full !rounded-[15px] !border-white/[0.12] !bg-[#111418] !px-4 !text-sm !font-semibold !text-white',
+  'relative overflow-hidden transition-all duration-200',
+  'hover:!border-white/20 hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]',
+  'data-[popup-open]:!border-emerald-400/50 data-[popup-open]:shadow-[0_0_0_2px_rgba(52,209,122,0.1),0_8px_16px_rgba(0,0,0,0.2)]',
+  '[&>svg]:!size-4 [&>svg]:text-muted-foreground',
 )
 
-const premiumContentClass = cn(
-  '!rounded-[22px] border border-white/[0.08] !bg-[#0D1318]/95 p-2 !shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-0 backdrop-blur-xl',
+const compactContentClass = cn(
+  '!rounded-[15px] border border-white/[0.1] !bg-[#0D1318]/95 p-1.5 !shadow-[0_12px_32px_rgba(0,0,0,0.3)] ring-0 backdrop-blur-xl',
 )
 
-const premiumItemClass = cn(
-  'rounded-[14px] px-3 py-2.5 text-base font-medium text-foreground/90',
-  'data-[highlighted]:!bg-emerald-500/15 data-[highlighted]:!text-emerald-50',
-  'data-[selected]:!bg-emerald-500/10 data-[selected]:!text-emerald-400',
+const compactItemClass = cn(
+  'rounded-[12px] px-2.5 py-1.5 text-xs font-medium text-foreground/85',
+  'data-[highlighted]:!bg-emerald-500/20 data-[highlighted]:!text-emerald-100',
+  'data-[selected]:!bg-emerald-500/15 data-[selected]:!text-emerald-300',
 )
 
 export interface StatusOption {
@@ -66,55 +64,46 @@ export function TournamentPlayerToolbar({
   sortOptions: SortOption[]
 }) {
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-5">
-      {/* Search input */}
-      <div className="group relative h-[60px] w-full overflow-hidden rounded-[22px] border border-[#2B3138] bg-[#111418] transition-all duration-[250ms] hover:-translate-y-px hover:border-white/20 hover:shadow-[0_10px_28px_rgba(0,0,0,0.28)] focus-within:-translate-y-px focus-within:border-[#34D17A] focus-within:shadow-[0_0_0_3px_rgba(52,209,122,0.15),0_10px_30px_rgba(16,185,129,0.12)] lg:flex-1">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-emerald-500/[0.05] opacity-0 blur-3xl transition-opacity duration-[250ms] group-hover:opacity-100 group-focus-within:opacity-100"
-        />
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_90%_-10%,rgba(16,185,129,0.04),transparent_60%)]"
-        />
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+      {/* Search input — desktop fills, mobile full width */}
+      <div className="group relative h-11 w-full overflow-hidden rounded-[15px] border border-white/[0.12] bg-[#111418] transition-all duration-200 hover:border-white/20 hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] focus-within:border-emerald-400/50 focus-within:shadow-[0_0_0_2px_rgba(52,209,122,0.1),0_8px_16px_rgba(0,0,0,0.2)] lg:flex-1">
         <Search
           aria-hidden="true"
-          className="pointer-events-none absolute left-6 top-1/2 size-[22px] -translate-y-1/2 text-muted-foreground transition-colors duration-[250ms] group-focus-within:text-emerald-400"
+          className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors duration-200 group-focus-within:text-emerald-400"
         />
         <input
           type="text"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Search players by name..."
+          placeholder="Search players..."
           aria-label="Search players by name"
-          className="relative h-full w-full bg-transparent pl-[3.75rem] pr-6 text-xl font-semibold text-white outline-none placeholder:font-normal placeholder:text-[#7D848D]"
+          className="relative h-full w-full bg-transparent pl-10 pr-3.5 text-sm font-medium text-white outline-none placeholder:text-muted-foreground"
         />
       </div>
 
-      {/* Filter dropdowns */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:flex lg:gap-5">
+      {/* Filter dropdowns — desktop row, mobile two columns */}
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3 lg:gap-4">
         <Select value={statusFilter} onValueChange={(value) => onStatusChange(value as FieldEntryStatus | 'ALL')}>
-          <SelectTrigger aria-label="Filter by status" className={premiumTriggerClass}>
+          <SelectTrigger aria-label="Filter by status" className={compactTriggerClass}>
             <SelectValue>
-              {() => statusOptions.find((o) => o.value === statusFilter)?.label ?? 'All statuses'}
+              {() => statusOptions.find((o) => o.value === statusFilter)?.label ?? 'Status'}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className={premiumContentClass}>
+          <SelectContent className={compactContentClass}>
             {statusOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value} className={premiumItemClass}>
+              <SelectItem key={option.value} value={option.value} className={compactItemClass}>
                 {option.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={(value) => onSortChange(value as SortKey)}>
-          <SelectTrigger aria-label="Sort players" className={premiumTriggerClass}>
-            <SelectValue>{() => sortOptions.find((o) => o.value === sort)?.label ?? ''}</SelectValue>
+          <SelectTrigger aria-label="Sort players" className={compactTriggerClass}>
+            <SelectValue>{() => sortOptions.find((o) => o.value === sort)?.label ?? 'Sort'}</SelectValue>
           </SelectTrigger>
-          <SelectContent className={premiumContentClass}>
+          <SelectContent className={compactContentClass}>
             {sortOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value} className={premiumItemClass}>
+              <SelectItem key={option.value} value={option.value} className={compactItemClass}>
                 {option.label}
               </SelectItem>
             ))}
