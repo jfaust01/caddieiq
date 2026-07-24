@@ -6,6 +6,7 @@ import type { TablePhase } from '@/features/tournaments/config/phase-table-confi
 import type { DfsValueResult } from '@/lib/dfs-value'
 import { FantasyRowCells } from './fantasy-row-cells'
 import { ScoreLiveRowCells } from './score-live-row-cells'
+import { FantasyLiveEnhancedRowCells } from './fantasy-live-enhanced-row-cells'
 import { ScoringRowCells } from './scoring-row-cells'
 
 interface FantasyPlayerRowProps {
@@ -60,7 +61,7 @@ export function FantasyPlayerRow({
       {isScheduled ? (
         <FantasyRowCells entrant={entrant} dfsResult={dfsResult} rank={index + 1} />
       ) : phase === 'live' ? (
-        <ScoreLiveRowCells entrant={entrant} positionCountMap={positionCountMap} />
+        <FantasyLiveEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} />
       ) : (
         <ScoringRowCells entrant={entrant} positionCountMap={positionCountMap} />
       )}

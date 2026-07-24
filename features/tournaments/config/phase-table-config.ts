@@ -214,15 +214,83 @@ const draftedColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 
+// New columns for enhanced LIVE phase display
+const aiRatingColumn: ColumnDescriptor = {
+  id: 'aiRating',
+  label: 'AI Rating',
+  tooltip: 'Overall player rating (0-100 scale)',
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const courseFitColumn: ColumnDescriptor = {
+  id: 'courseFit',
+  label: 'Course Fit',
+  tooltip: 'Course fit score relative to current field',
+  colClassName: 'w-[95px] sm:w-[110px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const recentFormColumn: ColumnDescriptor = {
+  id: 'recentForm',
+  label: 'Recent Form',
+  tooltip: 'Form trend visualization',
+  colClassName: 'w-[120px] sm:w-[140px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+}
+
+const liveValueColumn: ColumnDescriptor = {
+  id: 'value',
+  label: 'Value PTS/$1K',
+  tooltip: 'Fantasy points per $1,000 salary',
+  colClassName: 'w-[110px] sm:w-[130px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const liveOwnershipColumn: ColumnDescriptor = {
+  id: 'ownership',
+  label: 'Ownership',
+  tooltip: 'Expected DFS ownership %',
+  colClassName: 'w-[95px] sm:w-[110px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const leverageColumn: ColumnDescriptor = {
+  id: 'leverage',
+  label: 'Leverage (Down Prob)',
+  tooltip: 'Leverage / Downside probability',
+  colClassName: 'w-[120px] sm:w-[140px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const projectedPtsColumn: ColumnDescriptor = {
+  id: 'projectedPts',
+  label: 'Proj-K PTS',
+  tooltip: 'Projected tournament points',
+  colClassName: 'w-[105px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const ceilingColumn: ColumnDescriptor = {
+  id: 'ceiling',
+  label: 'Ceiling',
+  tooltip: 'Maximum likely tournament points',
+  colClassName: 'w-[95px] sm:w-[110px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
 const liveColumns: ColumnDescriptor[] = [
   posColumn,
   scoringPlayerColumn,
-  liveColumn,
-  totalColumn,
-  thruColumn,
-  todayColumn,
+  aiRatingColumn,
+  courseFitColumn,
+  recentFormColumn,
   salaryLiveColumn,
-  draftedColumn,
+  liveValueColumn,
+  liveOwnershipColumn,
+  leverageColumn,
+  projectedPtsColumn,
+  ceilingColumn,
   oddsScoringColumn,
 ]
 
