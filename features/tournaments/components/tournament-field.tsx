@@ -102,8 +102,11 @@ type SortKey =
   | 'own-desc'
   | 'odds-asc'
   | 'odds-desc'
+  | 'rating-asc'
+  | 'rating-desc'
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+// Sort options for the scoring (live/completed) table — anchored on position.
+const SCORING_SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'pos-asc', label: 'Position (↑)' },
   { value: 'pos-desc', label: 'Position (↓)' },
   { value: 'name-asc', label: 'Name (A–Z)' },
@@ -116,6 +119,21 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'own-desc', label: 'Ownership (High)' },
   { value: 'odds-asc', label: 'Odds (Favorable)' },
   { value: 'odds-desc', label: 'Odds (Long)' },
+]
+
+// Sort options for the pre-tournament fantasy table — no scores/positions yet,
+// so it anchors on the CaddieIQ rating and other fantasy signals.
+const PRE_SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'rating-desc', label: 'CaddieIQ Rating (High)' },
+  { value: 'rating-asc', label: 'CaddieIQ Rating (Low)' },
+  { value: 'salary-desc', label: 'DK Salary (High)' },
+  { value: 'salary-asc', label: 'DK Salary (Low)' },
+  { value: 'own-desc', label: 'Proj Ownership (High)' },
+  { value: 'own-asc', label: 'Proj Ownership (Low)' },
+  { value: 'odds-asc', label: 'Odds (Favorable)' },
+  { value: 'odds-desc', label: 'Odds (Long)' },
+  { value: 'name-asc', label: 'Name (A–Z)' },
+  { value: 'name-desc', label: 'Name (Z–A)' },
 ]
 
 const STATUS_ORDER: Record<FieldEntryStatus, number> = {
@@ -432,7 +450,7 @@ function LeaderboardRow({
       {/* R2 */}
       <td className="px-3 align-middle w-[108px] min-w-[108px]">
         <TournamentScoreCell 
-          primary={entrant.round2 ?? '—'} 
+          primary={entrant.round2 ?? '��'} 
           secondary={entrant.round2RelToPar ?? undefined}
           dkPoints={entrant.round2DkPoints}
         />
@@ -631,8 +649,12 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
   const phase = classifyPhase(status)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
-  const [sort, setSort] = useState<SortKey>('pos-asc')
+  const [sort, setSort] = useState<SortKey>(() => (phase === 'pre' ? 'rating-desc' : 'pos-asc'))
   const [chip, setChip] = useState<string>('all')
+
+  // Sort options depend on phase: pre-tournament anchors on fantasy rating,
+  // scoring anchors on position/total.
+  const sortOptions = phase === 'pre' ? PRE_SORT_OPTIONS : SCORING_SORT_OPTIONS
   const [selectedScorecardPlayer, setSelectedScorecardPlayer] = useState<string | null>(null)
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
   const [selectedRound, setSelectedRound] = useState<number>(1)
@@ -713,6 +735,18 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
       // Name sorting
       if (sort === 'name-asc') return a.playerName.localeCompare(b.playerName)
       if (sort === 'name-desc') return b.playerName.localeCompare(a.playerName)
+
+      // CaddieIQ fantasy rating sorting (nulls last for high, first meaningful)
+      if (sort === 'rating-desc') {
+        const ra = a.fantasyScore ?? Number.MIN_VALUE
+        const rb = b.fantasyScore ?? Number.MIN_VALUE
+        return rb !== ra ? rb - ra : a.playerName.localeCompare(b.playerName)
+      }
+      if (sort === 'rating-asc') {
+        const ra = a.fantasyScore ?? Number.MAX_VALUE
+        const rb = b.fantasyScore ?? Number.MAX_VALUE
+        return ra !== rb ? ra - rb : a.playerName.localeCompare(b.playerName)
+      }
 
       // Total score sorting
       if (sort === 'total-asc') {
@@ -889,7 +923,9 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
             onValueChange={(value) => setStatusFilter(value as FieldEntryStatus | 'ALL')}
           >
             <SelectTrigger aria-label="Filter by status" className={premiumTriggerClass}>
-              <SelectValue />
+              <SelectValue>
+                {() => statusOptions.find((o) => o.value === statusFilter)?.label ?? 'All statuses'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className={premiumContentClass}>
               {statusOptions.map((option) => (
@@ -904,10 +940,12 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
             onValueChange={(value) => setSort(value as SortKey)}
           >
             <SelectTrigger aria-label="Sort players" className={premiumTriggerClass}>
-              <SelectValue />
+              <SelectValue>
+                {() => sortOptions.find((o) => o.value === sort)?.label ?? ''}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className={premiumContentClass}>
-              {SORT_OPTIONS.map((option) => (
+              {sortOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value} className={premiumItemClass}>
                   {option.label}
                 </SelectItem>
