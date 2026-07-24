@@ -1,6 +1,7 @@
 'use client'
 
 import { TriangleAlert } from 'lucide-react'
+import Link from 'next/link'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { EmptyPlayersState } from '@/features/players/components/empty-players-state'
@@ -11,6 +12,7 @@ import { PlayerPagination } from '@/features/players/components/player-paginatio
 import { PlayerSearch } from '@/features/players/components/player-search'
 import { PlayerSkeleton } from '@/features/players/components/player-skeleton'
 import { ViewToggle } from '@/features/players/components/view-toggle'
+import { PlayersFantasyTable } from '@/features/players/components/players-fantasy-table/players-fantasy-table'
 import { PLAYERS_PAGE_SIZE, usePlayers } from '@/features/players/hooks/use-players'
 
 function ResultSummary({
@@ -109,6 +111,14 @@ export function PlayerDirectory() {
             <PlayerCard key={player.id} player={player} />
           ))}
         </div>
+      ) : view === 'table' ? (
+        <PlayersFantasyTable
+          players={result.items}
+          onPlayerClick={(playerId) => {
+            // Navigate to player detail page
+            window.location.href = `/players/${playerId}`
+          }}
+        />
       ) : (
         <div className="flex flex-col gap-3">
           {result.items.map((player) => (

@@ -333,7 +333,7 @@ export interface PlayerFilters {
 }
 
 /** Directory layout mode. */
-export type ViewMode = 'grid' | 'list'
+export type ViewMode = 'grid' | 'list' | 'table'
 
 /** A paginated query against the player directory. */
 export interface PlayerQuery {

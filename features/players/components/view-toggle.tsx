@@ -1,6 +1,6 @@
 'use client'
 
-import { LayoutGrid, List } from 'lucide-react'
+import { LayoutGrid, List, Table2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import type { ViewMode } from '@/features/players/types'
@@ -12,7 +12,7 @@ interface ViewToggleProps {
   className?: string
 }
 
-/** Grid/list layout switch for the player directory. */
+/** Grid/list/table layout switch for the player directory. */
 export function ViewToggle({ view, onViewChange, className }: ViewToggleProps) {
   return (
     <div
@@ -40,6 +40,15 @@ export function ViewToggle({ view, onViewChange, className }: ViewToggleProps) {
         onClick={() => onViewChange('list')}
       >
         <List />
+      </Button>
+      <Button
+        variant={view === 'table' ? 'outline' : 'ghost'}
+        size="icon-sm"
+        aria-label="Table view"
+        aria-pressed={view === 'table'}
+        onClick={() => onViewChange('table')}
+      >
+        <Table2 />
       </Button>
     </div>
   )
