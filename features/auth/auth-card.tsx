@@ -28,7 +28,7 @@ export function AuthCard({ title, description, children }: AuthCardProps) {
             width={64}
             height={64}
             priority
-            className="size-16 rounded-2xl border border-white/[0.08] shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
+            className="size-16"
           />
           <div className="flex flex-col gap-0.5">
             <span className="text-lg font-semibold tracking-tight">
