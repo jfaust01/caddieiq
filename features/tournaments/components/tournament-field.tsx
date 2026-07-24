@@ -202,7 +202,9 @@ function finishResult(e: FieldEntrant, isTie: boolean): string {
   if (e.status === 'DISQUALIFIED') return 'DQ'
   if (e.status === 'CUT' || e.cutMade === false) return 'MC'
   if (e.position == null) return '—'
-  if (e.position === 1) return 'Won'
+  // Only assert an outright win when position 1 is NOT tied — a T1 after
+  // regulation is decided by a playoff we can't infer from position alone.
+  if (e.position === 1 && !isTie) return 'Won'
   return `${isTie ? 'T' : ''}${e.position}`
 }
 
@@ -563,7 +565,7 @@ function PlayerRowCells({
 
   const isTie = entrant.position != null && (positionCountMap?.get(entrant.position) ?? 0) > 1
   const result = finishResult(entrant, isTie)
-  const isWinner = phase === 'completed' && entrant.position === 1 && entrant.status !== 'CUT' && entrant.cutMade !== false
+  const isWinner = phase === 'completed' && entrant.position === 1 && !isTie && entrant.status !== 'CUT' && entrant.cutMade !== false
 
   const initials = entrant.playerName
     .split(' ')
@@ -1326,13 +1328,11 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
                     </TooltipProvider>
                   </th>
                   {phase === 'completed' && (
-                    <th className="w-[88px] min-w-[88px] max-w-[88px] border-l border-white/[0.055] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild><span className="cursor-help">RESULT</span></TooltipTrigger>
-                          <TooltipContent>Final placement (Won / T-position / MC / WD / DQ)</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                    <th
+                      title="Final placement (Won / T-position / MC / WD / DQ)"
+                      className="w-[88px] min-w-[88px] max-w-[88px] border-l border-white/[0.055] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+                    >
+                      RESULT
                     </th>
                   )}
                 </tr>
