@@ -1,4 +1,7 @@
+'use client'
+
 import type { ComponentType, ReactNode } from 'react'
+import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
 import {
   CalendarClock,
   CloudSun,
@@ -173,9 +176,11 @@ function TournamentInsightCard({
   return (
     <div
       className={cn(
-        'relative flex min-w-0 flex-col items-center overflow-hidden rounded-[20px] p-5 text-center',
+        'group relative flex h-full min-w-0 flex-col items-center overflow-hidden rounded-[20px] p-5 text-center',
         'border border-white/[0.08] bg-[#0d1318]',
         'shadow-[inset_0_1px_0_rgba(255,255,255,0.025),0_12px_30px_rgba(0,0,0,0.18)]',
+        'transition-[transform,border-color,box-shadow] duration-300 ease-out',
+        'hover:-translate-y-0.5 hover:border-white/[0.14] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_40px_rgba(0,0,0,0.28)]',
       )}
     >
       {/* Top edge accent line */}
@@ -666,21 +671,65 @@ export function TournamentIntelligence({
     cards = buildCompletedCards(tournament, field)
   }
 
+  const prefersReducedMotion = useReducedMotion()
+
+  // Staggered fade/rise for the card grid. When the user prefers reduced
+  // motion, both variants collapse to the final state so nothing animates.
+  const container: Variants = {
+    hidden: {},
+    show: {
+      transition: prefersReducedMotion
+        ? undefined
+        : { staggerChildren: 0.07, delayChildren: 0.04 },
+    },
+  }
+  const item: Variants = prefersReducedMotion
+    ? { hidden: { opacity: 1 }, show: { opacity: 1 } }
+    : {
+        hidden: { opacity: 0, y: 16 },
+        show: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+        },
+      }
+
   return (
     <section className="flex flex-col gap-4" aria-label="Tournament intelligence">
       <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-        <TournamentStatusIntro
-          phase={phase}
-          icon={intro.icon}
-          title={intro.title}
-          statusLine={statusLine}
-          description={intro.description}
-        />
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {cards.map((card) => (
-            <TournamentInsightCard key={card.label} {...card} />
-          ))}
-        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={`intro-${phase}`}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <TournamentStatusIntro
+              phase={phase}
+              icon={intro.icon}
+              title={intro.title}
+              statusLine={statusLine}
+              description={intro.description}
+            />
+          </motion.div>
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={`cards-${phase}`}
+            className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+            variants={container}
+            initial="hidden"
+            animate="show"
+          >
+            {cards.map((card) => (
+              <motion.div key={card.label} variants={item} className="min-w-0">
+                <TournamentInsightCard {...card} />
+              </motion.div>
+            ))}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <p className="text-[11px] italic text-white/40 text-pretty">

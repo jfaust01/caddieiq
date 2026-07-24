@@ -2,7 +2,9 @@
 
 import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
 import type { WeatherIntelligence } from '@/lib/weather-intelligence'
+import type { DfsValueField } from '@/lib/dfs-value'
 import { TournamentIntelligence } from './tournament-intelligence'
+import { SlateOutlookSection } from './intelligence/slate-outlook-section'
 import { TournamentField } from './tournament-field'
 import { TournamentWinnerCard } from './tournament-elevation/tournament-winner-card'
 
@@ -11,6 +13,7 @@ interface TournamentCompactOverviewProps {
   field: TournamentField
   fieldReport?: { cutLine?: string; averageScore?: number } | null
   weather?: WeatherIntelligence | null
+  dfsField?: DfsValueField | null
 }
 
 /**
@@ -99,6 +102,7 @@ export function TournamentCompactOverview({
   field,
   fieldReport,
   weather,
+  dfsField,
 }: TournamentCompactOverviewProps) {
   const tournamentId = tournament.id
   const hasField = field.size > 0
@@ -112,6 +116,15 @@ export function TournamentCompactOverview({
           tournament={tournament}
           field={field}
           weather={weather}
+        />
+      </div>
+
+      {/* Phase-adaptive second section: AI Slate Outlook / Live Insights / Recap */}
+      <div className="min-w-0">
+        <SlateOutlookSection
+          tournament={tournament}
+          field={field}
+          dfsField={dfsField}
         />
       </div>
 
