@@ -24,7 +24,7 @@ export function FantasyTableHeader({
   return (
     <thead
       className={cn(
-        'sticky top-[94px] z-30 bg-[#101619]/90 backdrop-blur-sm border-b',
+        'sticky top-[94px] z-40 bg-[#101619] border-b',
         'before:content-[\'\'] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:pointer-events-none',
         phase === 'scheduled'
           ? 'before:bg-gradient-to-r before:from-transparent before:via-emerald-400/50 before:to-transparent'
@@ -40,8 +40,7 @@ export function FantasyTableHeader({
             key={col.id}
             className={cn(
               col.thClassName,
-              'relative text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80 border-r',
-              'transition-colors duration-150',
+              'text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80 border-r',
             )}
             style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}
             title={col.tooltip}
