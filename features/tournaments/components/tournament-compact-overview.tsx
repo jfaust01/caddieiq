@@ -112,10 +112,9 @@ export function TournamentCompactOverview({
       {hasField && (
         <div className="border-t border-border pt-6">
           {/* Footnote */}
-          <div className="mb-3 flex items-start gap-2 text-[11px] italic text-muted-foreground">
-            <div className="mt-0.5 shrink-0 text-muted-foreground/60">ℹ</div>
-            <p>Stats update automatically when official results and scoring are available.</p>
-          </div>
+          <p className="mb-3 text-[11px] italic text-muted-foreground">
+            Stats update automatically when official results and scoring are available.
+          </p>
 
           <TournamentWinnerCard
             tournamentWinner={resolvedWinner}
