@@ -175,8 +175,8 @@ const resultColumn: ColumnDescriptor = {
   id: 'result',
   label: 'RESULT',
   tooltip: 'Final placement (Won / T-position / MC / WD / DQ)',
-  colClassName: 'w-[88px]',
-  thClassName: `w-[88px] min-w-[88px] max-w-[88px] border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+  colClassName: 'w-[90px] sm:w-[100px]',
+  thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
 }
 
 /**
@@ -269,14 +269,13 @@ const ownershipCompletedColumn: ColumnDescriptor = {
 }
 
 const completedColumns: ColumnDescriptor[] = [
-  posColumn,
+  resultColumn,
   scoringPlayerColumn,
   totalDkColumn,
   finalScoreColumn,
   salaryCompletedColumn,
   valueColumn,
   ownershipCompletedColumn,
-  resultColumn,
   oddsScoringColumn,
 ]
 
