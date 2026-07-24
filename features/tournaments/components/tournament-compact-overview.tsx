@@ -6,7 +6,6 @@ import type { DfsValueField } from '@/lib/dfs-value'
 import { TournamentIntelligence } from './tournament-intelligence'
 import { SlateOutlookSection } from './intelligence/slate-outlook-section'
 import { TournamentField } from './tournament-field'
-import { TournamentWinnerCard } from './tournament-elevation/tournament-winner-card'
 
 interface TournamentCompactOverviewProps {
   tournament: TournamentSummary
@@ -128,15 +127,7 @@ export function TournamentCompactOverview({
         />
       </div>
 
-      {/* Winner Card - displayed above Field section */}
-      {hasField && (
-        <div className="border-t border-border pt-6">
-          <TournamentWinnerCard
-            tournamentWinner={resolvedWinner}
-            isCompleted={isTournamentCompleted(tournament.status)}
-          />
-        </div>
-      )}
+
 
       {/* Field Section */}
       {hasField && (
