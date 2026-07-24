@@ -296,10 +296,6 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
       <FieldAnalyticsSummary summary={field.analyticsSummary} />
 
       <div className="flex flex-col gap-3">
-        <p className="text-[11px] italic text-muted-foreground">
-          Stats update automatically when official results and scoring are available.
-        </p>
-
         <FantasyFilterChips chips={chips} active={chip} onSelect={setChip} accent={config.accent} />
       </div>
 
