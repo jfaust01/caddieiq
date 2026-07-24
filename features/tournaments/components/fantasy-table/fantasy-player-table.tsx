@@ -111,22 +111,20 @@ export function FantasyPlayerTable({
             </>
           )}
 
-          {/* Table scroll area */}
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <FantasyTableScrollArea hasScrolled={hasScrolled} onScroll={handleTableScroll}>
-              <div ref={scrollContainerRef} className={cn('overflow-x-auto sm:overflow-x-visible select-none', styles.scrollContainer)} style={{ userSelect: 'none', maxWidth: '100%' }}>
-                <table className="w-max table-fixed border-collapse sm:w-full">
-                  <colgroup>
-                    {columns.map((col) => (
-                      <col key={col.id} className={col.colClassName} />
-                    ))}
-                  </colgroup>
-                  <FantasyTableHeader columns={columns} fieldSize={fieldSize} phase={phase} />
-                  <FantasyTableBody entrants={entrants} phase={phase} dfsByPlayer={dfsByPlayer} positionCountMap={positionCountMap} onRowClick={onRowClick} />
-                </table>
-              </div>
-            </FantasyTableScrollArea>
-          </div>
+          {/* Table scroll area — sticky header needs to be here */}
+          <FantasyTableScrollArea hasScrolled={hasScrolled} onScroll={handleTableScroll}>
+            <div ref={scrollContainerRef} className={cn('overflow-x-auto sm:overflow-x-visible select-none', styles.scrollContainer)} style={{ userSelect: 'none', maxWidth: '100%' }}>
+              <table className="w-max table-fixed border-collapse sm:w-full">
+                <colgroup>
+                  {columns.map((col) => (
+                    <col key={col.id} className={col.colClassName} />
+                  ))}
+                </colgroup>
+                <FantasyTableHeader columns={columns} fieldSize={fieldSize} phase={phase} />
+                <FantasyTableBody entrants={entrants} phase={phase} dfsByPlayer={dfsByPlayer} positionCountMap={positionCountMap} onRowClick={onRowClick} />
+              </table>
+            </div>
+          </FantasyTableScrollArea>
 
           {/* Footer separator */}
           <div className="border-t" style={{ borderColor: 'rgba(120, 150, 165, 0.12)' }} />

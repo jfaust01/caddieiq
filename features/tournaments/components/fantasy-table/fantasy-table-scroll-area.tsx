@@ -12,7 +12,8 @@ interface FantasyTableScrollAreaProps {
 
 /**
  * Scrollable container for the fantasy table with mobile scroll hint.
- * Provides drag-to-scroll functionality and tracks scroll state.
+ * Provides drag-to-scroll functionality, tracks scroll state, and maintains
+ * proper stacking context for sticky table headers.
  */
 export function FantasyTableScrollArea({
   children,
@@ -20,7 +21,7 @@ export function FantasyTableScrollArea({
   hasScrolled = false,
 }: FantasyTableScrollAreaProps) {
   return (
-    <>
+    <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
       {/* Mobile scroll hint — hidden after first scroll */}
       {!hasScrolled && (
         <div className="sm:hidden text-xs text-muted-foreground py-3 flex items-center gap-1 px-4 transition-opacity duration-300">
@@ -29,11 +30,11 @@ export function FantasyTableScrollArea({
       )}
       <div
         onScroll={onScroll}
-        className={cn('overflow-x-auto sm:overflow-x-visible select-none', styles.scrollContainer)}
+        className={cn('overflow-x-auto sm:overflow-x-visible select-none flex-1', styles.scrollContainer)}
         style={{ userSelect: 'none', maxWidth: '100%' }}
       >
         {children}
       </div>
-    </>
+    </div>
   )
 }

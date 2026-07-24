@@ -24,7 +24,7 @@ export function FantasyTableHeader({
   return (
     <thead
       className={cn(
-        'sticky top-[94px] z-40 bg-[#101619] border-b',
+        'sticky top-0 z-40 bg-[#101619] border-b',
         'before:content-[\'\'] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:pointer-events-none',
         phase === 'scheduled'
           ? 'before:bg-gradient-to-r before:from-transparent before:via-emerald-400/50 before:to-transparent'
