@@ -264,8 +264,14 @@ function FantasyRowCells({
       {/* DK SALARY */}
       <td className="px-1 sm:px-3 align-middle">
         <div className="flex h-full items-center justify-center gap-1.5 whitespace-nowrap">
-          <DraftKingsMark className="h-3 w-auto shrink-0" />
-          <span className="text-sm font-semibold tabular-nums text-foreground">{salaryDisplay}</span>
+          {entrant.dfsSalary ? (
+            <>
+              <DraftKingsMark className="h-3 w-auto shrink-0" />
+              <span className="text-sm font-semibold tabular-nums text-foreground">{salaryDisplay}</span>
+            </>
+          ) : (
+            <span className="text-sm text-muted-foreground">—</span>
+          )}
         </div>
       </td>
 
