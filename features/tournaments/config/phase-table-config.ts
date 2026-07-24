@@ -65,36 +65,19 @@ const TH_CENTER_NUM =
 const TH_SCORE =
   'h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground'
 
+/**
+ * Scheduled (pre-tournament) columns for fantasy lineup building.
+ * Sorted by mobile priority: Player, Salary, Odds, World Ranking first,
+ * then Recent Form, Tee Time, Course Fit via horizontal scroll.
+ */
 const scheduledColumns: ColumnDescriptor[] = [
-  { id: 'rank', label: '#', colClassName: 'w-[48px]', thClassName: `px-1 sm:px-2 ${TH_CENTER_NUM}` },
   {
     id: 'player',
     label: 'Players',
     headerKind: 'player',
-    colClassName: 'w-[calc(100vw-256px)] sm:w-[280px]',
+    colClassName: 'w-[calc(100vw-256px)] sm:w-[240px]',
     thClassName:
       'px-2 sm:px-3 h-12 text-left text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground',
-  },
-  {
-    id: 'caddieiq',
-    label: 'CaddieIQ',
-    tooltip: 'CaddieIQ fantasy production rating (0–100)',
-    colClassName: 'w-[88px]',
-    thClassName: `px-1 sm:px-2 ${TH_CENTER_NUM}`,
-  },
-  {
-    id: 'fit',
-    label: 'Fit',
-    tooltip: 'Course Fit signal from the DFS Value Model (0–100)',
-    colClassName: 'w-[88px]',
-    thClassName: `px-1 sm:px-2 ${TH_CENTER_NUM}`,
-  },
-  {
-    id: 'value',
-    label: 'Value',
-    tooltip: 'DFS Value tier — projected quality relative to salary',
-    colClassName: 'w-[104px]',
-    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER}`,
   },
   {
     id: 'salary',
@@ -104,18 +87,39 @@ const scheduledColumns: ColumnDescriptor[] = [
     thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
   },
   {
-    id: 'ownership',
-    label: 'Proj Own',
-    tooltip: 'Projected DFS ownership percentage',
-    colClassName: 'w-[92px]',
-    thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
-  },
-  {
     id: 'odds',
     label: 'Odds',
     tooltip: 'Betting Odds to Win Tournament',
     colClassName: 'w-[88px]',
     thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+  },
+  {
+    id: 'worldRank',
+    label: 'World Rank',
+    tooltip: 'Most recent season World Golf Ranking',
+    colClassName: 'w-[96px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
+  },
+  {
+    id: 'form',
+    label: 'Form',
+    tooltip: 'Recent Form score (0–100) — how well they are playing',
+    colClassName: 'w-[76px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
+  },
+  {
+    id: 'teeTime',
+    label: 'Tee Time',
+    tooltip: 'Scheduled first-round tee time',
+    colClassName: 'w-[96px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground`,
+  },
+  {
+    id: 'fit',
+    label: 'Fit',
+    tooltip: 'Course Fit signal from the DFS Value Model (0–100)',
+    colClassName: 'w-[76px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
   },
 ]
 

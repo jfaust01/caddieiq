@@ -26,9 +26,10 @@ import {
 import styles from '../tournament-field.module.css'
 
 /**
- * Scheduled (pre-tournament) row cells: rank · player · CaddieIQ rating ·
- * course fit · DFS value tier · DK salary · projected ownership · odds. Every
- * value is authoritative; missing data renders an em-dash.
+ * Scheduled (pre-tournament) row cells for fantasy lineup building:
+ * player · salary · odds · world ranking · form · tee time · course fit.
+ * Mobile priority: Player, Salary, Odds, World Ranking visible first.
+ * Every value is authoritative; missing data renders an em-dash.
  */
 function FantasyRowCells({
   entrant,
@@ -39,51 +40,18 @@ function FantasyRowCells({
   dfsResult: DfsValueResult | undefined
   rank: number
 }) {
-  const rating = entrant.fantasyScore
-  const fit = courseFitScore(dfsResult)
-  const tier = dfsResult?.tier ?? null
-  const valueScore = dfsResult?.score ?? null
   const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null
   const oddsDisplay = formatMissing(entrant.oddsToWin)
+  const worldRankDisplay = entrant.worldRanking ? `#${entrant.worldRanking}` : null
+  const formScore = entrant.formScore
+  const fit = courseFitScore(dfsResult)
+  const teeTimeDisplay = entrant.startingTime ? entrant.startingTime.slice(11, 16) : null // HH:MM from ISO
 
   return (
     <>
-      {/* RANK */}
-      <td className="px-1 sm:px-2 align-middle">
-        <div className="flex h-full items-center justify-center">
-          <span className="text-sm font-semibold tabular-nums text-muted-foreground">{rank}</span>
-        </div>
-      </td>
-
       {/* PLAYER */}
       <td className="px-2 sm:px-3 align-middle">
         <FantasyPlayerCell entrant={entrant} />
-      </td>
-
-      {/* CADDIEIQ RATING */}
-      <td className="px-1 sm:px-2 align-middle">
-        <FantasyMetricCell value={rating ?? null} meterTone="bg-emerald-400/70" valueClassName="text-emerald-300" />
-      </td>
-
-      {/* COURSE FIT */}
-      <td className="px-1 sm:px-2 align-middle">
-        <FantasyMetricCell value={fit} meterTone="bg-sky-400/70" valueClassName="text-foreground" />
-      </td>
-
-      {/* DFS VALUE */}
-      <td className="border-l border-border/40 px-1 sm:px-2 align-middle">
-        <div className="flex h-full flex-col items-center justify-center gap-1">
-          {tier ? (
-            <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-bold', TIER_BADGE_CLASS[tier])}>
-              {TIER_LABEL[tier]}
-            </span>
-          ) : (
-            <MetricEmptyState />
-          )}
-          {valueScore != null && (
-            <span className="text-[11px] tabular-nums text-muted-foreground/70">{valueScore}/100</span>
-          )}
-        </div>
       </td>
 
       {/* DK SALARY */}
@@ -100,24 +68,43 @@ function FantasyRowCells({
         </div>
       </td>
 
-      {/* PROJ OWNERSHIP */}
-      <td className="border-l border-border/40 px-1 sm:px-3 align-middle">
+      {/* ODDS */}
+      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <div className="flex h-full items-center justify-center">
-          {entrant.ownershipPercent == null ? (
-            <MetricEmptyState />
+          <span className="text-sm font-mono tabular-nums text-muted-foreground">{oddsDisplay}</span>
+        </div>
+      </td>
+
+      {/* WORLD RANKING */}
+      <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
+        <div className="flex h-full items-center justify-center">
+          {worldRankDisplay ? (
+            <span className="text-sm font-semibold tabular-nums text-foreground">{worldRankDisplay}</span>
           ) : (
-            <span className="text-sm font-semibold tabular-nums text-foreground">
-              {Math.round(entrant.ownershipPercent)}%
-            </span>
+            <MetricEmptyState />
           )}
         </div>
       </td>
 
-      {/* ODDS */}
-      <td className="border-l border-border/40 px-1 sm:px-3 align-middle">
+      {/* RECENT FORM */}
+      <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
+        <FantasyMetricCell value={formScore ?? null} meterTone="bg-amber-400/70" valueClassName="text-amber-300" />
+      </td>
+
+      {/* TEE TIME */}
+      <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
         <div className="flex h-full items-center justify-center">
-          <span className="text-sm font-mono tabular-nums text-muted-foreground">{oddsDisplay}</span>
+          {teeTimeDisplay ? (
+            <span className="text-sm font-mono text-muted-foreground">{teeTimeDisplay}</span>
+          ) : (
+            <MetricEmptyState />
+          )}
         </div>
+      </td>
+
+      {/* COURSE FIT */}
+      <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
+        <FantasyMetricCell value={fit} meterTone="bg-sky-400/70" valueClassName="text-foreground" />
       </td>
     </>
   )
