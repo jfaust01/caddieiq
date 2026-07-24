@@ -647,10 +647,8 @@ export function TournamentField({ field, tournamentId }: TournamentFieldProps) {
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {filtered.length === field.size
-          ? `${field.size} ${field.size === 1 ? 'player' : 'players'} in the field`
-          : `${filtered.length} of ${field.size} players`}
+      <p className="text-[11px] italic text-muted-foreground">
+        Stats update automatically when official results and scoring are available.
       </p>
 
       {filtered.length === 0 ? (

@@ -111,11 +111,6 @@ export function TournamentCompactOverview({
       {/* Winner Card - displayed above Field section */}
       {hasField && (
         <div className="border-t border-border pt-6">
-          {/* Footnote */}
-          <p className="mb-3 text-[11px] italic text-muted-foreground">
-            Stats update automatically when official results and scoring are available.
-          </p>
-
           <TournamentWinnerCard
             tournamentWinner={resolvedWinner}
             isCompleted={isTournamentCompleted(tournament.status)}
