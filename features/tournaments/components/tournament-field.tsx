@@ -264,26 +264,30 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
     )
   }
 
+  const toolbar = (
+    <TournamentPlayerToolbar
+      query={query}
+      onQueryChange={setQuery}
+      statusFilter={statusFilter}
+      onStatusChange={setStatusFilter}
+      statusOptions={statusOptions}
+      sort={sort}
+      onSortChange={setSort}
+      sortOptions={config.sortOptions}
+    />
+  )
+
   return (
     <div className="flex flex-col gap-4">
       <FieldAnalyticsSummary summary={field.analyticsSummary} />
 
-      <TournamentPlayerToolbar
-        query={query}
-        onQueryChange={setQuery}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
-        statusOptions={statusOptions}
-        sort={sort}
-        onSortChange={setSort}
-        sortOptions={config.sortOptions}
-      />
+      <div className="flex flex-col gap-3">
+        <p className="text-[11px] italic text-muted-foreground">
+          Stats update automatically when official results and scoring are available.
+        </p>
 
-      <p className="text-[11px] italic text-muted-foreground">
-        Stats update automatically when official results and scoring are available.
-      </p>
-
-      <FantasyFilterChips chips={chips} active={chip} onSelect={setChip} accent={config.accent} />
+        <FantasyFilterChips chips={chips} active={chip} onSelect={setChip} accent={config.accent} />
+      </div>
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -298,6 +302,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           allEntrants={field.entrants}
           fieldSize={field.size}
           dfsByPlayer={dfsByPlayer}
+          toolbar={toolbar}
           onRowClick={(playerId) => {
             setSelectedScorecardPlayer(playerId)
             setIsScorecardModalOpen(true)

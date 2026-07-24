@@ -28,6 +28,8 @@ export interface FantasyPlayerTableProps {
   dfsByPlayer: Map<string, DfsValueResult>
   /** Opens the scorecard modal for a player row. */
   onRowClick: (playerId: string) => void
+  /** Optional: table toolbar component to render inside the shell. */
+  toolbar?: React.ReactNode
 }
 
 /**
@@ -50,6 +52,7 @@ export function FantasyPlayerTable({
   fieldSize,
   dfsByPlayer,
   onRowClick,
+  toolbar,
 }: FantasyPlayerTableProps) {
   const config = phaseTableConfig[phase]
   const { columns, footnote } = config
@@ -88,6 +91,14 @@ export function FantasyPlayerTable({
         />
 
         <div className="relative z-10 flex flex-col min-h-0">
+          {/* Toolbar inside table shell */}
+          {toolbar && (
+            <>
+              {toolbar}
+              <div className="border-t" style={{ borderColor: 'rgba(120, 150, 165, 0.12)' }} />
+            </>
+          )}
+
           {/* Table scroll area */}
           <div className="flex-1 min-w-0 overflow-hidden">
             <FantasyTableScrollArea hasScrolled={hasScrolled} onScroll={handleTableScroll}>
