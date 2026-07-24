@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -58,9 +59,14 @@ export function AppSidebar() {
           href="/"
           className="flex items-center gap-3 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
         >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/85 text-lg font-bold text-[#07120d] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
-            CQ
-          </div>
+          <Image
+            src="/caddieiq-logo.png"
+            alt={`${siteConfig.name} logo`}
+            width={48}
+            height={48}
+            priority
+            className="h-12 w-12 shrink-0 rounded-2xl border border-white/[0.08] shadow-[0_4px_16px_rgba(0,0,0,0.35)]"
+          />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <div className="text-base font-semibold tracking-tight text-white">
               {siteConfig.name}
