@@ -84,12 +84,12 @@ export function TournamentWinnerCard({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-2xl',
-        'border border-white/[0.06]',
-        'bg-gradient-to-br from-white/[0.05] to-white/[0.02]',
-        'backdrop-blur-sm',
+        // Background matched to the Field Strength card system.
+        'relative overflow-hidden rounded-[22px]',
+        'border border-white/[0.08]',
+        'bg-[#0D1318]',
         'p-4 sm:p-5',
-        'shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.08)]',
+        'shadow-[0_12px_40px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.04)]',
         className
       )}
     >
@@ -102,7 +102,13 @@ export function TournamentWinnerCard({
       {/* Subtle top-right glow */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-emerald-500/[0.06] blur-3xl"
+        className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-emerald-500/[0.06] blur-3xl"
+      />
+
+      {/* Faint radial lighting */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_85%_-10%,rgba(16,185,129,0.05),transparent_60%)]"
       />
 
       {/* Content */}
