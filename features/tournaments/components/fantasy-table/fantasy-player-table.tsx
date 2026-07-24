@@ -369,13 +369,9 @@ export function FantasyPlayerTable({
       {/* Premium table wrapper. overflow-clip (NOT overflow-hidden) clips the
           rounded corners WITHOUT creating a scroll container, so the sticky
           header can still pin to the top of the page. */}
-      <div className="relative overflow-clip rounded-[20px] border border-white/[0.09] bg-[#101419] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_12px_36px_rgba(0,0,0,0.20)]">
-        {/* Decorative clip layer (rounded) — keeps glow/accent inside the card
-            corners without creating a clipping context for the table */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[20px]">
-          <div className={cn('absolute -right-24 -top-24 h-56 w-56 rounded-full blur-3xl', accent.glow)} />
-          <div className={cn('absolute inset-x-20 top-0 h-px bg-gradient-to-r from-transparent to-transparent', accent.headerLine)} />
-        </div>
+      <div className="relative overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#0B0E13]">
+        {/* Premium glass background with subtle internal grid */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[18px] bg-[radial-gradient(120%_100%_at_50%_0%,rgba(255,255,255,0.01),transparent)]" />
 
         {/* Table content */}
         <div className="relative z-10">
@@ -393,10 +389,14 @@ export function FantasyPlayerTable({
                   <col key={col.id} className={col.colClassName} />
                 ))}
               </colgroup>
-              <thead className="sticky top-0 sm:top-[94px] z-20 bg-[#101419] border-b border-white/[0.06]">
+              <thead className="sticky top-0 sm:top-[94px] z-20 bg-[#0D1117]/80 backdrop-blur-md border-b border-white/[0.06] relative">
+                {/* Accent line at top of header */}
+                <div className={cn('absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-current to-transparent pointer-events-none',
+                  phase === 'scheduled' ? 'via-emerald-400/50' : phase === 'live' ? 'via-amber-400/50' : 'via-sky-400/50'
+                )} />
                 <tr>
                   {columns.map((col) => (
-                    <th key={col.id} className={col.thClassName} title={col.tooltip}>
+                    <th key={col.id} className={cn(col.thClassName, 'relative text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground')} title={col.tooltip}>
                       {col.headerKind === 'player' ? (
                         `Players (${fieldSize})`
                       ) : col.headerKind === 'dk' ? (
@@ -425,7 +425,8 @@ export function FantasyPlayerTable({
                     }}
                     role="button"
                     tabIndex={0}
-                    className="cursor-pointer h-[72px] border-b border-white/[0.055] bg-transparent transition-colors duration-150 hover:bg-white/[0.025]"
+                    className="h-14 border-b border-white/[0.045] bg-transparent transition-colors duration-100 hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/[0.2]"
+                    style={{ cursor: 'pointer' }}
                   >
                     {isScheduled ? (
                       <FantasyRowCells entrant={entrant} dfsResult={dfsByPlayer.get(entrant.playerId)} rank={index + 1} />
