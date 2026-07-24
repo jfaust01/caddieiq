@@ -149,18 +149,61 @@ const STATUS_ORDER: Record<FieldEntryStatus, number> = {
 const VISIBLE_COLUMN_COUNT = 9
 
 /**
- * Which table layout to show. Pre-tournament (SCHEDULED) events have no round
- * scores yet, so they get a fantasy lineup-building table; live/completed
- * events keep the round-by-round scoring table.
+ * Normalized tournament phase driving the status-aware fantasy workflow.
+ * - scheduled: no scores yet -> fantasy lineup-building table (emerald accent)
+ * - live: in-progress scoring -> real-time fantasy table (amber accent)
+ * - completed: final results -> fantasy recap table (sky/blue accent)
  */
-type TablePhase = 'pre' | 'scoring'
+type TablePhase = 'scheduled' | 'live' | 'completed'
 
 function classifyPhase(status: string | null | undefined): TablePhase {
   const s = (status ?? '').trim().toLowerCase()
-  // Anything that has (or will have) round scores uses the scoring layout.
-  const scoring = ['active', 'in_progress', 'in progress', 'live', 'completed', 'complete', 'final', 'finished']
-  if (scoring.some((k) => s.includes(k))) return 'scoring'
-  return 'pre'
+  // Check completed first because "complete" would also substring-match nothing
+  // in the live list, but keeping the order explicit avoids ambiguity.
+  const completed = ['completed', 'complete', 'final', 'finished', 'official']
+  const live = ['active', 'in_progress', 'in progress', 'live', 'playing', 'suspended']
+  if (completed.some((k) => s.includes(k))) return 'completed'
+  if (live.some((k) => s.includes(k))) return 'live'
+  return 'scheduled'
+}
+
+/** Per-phase accent styling (emerald / amber / sky) applied to chips + header. */
+const PHASE_ACCENT: Record<
+  TablePhase,
+  { chipActive: string; chipCount: string; headerLine: string; glow: string }
+> = {
+  scheduled: {
+    chipActive: 'border-emerald-400/40 bg-emerald-500/15 text-emerald-200 shadow-[0_0_0_1px_rgba(52,209,122,0.15)]',
+    chipCount: 'bg-emerald-500/20 text-emerald-100',
+    headerLine: 'via-emerald-400/40',
+    glow: 'bg-emerald-500/[0.04]',
+  },
+  live: {
+    chipActive: 'border-amber-400/40 bg-amber-500/15 text-amber-200 shadow-[0_0_0_1px_rgba(245,158,11,0.15)]',
+    chipCount: 'bg-amber-500/20 text-amber-100',
+    headerLine: 'via-amber-400/45',
+    glow: 'bg-amber-500/[0.05]',
+  },
+  completed: {
+    chipActive: 'border-sky-400/40 bg-sky-500/15 text-sky-200 shadow-[0_0_0_1px_rgba(56,189,248,0.15)]',
+    chipCount: 'bg-sky-500/20 text-sky-100',
+    headerLine: 'via-sky-400/40',
+    glow: 'bg-sky-500/[0.05]',
+  },
+}
+
+/**
+ * Honest finish result derived only from authoritative fields (status, cut
+ * flag, position, ties). Returns Won / T4 / 15 / MC / WD / DQ / — — never a
+ * fabricated tier.
+ */
+function finishResult(e: FieldEntrant, isTie: boolean): string {
+  if (e.status === 'WITHDRAWN' || e.withdrawn) return 'WD'
+  if (e.status === 'DISQUALIFIED') return 'DQ'
+  if (e.status === 'CUT' || e.cutMade === false) return 'MC'
+  if (e.position == null) return '—'
+  if (e.position === 1) return 'Won'
+  return `${isTie ? 'T' : ''}${e.position}`
 }
 
 /** Emerald→red accent per DFS value tier (badge styling only). */
@@ -508,14 +551,19 @@ function LeaderboardRow({
 function PlayerRowCells({
   entrant,
   positionCountMap,
+  phase,
 }: {
   entrant: FieldEntrant
   positionCountMap?: Map<number, number>
+  phase: TablePhase
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap)
   const salaryDisplay = formatMissing(entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null)
-  const ownershipDisplay = entrant.ownershipPercent ? `${entrant.ownershipPercent.toFixed(2)}%` : '0.00%'
   const oddsDisplay = formatMissing(entrant.oddsToWin)
+
+  const isTie = entrant.position != null && (positionCountMap?.get(entrant.position) ?? 0) > 1
+  const result = finishResult(entrant, isTie)
+  const isWinner = phase === 'completed' && entrant.position === 1 && entrant.status !== 'CUT' && entrant.cutMade !== false
 
   const initials = entrant.playerName
     .split(' ')
@@ -530,7 +578,7 @@ function PlayerRowCells({
       <td className="w-[52px] min-w-[52px] max-w-[52px] px-1 sm:px-2 align-middle text-center">
         <span className={cn(
           "text-sm font-semibold tabular-nums",
-          entrant.finalPosition === 1 ? "text-emerald-300" : "text-foreground"
+          isWinner ? "text-emerald-300" : "text-foreground"
         )}>
           {positionDisplay}
         </span>
@@ -566,6 +614,26 @@ function PlayerRowCells({
           isMobile
         />
       </td>
+
+      {/* THRU / TODAY — live only (real thru-hole + current round score) */}
+      {phase === 'live' && (
+        <td className="w-[76px] min-w-[76px] max-w-[76px] px-1 sm:px-2 align-middle">
+          <div className="flex h-full flex-col items-center justify-center leading-tight">
+            <span className="text-sm font-semibold tabular-nums text-foreground">
+              {entrant.thruHole ?? '—'}
+            </span>
+            <span className="text-[11px] tabular-nums text-muted-foreground">
+              {entrant.roundScore == null
+                ? '—'
+                : entrant.roundScore === 0
+                  ? 'E'
+                  : entrant.roundScore > 0
+                    ? `+${entrant.roundScore}`
+                    : entrant.roundScore}
+            </span>
+          </div>
+        </td>
+      )}
 
       {/* R1 */}
       <td className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 align-middle">
@@ -626,6 +694,26 @@ function PlayerRowCells({
           </span>
         </div>
       </td>
+
+      {/* RESULT — completed only (honest placement from real position/status) */}
+      {phase === 'completed' && (
+        <td className="w-[88px] min-w-[88px] max-w-[88px] border-l border-white/[0.045] px-1 sm:px-3 align-middle">
+          <div className="flex items-center justify-center h-full">
+            <span
+              className={cn(
+                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold tabular-nums',
+                result === 'Won'
+                  ? 'bg-emerald-500/15 text-emerald-300'
+                  : result === 'MC' || result === 'WD' || result === 'DQ'
+                    ? 'bg-rose-500/10 text-rose-300'
+                    : 'bg-white/[0.06] text-foreground',
+              )}
+            >
+              {result}
+            </span>
+          </div>
+        </td>
+      )}
     </>
   )
 }
@@ -647,14 +735,16 @@ interface TournamentFieldProps {
  */
 export function TournamentField({ field, tournamentId, status, dfsField }: TournamentFieldProps) {
   const phase = classifyPhase(status)
+  const isPre = phase === 'scheduled'
+  const accent = PHASE_ACCENT[phase]
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
-  const [sort, setSort] = useState<SortKey>(() => (phase === 'pre' ? 'rating-desc' : 'pos-asc'))
+  const [sort, setSort] = useState<SortKey>(() => (phase === 'scheduled' ? 'rating-desc' : 'pos-asc'))
   const [chip, setChip] = useState<string>('all')
 
   // Sort options depend on phase: pre-tournament anchors on fantasy rating,
   // scoring anchors on position/total.
-  const sortOptions = phase === 'pre' ? PRE_SORT_OPTIONS : SCORING_SORT_OPTIONS
+  const sortOptions = isPre ? PRE_SORT_OPTIONS : SCORING_SORT_OPTIONS
   const [selectedScorecardPlayer, setSelectedScorecardPlayer] = useState<string | null>(null)
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
   const [selectedRound, setSelectedRound] = useState<number>(1)
@@ -698,6 +788,36 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
     return new Set(rated.map((e) => e.playerId))
   }, [field.entrants])
 
+  // Top live DK scorers (top 20 by in-progress tournament DK points).
+  const topLiveDkIds = useMemo(() => {
+    const scored = field.entrants
+      .filter((e) => e.totalDkFantasyPoints != null)
+      .sort((a, b) => (b.totalDkFantasyPoints ?? 0) - (a.totalDkFantasyPoints ?? 0))
+      .slice(0, 20)
+    return new Set(scored.map((e) => e.playerId))
+  }, [field.entrants])
+
+  // Top final DK scorers (top 20 by authoritative final DK points).
+  const topFinalDkIds = useMemo(() => {
+    const scored = field.entrants
+      .filter((e) => e.dkFantasyPoints != null)
+      .sort((a, b) => (b.dkFantasyPoints ?? 0) - (a.dkFantasyPoints ?? 0))
+      .slice(0, 20)
+    return new Set(scored.map((e) => e.playerId))
+  }, [field.entrants])
+
+  // Best value ids: top 20 by final DK points per $1k salary (needs both real).
+  const topValueIds = useMemo(() => {
+    const eligible = field.entrants
+      .filter((e) => e.dkFantasyPoints != null && e.dfsSalary != null && e.dfsSalary > 0)
+      .sort(
+        (a, b) =>
+          (b.dkFantasyPoints ?? 0) / (b.dfsSalary ?? 1) - (a.dkFantasyPoints ?? 0) / (a.dfsSalary ?? 1),
+      )
+      .slice(0, 20)
+    return new Set(eligible.map((e) => e.playerId))
+  }, [field.entrants])
+
   const baseFiltered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     const result = field.entrants.filter((entrant) => {
@@ -710,7 +830,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
     // Pre-tournament there are no positions/scores, so the position/total sort
     // keys are meaningless — default to CaddieIQ fantasy rating (high → low).
     const posLikeSort = ['pos-asc', 'pos-desc', 'total-asc', 'total-desc'].includes(sort)
-    if (phase === 'pre' && posLikeSort) {
+    if (isPre && posLikeSort) {
       result.sort((a, b) => {
         const ra = a.fantasyScore ?? -Infinity
         const rb = b.fantasyScore ?? -Infinity
@@ -801,62 +921,120 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
     return result
   }, [field.entrants, query, statusFilter, sort, phase])
 
-  // Status-aware fantasy filter chips. Each predicate reads only authoritative
-  // fields; counts are computed over the current search/status result so a
-  // chip that would match nothing is disabled.
+  // Status-aware fantasy filter chips. Every predicate reads only authoritative
+  // fields. Chips whose underlying data does not exist in this field are hidden
+  // entirely (structural availability); supported chips that currently match
+  // nothing are disabled. Counts reflect the active search/status result.
   const chipDefs = useMemo(() => {
-    const defs =
-      phase === 'pre'
-        ? [
-            { id: 'all', label: 'All', predicate: () => true },
-            {
-              id: 'elite',
-              label: 'Elite Plays',
-              predicate: (e: FieldEntrant) => {
-                const t = dfsByPlayer.get(e.playerId)?.tier
-                return t === 'A_PLUS' || t === 'A'
-              },
-            },
-            { id: 'value', label: 'Value Plays', predicate: (e: FieldEntrant) => valuePlayIds.has(e.playerId) },
-            { id: 'toprated', label: 'Top Rated', predicate: (e: FieldEntrant) => topRatedIds.has(e.playerId) },
-            {
-              id: 'chalk',
-              label: 'Chalk',
-              predicate: (e: FieldEntrant) => e.ownershipPercent != null && e.ownershipPercent >= 20,
-            },
-            {
-              id: 'longshots',
-              label: 'Longshots',
-              predicate: (e: FieldEntrant) => {
-                const n = parseOdds(e.oddsToWin)
-                return n !== Number.MAX_VALUE && n >= 5000
-              },
-            },
-          ]
-        : [
-            { id: 'all', label: 'All', predicate: () => true },
-            { id: 'made', label: 'Made Cut', predicate: (e: FieldEntrant) => e.cutMade === true },
-            {
-              id: 'missed',
-              label: 'Missed Cut',
-              predicate: (e: FieldEntrant) => e.cutMade === false || e.status === 'CUT',
-            },
-            {
-              id: 'top20',
-              label: 'Top 20',
-              predicate: (e: FieldEntrant) => e.position != null && e.position <= 20,
-            },
-            {
-              id: 'leaders',
-              label: 'Leaders',
-              predicate: (e: FieldEntrant) => e.position != null && e.position <= 5,
-            },
-          ]
-    return defs.map((d) => ({
-      ...d,
-      count: d.id === 'all' ? baseFiltered.length : baseFiltered.filter(d.predicate).length,
-    }))
-  }, [phase, baseFiltered, dfsByPlayer, valuePlayIds, topRatedIds])
+    type Def = {
+      id: string
+      label: string
+      predicate: (e: FieldEntrant) => boolean
+      available: boolean
+    }
+    const has = {
+      dfsTier: dfsByPlayer.size > 0,
+      valueBoard: valuePlayIds.size > 0,
+      fantasy: topRatedIds.size > 0,
+      ownership: field.entrants.some((e) => e.ownershipPercent != null),
+      odds: field.entrants.some((e) => e.oddsToWin != null),
+      liveDk: topLiveDkIds.size > 0,
+      finalDk: topFinalDkIds.size > 0,
+      value: topValueIds.size > 0,
+      position: field.entrants.some((e) => e.position != null),
+      cutFlag: field.entrants.some((e) => e.cutMade != null || e.status === 'CUT'),
+    }
+
+    let defs: Def[]
+    if (phase === 'scheduled') {
+      defs = [
+        { id: 'all', label: 'All Players', predicate: () => true, available: true },
+        {
+          id: 'elite',
+          label: 'Elite',
+          predicate: (e) => {
+            const t = dfsByPlayer.get(e.playerId)?.tier
+            return t === 'A_PLUS' || t === 'A'
+          },
+          available: has.dfsTier,
+        },
+        { id: 'value', label: 'Value', predicate: (e) => valuePlayIds.has(e.playerId), available: has.valueBoard },
+        { id: 'toprated', label: 'Top Rated', predicate: (e) => topRatedIds.has(e.playerId), available: has.fantasy },
+        {
+          id: 'chalk',
+          label: 'Chalk',
+          predicate: (e) => e.ownershipPercent != null && e.ownershipPercent >= 20,
+          available: has.ownership,
+        },
+        {
+          id: 'longshots',
+          label: 'Longshots',
+          predicate: (e) => {
+            const n = parseOdds(e.oddsToWin)
+            return n !== Number.MAX_VALUE && n >= 5000
+          },
+          available: has.odds,
+        },
+      ]
+    } else if (phase === 'live') {
+      defs = [
+        { id: 'all', label: 'All Players', predicate: () => true, available: true },
+        { id: 'topdk', label: 'Top DK', predicate: (e) => topLiveDkIds.has(e.playerId), available: has.liveDk },
+        { id: 'leaders', label: 'Leaders', predicate: (e) => e.position != null && e.position <= 5, available: has.position },
+        { id: 'top20', label: 'Top 20', predicate: (e) => e.position != null && e.position <= 20, available: has.position },
+        { id: 'making', label: 'Making Cut', predicate: (e) => e.cutMade === true, available: has.cutFlag },
+      ]
+    } else {
+      defs = [
+        { id: 'all', label: 'All Players', predicate: () => true, available: true },
+        {
+          id: 'topfin',
+          label: 'Top Finishers',
+          predicate: (e) => e.position != null && e.position <= 10 && e.status !== 'CUT' && e.cutMade !== false,
+          available: has.position,
+        },
+        { id: 'topdk', label: 'Top DK', predicate: (e) => topFinalDkIds.has(e.playerId), available: has.finalDk },
+        { id: 'bestvalue', label: 'Best Value', predicate: (e) => topValueIds.has(e.playerId), available: has.value },
+        {
+          id: 'highowned',
+          label: 'High Owned',
+          predicate: (e) => e.ownershipPercent != null && e.ownershipPercent >= 20,
+          available: has.ownership,
+        },
+        {
+          id: 'lowowned',
+          label: 'Low Owned',
+          predicate: (e) => e.ownershipPercent != null && e.ownershipPercent < 10,
+          available: has.ownership,
+        },
+        {
+          id: 'missed',
+          label: 'Missed Cut',
+          predicate: (e) => e.cutMade === false || e.status === 'CUT',
+          available: has.cutFlag,
+        },
+      ]
+    }
+
+    return defs
+      .filter((d) => d.available)
+      .map((d) => ({
+        id: d.id,
+        label: d.label,
+        predicate: d.predicate,
+        count: d.id === 'all' ? baseFiltered.length : baseFiltered.filter(d.predicate).length,
+      }))
+  }, [
+    phase,
+    baseFiltered,
+    dfsByPlayer,
+    valuePlayIds,
+    topRatedIds,
+    topLiveDkIds,
+    topFinalDkIds,
+    topValueIds,
+    field.entrants,
+  ])
 
   // Apply the active chip. Falls back to "all" if the chip has no matches.
   const filtered = useMemo(() => {
@@ -978,7 +1156,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
               className={cn(
                 'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-all duration-200',
                 isActive
-                  ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-200 shadow-[0_0_0_1px_rgba(52,209,122,0.15)]'
+                  ? accent.chipActive
                   : 'border-white/[0.09] bg-white/[0.02] text-muted-foreground hover:border-white/20 hover:text-foreground',
                 isDisabled && 'cursor-not-allowed opacity-40 hover:border-white/[0.09] hover:text-muted-foreground',
               )}
@@ -987,7 +1165,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
               <span
                 className={cn(
                   'rounded-full px-1.5 py-0.5 text-[11px] tabular-nums',
-                  isActive ? 'bg-emerald-500/20 text-emerald-100' : 'bg-white/[0.06] text-muted-foreground/80',
+                  isActive ? accent.chipCount : 'bg-white/[0.06] text-muted-foreground/80',
                 )}
               >
                 {c.count}
@@ -1013,10 +1191,10 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
             {/* Decorative clip layer (rounded) — keeps glow/accent inside the
                 card corners without creating a clipping context for the table */}
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[20px]">
-              {/* Top-right glow */}
-              <div className="absolute -right-24 -top-24 h-56 w-56 rounded-full bg-emerald-500/[0.04] blur-3xl" />
-              {/* Top accent line */}
-              <div className="absolute inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/35 to-transparent" />
+              {/* Top-right glow (phase accent) */}
+              <div className={cn('absolute -right-24 -top-24 h-56 w-56 rounded-full blur-3xl', accent.glow)} />
+              {/* Top accent line (phase accent) */}
+              <div className={cn('absolute inset-x-20 top-0 h-px bg-gradient-to-r from-transparent to-transparent', accent.headerLine)} />
             </div>
 
             {/* Table content */}
@@ -1030,7 +1208,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
                 style={{ userSelect: 'none', maxWidth: '100%' }}
               >
                 <table className="w-max table-fixed border-collapse sm:w-full">
-            {phase === 'pre' ? (
+            {isPre ? (
               <colgroup>
                 <col className="w-[48px]" />
                 <col className="w-[calc(100vw-256px)] sm:w-[280px]" />
@@ -1046,16 +1224,18 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
                 <col className="w-[52px]" />
                 <col className="w-[calc(100vw-256px)] sm:w-[300px]" />
                 <col className="w-[92px]" />
+                {phase === 'live' && <col className="w-[76px]" />}
                 <col className="w-[82px]" />
                 <col className="w-[82px]" />
                 <col className="w-[82px]" />
                 <col className="w-[82px]" />
                 <col className="w-[126px]" />
                 <col className="w-[80px]" />
+                {phase === 'completed' && <col className="w-[88px]" />}
               </colgroup>
             )}
             <thead className="sticky top-0 sm:top-[94px] z-20 bg-[#101419] border-b border-white/[0.06]">
-              {phase === 'pre' ? (
+              {isPre ? (
                 <tr>
                   <th className="px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">#</th>
                   <th className="px-2 sm:px-3 h-12 text-left text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -1117,6 +1297,14 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
                     Players ({field.size})
                   </th>
                   <th className="w-[92px] min-w-[92px] max-w-[92px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">TOTAL</th>
+                  {phase === 'live' && (
+                    <th
+                      title="Holes completed this round + current round score"
+                      className="w-[76px] min-w-[76px] max-w-[76px] px-1 sm:px-2 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground"
+                    >
+                      THRU
+                    </th>
+                  )}
                   <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R1</th>
                   <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R2</th>
                   <th className="w-[82px] min-w-[82px] max-w-[82px] px-1 sm:px-3 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums text-muted-foreground">R3</th>
@@ -1137,6 +1325,16 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
                       </Tooltip>
                     </TooltipProvider>
                   </th>
+                  {phase === 'completed' && (
+                    <th className="w-[88px] min-w-[88px] max-w-[88px] border-l border-white/[0.055] px-1 sm:px-3 h-12 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild><span className="cursor-help">RESULT</span></TooltipTrigger>
+                          <TooltipContent>Final placement (Won / T-position / MC / WD / DQ)</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </th>
+                  )}
                 </tr>
               )}
             </thead>
@@ -1161,14 +1359,14 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
                       tabIndex={0}
                       className="cursor-pointer h-[72px] border-b border-white/[0.055] bg-transparent transition-colors duration-150 hover:bg-white/[0.025]"
                     >
-                      {phase === 'pre' ? (
+                      {isPre ? (
                         <FantasyRowCells
                           entrant={entrant}
                           dfsResult={dfsByPlayer.get(entrant.playerId)}
                           rank={index + 1}
                         />
                       ) : (
-                        <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} />
+                        <PlayerRowCells entrant={entrant} positionCountMap={positionCountMap} phase={phase} />
                       )}
                     </tr>
               ))}
@@ -1178,9 +1376,11 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
             </div>
           </div>
           <div className="text-xs text-muted-foreground italic mt-2">
-            {phase === 'pre'
+            {phase === 'scheduled'
               ? 'Fantasy ratings, course fit, and value reflect the DFS Value Model; blanks mean the platform holds no signal yet.'
-              : 'Final DraftKings points are shown when official results are available.'}
+              : phase === 'live'
+                ? 'Live scoring, thru-hole, and DraftKings points update automatically as official results arrive.'
+                : 'Final placements and DraftKings points are shown from official results.'}
           </div>
         </div>
       )}
