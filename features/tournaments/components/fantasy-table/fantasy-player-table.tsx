@@ -403,11 +403,12 @@ export function FantasyPlayerTable({
                   <col key={col.id} className={col.colClassName} />
                 ))}
               </colgroup>
-              <thead className="sticky top-0 sm:top-[94px] z-20 bg-[#0D1117]/80 backdrop-blur-md border-b border-white/[0.06] relative">
-                {/* Accent line at top of header */}
-                <div className={cn('absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-current to-transparent pointer-events-none',
-                  phase === 'scheduled' ? 'via-emerald-400/50' : phase === 'live' ? 'via-amber-400/50' : 'via-sky-400/50'
-                )} />
+              <thead className={cn('sticky top-0 sm:top-[94px] z-20 bg-[#0D1117]/80 backdrop-blur-md border-b border-white/[0.06] relative',
+                'before:content-[\'\'] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:pointer-events-none',
+                phase === 'scheduled' ? 'before:bg-gradient-to-r before:from-transparent before:via-emerald-400/50 before:to-transparent' : 
+                phase === 'live' ? 'before:bg-gradient-to-r before:from-transparent before:via-amber-400/50 before:to-transparent' : 
+                'before:bg-gradient-to-r before:from-transparent before:via-sky-400/50 before:to-transparent'
+              )}>
                 <tr>
                   {columns.map((col) => (
                     <th key={col.id} className={cn(col.thClassName, 'relative text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground')} title={col.tooltip}>
