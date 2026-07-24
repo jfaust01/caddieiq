@@ -95,11 +95,9 @@ export const getPlayerRoundScorecard = cache(
             },
           },
           holeScores: {
-            // PROVENANCE: Only include verified, provider-supplied hole scores
-            // Synthetic, reconstructed, or inferred data is explicitly excluded
-            where: {
-              source: { not: null }, // Must have explicit source
-            },
+            // PROVENANCE: `source` is a required column (non-nullable), so every
+            // HoleScore row is provider-tagged by definition. No null filter needed
+            // (filtering `source: { not: null }` is invalid on a non-nullable field).
             orderBy: { holeNumber: 'asc' },
             select: {
               holeNumber: true,
