@@ -34,6 +34,40 @@ function toParColor(value: number | null | undefined): string {
   return 'text-white'
 }
 
+// TODO: Remove once real hole-by-hole data is connected.
+// Deterministic mock data so the scorecard renders with realistic numbers.
+const MOCK_PARS = [4, 5, 3, 4, 4, 3, 5, 4, 4]
+const MOCK_SCORE_DELTAS: Record<'FRONT 9' | 'BACK 9', number[]> = {
+  'FRONT 9': [-1, 0, 0, 1, -1, 0, -1, 0, 1],
+  'BACK 9': [0, -1, 1, 0, 0, -1, 0, 1, -1],
+}
+
+function buildMockHoles(label: 'FRONT 9' | 'BACK 9'): Hole[] {
+  const startHole = label === 'FRONT 9' ? 1 : 10
+  const deltas = MOCK_SCORE_DELTAS[label]
+  return MOCK_PARS.map((par, i) => {
+    const delta = deltas[i]
+    const score = par + delta
+    // Simple mock DK points: birdies/eagles score higher, bogeys lower.
+    const dkPoints = 3 + delta * -1.5 + (par === 5 ? 0.5 : 0)
+    return {
+      holeNumber: startHole + i,
+      score,
+      par,
+      toPar: delta,
+      dkPoints: Math.max(0, Number(dkPoints.toFixed(1))),
+    }
+  })
+}
+
+function mockTotals(mockHoles: Hole[]): { strokes: number; toPar: number; dkPoints: number } {
+  return {
+    strokes: mockHoles.reduce((sum, h) => sum + (h.score ?? 0), 0),
+    toPar: mockHoles.reduce((sum, h) => sum + (h.toPar ?? 0), 0),
+    dkPoints: Number(mockHoles.reduce((sum, h) => sum + (h.dkPoints ?? 0), 0).toFixed(1)),
+  }
+}
+
 export function NineHoleScorecard({
   label,
   holes,
@@ -42,13 +76,36 @@ export function NineHoleScorecard({
   totTotal,
   isDesktop = true,
 }: NineHoleScorecardProps) {
-  const showTotals = label === 'BACK 9' && Boolean(totTotal)
   const isFront = label === 'FRONT 9'
-  const hasData = holes.some((h) => h.score !== null)
+  const realHasData = holes.some((h) => h.score !== null)
+
+  // TODO: Remove mock fallback once real hole-by-hole data is connected.
+  const usingMock = !realHasData
+  const displayHoles = usingMock ? buildMockHoles(label) : holes
+  const displayTotal = usingMock ? mockTotals(displayHoles) : total
+  const displayTotTotal = usingMock
+    ? (() => {
+        const front = mockTotals(buildMockHoles('FRONT 9'))
+        const back = mockTotals(buildMockHoles('BACK 9'))
+        return {
+          strokes: front.strokes + back.strokes,
+          toPar: front.toPar + back.toPar,
+          dkPoints: Number((front.dkPoints + back.dkPoints).toFixed(1)),
+        }
+      })()
+    : totTotal
+
+  const showTotals = label === 'BACK 9' && Boolean(displayTotTotal)
+  const hasData = true
+
+  const displayCourseHoles =
+    usingMock || !courseHoles || courseHoles.length === 0
+      ? displayHoles.map((h) => ({ holeNumber: h.holeNumber, par: h.par }))
+      : courseHoles
 
   const parSum =
-    courseHoles && courseHoles.length > 0
-      ? courseHoles.reduce((sum, h) => sum + (h.par || 0), 0)
+    displayCourseHoles && displayCourseHoles.length > 0
+      ? displayCourseHoles.reduce((sum, h) => sum + (h.par || 0), 0)
       : null
 
   // Grid: row label + 9 holes + OUT/IN (+ TOT for Back 9)
@@ -88,11 +145,11 @@ export function NineHoleScorecard({
             </div>
           </div>
           <div className="text-right">
-            <div className={cn('text-lg font-semibold tabular-nums', hasData ? toParColor(total.toPar) : 'text-muted-foreground')}>
-              {hasData ? formatToPar(total.toPar) : '—'}
+            <div className={cn('text-lg font-semibold tabular-nums', toParColor(displayTotal.toPar))}>
+              {formatToPar(displayTotal.toPar)}
             </div>
             <div className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
-              {isFront ? 'Out' : 'In'} {hasData && total.strokes !== 0 ? total.strokes : '—'}
+              {isFront ? 'Out' : 'In'} {displayTotal.strokes !== 0 ? displayTotal.strokes : '—'}
             </div>
           </div>
         </div>
@@ -103,7 +160,7 @@ export function NineHoleScorecard({
               {/* HOLE header row */}
               <div className="grid border-b border-white/[0.055]" style={rowStyle}>
                 <div className={cn(labelCell, 'py-2.5')}>Hole</div>
-                {holes.map((hole) => (
+                {displayHoles.map((hole) => (
                   <div
                     key={`hole-${hole.holeNumber}`}
                     className={cn(dataCell, 'py-2.5 text-xs font-semibold text-white/85')}
@@ -122,7 +179,7 @@ export function NineHoleScorecard({
               {/* PAR row */}
               <div className="grid border-b border-white/[0.055]" style={rowStyle}>
                 <div className={cn(labelCell, 'py-2.5')}>Par</div>
-                {(courseHoles && courseHoles.length > 0 ? courseHoles : holes).map((h) => (
+                {displayCourseHoles.map((h) => (
                   <div
                     key={`par-${h.holeNumber}`}
                     className={cn(dataCell, 'py-2.5 text-xs text-muted-foreground')}
@@ -143,7 +200,7 @@ export function NineHoleScorecard({
               {/* SCORE row - visual focus */}
               <div className="grid border-b border-white/[0.055] bg-white/[0.02]" style={rowStyle}>
                 <div className={cn(labelCell, 'py-3')}>Score</div>
-                {holes.map((hole) => (
+                {displayHoles.map((hole) => (
                   <div
                     key={`score-${hole.holeNumber}`}
                     className={cn(dataCell, 'flex-col gap-0.5 py-3 text-sm font-bold text-white')}
@@ -155,11 +212,11 @@ export function NineHoleScorecard({
                   </div>
                 ))}
                 <div className={cn(totalCell, 'py-3 text-sm text-white')}>
-                  {total.strokes !== 0 ? total.strokes : '—'}
+                  {displayTotal.strokes !== 0 ? displayTotal.strokes : '—'}
                 </div>
-                {showTotals && totTotal && (
+                {showTotals && displayTotTotal && (
                   <div className={cn(totalCell, 'py-3 text-sm text-white')}>
-                    {totTotal.strokes !== 0 ? totTotal.strokes : '—'}
+                    {displayTotTotal.strokes !== 0 ? displayTotTotal.strokes : '—'}
                   </div>
                 )}
               </div>
@@ -170,7 +227,7 @@ export function NineHoleScorecard({
                   <DraftKingsMark className="h-3 w-auto" />
                   <span>Pts</span>
                 </div>
-                {holes.map((hole) => (
+                {displayHoles.map((hole) => (
                   <div
                     key={`dk-${hole.holeNumber}`}
                     className={cn(dataCell, 'py-2.5 text-xs text-muted-foreground')}
@@ -181,14 +238,14 @@ export function NineHoleScorecard({
                   </div>
                 ))}
                 <div className={cn(totalCell, 'py-2.5 text-xs text-white/90')}>
-                  {total.dkPoints != null && Number.isFinite(total.dkPoints)
-                    ? total.dkPoints.toFixed(1)
+                  {displayTotal.dkPoints != null && Number.isFinite(displayTotal.dkPoints)
+                    ? displayTotal.dkPoints.toFixed(1)
                     : '—'}
                 </div>
-                {showTotals && totTotal && (
+                {showTotals && displayTotTotal && (
                   <div className={cn(totalCell, 'py-2.5 text-xs text-white/90')}>
-                    {totTotal.dkPoints != null && Number.isFinite(totTotal.dkPoints)
-                      ? totTotal.dkPoints.toFixed(1)
+                    {displayTotTotal.dkPoints != null && Number.isFinite(displayTotTotal.dkPoints)
+                      ? displayTotTotal.dkPoints.toFixed(1)
                       : '—'}
                   </div>
                 )}
