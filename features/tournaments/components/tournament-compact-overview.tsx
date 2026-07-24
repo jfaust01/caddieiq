@@ -126,7 +126,7 @@ export function TournamentCompactOverview({
 
       {/* Field Section */}
       {hasField && (
-        <div className="pt-2 border-t border-border min-w-0">
+        <div className="min-w-0">
           <div className="min-w-0">
             <TournamentField field={field} tournamentId={tournamentId} />
           </div>
