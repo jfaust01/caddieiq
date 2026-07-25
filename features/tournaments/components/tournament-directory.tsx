@@ -5,7 +5,9 @@ import { useMemo } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { EmptyTournamentsState } from '@/features/tournaments/components/empty-tournaments-state'
-import { TournamentCard } from '@/features/tournaments/components/tournament-card'
+import { TournamentCardScheduled } from '@/features/tournaments/components/tournament-card-scheduled'
+import { TournamentCardLive } from '@/features/tournaments/components/tournament-card-live'
+import { TournamentCardCompleted } from '@/features/tournaments/components/tournament-card-completed'
 import { TournamentIndexHero } from '@/features/tournaments/components/tournament-index-hero'
 import { TournamentSectionHeader } from '@/features/tournaments/components/tournament-section-header'
 import { TournamentToolbar } from '@/features/tournaments/components/tournament-toolbar'
@@ -87,11 +89,11 @@ export function TournamentDirectory() {
               <TournamentSectionHeader
                 title="Live"
                 count={groupedTournaments.live.length}
-                accentColor="text-amber-400"
+                accentColor="text-emerald-400"
               />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {groupedTournaments.live.map((tournament) => (
-                  <TournamentCard key={tournament.id} tournament={tournament} />
+                  <TournamentCardLive key={tournament.id} tournament={tournament} />
                 ))}
               </div>
             </div>
@@ -103,11 +105,11 @@ export function TournamentDirectory() {
               <TournamentSectionHeader
                 title="Upcoming"
                 count={groupedTournaments.upcoming.length}
-                accentColor="text-emerald-400"
+                accentColor="text-cyan-400"
               />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {groupedTournaments.upcoming.map((tournament) => (
-                  <TournamentCard key={tournament.id} tournament={tournament} />
+                  <TournamentCardScheduled key={tournament.id} tournament={tournament} />
                 ))}
               </div>
             </div>
@@ -123,7 +125,7 @@ export function TournamentDirectory() {
               />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {groupedTournaments.completed.map((tournament) => (
-                  <TournamentCard key={tournament.id} tournament={tournament} />
+                  <TournamentCardCompleted key={tournament.id} tournament={tournament} />
                 ))}
               </div>
             </div>
