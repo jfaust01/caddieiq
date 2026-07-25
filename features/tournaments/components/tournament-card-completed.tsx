@@ -41,7 +41,8 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
           'bg-[#0f1f2e]',
           'border border-cyan-500/30 hover:border-cyan-400/50',
           'hover:shadow-xl hover:shadow-cyan-500/15 transition-all duration-300',
-          'focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-400 focus-within:ring-offset-2'
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-400 focus-within:ring-offset-2',
+          'h-80'
         )}
       >
         {/* Content */}

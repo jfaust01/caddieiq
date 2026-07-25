@@ -44,7 +44,8 @@ export function TournamentCardScheduled({ tournament }: TournamentCardScheduledP
           'bg-[#0f1f2e]',
           'border border-green-500/30 hover:border-green-400/50',
           'hover:shadow-xl hover:shadow-green-500/15 transition-all duration-300',
-          'focus-within:outline-none focus-within:ring-2 focus-within:ring-green-400 focus-within:ring-offset-2'
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-green-400 focus-within:ring-offset-2',
+          'h-80'
         )}
       >
 

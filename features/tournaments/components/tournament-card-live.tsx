@@ -44,7 +44,8 @@ export function TournamentCardLive({ tournament }: TournamentCardLiveProps) {
           'bg-[#0f1f2e]',
           'border border-amber-500/30 hover:border-amber-400/50',
           'hover:shadow-xl hover:shadow-amber-500/15 transition-all duration-300',
-          'focus-within:outline-none focus-within:ring-2 focus-within:ring-amber-400 focus-within:ring-offset-2'
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-amber-400 focus-within:ring-offset-2',
+          'h-80'
         )}
       >
       {/* Pulsing indicator dot */}
