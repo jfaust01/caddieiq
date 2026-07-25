@@ -2,12 +2,13 @@
 
 import React from 'react'
 import { cn } from '@/lib/utils'
-import styles from '../tournament-field.module.css'
+import tourStyles from '../tournament-field.module.css'
 
 interface FantasyTableScrollAreaProps {
   children: React.ReactNode
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void
   hasScrolled?: boolean
+  scrollContainerRef?: React.RefObject<HTMLDivElement>
 }
 
 /**
@@ -19,6 +20,7 @@ export function FantasyTableScrollArea({
   children,
   onScroll,
   hasScrolled = false,
+  scrollContainerRef,
 }: FantasyTableScrollAreaProps) {
   return (
     <>
@@ -29,8 +31,9 @@ export function FantasyTableScrollArea({
         </div>
       )}
       <div
+        ref={scrollContainerRef}
         onScroll={onScroll}
-        className={cn('overflow-x-auto sm:overflow-x-visible select-none flex-1 min-w-0', styles.scrollContainer)}
+        className={cn('overflow-x-auto sm:overflow-x-visible select-none flex-1 min-w-0', tourStyles.scrollContainer)}
         style={{ userSelect: 'none' }}
       >
         {children}
