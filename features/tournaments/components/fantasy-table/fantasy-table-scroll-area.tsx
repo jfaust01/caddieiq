@@ -33,7 +33,7 @@ export function FantasyTableScrollArea({
       <div
         ref={scrollContainerRef}
         onScroll={onScroll}
-        className={cn('overflow-x-auto sm:overflow-x-visible select-none flex-1 min-w-0', tourStyles.scrollContainer)}
+        className={cn('overflow-x-auto select-none flex-1 min-w-0', tourStyles.scrollContainer)}
         style={{ userSelect: 'none' }}
       >
         {children}

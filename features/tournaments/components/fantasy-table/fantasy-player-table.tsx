@@ -113,7 +113,7 @@ export function FantasyPlayerTable({
 
           {/* Table scroll area — sticky header needs to be here */}
           <FantasyTableScrollArea hasScrolled={hasScrolled} onScroll={handleTableScroll} scrollContainerRef={scrollContainerRef}>
-            <table className="table-fixed border-collapse w-full">
+            <table className="border-collapse min-w-max">
               <colgroup>
                 {columns.map((col) => (
                   <col key={col.id} className={col.colClassName} />
