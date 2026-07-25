@@ -1,17 +1,8 @@
 'use client'
 
-import {
-  Trophy,
-  Users,
-  TrendingUp,
-  ChevronRight,
-  Calendar,
-  Award,
-  BarChart3,
-} from 'lucide-react'
+import { BarChart3, Trophy, Award } from 'lucide-react'
 import Link from 'next/link'
 
-import { Badge } from '@/components/ui/badge'
 import type { TournamentSummary } from '@/features/tournaments/types'
 import {
   EMPTY_VALUE,
@@ -24,7 +15,7 @@ interface TournamentCardCompletedProps {
   tournament: TournamentSummary
 }
 
-/** Completed tournament card - emphasizes final results and fantasy recap. */
+/** Completed tournament card - recap style with narrative results. */
 export function TournamentCardCompleted({ tournament }: TournamentCardCompletedProps) {
   const winner = tournament.tournamentWinner?.playerName
   const winnerScore = tournament.tournamentWinner?.scoreToPar
@@ -47,108 +38,93 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
         className={cn(
           'group relative overflow-hidden rounded-lg cursor-pointer',
           'bg-gradient-to-br from-slate-900/90 to-slate-950/70',
-          'border border-blue-500/30 hover:border-blue-400/60',
-          'hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300',
-          'focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-400 focus-within:ring-offset-2'
+          'border border-cyan-500/30 hover:border-cyan-400/60',
+          'hover:shadow-xl hover:shadow-cyan-500/20 transition-all duration-300',
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-400 focus-within:ring-offset-2',
+          'flex flex-col'
         )}
       >
-      {/* Blue top accent - completed/results */}
-      <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600" aria-hidden />
-
-      {/* Inset highlight */}
-      <div className="absolute inset-x-0 top-2 h-px bg-gradient-to-r from-blue-300/30 via-blue-200/15 to-transparent pointer-events-none" aria-hidden />
-
-      {/* Content */}
-      <div className="flex flex-col gap-0 p-6">
-        {/* Header with badges */}
-        <div className="flex items-center justify-between gap-3 mb-4 min-w-0">
-          <h3
-            className="text-sm font-bold uppercase tracking-wider text-blue-300 flex-1"
-            title={tournament.name}
-          >
-            {tournament.name}
-          </h3>
-          <Badge
-            className="h-6 px-2 text-xs font-semibold uppercase tracking-wide border-blue-400/60 bg-blue-500/20 text-blue-300 shrink-0"
-          >
-            FINAL
-          </Badge>
-        </div>
-
-        {/* Tournament metadata */}
-        <p className="text-xs text-slate-400 mb-4 line-clamp-1">
-          {tourShortLabel(tournament.tour?.type ?? null)} • {formatDateRange(tournament.startDate, tournament.endDate)}
-        </p>
-
-        {/* Results stat boxes grid */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          {/* Box 1: Champion */}
-          <div className="border border-blue-500/30 rounded-lg p-3 bg-blue-500/5 text-center">
-            <Trophy className="size-4 mx-auto mb-2 text-blue-400" aria-hidden />
-            <p className="text-xl font-bold text-blue-300 leading-tight">
-              {scoreDisplay || '—'}
-            </p>
-            <p className="text-xs text-blue-300/70 uppercase tracking-wide mt-1">Winner</p>
+        {/* Header: Icon + Title + Description */}
+        <div className="flex items-start gap-4 p-6 pb-4">
+          {/* Circular chart icon */}
+          <div className="flex-shrink-0 w-12 h-12 rounded-full border border-cyan-500/60 bg-cyan-500/10 flex items-center justify-center">
+            <BarChart3 className="size-5 text-cyan-400" aria-hidden />
           </div>
 
-          {/* Box 2: Top DK */}
-          <div className="border border-blue-500/30 rounded-lg p-3 bg-blue-500/5 text-center">
-            <Award className="size-4 mx-auto mb-2 text-blue-400" aria-hidden />
-            <p className="text-xl font-bold text-blue-300 leading-tight">
-              {topDkPoints ? topDkPoints.toFixed(1) : '—'}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-300 mb-1">
+              Tournament Recap
+            </h3>
+            <p className="text-xs text-slate-400 line-clamp-2">
+              Final standings and DraftKings results — review what actually happened.
             </p>
-            <p className="text-xs text-blue-300/70 uppercase tracking-wide mt-1">Top DK</p>
-          </div>
-
-          {/* Box 3: Chalk Pick % */}
-          <div className="border border-blue-500/30 rounded-lg p-3 bg-blue-500/5 text-center">
-            <BarChart3 className="size-4 mx-auto mb-2 text-blue-400" aria-hidden />
-            <p className="text-xl font-bold text-blue-300 leading-tight">
-              28%
-            </p>
-            <p className="text-xs text-blue-300/70 uppercase tracking-wide mt-1">Chalk</p>
-          </div>
-
-          {/* Box 4: Final Payouts */}
-          <div className="border border-blue-500/30 rounded-lg p-3 bg-blue-500/5 text-center">
-            <TrendingUp className="size-4 mx-auto mb-2 text-blue-400" aria-hidden />
-            <p className="text-lg font-bold text-blue-300 leading-tight">
-              3
-            </p>
-            <p className="text-xs text-blue-300/70 uppercase tracking-wide mt-1">Players</p>
           </div>
         </div>
 
-        {/* Winner and top scorer info */}
-        <div className="space-y-2 mb-4 text-xs text-slate-400">
-          {winner && (
-            <p className="flex items-center gap-2 text-blue-300/80">
-              <Trophy className="size-3.5 text-blue-400" />
-              {winner} won
+        {/* Two-column layout: Tournament Story | Top DK Scores */}
+        <div className="flex-1 px-6 pb-6 grid grid-cols-2 gap-6">
+          {/* Left column: Tournament Story */}
+          <div className="flex flex-col gap-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+              Tournament Story
             </p>
-          )}
-          {topDkPlayer && (
-            <p className="flex items-center gap-2 text-blue-300/80">
-              <Award className="size-3.5 text-blue-400" />
-              {topDkPlayer} played best
+            <p className="text-xs text-slate-500 mb-2">
+              What decided the tournament and the fantasy results
             </p>
-          )}
-          <p className="flex items-center gap-2">
-            <Calendar className="size-3.5 text-blue-400" />
-            All results final
-          </p>
+
+            {/* Champion section */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-cyan-400" aria-hidden />
+                <p className="text-xs font-bold uppercase tracking-wide text-cyan-300">
+                  Champion
+                </p>
+              </div>
+              {winner && scoreDisplay ? (
+                <p className="text-sm text-white ml-3">
+                  {winner} claimed the title at {scoreDisplay}.
+                </p>
+              ) : (
+                <p className="text-sm text-slate-500 ml-3">
+                  Tournament results pending
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Right column: Top DraftKings Scores */}
+          <div className="flex flex-col gap-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+              Top DraftKings Scores
+            </p>
+            <p className="text-xs text-slate-500 mb-2">
+              Best final DK fantasy performances
+            </p>
+
+            {/* Top DK scorer */}
+            {topDkPlayer && topDkPoints ? (
+              <div className="text-sm text-white">
+                <p>
+                  <span className="font-semibold">{topDkPlayer}</span> led fantasy with <span className="font-semibold text-cyan-300">{topDkPoints.toFixed(1)}</span> points.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">
+                DraftKings scoring not available yet
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Footer: divider and action */}
-        <div className="border-t border-blue-500/15 pt-3 flex items-center justify-between">
-          <span className="text-xs font-medium uppercase tracking-wide text-blue-400/50">
-            Archive
+        {/* Footer divider */}
+        <div className="border-t border-cyan-500/15 px-6 py-3 flex items-center justify-between">
+          <span className="text-xs font-medium uppercase tracking-wide text-cyan-400/50">
+            Complete
           </span>
-          <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-blue-300 group-hover:text-blue-200">
+          <div className="text-xs font-bold uppercase tracking-wide text-cyan-300 group-hover:text-cyan-200">
             View Recap →
           </div>
         </div>
-      </div>
       </div>
     </Link>
   )
