@@ -23,10 +23,12 @@ export function FantasyRowCells({
   entrant,
   dfsResult,
   rank,
+  onScorecardOpen,
 }: {
   entrant: FieldEntrant
   dfsResult: DfsValueResult | undefined
   rank: number
+  onScorecardOpen?: (playerId: string) => void
 }) {
   const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null
   const oddsDisplay = formatMissing(entrant.oddsToWin)
@@ -40,7 +42,7 @@ export function FantasyRowCells({
       {/* SCORECARD */}
       <td className="px-1 sm:px-3 align-middle">
         <div className="flex h-full items-center justify-center">
-          <ScorecardCell entrant={entrant} />
+          <ScorecardCell entrant={entrant} onOpen={onScorecardOpen} />
         </div>
       </td>
 

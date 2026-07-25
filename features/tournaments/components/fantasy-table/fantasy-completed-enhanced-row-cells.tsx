@@ -18,9 +18,11 @@ import { formatMissing } from './helpers'
 export function FantasyCompletedEnhancedRowCells({
   entrant,
   positionCountMap,
+  onScorecardOpen,
 }: {
   entrant: FieldEntrant
   positionCountMap?: Map<number, number>
+  onScorecardOpen?: (playerId: string) => void
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap ?? new Map())
   const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null
@@ -54,7 +56,7 @@ export function FantasyCompletedEnhancedRowCells({
       {/* SCORECARD */}
       <td className="px-1 sm:px-3 align-middle">
         <div className="flex h-full items-center justify-center">
-          <ScorecardCell entrant={entrant} />
+          <ScorecardCell entrant={entrant} onOpen={onScorecardOpen} />
         </div>
       </td>
 

@@ -6,20 +6,21 @@ import type { FieldEntrant } from '@/features/tournaments/types'
 
 interface ScorecardCellProps {
   entrant: FieldEntrant
-  onOpen?: (entrant: FieldEntrant) => void
+  onOpen?: (playerId: string) => void
 }
 
 /**
  * Scorecard cell with clickable icon to open player scorecard.
- * Shows a chart icon that opens the player's round-by-round scorecard.
+ * Shows a chart icon that opens the player's round-by-round scorecard modal.
+ * When clicked, it calls onOpen with the player's ID to trigger the modal.
  */
 export function ScorecardCell({ entrant, onOpen }: ScorecardCellProps) {
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
-      onOpen?.(entrant)
+      onOpen?.(entrant.playerId)
     },
-    [entrant, onOpen]
+    [entrant.playerId, onOpen]
   )
 
   return (
