@@ -336,15 +336,83 @@ const ownershipCompletedColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 
+// Enhanced COMPLETED phase columns (12 columns matching reference design)
+const aiRatingCompletedColumn: ColumnDescriptor = {
+  id: 'aiRating',
+  label: 'AI RATING',
+  tooltip: 'Overall player rating (0-100 scale)',
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const courseFitCompletedColumn: ColumnDescriptor = {
+  id: 'courseFit',
+  label: 'COURSE FIT',
+  tooltip: 'Course fit score relative to current field',
+  colClassName: 'w-[95px] sm:w-[110px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const recentFormCompletedColumn: ColumnDescriptor = {
+  id: 'recentForm',
+  label: 'RECENT FORM — last 10',
+  tooltip: 'Form trend visualization',
+  colClassName: 'w-[140px] sm:w-[160px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+}
+
+const valueCompletedColumn: ColumnDescriptor = {
+  id: 'value',
+  label: 'VALUE — PTS/$1K',
+  tooltip: 'Fantasy points per $1,000 salary',
+  colClassName: 'w-[110px] sm:w-[130px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const leverageCompletedColumn: ColumnDescriptor = {
+  id: 'leverage',
+  label: 'LEVERAGE — OWN PROJ.',
+  tooltip: 'Leverage / Ownership Projection',
+  colClassName: 'w-[130px] sm:w-[150px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const projectedPtsCompletedColumn: ColumnDescriptor = {
+  id: 'projectedPts',
+  label: 'PROJ. PTS',
+  tooltip: 'Projected tournament points',
+  colClassName: 'w-[105px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const ceilingCompletedColumn: ColumnDescriptor = {
+  id: 'ceiling',
+  label: 'CEILING — 90TH %',
+  tooltip: 'Maximum likely tournament points (90th percentile)',
+  colClassName: 'w-[120px] sm:w-[140px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const oddsCompletedColumn: ColumnDescriptor = {
+  id: 'odds',
+  label: 'ODDS TO WIN',
+  tooltip: 'Odds to win tournament',
+  colClassName: 'w-[110px] sm:w-[130px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
 const completedColumns: ColumnDescriptor[] = [
   resultColumn,
   scoringPlayerColumn,
-  totalDkColumn,
-  finalScoreColumn,
+  aiRatingCompletedColumn,
+  courseFitCompletedColumn,
+  recentFormCompletedColumn,
   salaryCompletedColumn,
-  valueColumn,
-  ownershipCompletedColumn,
-  oddsScoringColumn,
+  valueCompletedColumn,
+  leverageCompletedColumn,
+  projectedPtsCompletedColumn,
+  ceilingCompletedColumn,
+  oddsCompletedColumn,
 ]
 
 // ---------------------------------------------------------------------------
@@ -460,7 +528,7 @@ const scheduledFilters: FilterDescriptor[] = [
     predicate: (e, ctx) => ctx.valuePlayIds.has(e.playerId),
   },
   // Leverage: not backed by real data in current schema — hidden
-  // Cash Game: not backed by real data — hidden
+  // Cash Game: not backed by real data �� hidden
   // GPP: not backed by real data — hidden
   {
     id: 'toprated',

@@ -7,6 +7,7 @@ import type { DfsValueResult } from '@/lib/dfs-value'
 import { FantasyRowCells } from './fantasy-row-cells'
 import { ScoreLiveRowCells } from './score-live-row-cells'
 import { FantasyLiveEnhancedRowCells } from './fantasy-live-enhanced-row-cells'
+import { FantasyCompletedEnhancedRowCells } from './fantasy-completed-enhanced-row-cells'
 import { ScoringRowCells } from './scoring-row-cells'
 
 interface FantasyPlayerRowProps {
@@ -63,7 +64,7 @@ export function FantasyPlayerRow({
       ) : phase === 'live' ? (
         <FantasyLiveEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} />
       ) : (
-        <ScoringRowCells entrant={entrant} positionCountMap={positionCountMap} />
+        <FantasyCompletedEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} />
       )}
     </tr>
   )
