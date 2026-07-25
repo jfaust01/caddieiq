@@ -1,48 +1,23 @@
 'use client'
 
 import { TriangleAlert } from 'lucide-react'
+import { useMemo } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { EmptyTournamentsState } from '@/features/tournaments/components/empty-tournaments-state'
 import { TournamentCard } from '@/features/tournaments/components/tournament-card'
-import { TournamentFilters } from '@/features/tournaments/components/tournament-filters'
+import { TournamentIndexHero } from '@/features/tournaments/components/tournament-index-hero'
+import { TournamentSectionHeader } from '@/features/tournaments/components/tournament-section-header'
+import { TournamentToolbar } from '@/features/tournaments/components/tournament-toolbar'
 import { TournamentPagination } from '@/features/tournaments/components/tournament-pagination'
-import { TournamentSearch } from '@/features/tournaments/components/tournament-search'
 import { TournamentSkeleton } from '@/features/tournaments/components/tournament-skeleton'
+import type { TournamentSummary } from '@/features/tournaments/types'
 import { TOURNAMENTS_PAGE_SIZE, useTournaments } from '@/features/tournaments/hooks/use-tournaments'
-
-function ResultSummary({
-  page,
-  pageSize,
-  total,
-  isLoading,
-}: {
-  page: number
-  pageSize: number
-  total: number
-  isLoading: boolean
-}) {
-  if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading tournaments…</p>
-  }
-  if (total === 0) {
-    return <p className="text-sm text-muted-foreground">No tournaments found</p>
-  }
-  const start = (page - 1) * pageSize + 1
-  const end = Math.min(page * pageSize, total)
-  return (
-    <p className="text-sm text-muted-foreground" aria-live="polite">
-      Showing <span className="font-medium text-foreground">{start}</span>–
-      <span className="font-medium text-foreground">{end}</span> of{' '}
-      <span className="font-medium text-foreground">{total}</span> tournaments
-    </p>
-  )
-}
 
 /**
  * The searchable, filterable tournament directory. Owns directory UI state via
- * the `useTournaments` hook and renders grid, loading, empty, and error states
- * against the live tournament data.
+ * the `useTournaments` hook and renders status-aware sections, loading, empty,
+ * and error states against the live tournament data.
  */
 export function TournamentDirectory() {
   const {
@@ -60,30 +35,40 @@ export function TournamentDirectory() {
 
   const showEmpty = !isLoading && !isError && result.items.length === 0
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3">
-        <TournamentSearch
-          defaultValue={filters.search}
-          onSearch={setSearch}
-          className="sm:max-w-sm"
-        />
-        <TournamentFilters
-          filters={filters}
-          options={options}
-          setFilter={setFilter}
-          hasActiveFilters={hasActiveFilters}
-          onReset={resetFilters}
-        />
-      </div>
+  // Group tournaments by status for sectioned display
+  const groupedTournaments = useMemo(() => {
+    const groups: Record<string, TournamentSummary[]> = {
+      live: [],
+      upcoming: [],
+      completed: [],
+    }
 
-      <ResultSummary
-        page={result.page}
-        pageSize={TOURNAMENTS_PAGE_SIZE}
-        total={result.total}
-        isLoading={isLoading}
+    result.items.forEach((tournament) => {
+      if (tournament.status === 'ACTIVE') groups.live.push(tournament)
+      else if (tournament.status === 'SCHEDULED') groups.upcoming.push(tournament)
+      else if (tournament.status === 'COMPLETED') groups.completed.push(tournament)
+    })
+
+    return groups
+  }, [result.items])
+
+  return (
+    <div className="flex flex-col gap-8">
+      {/* Hero with metrics */}
+      <TournamentIndexHero tournaments={result.items} isLoading={isLoading} />
+
+      {/* Toolbar */}
+      <TournamentToolbar
+        search={filters.search}
+        onSearchChange={setSearch}
+        filters={filters}
+        options={options}
+        setFilter={setFilter}
+        hasActiveFilters={hasActiveFilters}
+        onReset={resetFilters}
       />
 
+      {/* Content */}
       {isError ? (
         <EmptyState
           icon={TriangleAlert}
@@ -95,20 +80,66 @@ export function TournamentDirectory() {
       ) : showEmpty ? (
         <EmptyTournamentsState hasFilters={hasActiveFilters} onReset={resetFilters} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {result.items.map((tournament) => (
-            <TournamentCard key={tournament.id} tournament={tournament} />
-          ))}
+        <div className="space-y-8">
+          {/* Live Section */}
+          {groupedTournaments.live.length > 0 && (
+            <div className="space-y-4">
+              <TournamentSectionHeader
+                title="Live"
+                count={groupedTournaments.live.length}
+                accentColor="text-amber-400"
+              />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {groupedTournaments.live.map((tournament) => (
+                  <TournamentCard key={tournament.id} tournament={tournament} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Upcoming Section */}
+          {groupedTournaments.upcoming.length > 0 && (
+            <div className="space-y-4">
+              <TournamentSectionHeader
+                title="Upcoming"
+                count={groupedTournaments.upcoming.length}
+                accentColor="text-emerald-400"
+              />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {groupedTournaments.upcoming.map((tournament) => (
+                  <TournamentCard key={tournament.id} tournament={tournament} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recently Completed Section */}
+          {groupedTournaments.completed.length > 0 && (
+            <div className="space-y-4">
+              <TournamentSectionHeader
+                title="Recently Completed"
+                count={groupedTournaments.completed.length}
+                accentColor="text-sky-400"
+              />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {groupedTournaments.completed.map((tournament) => (
+                  <TournamentCard key={tournament.id} tournament={tournament} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
+      {/* Pagination */}
       {!isLoading && !isError && !showEmpty ? (
-        <TournamentPagination
-          page={result.page}
-          totalPages={result.totalPages}
-          onPageChange={setPage}
-          className="pt-2"
-        />
+        <div className="flex justify-center border-t border-white/5 pt-8">
+          <TournamentPagination
+            page={result.page}
+            totalPages={result.totalPages}
+            onPageChange={setPage}
+          />
+        </div>
       ) : null}
     </div>
   )
