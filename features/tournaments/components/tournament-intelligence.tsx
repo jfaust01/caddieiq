@@ -674,7 +674,6 @@ const INTRO: Record<
 export function TournamentIntelligence({
   tournament,
   field,
-  weather,
 }: TournamentIntelligenceProps) {
   const phase = getTournamentPhase(tournament.status)
   const intro = INTRO[phase]
