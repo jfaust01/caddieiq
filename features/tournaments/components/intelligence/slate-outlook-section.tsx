@@ -24,6 +24,7 @@ import {
   formatDkTotal,
 } from '@/features/tournaments/utils/format'
 import { DraftKingsMark } from '../draftkings-mark'
+import { Zap } from 'lucide-react'
 
 /* ------------------------------------------------------------------ */
 /* Phase + accent (mirrors TournamentIntelligence)                     */
@@ -234,6 +235,143 @@ function dkTop(entrants: FieldEntrant[], n: number): FieldEntrant[] {
   return [...withDk]
     .sort((a, b) => (b.dkFantasyPoints as number) - (a.dkFantasyPoints as number))
     .slice(0, n)
+}
+
+/* ------------------------------------------------------------------ */
+/* Tournament Story — deterministic insights from real data           */
+/* ------------------------------------------------------------------ */
+
+interface Insight {
+  title: string
+  description: string
+}
+
+function generateTournamentInsights(entrants: FieldEntrant[]): Insight[] {
+  const insights: Insight[] = []
+  
+  const active = entrants.filter((e) => isActive(e))
+  const scored = active.filter((e) => e.total !== null)
+  const withDk = active.filter((e) => e.dkFantasyPoints !== null && Number.isFinite(e.dkFantasyPoints))
+  const withValue = withDk.filter((e) => e.dfsSalary && e.dfsSalary > 0)
+  
+  if (scored.length === 0) return insights
+  
+  // 1. Winner performance
+  const winner = leaderboardTop(entrants, 1)[0]
+  if (winner) {
+    const score = formatToPar(winner.total)
+    insights.push({
+      title: 'Champion',
+      description: `${winner.playerName} claimed the title at ${score}.`,
+    })
+  }
+  
+  // 2. Highest DraftKings scorer
+  const topDkPlayer = dkTop(entrants, 1)[0]
+  if (topDkPlayer && topDkPlayer.dkFantasyPoints) {
+    const salary = topDkPlayer.dfsSalary ? formatDfsSalary(topDkPlayer.dfsSalary) : null
+    const own = topDkPlayer.ownershipPercent !== null && Number.isFinite(topDkPlayer.ownershipPercent)
+      ? `${Math.round(topDkPlayer.ownershipPercent)}% drafted`
+      : null
+    const detail = salary || own ? ` (${salary || own})` : ''
+    insights.push({
+      title: 'Top DraftKings Scorer',
+      description: `${topDkPlayer.playerName} scored ${formatDkTotal(topDkPlayer.dkFantasyPoints)} DK points${detail}.`,
+    })
+  }
+  
+  // 3. Best value (highest DK points per $1K salary)
+  if (withValue.length > 0) {
+    const withValueScores = withValue.map((e) => ({
+      entrant: e,
+      value: (e.dkFantasyPoints as number) / ((e.dfsSalary as number) / 1000),
+    }))
+    withValueScores.sort((a, b) => b.value - a.value)
+    const bestValue = withValueScores[0]
+    if (bestValue) {
+      const ptsPerK = bestValue.value.toFixed(1)
+      insights.push({
+        title: 'Best Value Result',
+        description: `${bestValue.entrant.playerName} delivered ${ptsPerK} points per $1K salary.`,
+      })
+    }
+  }
+  
+  // 4. Highest-owned disappointment (top 5 owned players who finished low)
+  const ownedEntrants = entrants
+    .filter((e) => isActive(e) && e.ownershipPercent !== null && Number.isFinite(e.ownershipPercent) && e.total !== null)
+    .sort((a, b) => (b.ownershipPercent as number) - (a.ownershipPercent as number))
+    .slice(0, 5)
+  
+  if (ownedEntrants.length > 0) {
+    const worstInOwned = [...ownedEntrants].sort((a, b) => {
+      const pa = numericPosition(a.position)
+      const pb = numericPosition(b.position)
+      if (pa === null) return 1
+      if (pb === null) return -1
+      return pb - pa // worse position = higher number
+    })[0]
+    
+    if (worstInOwned) {
+      const pos = numericPosition(worstInOwned.position)
+      const own = Math.round(worstInOwned.ownershipPercent as number)
+      if (pos && pos > 10) {
+        insights.push({
+          title: 'Owned Disappointment',
+          description: `${worstInOwned.playerName}, owned by ${own}% of lineups, finished T${pos}.`,
+        })
+      }
+    }
+  }
+  
+  // 5. Field size and cut line
+  if (scored.length > 0) {
+    const cutline = Math.ceil(scored.length * 0.7) // Typical golf cut at ~70% of field
+    const made = scored.length
+    const didNotMake = active.length - made
+    if (didNotMake > 0) {
+      insights.push({
+        title: 'Cut Line',
+        description: `${made} players made the cut. The field finished with ${active.length - made} withdrawal${active.length - made === 1 ? '' : 's'}.`,
+      })
+    }
+  }
+  
+  return insights.slice(0, 5)
+}
+
+/** Tournament Story card — displays key insights from real data. */
+function TournamentStoryRecap({ field }: { field: TournamentField }) {
+  const insights = generateTournamentInsights(field.entrants)
+  
+  return (
+    <BoardColumn
+      accent="completed"
+      title="Tournament Story"
+      description="What decided the tournament and the fantasy results"
+      isEmpty={insights.length === 0}
+      emptyMessage="Tournament recap unavailable. More tournament and fantasy data is needed to generate a complete story."
+    >
+      <div className="flex flex-col gap-3">
+        {insights.map((insight, idx) => (
+          <div key={idx} className="flex gap-3">
+            <div
+              className="mt-1 flex size-1.5 shrink-0 rounded-full bg-sky-400/60"
+              aria-hidden="true"
+            />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-xs font-semibold uppercase tracking-wide text-sky-400">
+                {insight.title}
+              </span>
+              <p className="text-sm leading-relaxed text-white text-pretty">
+                {insight.description}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </BoardColumn>
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -451,7 +589,6 @@ function LiveInsights({ field }: { field: TournamentField }) {
 }
 
 function Recap({ field }: { field: TournamentField }) {
-  const finalBoard = leaderboardTop(field.entrants, 5)
   const topDk = dkTop(field.entrants, 5)
 
   return (
@@ -462,27 +599,7 @@ function Recap({ field }: { field: TournamentField }) {
       subtitle="Final standings and DraftKings results — review what actually happened."
     >
       <div className="grid gap-4 md:grid-cols-2">
-        <BoardColumn
-          accent="completed"
-          title="Final Leaderboard"
-          description="Where the field finished"
-          isEmpty={finalBoard.length === 0}
-          emptyMessage="Final leaderboard not available yet"
-        >
-          {finalBoard.map((e, i) => (
-            <RankRow
-              key={e.playerId}
-              accent="completed"
-              rank={numericPosition(e.position) ?? i + 1}
-              name={e.playerName}
-              metric={
-                <span className="text-base font-bold tabular-nums text-white">
-                  {formatToPar(e.total)}
-                </span>
-              }
-            />
-          ))}
-        </BoardColumn>
+        <TournamentStoryRecap field={field} />
 
         <BoardColumn
           accent="completed"
