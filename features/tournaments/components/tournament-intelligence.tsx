@@ -560,7 +560,6 @@ function buildCompletedCards(
     tournament.tournamentWinner?.playerName ?? winnerEntrant?.playerName ?? null
   const winnerScore =
     tournament.tournamentWinner?.scoreToPar ?? winnerEntrant?.total ?? null
-  const winnerStrokes = winnerEntrant?.totalStrokes ?? null
   const margin = getMarginOfVictory(field.entrants)
 
   // B. Top DK score
@@ -583,35 +582,18 @@ function buildCompletedCards(
   // D. Highest drafted (authoritative replacement for "Biggest Bust")
   const highestDrafted = getHighestDrafted(field.entrants)
 
-  // Build the winning score supporting text with total strokes and margin
-  const winningScoreParts: string[] = []
-  if (winnerName) {
-    winningScoreParts.push(winnerName)
-  }
-  if (winnerStrokes !== null && Number.isFinite(winnerStrokes)) {
-    winningScoreParts.push(`${winnerStrokes} total`)
-  }
-  const winningScoreSupport = winningScoreParts.length > 0
-    ? winningScoreParts.join(' • ')
-    : (winnerName ? '' : 'Winner not available yet')
-  
-  const winningScoreSuffix = margin
-    ? ` • Won by ${margin} Shot${margin > 1 ? 's' : ''}`
-    : ''
-
   return [
     {
       accent: 'completed',
       icon: <Trophy className={iconClass} aria-hidden />,
-      label: 'Winning Score',
-      primaryValue: winnerScore !== null ? formatToPar(winnerScore) : EMPTY_VALUE,
-      secondaryValue: winnerName ? winnerName : undefined,
-      supportingText: winningScoreParts.length > 0 
-        ? winningScoreSupport + winningScoreSuffix
-        : winnerName 
-          ? (margin ? `Won by ${margin} Shot${margin > 1 ? 's' : ''}` : 'Final standings')
+      label: 'Tournament Winner',
+      primaryValue: winnerName ?? EMPTY_VALUE,
+      secondaryValue: winnerName ? formatToPar(winnerScore) : undefined,
+      supportingText: margin
+        ? `${margin} Shot${margin > 1 ? 's' : ''} Clear`
+        : winnerName
+          ? 'Final standings'
           : 'Winner not available yet',
-      accentPrimary: true,
     },
     {
       accent: 'completed',
@@ -772,25 +754,13 @@ export function TournamentIntelligence({
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={`cards-${phase}`}
-            className={cn(
-              'grid gap-4',
-              phase === 'completed'
-                ? 'md:grid-cols-2 xl:grid-cols-4'
-                : 'md:grid-cols-2 xl:grid-cols-4'
-            )}
+            className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
             variants={container}
             initial="hidden"
             animate="show"
           >
-            {cards.map((card, idx) => (
-              <motion.div 
-                key={card.label} 
-                variants={item} 
-                className={cn(
-                  'min-w-0',
-                  phase === 'completed' && idx === 0 && 'md:col-span-2 xl:col-span-2'
-                )}
-              >
+            {cards.map((card) => (
+              <motion.div key={card.label} variants={item} className="min-w-0">
                 <TournamentInsightCard {...card} />
               </motion.div>
             ))}
