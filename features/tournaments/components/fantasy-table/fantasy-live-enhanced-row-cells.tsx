@@ -7,6 +7,7 @@ import { formatPositionWithStatusPriority } from '@/features/tournaments/utils/f
 import { FantasyPlayerCell } from './fantasy-player-cell'
 import { FantasyMetricCell } from './fantasy-metric-cell'
 import { MetricEmptyState } from './metric-empty-state'
+import { FormSparkline } from './form-sparkline'
 import { formatMissing } from './helpers'
 
 /**
@@ -81,11 +82,13 @@ export function FantasyLiveEnhancedRowCells({
 
       {/* RECENT FORM */}
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <FantasyMetricCell 
-          value={formScore}
-          meterTone="bg-amber-400/60"
-          valueClassName="text-amber-100"
-        />
+        <div className="flex h-full items-center justify-center">
+          {formScore != null ? (
+            <FormSparkline formScore={formScore} />
+          ) : (
+            <MetricEmptyState />
+          )}
+        </div>
       </td>
 
       {/* SALARY */}
