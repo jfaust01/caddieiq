@@ -336,6 +336,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
         players={field.entrants}
         tournamentId={tournamentId}
         visiblePlayers={filtered}
+        status={status}
       />
     </div>
   )

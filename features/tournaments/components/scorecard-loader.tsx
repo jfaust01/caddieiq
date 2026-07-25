@@ -10,6 +10,8 @@ interface ScorecardLoaderProps {
   playerName: string
   tournamentId: string
   roundNumber: number
+  /** Tournament phase: scheduled, live, or completed. */
+  phase?: 'scheduled' | 'live' | 'completed'
 }
 
 type LoadingState = 'idle' | 'loading' | 'success' | 'empty' | 'error'
@@ -19,6 +21,7 @@ export function ScorecardLoader({
   playerName,
   tournamentId,
   roundNumber,
+  phase = 'scheduled',
 }: ScorecardLoaderProps) {
   const [state, setState] = useState<LoadingState>('idle')
   const [data, setData] = useState<PlayerRoundScorecardData | null>(null)
@@ -123,7 +126,7 @@ export function ScorecardLoader({
   return (
     <div>
       <ScorecardErrorBoundary playerName={playerName}>
-        <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} />
+        <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} phase={phase} />
       </ScorecardErrorBoundary>
       {state === 'error' && (
         <div className="mt-4 p-3 bg-muted/20 rounded">

@@ -24,6 +24,8 @@ interface ExpandedPlayerScorecardProps {
   }>
   currentPlayerIndex?: number
   onPlayerChange?: (index: number) => void
+  /** Tournament phase for future layout routing. */
+  phase?: 'scheduled' | 'live' | 'completed'
 }
 
 export function ExpandedPlayerScorecard({
@@ -32,6 +34,7 @@ export function ExpandedPlayerScorecard({
   players = [],
   currentPlayerIndex = 0,
   onPlayerChange,
+  phase = 'scheduled',
 }: ExpandedPlayerScorecardProps) {
   const [selectedRound, setSelectedRound] = useState(data.roundNumber)
 

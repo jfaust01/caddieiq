@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,8 @@ interface PlayerScorecardModalProps {
   players: FieldEntrant[]
   tournamentId: string
   visiblePlayers: FieldEntrant[]
+  /** Tournament status for routing to phase-specific scorecard. */
+  status?: string | null
 }
 
 export function PlayerScorecardModal({
@@ -30,8 +32,21 @@ export function PlayerScorecardModal({
   players,
   tournamentId,
   visiblePlayers,
+  status,
 }: PlayerScorecardModalProps) {
   const [selectedRound, setSelectedRound] = useState<number>(1)
+
+  // Determine phase based on tournament status
+  const phase = useMemo(() => {
+    const normalizedStatus = status?.trim().toUpperCase()
+    if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMPLETE' || normalizedStatus === 'FINAL') {
+      return 'completed'
+    }
+    if (normalizedStatus === 'ACTIVE' || normalizedStatus === 'LIVE' || normalizedStatus === 'IN_PROGRESS' || normalizedStatus === 'IN-PROGRESS') {
+      return 'live'
+    }
+    return 'scheduled'
+  }, [status])
 
   // Find the selected player
   const selectedPlayer = useMemo(
@@ -161,6 +176,7 @@ export function PlayerScorecardModal({
                 playerName={selectedPlayer.playerName}
                 tournamentId={tournamentId}
                 roundNumber={selectedRound}
+                phase={phase}
               />
             </ScorecardErrorBoundaryV2>
           </div>
