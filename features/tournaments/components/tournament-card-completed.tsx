@@ -96,24 +96,28 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
             </div>
           </div>
 
-          {/* Winner and top scorer info */}
-          <div className="space-y-2 text-xs text-slate-500">
+          {/* Winner and top scorer details */}
+          <div className="space-y-3 text-xs">
             {winner && (
-              <p className="flex items-center gap-2 text-cyan-300/80">
-                <Trophy className="size-3.5 text-cyan-400" />
-                {winner} won
-              </p>
+              <div className="flex items-start gap-2">
+                <Trophy className="size-3.5 text-cyan-400 flex-shrink-0 mt-0.5" aria-hidden />
+                <div className="flex-1 min-w-0">
+                  <p className="text-cyan-300/70 uppercase tracking-wide mb-0.5">Tournament Winner</p>
+                  <p className="text-cyan-100 font-semibold truncate">{winner}</p>
+                  {scoreDisplay && <p className="text-cyan-300/80 text-xs">{scoreDisplay}</p>}
+                </div>
+              </div>
             )}
             {topDkPlayer && (
-              <p className="flex items-center gap-2 text-cyan-300/80">
-                <Award className="size-3.5 text-cyan-400" />
-                {topDkPlayer} played best
-              </p>
+              <div className="flex items-start gap-2">
+                <Award className="size-3.5 text-cyan-400 flex-shrink-0 mt-0.5" aria-hidden />
+                <div className="flex-1 min-w-0">
+                  <p className="text-cyan-300/70 uppercase tracking-wide mb-0.5">Top DK Score</p>
+                  <p className="text-cyan-100 font-semibold truncate">{topDkPlayer}</p>
+                  {topDkPoints && <p className="text-cyan-300/80 text-xs">{topDkPoints.toFixed(1)} pts</p>}
+                </div>
+              </div>
             )}
-            <p className="flex items-center gap-2 text-cyan-300/80">
-              <Calendar className="size-3.5 text-cyan-400" />
-              All results final
-            </p>
           </div>
         </div>
       </div>
