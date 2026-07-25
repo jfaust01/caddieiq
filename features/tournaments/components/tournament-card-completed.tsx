@@ -38,9 +38,9 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
       <div
         className={cn(
           'group relative overflow-hidden rounded-lg cursor-pointer',
-          'bg-gradient-to-br from-slate-900/80 to-slate-950/90',
-          'border border-cyan-500/20 hover:border-cyan-400/40',
-          'hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300',
+          'bg-[#0f1f2e]',
+          'border border-cyan-500/30 hover:border-cyan-400/50',
+          'hover:shadow-xl hover:shadow-cyan-500/15 transition-all duration-300',
           'focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-400 focus-within:ring-offset-2'
         )}
       >
