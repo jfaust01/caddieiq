@@ -1,4 +1,5 @@
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
+import { PlayerPerformanceBadges } from './player-performance-badges'
 import type { FieldEntrant } from '@/features/tournaments/types'
 
 /**
@@ -17,7 +18,7 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
     .slice(0, 2)
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 gap-2">
       {entrant.headshotUrl ? (
         <img
           src={entrant.headshotUrl || '/placeholder.svg'}
@@ -29,16 +30,19 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
           {initials}
         </div>
       )}
-      <div className="flex min-w-0 items-center gap-1.5">
-        <span className="min-w-0 truncate text-sm font-medium text-foreground">
-          {entrant.playerName}
-        </span>
-        {entrant.countryCode && (
-          <PlayerFlag
-            countryCode={entrant.countryCode}
-            className="h-[16px] sm:h-[18px] w-auto shrink-0 rounded-[2px]"
-          />
-        )}
+      <div className="flex min-w-0 flex-col">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="min-w-0 truncate text-sm font-medium text-foreground">
+            {entrant.playerName}
+          </span>
+          {entrant.countryCode && (
+            <PlayerFlag
+              countryCode={entrant.countryCode}
+              className="h-[16px] sm:h-[18px] w-auto shrink-0 rounded-[2px]"
+            />
+          )}
+        </div>
+        <PlayerPerformanceBadges entrant={entrant} />
       </div>
     </div>
   )
