@@ -39,10 +39,21 @@ type TournamentPhase = 'scheduled' | 'live' | 'completed'
 
 /** Map the tournament lifecycle enum to a display phase. */
 function getTournamentPhase(status: TournamentSummary['status']): TournamentPhase {
-  if (status === 'COMPLETED') return 'completed'
-  if (status === 'ACTIVE') return 'live'
-  // SCHEDULED and CANCELED both render the pre-tournament (scheduled) layout;
-  // its cards degrade to honest empty states when data is absent.
+  if (!status) return 'scheduled'
+  
+  const normalized = status.toUpperCase().trim()
+  
+  // Completed states
+  if (['COMPLETED', 'COMPLETE', 'FINAL', 'FINISHED', 'CLOSED', 'DONE'].includes(normalized)) {
+    return 'completed'
+  }
+  
+  // Live states
+  if (['ACTIVE', 'LIVE', 'IN_PROGRESS', 'IN-PROGRESS', 'STARTED'].includes(normalized)) {
+    return 'live'
+  }
+  
+  // SCHEDULED and all other states render scheduled layout
   return 'scheduled'
 }
 
