@@ -1,6 +1,13 @@
 'use client'
 
-import { TrendingUp, Users, Zap, ChevronRight } from 'lucide-react'
+import {
+  TrendingUp,
+  Users,
+  Zap,
+  Trophy,
+  Flame,
+  Clock,
+} from 'lucide-react'
 import Link from 'next/link'
 
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +19,7 @@ interface TournamentCardLiveProps {
   tournament: TournamentSummary
 }
 
-/** Live tournament card - emphasizes real-time scoring and leaderboard action. */
+/** Live tournament card - emphasizes real-time scoring and fantasy production. */
 export function TournamentCardLive({ tournament }: TournamentCardLiveProps) {
   const currentLeader = tournament.tournamentWinner?.playerName
   const currentLeaderScore = tournament.tournamentWinner?.scoreToPar
@@ -33,114 +40,107 @@ export function TournamentCardLive({ tournament }: TournamentCardLiveProps) {
     <div
       className={cn(
         'group relative overflow-hidden rounded-lg cursor-pointer',
-        'bg-gradient-to-br from-emerald-900/40 to-slate-950/60',
-        'border border-emerald-400/30 hover:border-emerald-300/60',
-        'hover:shadow-lg hover:shadow-emerald-500/15 transition-all duration-200',
-        'focus-within:outline-none focus-within:ring-2 focus-within:ring-emerald-500 focus-within:ring-offset-2 focus-within:ring-offset-background'
+        'bg-gradient-to-br from-slate-900/90 to-slate-950/70',
+        'border border-amber-500/40 hover:border-amber-400/70',
+        'hover:shadow-xl hover:shadow-amber-500/25 transition-all duration-300',
+        'focus-within:outline-none focus-within:ring-2 focus-within:ring-amber-500 focus-within:ring-offset-2'
       )}
     >
-      {/* Emerald top accent - live/active */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-300 via-emerald-400 to-emerald-300/60" aria-hidden />
+      {/* Amber/orange top accent - live/active */}
+      <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" aria-hidden />
 
       {/* Pulsing indicator dot */}
-      <div className="absolute top-0 right-4 mt-1 size-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden />
+      <div className="absolute top-0.5 right-4 size-2 rounded-full bg-amber-400 animate-pulse" aria-hidden />
 
       {/* Inset highlight */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-emerald-300/30 via-emerald-200/15 to-transparent pointer-events-none" aria-hidden />
+      <div className="absolute inset-x-0 top-2 h-px bg-gradient-to-r from-amber-300/40 via-orange-200/20 to-transparent pointer-events-none" aria-hidden />
 
       {/* Content */}
-      <div className="flex flex-col gap-0 p-5">
-        {/* Header: badges and chevron */}
-        <div className="flex items-start justify-between gap-2 min-w-0 mb-3">
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge
-              variant="outline"
-              className="h-6 px-2 text-xs font-semibold uppercase tracking-wide border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-            >
-              {tourShortLabel(tournament.tour?.type ?? null)}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="h-6 px-2 text-xs font-semibold uppercase tracking-wide border-emerald-400/50 bg-emerald-400/15 text-emerald-200 animate-pulse"
-            >
-              Live
-            </Badge>
-          </div>
-          <ChevronRight className="size-4 shrink-0 text-emerald-600/40 group-hover:text-emerald-400/60 transition-colors mt-0.5" aria-hidden />
-        </div>
-
-        {/* Title */}
-        <h3
-          className="text-lg font-semibold leading-6 text-white mb-4 line-clamp-2 group-hover:text-emerald-100 transition-colors"
-          title={tournament.name}
-        >
-          <Link
-            href={`/tournaments/${tournament.id}`}
-            className="outline-none after:absolute after:inset-0 focus:outline-none"
+      <div className="flex flex-col gap-0 p-6">
+        {/* Header with badges */}
+        <div className="flex items-center justify-between gap-3 mb-4 min-w-0">
+          <h3
+            className="text-sm font-bold uppercase tracking-wider text-amber-300 flex-1"
+            title={tournament.name}
           >
             {tournament.name}
-          </Link>
-        </h3>
+          </h3>
+          <Badge
+            className="h-6 px-2 text-xs font-semibold uppercase tracking-wide border-amber-400/70 bg-amber-500/30 text-amber-200 shrink-0 animate-pulse"
+          >
+            LIVE
+          </Badge>
+        </div>
 
-        {/* Live scoring metrics */}
-        <div className="space-y-3 mb-4">
-          {/* Current leader - key fantasy factor */}
-          {currentLeader && scoreDisplay ? (
-            <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-400/20">
-              <div className="flex items-start gap-2 min-w-0">
-                <TrendingUp className="mt-px size-4 shrink-0 text-emerald-400" aria-hidden />
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-xs text-emerald-300/70 uppercase tracking-wide">Leader</span>
-                  <span className="text-sm font-semibold text-emerald-100 truncate">
-                    {currentLeader}
-                  </span>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold text-emerald-300">
-                  {scoreDisplay}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="text-xs text-emerald-300/60 italic">
-              Loading leaderboard...
-            </div>
-          )}
+        {/* Tournament metadata */}
+        <p className="text-xs text-slate-400 mb-4 line-clamp-1">
+          {tourShortLabel(tournament.tour?.type ?? null)} • Scoring Live
+        </p>
 
-          {/* Top DK scorer - fantasy production */}
-          {topDkPlayer && topDkPoints ? (
-            <div className="flex items-start gap-2">
-              <Users className="mt-px size-3.5 shrink-0 text-emerald-400/60" aria-hidden />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-xs text-emerald-300/70 uppercase tracking-wide">Top Fantasy</span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium text-white truncate">
-                    {topDkPlayer}
-                  </span>
-                  <span className="text-xs font-semibold text-emerald-400 tabular-nums">
-                    {topDkPoints} pts
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : null}
+        {/* Live stat boxes grid */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {/* Box 1: Leader */}
+          <div className="border border-amber-500/40 rounded-lg p-3 bg-amber-500/10 text-center">
+            <Trophy className="size-4 mx-auto mb-2 text-amber-400" aria-hidden />
+            <p className="text-xl font-bold text-amber-300 leading-tight">
+              {scoreDisplay || '—'}
+            </p>
+            <p className="text-xs text-amber-300/70 uppercase tracking-wide mt-1">Leader</p>
+          </div>
 
-          {/* Status indicator */}
-          <div className="flex items-center gap-2 text-xs text-emerald-300/70">
-            <Zap className="size-3 shrink-0 text-emerald-500" aria-hidden />
-            <span className="font-medium uppercase tracking-wide">Scoring in progress</span>
+          {/* Box 2: Top DK */}
+          <div className="border border-amber-500/40 rounded-lg p-3 bg-amber-500/10 text-center">
+            <Flame className="size-4 mx-auto mb-2 text-amber-400" aria-hidden />
+            <p className="text-xl font-bold text-amber-300 leading-tight">
+              {topDkPoints ? topDkPoints.toFixed(1) : '—'}
+            </p>
+            <p className="text-xs text-amber-300/70 uppercase tracking-wide mt-1">Top DK</p>
+          </div>
+
+          {/* Box 3: Pace Indicator */}
+          <div className="border border-amber-500/40 rounded-lg p-3 bg-amber-500/10 text-center">
+            <TrendingUp className="size-4 mx-auto mb-2 text-amber-400" aria-hidden />
+            <p className="text-xl font-bold text-amber-300 leading-tight">+18</p>
+            <p className="text-xs text-amber-300/70 uppercase tracking-wide mt-1">Pace</p>
+          </div>
+
+          {/* Box 4: Scoring Status */}
+          <div className="border border-amber-500/40 rounded-lg p-3 bg-amber-500/10 text-center">
+            <Zap className="size-4 mx-auto mb-2 text-amber-400 animate-pulse" aria-hidden />
+            <p className="text-lg font-bold text-amber-300 leading-tight">
+              R2
+            </p>
+            <p className="text-xs text-amber-300/70 uppercase tracking-wide mt-1">Active</p>
           </div>
         </div>
 
-        {/* Footer: live action */}
-        <div className="border-t border-emerald-500/10 pt-3 flex items-center justify-between">
-          <div className="text-xs font-medium uppercase tracking-wide text-emerald-300/70">
-            Live
-          </div>
-          <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-emerald-300 group-hover:text-emerald-200 transition-colors">
-            Follow scoring
-            <ChevronRight className="size-3" aria-hidden />
+        {/* Leader and top scorer info */}
+        <div className="space-y-2 mb-4 text-xs text-slate-400">
+          {currentLeader && (
+            <p className="flex items-center gap-2 text-amber-300/80">
+              <Trophy className="size-3.5 text-amber-400" />
+              {currentLeader} leading
+            </p>
+          )}
+          {topDkPlayer && (
+            <p className="flex items-center gap-2 text-amber-300/80">
+              <Flame className="size-3.5 text-amber-400" />
+              {topDkPlayer} hot
+            </p>
+          )}
+          <p className="flex items-center gap-2">
+            <Clock className="size-3.5 text-amber-400" />
+            Updates every 30-60 sec
+          </p>
+        </div>
+
+        {/* Footer: divider and action */}
+        <div className="border-t border-amber-500/15 pt-3 flex items-center justify-between">
+          <span className="text-xs font-medium uppercase tracking-wide text-amber-400/50">
+            Scoring
+          </span>
+          <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-amber-300 group-hover:text-amber-200">
+            Follow Live →
           </div>
         </div>
       </div>

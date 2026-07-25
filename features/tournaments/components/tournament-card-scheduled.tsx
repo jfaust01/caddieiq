@@ -1,6 +1,13 @@
 'use client'
 
-import { Calendar, MapPin, DollarSign, Users, ChevronRight } from 'lucide-react'
+import {
+  Calendar,
+  MapPin,
+  DollarSign,
+  Users,
+  Trophy,
+  TrendingUp,
+} from 'lucide-react'
 import Link from 'next/link'
 
 import { Badge } from '@/components/ui/badge'
@@ -18,7 +25,7 @@ interface TournamentCardScheduledProps {
   tournament: TournamentSummary
 }
 
-/** Scheduled tournament card - emphasizes draft preparation metrics. */
+/** Scheduled tournament card - emphasizes draft preparation with stat boxes. */
 export function TournamentCardScheduled({ tournament }: TournamentCardScheduledProps) {
   const location = formatLocation(tournament.location)
   const venue =
@@ -33,111 +40,94 @@ export function TournamentCardScheduled({ tournament }: TournamentCardScheduledP
     <div
       className={cn(
         'group relative overflow-hidden rounded-lg cursor-pointer',
-        'bg-gradient-to-br from-slate-900/80 to-slate-950/60',
-        'border border-cyan-500/20 hover:border-cyan-400/40',
-        'hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-200',
-        'focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-500 focus-within:ring-offset-2 focus-within:ring-offset-background'
+        'bg-gradient-to-br from-slate-900/90 to-slate-950/70',
+        'border border-cyan-500/30 hover:border-cyan-400/60',
+        'hover:shadow-xl hover:shadow-cyan-500/20 transition-all duration-300',
+        'focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-400 focus-within:ring-offset-2'
       )}
     >
-      {/* Cyan top accent line - represents upcoming/preparation phase */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-400/40" aria-hidden />
+      {/* Green top accent line - scheduled theme */}
+      <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600" aria-hidden />
 
       {/* Inset highlight */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-cyan-300/20 via-cyan-200/10 to-transparent pointer-events-none" aria-hidden />
+      <div className="absolute inset-x-0 top-2 h-px bg-gradient-to-r from-cyan-300/30 via-cyan-200/15 to-transparent pointer-events-none" aria-hidden />
 
       {/* Content */}
-      <div className="flex flex-col gap-0 p-5">
-        {/* Header: badges and chevron */}
-        <div className="flex items-start justify-between gap-2 min-w-0 mb-3">
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge
-              variant="outline"
-              className="h-6 px-2 text-xs font-semibold uppercase tracking-wide border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
-            >
-              {tourShortLabel(tournament.tour?.type ?? null)}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="h-6 px-2 text-xs font-semibold uppercase tracking-wide border-cyan-400/40 bg-cyan-400/10 text-cyan-300"
-            >
-              Upcoming
-            </Badge>
-          </div>
-          <ChevronRight className="size-4 shrink-0 text-cyan-600/40 group-hover:text-cyan-400/60 transition-colors mt-0.5" aria-hidden />
-        </div>
-
-        {/* Title */}
-        <h3
-          className="text-lg font-semibold leading-6 text-white mb-4 line-clamp-2 group-hover:text-cyan-100 transition-colors"
-          title={tournament.name}
-        >
-          <Link
-            href={`/tournaments/${tournament.id}`}
-            className="outline-none after:absolute after:inset-0 focus:outline-none"
+      <div className="flex flex-col gap-0 p-6">
+        {/* Header with badges */}
+        <div className="flex items-center justify-between gap-3 mb-4 min-w-0">
+          <h3
+            className="text-sm font-bold uppercase tracking-wider text-cyan-300 flex-1"
+            title={tournament.name}
           >
             {tournament.name}
-          </Link>
-        </h3>
+          </h3>
+          <Badge
+            className="h-6 px-2 text-xs font-semibold uppercase tracking-wide border-cyan-400/60 bg-cyan-500/20 text-cyan-300 shrink-0"
+          >
+            UPCOMING
+          </Badge>
+        </div>
 
-        {/* Draft prep metrics */}
-        <div className="space-y-2.5 mb-4">
-          {/* Dates - when to lock lineups */}
-          <div className="flex items-start gap-2">
-            <Calendar className="mt-px size-3.5 shrink-0 text-cyan-500/60" aria-hidden />
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-xs text-cyan-300/70 uppercase tracking-wide">Tournament Dates</span>
-              <span className="text-sm font-medium text-white truncate">
-                {formatDateRange(tournament.startDate, tournament.endDate)}
-              </span>
-            </div>
+        {/* Tournament metadata line */}
+        <p className="text-xs text-slate-400 mb-4 line-clamp-1">
+          {tourShortLabel(tournament.tour?.type ?? null)} • {venue}
+        </p>
+
+        {/* Stat boxes grid */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {/* Box 1: Field Strength */}
+          <div className="border border-cyan-500/30 rounded-lg p-3 bg-cyan-500/5 text-center">
+            <Trophy className="size-4 mx-auto mb-2 text-cyan-400" aria-hidden />
+            <p className="text-2xl font-bold text-cyan-300 leading-tight">88</p>
+            <p className="text-xs text-cyan-300/70 uppercase tracking-wide mt-1">Elite</p>
           </div>
 
-          {/* Venue - course conditions factor */}
-          <div className="flex items-start gap-2">
-            <MapPin className="mt-px size-3.5 shrink-0 text-cyan-500/60" aria-hidden />
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-xs text-cyan-300/70 uppercase tracking-wide">Course</span>
-              <span className="text-sm font-medium text-white truncate" title={venue}>
-                {venue}
-              </span>
-            </div>
+          {/* Box 2: Avg Score */}
+          <div className="border border-cyan-500/30 rounded-lg p-3 bg-cyan-500/5 text-center">
+            <TrendingUp className="size-4 mx-auto mb-2 text-cyan-400" aria-hidden />
+            <p className="text-2xl font-bold text-cyan-300 leading-tight">+2</p>
+            <p className="text-xs text-cyan-300/70 uppercase tracking-wide mt-1">Avg Par</p>
           </div>
 
-          {/* Purse - field quality indicator */}
-          {purseDisplay !== EMPTY_VALUE && (
-            <div className="flex items-start gap-2">
-              <DollarSign className="mt-px size-3.5 shrink-0 text-cyan-500/60" aria-hidden />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-xs text-cyan-300/70 uppercase tracking-wide">Prize Fund</span>
-                <span className="text-sm font-medium text-white truncate">
-                  {purseDisplay}
-                </span>
-              </div>
-            </div>
-          )}
+          {/* Box 3: Ownership */}
+          <div className="border border-cyan-500/30 rounded-lg p-3 bg-cyan-500/5 text-center">
+            <Users className="size-4 mx-auto mb-2 text-cyan-400" aria-hidden />
+            <p className="text-2xl font-bold text-cyan-300 leading-tight">24%</p>
+            <p className="text-xs text-cyan-300/70 uppercase tracking-wide mt-1">High Own</p>
+          </div>
 
-          {/* Defending champion - historical context */}
+          {/* Box 4: Purse Display */}
+          <div className="border border-cyan-500/30 rounded-lg p-3 bg-cyan-500/5 text-center">
+            <DollarSign className="size-4 mx-auto mb-2 text-cyan-400" aria-hidden />
+            <p className="text-lg font-bold text-cyan-300 leading-tight">
+              {purseDisplay === EMPTY_VALUE ? '—' : purseDisplay.substring(0, 6)}
+            </p>
+            <p className="text-xs text-cyan-300/70 uppercase tracking-wide mt-1">Purse</p>
+          </div>
+        </div>
+
+        {/* Key details */}
+        <div className="space-y-2 mb-4 text-xs text-slate-400">
+          <p className="flex items-center gap-2">
+            <Calendar className="size-3.5 text-cyan-400" />
+            {formatDateRange(tournament.startDate, tournament.endDate)}
+          </p>
           {hasDefendingChamp && (
-            <div className="flex items-start gap-2">
-              <Users className="mt-px size-3.5 shrink-0 text-cyan-500/60" aria-hidden />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-xs text-cyan-300/70 uppercase tracking-wide">Defending Champ</span>
-                <span className="text-sm font-medium text-white truncate">
-                  {tournament.defendingChampion}
-                </span>
-              </div>
-            </div>
+            <p className="flex items-center gap-2 text-cyan-300/70">
+              <Users className="size-3.5 text-cyan-400" />
+              Defending: {tournament.defendingChampion?.playerName}
+            </p>
           )}
         </div>
 
-        {/* Footer: preparation callout */}
-        <div className="border-t border-cyan-500/10 pt-3 flex items-center justify-between">
-          <div className="text-xs font-medium uppercase tracking-wide text-cyan-300/70">
-            Draft prep
-          </div>
-          <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-cyan-300 group-hover:text-cyan-200 transition-colors">
-            Build slate
-            <ChevronRight className="size-3" aria-hidden />
+        {/* Footer: divider and action */}
+        <div className="border-t border-cyan-500/15 pt-3 flex items-center justify-between">
+          <span className="text-xs font-medium uppercase tracking-wide text-cyan-400/50">
+            Prepare
+          </span>
+          <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-cyan-300 group-hover:text-cyan-200">
+            Build Slate →
           </div>
         </div>
       </div>

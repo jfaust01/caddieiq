@@ -1,6 +1,14 @@
 'use client'
 
-import { Trophy, Users, TrendingUp, ChevronRight, Calendar } from 'lucide-react'
+import {
+  Trophy,
+  Users,
+  TrendingUp,
+  ChevronRight,
+  Calendar,
+  Award,
+  BarChart3,
+} from 'lucide-react'
 import Link from 'next/link'
 
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +24,7 @@ interface TournamentCardCompletedProps {
   tournament: TournamentSummary
 }
 
-/** Completed tournament card - emphasizes results and fantasy performance. */
+/** Completed tournament card - emphasizes final results and fantasy recap. */
 export function TournamentCardCompleted({ tournament }: TournamentCardCompletedProps) {
   const winner = tournament.tournamentWinner?.playerName
   const winnerScore = tournament.tournamentWinner?.scoreToPar
@@ -37,122 +45,106 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
     <div
       className={cn(
         'group relative overflow-hidden rounded-lg cursor-pointer',
-        'bg-gradient-to-br from-slate-900/60 to-slate-950/80',
-        'border border-sky-400/20 hover:border-sky-300/40',
-        'hover:shadow-lg hover:shadow-sky-500/10 transition-all duration-200',
-        'focus-within:outline-none focus-within:ring-2 focus-within:ring-sky-500 focus-within:ring-offset-2 focus-within:ring-offset-background'
+        'bg-gradient-to-br from-slate-900/90 to-slate-950/70',
+        'border border-blue-500/30 hover:border-blue-400/60',
+        'hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300',
+        'focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-400 focus-within:ring-offset-2'
       )}
     >
-      {/* Sky blue top accent - completed/historical */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-sky-400/50 via-sky-300/40 to-sky-400/20" aria-hidden />
+      {/* Blue top accent - completed/results */}
+      <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600" aria-hidden />
 
       {/* Inset highlight */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-sky-300/15 via-sky-200/10 to-transparent pointer-events-none" aria-hidden />
+      <div className="absolute inset-x-0 top-2 h-px bg-gradient-to-r from-blue-300/30 via-blue-200/15 to-transparent pointer-events-none" aria-hidden />
 
       {/* Content */}
-      <div className="flex flex-col gap-0 p-5">
-        {/* Header: badges and chevron */}
-        <div className="flex items-start justify-between gap-2 min-w-0 mb-3">
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge
-              variant="outline"
-              className="h-6 px-2 text-xs font-semibold uppercase tracking-wide border-sky-500/40 bg-sky-500/10 text-sky-300"
-            >
-              {tourShortLabel(tournament.tour?.type ?? null)}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="h-6 px-2 text-xs font-semibold uppercase tracking-wide border-sky-400/30 bg-sky-400/10 text-sky-300"
-            >
-              Final
-            </Badge>
-          </div>
-          <ChevronRight className="size-4 shrink-0 text-sky-600/40 group-hover:text-sky-400/60 transition-colors mt-0.5" aria-hidden />
-        </div>
-
-        {/* Title */}
-        <h3
-          className="text-lg font-semibold leading-6 text-white mb-4 line-clamp-2 group-hover:text-sky-100 transition-colors"
-          title={tournament.name}
-        >
-          <Link
-            href={`/tournaments/${tournament.id}`}
-            className="outline-none after:absolute after:inset-0 focus:outline-none"
+      <div className="flex flex-col gap-0 p-6">
+        {/* Header with badges */}
+        <div className="flex items-center justify-between gap-3 mb-4 min-w-0">
+          <h3
+            className="text-sm font-bold uppercase tracking-wider text-blue-300 flex-1"
+            title={tournament.name}
           >
             {tournament.name}
-          </Link>
-        </h3>
+          </h3>
+          <Badge
+            className="h-6 px-2 text-xs font-semibold uppercase tracking-wide border-blue-400/60 bg-blue-500/20 text-blue-300 shrink-0"
+          >
+            FINAL
+          </Badge>
+        </div>
 
-        {/* Tournament recap metrics */}
-        <div className="space-y-3 mb-4">
-          {/* Winner highlight - main result */}
-          {winner && scoreDisplay ? (
-            <div className="flex items-center justify-between p-3 rounded-lg bg-sky-500/10 border border-sky-400/20">
-              <div className="flex items-start gap-2 min-w-0">
-                <Trophy className="mt-px size-4 shrink-0 text-sky-300" aria-hidden />
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-xs text-sky-300/70 uppercase tracking-wide">Winner</span>
-                  <span className="text-sm font-semibold text-sky-100 truncate">
-                    {winner}
-                  </span>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold text-sky-300">
-                  {scoreDisplay}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-start gap-2">
-              <Trophy className="mt-px size-3.5 shrink-0 text-sky-400/60" aria-hidden />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-xs text-sky-300/70 uppercase tracking-wide">Result</span>
-                <span className="text-sm font-medium text-white">
-                  Results pending
-                </span>
-              </div>
-            </div>
-          )}
+        {/* Tournament metadata */}
+        <p className="text-xs text-slate-400 mb-4 line-clamp-1">
+          {tourShortLabel(tournament.tour?.type ?? null)} • {formatDateRange(tournament.startDate, tournament.endDate)}
+        </p>
 
-          {/* Top fantasy scorer - DK performance */}
-          {topDkPlayer && topDkPoints ? (
-            <div className="flex items-start gap-2">
-              <Users className="mt-px size-3.5 shrink-0 text-sky-400/60" aria-hidden />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-xs text-sky-300/70 uppercase tracking-wide">Top Fantasy</span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium text-white truncate">
-                    {topDkPlayer}
-                  </span>
-                  <span className="text-xs font-semibold text-sky-400 tabular-nums">
-                    {topDkPoints} pts
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : null}
+        {/* Results stat boxes grid */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {/* Box 1: Champion */}
+          <div className="border border-blue-500/30 rounded-lg p-3 bg-blue-500/5 text-center">
+            <Trophy className="size-4 mx-auto mb-2 text-blue-400" aria-hidden />
+            <p className="text-xl font-bold text-blue-300 leading-tight">
+              {scoreDisplay || '—'}
+            </p>
+            <p className="text-xs text-blue-300/70 uppercase tracking-wide mt-1">Winner</p>
+          </div>
 
-          {/* Played dates - historical context */}
-          <div className="flex items-start gap-2">
-            <Calendar className="mt-px size-3.5 shrink-0 text-sky-400/60" aria-hidden />
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-xs text-sky-300/70 uppercase tracking-wide">Completed</span>
-              <span className="text-sm font-medium text-white truncate">
-                {formatDateRange(tournament.startDate, tournament.endDate)}
-              </span>
-            </div>
+          {/* Box 2: Top DK */}
+          <div className="border border-blue-500/30 rounded-lg p-3 bg-blue-500/5 text-center">
+            <Award className="size-4 mx-auto mb-2 text-blue-400" aria-hidden />
+            <p className="text-xl font-bold text-blue-300 leading-tight">
+              {topDkPoints ? topDkPoints.toFixed(1) : '—'}
+            </p>
+            <p className="text-xs text-blue-300/70 uppercase tracking-wide mt-1">Top DK</p>
+          </div>
+
+          {/* Box 3: Chalk Pick % */}
+          <div className="border border-blue-500/30 rounded-lg p-3 bg-blue-500/5 text-center">
+            <BarChart3 className="size-4 mx-auto mb-2 text-blue-400" aria-hidden />
+            <p className="text-xl font-bold text-blue-300 leading-tight">
+              28%
+            </p>
+            <p className="text-xs text-blue-300/70 uppercase tracking-wide mt-1">Chalk</p>
+          </div>
+
+          {/* Box 4: Final Payouts */}
+          <div className="border border-blue-500/30 rounded-lg p-3 bg-blue-500/5 text-center">
+            <TrendingUp className="size-4 mx-auto mb-2 text-blue-400" aria-hidden />
+            <p className="text-lg font-bold text-blue-300 leading-tight">
+              3
+            </p>
+            <p className="text-xs text-blue-300/70 uppercase tracking-wide mt-1">Players</p>
           </div>
         </div>
 
-        {/* Footer: recap action */}
-        <div className="border-t border-sky-500/10 pt-3 flex items-center justify-between">
-          <div className="text-xs font-medium uppercase tracking-wide text-sky-300/70">
-            Complete
-          </div>
-          <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-sky-300 group-hover:text-sky-200 transition-colors">
-            View recap
-            <ChevronRight className="size-3" aria-hidden />
+        {/* Winner and top scorer info */}
+        <div className="space-y-2 mb-4 text-xs text-slate-400">
+          {winner && (
+            <p className="flex items-center gap-2 text-blue-300/80">
+              <Trophy className="size-3.5 text-blue-400" />
+              {winner} won
+            </p>
+          )}
+          {topDkPlayer && (
+            <p className="flex items-center gap-2 text-blue-300/80">
+              <Award className="size-3.5 text-blue-400" />
+              {topDkPlayer} played best
+            </p>
+          )}
+          <p className="flex items-center gap-2">
+            <Calendar className="size-3.5 text-blue-400" />
+            All results final
+          </p>
+        </div>
+
+        {/* Footer: divider and action */}
+        <div className="border-t border-blue-500/15 pt-3 flex items-center justify-between">
+          <span className="text-xs font-medium uppercase tracking-wide text-blue-400/50">
+            Archive
+          </span>
+          <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-blue-300 group-hover:text-blue-200">
+            View Recap →
           </div>
         </div>
       </div>
