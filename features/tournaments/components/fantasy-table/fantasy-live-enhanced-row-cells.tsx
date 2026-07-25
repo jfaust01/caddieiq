@@ -8,6 +8,7 @@ import { FantasyPlayerCell } from './fantasy-player-cell'
 import { FantasyMetricCell } from './fantasy-metric-cell'
 import { MetricEmptyState } from './metric-empty-state'
 import { FormSparkline } from './form-sparkline'
+import { ScorecardCell } from './scorecard-cell'
 import { formatMissing } from './helpers'
 
 /**
@@ -55,6 +56,13 @@ export function FantasyLiveEnhancedRowCells({
       {/* POS */}
       <td className="border-r align-middle text-center" style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}>
         <span className="text-sm font-medium tabular-nums text-white">{positionDisplay}</span>
+      </td>
+
+      {/* SCORECARD */}
+      <td className="px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <ScorecardCell entrant={entrant} />
+        </div>
       </td>
 
       {/* PLAYER */}
