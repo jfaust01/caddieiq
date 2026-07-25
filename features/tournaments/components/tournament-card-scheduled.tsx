@@ -69,7 +69,7 @@ export function TournamentCardScheduled({ tournament }: TournamentCardScheduledP
         </div>
 
         {/* Stat boxes grid */}
-        <div className="grid grid-cols-4 gap-2 mb-6">
+        <div className="grid grid-cols-3 gap-2 mb-6">
           {/* Box 1: Field Strength */}
           <div className="border border-green-500/20 rounded-lg p-3 bg-green-500/5 text-center">
             <Trophy className="size-4 mx-auto mb-2 text-green-400" aria-hidden />
@@ -89,15 +89,6 @@ export function TournamentCardScheduled({ tournament }: TournamentCardScheduledP
             <Users className="size-4 mx-auto mb-2 text-green-400" aria-hidden />
             <p className="text-xl font-bold text-green-100 leading-tight">24%</p>
             <p className="text-xs text-green-300/70 uppercase tracking-wide mt-1">High Own</p>
-          </div>
-
-          {/* Box 4: Purse Display */}
-          <div className="border border-green-500/20 rounded-lg p-3 bg-green-500/5 text-center">
-            <DollarSign className="size-4 mx-auto mb-2 text-green-400" aria-hidden />
-            <p className="text-lg font-bold text-green-100 leading-tight">
-              {purseDisplay === EMPTY_VALUE ? '—' : purseDisplay.substring(0, 6)}
-            </p>
-            <p className="text-xs text-green-300/70 uppercase tracking-wide mt-1">Purse</p>
           </div>
         </div>
 

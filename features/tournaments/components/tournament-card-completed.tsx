@@ -65,7 +65,7 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
           </div>
 
           {/* Results stat boxes grid */}
-          <div className="grid grid-cols-4 gap-2 mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-6">
             {/* Box 1: Champion */}
             <div className="border border-cyan-500/20 rounded-lg p-3 bg-cyan-500/5 text-center">
               <Trophy className="size-4 mx-auto mb-2 text-cyan-400" aria-hidden />
@@ -91,15 +91,6 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
                 28%
               </p>
               <p className="text-xs text-cyan-300/70 uppercase tracking-wide mt-1">Chalk</p>
-            </div>
-
-            {/* Box 4: Final Payouts */}
-            <div className="border border-cyan-500/20 rounded-lg p-3 bg-cyan-500/5 text-center">
-              <TrendingUp className="size-4 mx-auto mb-2 text-cyan-400" aria-hidden />
-              <p className="text-lg font-bold text-cyan-100 leading-tight">
-                3
-              </p>
-              <p className="text-xs text-cyan-300/70 uppercase tracking-wide mt-1">Players</p>
             </div>
           </div>
 

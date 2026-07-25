@@ -71,7 +71,7 @@ export function TournamentCardLive({ tournament }: TournamentCardLiveProps) {
         </div>
 
         {/* Live stat boxes grid */}
-        <div className="grid grid-cols-4 gap-2 mb-6">
+        <div className="grid grid-cols-3 gap-2 mb-6">
           {/* Box 1: Leader */}
           <div className="border border-amber-500/20 rounded-lg p-3 bg-amber-500/5 text-center">
             <Trophy className="size-4 mx-auto mb-2 text-amber-400" aria-hidden />
@@ -90,14 +90,7 @@ export function TournamentCardLive({ tournament }: TournamentCardLiveProps) {
             <p className="text-xs text-amber-300/70 uppercase tracking-wide mt-1">Top DK</p>
           </div>
 
-          {/* Box 3: Pace Indicator */}
-          <div className="border border-amber-500/20 rounded-lg p-3 bg-amber-500/5 text-center">
-            <TrendingUp className="size-4 mx-auto mb-2 text-amber-400" aria-hidden />
-            <p className="text-xl font-bold text-amber-100 leading-tight">+18</p>
-            <p className="text-xs text-amber-300/70 uppercase tracking-wide mt-1">Pace</p>
-          </div>
-
-          {/* Box 4: Scoring Status */}
+          {/* Box 3: Scoring Status */}
           <div className="border border-amber-500/20 rounded-lg p-3 bg-amber-500/5 text-center">
             <Zap className="size-4 mx-auto mb-2 text-amber-400 animate-pulse" aria-hidden />
             <p className="text-lg font-bold text-amber-100 leading-tight">
