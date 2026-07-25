@@ -37,15 +37,16 @@ export function TournamentCardLive({ tournament }: TournamentCardLiveProps) {
       : null
 
   return (
-    <div
-      className={cn(
-        'group relative overflow-hidden rounded-lg cursor-pointer',
-        'bg-gradient-to-br from-slate-900/90 to-slate-950/70',
-        'border border-amber-500/40 hover:border-amber-400/70',
-        'hover:shadow-xl hover:shadow-amber-500/25 transition-all duration-300',
-        'focus-within:outline-none focus-within:ring-2 focus-within:ring-amber-500 focus-within:ring-offset-2'
-      )}
-    >
+    <Link href={`/tournaments/${tournament.id}`}>
+      <div
+        className={cn(
+          'group relative overflow-hidden rounded-lg cursor-pointer',
+          'bg-gradient-to-br from-slate-900/90 to-slate-950/70',
+          'border border-amber-500/40 hover:border-amber-400/70',
+          'hover:shadow-xl hover:shadow-amber-500/25 transition-all duration-300',
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-amber-500 focus-within:ring-offset-2'
+        )}
+      >
       {/* Amber/orange top accent - live/active */}
       <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" aria-hidden />
 
@@ -144,6 +145,7 @@ export function TournamentCardLive({ tournament }: TournamentCardLiveProps) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Link>
   )
 }

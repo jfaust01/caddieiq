@@ -42,15 +42,16 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
       : null
 
   return (
-    <div
-      className={cn(
-        'group relative overflow-hidden rounded-lg cursor-pointer',
-        'bg-gradient-to-br from-slate-900/90 to-slate-950/70',
-        'border border-blue-500/30 hover:border-blue-400/60',
-        'hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300',
-        'focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-400 focus-within:ring-offset-2'
-      )}
-    >
+    <Link href={`/tournaments/${tournament.id}`}>
+      <div
+        className={cn(
+          'group relative overflow-hidden rounded-lg cursor-pointer',
+          'bg-gradient-to-br from-slate-900/90 to-slate-950/70',
+          'border border-blue-500/30 hover:border-blue-400/60',
+          'hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300',
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-400 focus-within:ring-offset-2'
+        )}
+      >
       {/* Blue top accent - completed/results */}
       <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600" aria-hidden />
 
@@ -148,6 +149,7 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Link>
   )
 }

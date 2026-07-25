@@ -37,15 +37,16 @@ export function TournamentCardScheduled({ tournament }: TournamentCardScheduledP
   const hasDefendingChamp = !!tournament.defendingChampion
 
   return (
-    <div
-      className={cn(
-        'group relative overflow-hidden rounded-lg cursor-pointer',
-        'bg-gradient-to-br from-slate-900/90 to-slate-950/70',
-        'border border-cyan-500/30 hover:border-cyan-400/60',
-        'hover:shadow-xl hover:shadow-cyan-500/20 transition-all duration-300',
-        'focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-400 focus-within:ring-offset-2'
-      )}
-    >
+    <Link href={`/tournaments/${tournament.id}`}>
+      <div
+        className={cn(
+          'group relative overflow-hidden rounded-lg cursor-pointer',
+          'bg-gradient-to-br from-slate-900/90 to-slate-950/70',
+          'border border-cyan-500/30 hover:border-cyan-400/60',
+          'hover:shadow-xl hover:shadow-cyan-500/20 transition-all duration-300',
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-400 focus-within:ring-offset-2'
+        )}
+      >
       {/* Green top accent line - scheduled theme */}
       <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600" aria-hidden />
 
@@ -131,6 +132,7 @@ export function TournamentCardScheduled({ tournament }: TournamentCardScheduledP
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Link>
   )
 }
