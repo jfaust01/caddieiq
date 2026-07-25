@@ -68,7 +68,7 @@ const TH_SCORE =
 // Scorecard column (common to all phases)
 const scorecardColumn: ColumnDescriptor = {
   id: 'scorecard',
-  label: 'Scorecard',
+  label: 'Card',
   colClassName: 'w-[50px] sm:w-[60px]',
   thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
 }
