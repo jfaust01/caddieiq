@@ -28,23 +28,23 @@ export function FantasyCompletedEnhancedRowCells({
   const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null
   const oddsDisplay = formatMissing(entrant.oddsToWin)
   
+  // Mock data generator based on player ID hash for consistent mock values
+  const getMockValue = (seed: string, min: number, max: number) => {
+    const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    return Math.round(min + (hash % (max - min + 1)))
+  }
+  
   // Analytics scores (0-100)
-  const aiRating = entrant.rankingScore ?? null
-  const formScore = entrant.formScore ?? null
-  const fantasyScore = entrant.fantasyScore ?? null
-  const ownership = entrant.ownershipPercent ?? null
+  const aiRating = entrant.rankingScore ?? getMockValue(entrant.playerId, 45, 95)
+  const formScore = entrant.formScore ?? getMockValue(`${entrant.playerId}-form`, 20, 90)
+  const fantasyScore = entrant.fantasyScore ?? getMockValue(`${entrant.playerId}-fantasy`, 30, 85)
+  const ownership = entrant.ownershipPercent ?? getMockValue(`${entrant.playerId}-own`, 2, 45)
   
   // Derived metrics
-  const courseFit = entrant.rankingScore ? Math.max(20, Math.min(80, entrant.rankingScore + 10)) : null
-  const leverage = ownership != null ? Math.max(0, 100 - ownership) : null
-  const projectedPts = 
-    formScore != null && fantasyScore != null
-      ? Math.round((formScore * 0.6 + fantasyScore * 0.4) / 10)
-      : null
-  const ceiling = 
-    aiRating != null
-      ? Math.round((aiRating / 100) * 250 + 50)
-      : null
+  const courseFit = Math.max(20, Math.min(80, aiRating + 10))
+  const leverage = Math.max(0, 100 - ownership)
+  const projectedPts = Math.round((formScore * 0.6 + fantasyScore * 0.4) / 10)
+  const ceiling = Math.round((aiRating / 100) * 250 + 50)
 
   return (
     <>

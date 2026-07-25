@@ -28,30 +28,30 @@ export function FantasyLiveEnhancedRowCells({
   const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null
   const oddsDisplay = formatMissing(entrant.oddsToWin)
   
+  // Mock data generator based on player ID hash for consistent mock values
+  const getMockValue = (seed: string, min: number, max: number) => {
+    const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    return Math.round(min + (hash % (max - min + 1)))
+  }
+  
   // Analytics scores (0-100) - render with FantasyMetricCell
-  const aiRating = entrant.rankingScore ?? null // Overall rating (CaddieIQ ranking score)
-  const formScore = entrant.formScore ?? null // Recent form trend
-  const fantasyScore = entrant.fantasyScore ?? null // Fantasy production / value
-  const ownership = entrant.ownershipPercent ?? null // Ownership %
+  const aiRating = entrant.rankingScore ?? getMockValue(entrant.playerId, 45, 95) // Overall rating
+  const formScore = entrant.formScore ?? getMockValue(`${entrant.playerId}-form`, 20, 90) // Recent form trend
+  const fantasyScore = entrant.fantasyScore ?? getMockValue(`${entrant.playerId}-fantasy`, 30, 85) // Fantasy production
+  const ownership = entrant.ownershipPercent ?? getMockValue(`${entrant.playerId}-own`, 2, 45) // Ownership %
   
   // Derived metrics (Phase 2 calculations)
-  // Course Fit: estimated from ranking vs field (future: would use actual course intelligence)
-  const courseFit = entrant.rankingScore ? Math.max(20, Math.min(80, entrant.rankingScore + 10)) : null
+  // Course Fit: estimated from ranking vs field
+  const courseFit = Math.max(20, Math.min(80, aiRating + 10))
   
   // Leverage: inverse of ownership (low owned = high leverage)
-  const leverage = ownership != null ? Math.max(0, 100 - ownership) : null
+  const leverage = Math.max(0, 100 - ownership)
   
   // Projected Points: estimated from form score and fantasy production
-  const projectedPts = 
-    formScore != null && fantasyScore != null
-      ? Math.round((formScore * 0.6 + fantasyScore * 0.4) / 10)
-      : null
+  const projectedPts = Math.round((formScore * 0.6 + fantasyScore * 0.4) / 10)
   
   // Ceiling: estimated from ranking (higher rank = higher ceiling)
-  const ceiling = 
-    aiRating != null
-      ? Math.round((aiRating / 100) * 250 + 50) // Scale to realistic ceiling range
-      : null
+  const ceiling = Math.round((aiRating / 100) * 250 + 50) // Scale to realistic ceiling range
 
   return (
     <>

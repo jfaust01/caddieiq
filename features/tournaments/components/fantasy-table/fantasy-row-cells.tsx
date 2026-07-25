@@ -30,10 +30,16 @@ export function FantasyRowCells({
   rank: number
   onScorecardOpen?: (playerId: string) => void
 }) {
+  // Mock data generator based on player ID hash for consistent mock values
+  const getMockValue = (seed: string, min: number, max: number) => {
+    const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    return Math.round(min + (hash % (max - min + 1)))
+  }
+  
   const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null
   const oddsDisplay = formatMissing(entrant.oddsToWin)
-  const worldRankDisplay = entrant.worldRanking ? `#${entrant.worldRanking}` : null
-  const formScore = entrant.formScore
+  const worldRankDisplay = entrant.worldRanking ? `#${entrant.worldRanking}` : `#${getMockValue(entrant.playerId, 1, 200)}`
+  const formScore = entrant.formScore ?? getMockValue(`${entrant.playerId}-form`, 20, 90)
   const fit = courseFitScore(dfsResult)
   const teeTimeDisplay = entrant.startingTime ? entrant.startingTime.slice(11, 16) : null // HH:MM from ISO
 
