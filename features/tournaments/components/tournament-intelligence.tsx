@@ -467,12 +467,29 @@ function buildScheduledCards(
 
 function buildLiveCards(field: TournamentField): InsightCardProps[] {
   const iconClass = 'size-6 ' + ACCENT.live.text
+  const scored = scoredEntrants(field.entrants)
+  
+  // A. Current Leader
   const leader = getLeader(field.entrants)
   const leaderThru = leader?.thruHole
     ? leader.thruHole.toUpperCase() === 'F'
       ? 'Finished'
       : `Thru ${leader.thruHole}`
     : undefined
+
+  // B. Players Remaining (active in the tournament)
+  const playersRemaining = field.entrants.filter(
+    (e) => e.status !== 'WITHDRAWN' && e.status !== 'DISQUALIFIED' && !e.withdrawn
+  ).length
+
+  // C. Top DK Scorer So Far
+  const topDkLive = getTopDkEntrant(field.entrants)
+
+  // D. Average Round Score (of scored entrants, round that's in progress/completed)
+  const scoredWithScores = scored.filter((e) => e.total !== null && Number.isFinite(e.total))
+  const avgScore = scoredWithScores.length > 0
+    ? (scoredWithScores.reduce((sum, e) => sum + (e.total as number), 0) / scoredWithScores.length).toFixed(1)
+    : null
 
   return [
     {
@@ -486,27 +503,36 @@ function buildLiveCards(field: TournamentField): InsightCardProps[] {
     },
     {
       accent: 'live',
-      icon: <Scissors className={iconClass} aria-hidden />,
-      label: 'Live Cut Line',
-      primaryValue:
-        // Cut line surfaces on the field report; the summary carries no live
-        // projected cut, so stay honest rather than fabricate one.
-        EMPTY_VALUE,
-      supportingText: 'Live cut line not available yet',
+      icon: <Users className={iconClass} aria-hidden />,
+      label: 'Players Remaining',
+      primaryValue: playersRemaining > 0 ? playersRemaining : EMPTY_VALUE,
+      secondaryValue: playersRemaining > 0 ? 'In tournament' : undefined,
+      supportingText: playersRemaining > 0 
+        ? `${field.size - playersRemaining} withdrawn/DQ`
+        : 'No active players',
+      accentPrimary: Boolean(playersRemaining),
     },
     {
       accent: 'live',
-      icon: <TrendingUp className={iconClass} aria-hidden />,
-      label: 'Biggest Mover',
-      primaryValue: EMPTY_VALUE,
-      supportingText: 'Round-over-round movement not available yet',
+      icon: <DraftKingsMark className="h-6 w-auto" />,
+      label: 'Top DK Score',
+      primaryValue: topDkLive?.dkFantasyPoints !== null ? formatDkTotal(topDkLive.dkFantasyPoints) : EMPTY_VALUE,
+      secondaryValue: topDkLive?.playerName,
+      supportingText: topDkLive
+        ? `${topDkLive.thruHole ? `Thru ${topDkLive.thruHole}` : 'In progress'}`
+        : 'DraftKings data not available yet',
+      accentPrimary: topDkLive?.dkFantasyPoints !== null,
     },
     {
       accent: 'live',
       icon: <Target className={iconClass} aria-hidden />,
-      label: 'Birdie Leader',
-      primaryValue: EMPTY_VALUE,
-      supportingText: 'Hole-by-hole birdie data not available yet',
+      label: 'Avg Score (Thru)',
+      primaryValue: avgScore !== null ? avgScore : EMPTY_VALUE,
+      secondaryValue: avgScore !== null ? `${scoredWithScores.length} players` : undefined,
+      supportingText: avgScore !== null
+        ? `Field average through current round`
+        : 'No live scoring data yet',
+      accentPrimary: Boolean(avgScore),
     },
   ]
 }
