@@ -10,6 +10,7 @@ import {
 import Link from 'next/link'
 
 import type { TournamentSummary } from '@/features/tournaments/types'
+import { formatDateRange } from '@/features/tournaments/utils/format'
 import { cn } from '@/lib/utils'
 
 interface TournamentCardCompletedProps {
@@ -47,19 +48,20 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
       >
         {/* Content */}
         <div className="flex flex-col gap-0 p-6">
-          {/* Header with icon, title, and description */}
-          <div className="flex items-start gap-4 mb-6 min-w-0">
+          {/* Header with icon, tournament name, and date */}
+          <div className="flex items-start gap-3 mb-4 min-w-0">
             {/* Circular chart icon */}
-            <div className="flex-shrink-0 w-12 h-12 rounded-full border border-cyan-500/60 bg-cyan-500/10 flex items-center justify-center">
-              <BarChart3 className="size-5 text-cyan-400" aria-hidden />
+            <div className="flex-shrink-0 w-10 h-10 rounded-full border border-cyan-500/60 bg-cyan-500/10 flex items-center justify-center">
+              <BarChart3 className="size-4 text-cyan-400" aria-hidden />
             </div>
 
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-300 mb-1">
-                Tournament Recap
+              <h3 className="text-sm font-bold text-cyan-100 leading-tight mb-0.5" title={tournament.name}>
+                {tournament.name}
               </h3>
-              <p className="text-xs text-slate-400">
-                Final standings and DraftKings results — review what actually happened.
+              <p className="text-xs text-cyan-300/70 flex items-center gap-1">
+                <Calendar className="size-3" aria-hidden />
+                {formatDateRange(tournament.startDate, tournament.endDate)}
               </p>
             </div>
           </div>
