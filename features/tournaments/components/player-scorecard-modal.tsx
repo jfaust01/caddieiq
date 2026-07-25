@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -79,12 +79,13 @@ export function PlayerScorecardModal({
     }
   }, [canGoNext, visibleIndex, visiblePlayers, onPlayerChange])
 
+  // If modal is not open, render nothing
+  if (!isOpen) return null
+
+  // If no player selected, render nothing (this shouldn't happen if modal is open)
   if (!selectedPlayer) {
     return null
   }
-
-  // Early return for testing modal visibility
-  if (!isOpen) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
