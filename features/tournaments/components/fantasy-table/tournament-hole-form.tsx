@@ -72,9 +72,9 @@ export const TournamentHoleForm = memo(function TournamentHoleForm({
     }
 
     return (
-      <div className="flex flex-col gap-0">
+      <div className="flex flex-col gap-0 w-full">
         {rounds.map((roundData, index) => (
-          <div key={`round-${roundData.round}`}>
+          <div key={`round-${roundData.round}`} className="w-full">
             <RoundHoleRow {...roundData} />
             {index < rounds.length - 1 && (
               <div className="h-px bg-white/[0.055] my-1" />
@@ -101,14 +101,14 @@ const RoundHoleRow = memo(function RoundHoleRow({
   played,
 }: RoundHoles) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 w-full">
       {/* Round label */}
       <div className="w-4 text-right text-[10px] font-semibold text-gray-500">
         R{round}
       </div>
 
       {/* 18 hole dots grid */}
-      <div className="grid flex-1 gap-0.5" style={{ gridTemplateColumns: 'repeat(18, minmax(4px, 1fr))' }}>
+      <div className="grid flex-1 gap-0.5 w-full" style={{ gridTemplateColumns: 'repeat(18, minmax(4px, 1fr))' }}>
         {holes.map(hole => (
           <HoleDot
             key={`hole-${round}-${hole.holeNumber}`}
