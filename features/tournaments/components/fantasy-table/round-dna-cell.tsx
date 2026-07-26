@@ -284,7 +284,7 @@ function RoundDnaRow({
 
   // SVG dimensions and coordinate system
   const SVG_WIDTH = 480
-  const SVG_HEIGHT = 32
+  const SVG_HEIGHT = 40
   const CENTER_Y = SVG_HEIGHT / 2
   const PADDING = 8
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
@@ -293,7 +293,7 @@ function RoundDnaRow({
   // Calculate point coordinates (shared between line and dots)
   const points = holes.map((hole, idx) => ({
     x: PADDING + idx * STEP_X,
-    y: CENTER_Y + SCORE_Y_OFFSET[hole.status === 'future' || hole.status === 'missing' ? 'par' : hole.status] * 0.75,
+    y: CENTER_Y + SCORE_Y_OFFSET[hole.status === 'future' || hole.status === 'missing' ? 'par' : hole.status],
     hole,
   }))
 
@@ -302,7 +302,7 @@ function RoundDnaRow({
 
   return (
     <div
-      className="relative w-full h-8 cursor-pointer hover:bg-white/[0.02] transition-colors"
+      className="relative w-full h-10 cursor-pointer hover:bg-white/[0.02] transition-colors"
       onMouseEnter={() => onRoundHover(round)}
       onMouseLeave={() => onRoundHover(null)}
       onClick={() => onRoundClick?.(round)}
