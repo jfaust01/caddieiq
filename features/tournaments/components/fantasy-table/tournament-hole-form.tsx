@@ -82,7 +82,7 @@ export const TournamentHoleForm = memo(function TournamentHoleForm({
           <div key={`round-${roundData.round}`} className="w-full">
             <RoundHoleRow {...roundData} hoveredHole={hoveredHole} onHoleHover={setHoveredHole} />
             {index < rounds.length - 1 && (
-              <div className="h-px bg-white/[0.07] my-0.5" />
+              <div className="h-px bg-white/[0.07] my-0" />
             )}
           </div>
         ))}
@@ -113,14 +113,14 @@ const RoundHoleRow = memo(function RoundHoleRow({
   const toParColor = relToPar === null ? 'text-gray-500' : relToPar < 0 ? 'text-emerald-400' : relToPar > 0 ? 'text-red-400' : 'text-gray-400'
 
   return (
-    <div className="flex items-stretch gap-2 w-full h-12">
+    <div className="flex items-center gap-1 w-full h-7">
       {/* Round label */}
       <div className="flex flex-col items-end justify-center gap-0">
-        <div className="text-[8px] font-semibold text-gray-500 uppercase leading-3">
+        <div className="text-[7px] font-semibold text-gray-500 uppercase leading-none">
           R{round}
         </div>
         {/* Round score badge */}
-        <div className={`text-[10px] font-bold tabular-nums leading-3 ${toParColor}`}>
+        <div className={`text-[9px] font-bold tabular-nums leading-none ${toParColor}`}>
           {toParDisplay}
         </div>
       </div>
@@ -193,12 +193,12 @@ const HoleDot = memo(function HoleDot({
       <div
         className="rounded-full transition-all duration-150"
         style={{
-          width: isHovered ? '7px' : '5px',
-          height: isHovered ? '7px' : '5px',
+          width: isHovered ? '5px' : '3.5px',
+          height: isHovered ? '5px' : '3.5px',
           backgroundColor: color,
           transform: `translateY(${yOffset}px)`,
           boxShadow: isHovered
-            ? `0 0 8px ${color}4D, 0 0 0 2px rgba(255,255,255,0.1)`
+            ? `0 0 6px ${color}4D, 0 0 0 2px rgba(255,255,255,0.1)`
             : hole.status !== 'unplayed'
               ? `0 0 1px rgba(0,0,0,0.8)`
               : 'none',
@@ -286,14 +286,14 @@ function getHoleStyle(hole: HoleResult): {
     unplayed: '#374151', // gray-700 - very muted
   }
 
-  // Increased vertical offset for clearer visual movement
+  // Vertical offset for visual distinction - reduced for compact layout
   // Positive = down (good), Negative = up (bad)
   const offsetMap: Record<HoleResult['status'], number> = {
-    eagleOrBetter: 6,  // 6px down
-    birdie: 3,         // 3px down
+    eagleOrBetter: 3,  // 3px down
+    birdie: 1.5,       // 1.5px down
     par: 0,            // centered
-    bogey: -3,         // 3px up
-    doubleOrWorse: -6, // 6px up
+    bogey: -1.5,       // 1.5px up
+    doubleOrWorse: -3, // 3px up
     unplayed: 0,       // centered
   }
 
