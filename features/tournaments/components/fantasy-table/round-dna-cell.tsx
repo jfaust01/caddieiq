@@ -225,9 +225,8 @@ function RoundDnaRow({
     hole,
   }))
 
-  // Build polyline for connecting line
+  // Filter completed points for line segments
   const completedPoints = points.filter(p => p.hole.status !== 'future' && p.hole.status !== 'missing')
-  const polylinePoints = completedPoints.map(p => `${p.x},${p.y}`).join(' ')
 
   return (
     <div
@@ -255,18 +254,27 @@ function RoundDnaRow({
           preserveAspectRatio="none"
           style={{ overflow: 'visible', marginLeft: '0' }}
         >
-          {/* Connecting polyline */}
-          {polylinePoints && (
-            <polyline
-              points={polylinePoints}
-              fill="none"
-              stroke={completedPoints[0]?.hole.status === 'albatross' ? DOT_COLORS.albatross : DOT_COLORS.birdie}
-              strokeWidth="1"
-              opacity="0.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          )}
+          {/* Connecting line segments - each line takes color of the next dot */}
+          {completedPoints.slice(0, -1).map((startPoint, idx) => {
+            const endPoint = completedPoints[idx + 1]
+            if (!endPoint) return null
+            
+            const lineColor = DOT_COLORS[endPoint.hole.status] || DOT_COLORS.par
+            
+            return (
+              <line
+                key={`line-${round}-${idx}`}
+                x1={startPoint.x}
+                y1={startPoint.y}
+                x2={endPoint.x}
+                y2={endPoint.y}
+                stroke={lineColor}
+                strokeWidth="1"
+                opacity="0.6"
+                strokeLinecap="round"
+              />
+            )
+          })}
 
           {/* Hole dots */}
           {points.map((point, idx) => {
