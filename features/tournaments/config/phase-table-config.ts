@@ -267,8 +267,8 @@ const courseFitColumn: ColumnDescriptor = {
 const tournamentFormColumn: ColumnDescriptor = {
   id: 'tournamentForm',
   label: 'Tournament Form',
-  tooltip: 'Hole-by-hole scoring visualization',
-  colClassName: 'w-[220px] sm:w-[260px]',
+  tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
+  colClassName: 'w-[300px] sm:w-[340px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
@@ -384,8 +384,8 @@ const courseFitCompletedColumn: ColumnDescriptor = {
 const tournamentFormCompletedColumn: ColumnDescriptor = {
   id: 'tournamentForm',
   label: 'TOURNAMENT FORM',
-  tooltip: 'Hole-by-hole scoring visualization',
-  colClassName: 'w-[220px] sm:w-[260px]',
+  tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
+  colClassName: 'w-[300px] sm:w-[340px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
