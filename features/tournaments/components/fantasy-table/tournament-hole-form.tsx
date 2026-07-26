@@ -72,9 +72,14 @@ export const TournamentHoleForm = memo(function TournamentHoleForm({
     }
 
     return (
-      <div className="flex flex-col gap-2">
-        {rounds.map(roundData => (
-          <RoundHoleRow key={`round-${roundData.round}`} {...roundData} />
+      <div className="flex flex-col gap-0">
+        {rounds.map((roundData, index) => (
+          <div key={`round-${roundData.round}`}>
+            <RoundHoleRow {...roundData} />
+            {index < rounds.length - 1 && (
+              <div className="h-px bg-white/[0.055] my-1" />
+            )}
+          </div>
         ))}
       </div>
     )
@@ -96,9 +101,9 @@ const RoundHoleRow = memo(function RoundHoleRow({
   played,
 }: RoundHoles) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       {/* Round label */}
-      <div className="w-6 text-right text-xs font-semibold text-gray-400">
+      <div className="w-4 text-right text-[10px] font-semibold text-gray-500">
         R{round}
       </div>
 
