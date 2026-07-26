@@ -48,7 +48,6 @@ export function FantasyCompletedEnhancedRowCells({
   // Derived metrics
   const courseFit = Math.max(20, Math.min(80, aiRating + 10))
   const leverage = Math.max(0, 100 - ownership)
-  const projectedPts = Math.round((formScore * 0.6 + fantasyScore * 0.4) / 10)
   const ceiling = Math.round((aiRating / 100) * 250 + 50)
 
   return (
@@ -154,15 +153,6 @@ export function FantasyCompletedEnhancedRowCells({
           value={leverage}
           meterTone="bg-purple-400/60"
           valueClassName="text-purple-100"
-        />
-      </td>
-
-      {/* PROJ. PTS */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <FantasyMetricCell 
-          value={projectedPts}
-          meterTone="bg-indigo-400/60"
-          valueClassName="text-indigo-100"
         />
       </td>
 

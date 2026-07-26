@@ -296,14 +296,6 @@ const leverageColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
-const projectedPtsColumn: ColumnDescriptor = {
-  id: 'projectedPts',
-  label: 'Proj-K PTS',
-  tooltip: 'Projected tournament points',
-  colClassName: 'w-[105px] sm:w-[120px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
-}
-
 const liveColumns: ColumnDescriptor[] = [
   posColumn,
   scorecardColumn,
@@ -317,7 +309,6 @@ const liveColumns: ColumnDescriptor[] = [
   liveValueColumn,
   liveOwnershipColumn,
   leverageColumn,
-  projectedPtsColumn,
   oddsScoringColumn,
 ]
 
@@ -415,14 +406,6 @@ const leverageCompletedColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
-const projectedPtsCompletedColumn: ColumnDescriptor = {
-  id: 'projectedPts',
-  label: 'PROJ. PTS',
-  tooltip: 'Projected tournament points',
-  colClassName: 'w-[105px] sm:w-[120px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
-}
-
 const oddsCompletedColumn: ColumnDescriptor = {
   id: 'odds',
   label: 'ODDS TO WIN',
@@ -443,7 +426,6 @@ const completedColumns: ColumnDescriptor[] = [
   dkScoreCompletedColumn,
   valueCompletedColumn,
   leverageCompletedColumn,
-  projectedPtsCompletedColumn,
   oddsCompletedColumn,
 ]
 

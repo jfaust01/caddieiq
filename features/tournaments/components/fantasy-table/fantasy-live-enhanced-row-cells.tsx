@@ -52,9 +52,6 @@ export function FantasyLiveEnhancedRowCells({
   // Leverage: inverse of ownership (low owned = high leverage)
   const leverage = Math.max(0, 100 - ownership)
   
-  // Projected Points: estimated from form score and fantasy production
-  const projectedPts = Math.round((formScore * 0.6 + fantasyScore * 0.4) / 10)
-  
   // Ceiling: estimated from ranking (higher rank = higher ceiling)
   const ceiling = Math.round((aiRating / 100) * 250 + 50) // Scale to realistic ceiling range
 
@@ -170,15 +167,6 @@ export function FantasyLiveEnhancedRowCells({
           value={leverage}
           meterTone="bg-purple-400/60"
           valueClassName="text-purple-100"
-        />
-      </td>
-
-      {/* PROJ-K PTS */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <FantasyMetricCell 
-          value={projectedPts}
-          meterTone="bg-indigo-400/60"
-          valueClassName="text-indigo-100"
         />
       </td>
 
