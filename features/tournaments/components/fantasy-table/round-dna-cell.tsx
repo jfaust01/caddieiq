@@ -30,14 +30,16 @@ interface RoundData {
 }
 
 // Fixed Y offsets for scoring grid (in SVG coordinate space)
+// Negative Y = above center line (red, bogey or worse)
+// Positive Y = below center line (green, birdie or better)
 const SCORE_Y_OFFSET = {
-  albatross: -12,
-  eagle: -8,
-  birdie: -4,
+  albatross: 12,
+  eagle: 8,
+  birdie: 4,
   par: 0,
-  bogey: 4,
-  double: 8,
-  triplePlus: 12,
+  bogey: -4,
+  double: -8,
+  triplePlus: -12,
 }
 
 // Helper function to get color based on score status
