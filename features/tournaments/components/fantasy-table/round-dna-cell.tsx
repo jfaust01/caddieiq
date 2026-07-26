@@ -40,16 +40,19 @@ const SCORE_Y_OFFSET = {
   triplePlus: 12,
 }
 
-const DOT_COLORS = {
-  albatross: '#06B6D4', // cyan
-  eagle: '#00E676', // bright green
-  birdie: '#22C55E', // green
-  par: '#6B7280', // gray
-  bogey: '#F59E0B', // amber
-  double: '#F97316', // orange
-  triplePlus: '#EF4444', // red
-  future: '#3F4855', // dark gray
-  missing: '#4B5563', // muted gray
+// Helper function to get color based on Y offset direction
+// Negative Y (below center) = good scores (green)
+// Positive Y (above center) = bad scores (red)
+const getDotColor = (status: string, yOffset: number): string => {
+  if (status === 'future') return '#3F4855' // dark gray
+  if (status === 'missing') return '#4B5563' // muted gray
+  
+  if (yOffset < 0) {
+    return '#10B981' // green for good scores (below center)
+  } else if (yOffset > 0) {
+    return '#EF4444' // red for bad scores (above center)
+  }
+  return '#6B7280' // gray for par
 }
 
 /**
@@ -317,7 +320,7 @@ function RoundDnaRow({
             const endPoint = completedPoints[idx + 1]
             if (!endPoint) return null
             
-            const lineColor = DOT_COLORS[endPoint.hole.status] || DOT_COLORS.par
+            const lineColor = getDotColor(endPoint.hole.status, endPoint.y - CENTER_Y)
             
             return (
               <line
@@ -391,7 +394,7 @@ function RoundDnaRow({
                   cx={point.x}
                   cy={point.y}
                   r={hoverRadius}
-                  fill={DOT_COLORS[point.hole.status] || DOT_COLORS.par}
+                  fill={getDotColor(point.hole.status, point.y - CENTER_Y)}
                   opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.4 : 1}
                   style={{
                     transition: 'r 0.2s',
