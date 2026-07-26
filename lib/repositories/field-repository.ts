@@ -252,8 +252,15 @@ export class FieldRepository extends BaseRepository {
         hto.total_strokes AS "totalStrokes",
         hto.score_to_par AS "totalRelativeToPar",
         fp."fantasyPointsDraftKings"::float AS "projection",
-        -- Odds (disabled - requires deduplication logic for multiple odds events/quotes per player)
-        NULL::text AS "odds",
+        -- Odds: fetch the most recent American odds for this player in this tournament
+        CASE 
+          WHEN oq."americanOdds" IS NOT NULL THEN 
+            CASE 
+              WHEN oq."americanOdds" > 0 THEN '+' || oq."americanOdds"::text
+              ELSE oq."americanOdds"::text
+            END
+          ELSE NULL
+        END AS "odds",
         -- Ownership percentage (null - not available in current schema)
         NULL::float AS "ownershipPercent",
         ds.salary AS "dfsSalary",
@@ -297,11 +304,23 @@ export class FieldRepository extends BaseRepository {
       LEFT JOIN fantasy_projections fp
         ON fp."playerId" = tf."playerId"
         AND fp."tournamentId" = tf."tournamentId"
+      -- Odds: fetch the most recent odds quote for this player/tournament
+      -- Deduplicates by taking the latest odds_event per player (by event updatedAt)
+      LEFT JOIN LATERAL (
+        SELECT oq."americanOdds"
+        FROM odds_quotes oq
+        JOIN odds_events oe ON oe.id = oq."oddsEventId"
+        WHERE oe."tournamentId" = tf."tournamentId"
+          AND oq."playerId" = p.id
+          AND oq.market = 'TO_WIN'
+        ORDER BY oe."updatedAt" DESC
+        LIMIT 1
+      ) oq ON true
       WHERE tf."tournamentId" = ${tournamentId}
       GROUP BY tf.id, p.id, p."fullName", p."countryCode", n.iso2, p."headshotUrl", ds.operator, tf.status, 
                tf."isAlternate", tf.withdrawn, tf."cutMade", tf."finalPosition", stat."worldRanking", 
                hto.dk_fantasy_points, hto.round_dk_points_json, hto.total_strokes, hto.score_to_par, fp."fantasyPointsDraftKings",
-               ds.salary
+               ds.salary, oq."americanOdds"
       ORDER BY p."fullName" ASC
     `)
   }
