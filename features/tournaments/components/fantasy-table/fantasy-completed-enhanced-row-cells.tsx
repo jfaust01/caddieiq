@@ -1,19 +1,17 @@
 'use client'
 
-import { DraftKingsMark } from '@/features/tournaments/components/draftkings-mark'
 import type { FieldEntrant } from '@/features/tournaments/types'
+import type { DfsValueResult } from '@/lib/dfs-value'
 import { formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 
 import { FantasyPlayerCell } from './fantasy-player-cell'
-import { FantasyMetricCell } from './fantasy-metric-cell'
-import { MetricEmptyState } from './metric-empty-state'
 import { RoundDnaCell } from './round-dna-cell'
 import { ScorecardCell } from './scorecard-cell'
-import { formatMissing } from './helpers'
+import { AiIntelligenceCell, FantasyOutlookCell, MarketCell } from './premium-metric-cells'
 
 /**
- * Enhanced COMPLETED (finished) row cells with extended analytics columns.
- * Displays: RESULT · PLAYER · AI RATING · COURSE FIT · RECENT FORM · SALARY · VALUE · LEVERAGE · PROJ PTS · CEILING · ODDS
+ * Enhanced COMPLETED (finished) row cells with combined premium metrics.
+ * Displays: RESULT · PLAYER · TO PAR · ROUND DNA · AI INTELLIGENCE · FANTASY OUTLOOK · MARKET
  */
 export function FantasyCompletedEnhancedRowCells({
   entrant,
@@ -21,38 +19,16 @@ export function FantasyCompletedEnhancedRowCells({
   onScorecardOpen,
   onRoundSelect,
   tournamentStatus = 'COMPLETED',
+  dfsResult,
 }: {
   entrant: FieldEntrant
   positionCountMap?: Map<number, number>
   onScorecardOpen?: (playerId: string) => void
   onRoundSelect?: (playerId: string, round: number) => void
   tournamentStatus?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
+  dfsResult?: DfsValueResult
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap ?? new Map())
-  const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null
-  const oddsDisplay = entrant.oddsToWin 
-    ? (() => {
-        const odds = parseInt(entrant.oddsToWin)
-        return isNaN(odds) ? formatMissing(entrant.oddsToWin) : (odds > 0 ? '+' + odds : odds.toString())
-      })()
-    : '—'
-  
-  // Mock data generator based on player ID hash for consistent mock values
-  const getMockValue = (seed: string, min: number, max: number) => {
-    const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-    return Math.round(min + (hash % (max - min + 1)))
-  }
-  
-  // Analytics scores (0-100)
-  const aiRating = entrant.rankingScore ?? getMockValue(entrant.playerId, 45, 95)
-  const formScore = entrant.formScore ?? getMockValue(`${entrant.playerId}-form`, 20, 90)
-  const fantasyScore = entrant.fantasyScore ?? getMockValue(`${entrant.playerId}-fantasy`, 30, 85)
-  const ownership = entrant.ownershipPercent ?? getMockValue(`${entrant.playerId}-own`, 2, 45)
-  
-  // Derived metrics
-  const courseFit = Math.max(20, Math.min(80, aiRating + 10))
-  const leverage = Math.max(0, 100 - ownership)
-  const ceiling = Math.round((aiRating / 100) * 250 + 50)
 
   return (
     <>
@@ -95,69 +71,14 @@ export function FantasyCompletedEnhancedRowCells({
         />
       </td>
 
-      {/* AI RATING */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <FantasyMetricCell 
-          value={aiRating}
-          valueClassName="text-blue-100"
-        />
-      </td>
+      {/* AI INTELLIGENCE */}
+      <AiIntelligenceCell entrant={entrant} />
 
-      {/* COURSE FIT */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <FantasyMetricCell 
-          value={courseFit}
-          valueClassName="text-cyan-100"
-        />
-      </td>
+      {/* FANTASY OUTLOOK */}
+      <FantasyOutlookCell entrant={entrant} dfsResult={dfsResult} />
 
-      {/* SALARY */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <div className="flex h-full items-center justify-center gap-1.5 whitespace-nowrap">
-          {salaryDisplay ? (
-            <>
-              <DraftKingsMark className="h-3 w-auto shrink-0" />
-              <span className="text-sm font-medium tabular-nums text-foreground">{salaryDisplay}</span>
-            </>
-          ) : (
-            <MetricEmptyState />
-          )}
-        </div>
-      </td>
-
-      {/* DK SCORE */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <div className="flex h-full items-center justify-center">
-          {entrant.dkFantasyPoints != null ? (
-            <span className="text-sm font-medium tabular-nums text-emerald-200">{entrant.dkFantasyPoints.toFixed(1)}</span>
-          ) : (
-            <MetricEmptyState />
-          )}
-        </div>
-      </td>
-
-      {/* VALUE — PTS/$1K */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <FantasyMetricCell 
-          value={fantasyScore}
-          valueClassName="text-emerald-100"
-        />
-      </td>
-
-      {/* LEVERAGE — OWN PROJ. */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <FantasyMetricCell 
-          value={leverage}
-          valueClassName="text-purple-100"
-        />
-      </td>
-
-      {/* ODDS TO WIN */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <div className="flex h-full items-center justify-center">
-          <span className="text-sm font-mono tabular-nums text-muted-foreground">{oddsDisplay}</span>
-        </div>
-      </td>
+      {/* MARKET */}
+      <MarketCell entrant={entrant} />
     </>
   )
 }

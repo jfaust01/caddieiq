@@ -45,9 +45,9 @@ export function FantasyPlayerRow({
       {isScheduled ? (
         <FantasyRowCells entrant={entrant} dfsResult={dfsResult} rank={index + 1} onScorecardOpen={onRowClick} />
       ) : phase === 'live' ? (
-        <FantasyLiveEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} onScorecardOpen={onRowClick} onRoundSelect={onRoundSelect} />
+        <FantasyLiveEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} onScorecardOpen={onRowClick} onRoundSelect={onRoundSelect} dfsResult={dfsResult} />
       ) : (
-        <FantasyCompletedEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} onScorecardOpen={onRowClick} onRoundSelect={onRoundSelect} />
+        <FantasyCompletedEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} onScorecardOpen={onRowClick} onRoundSelect={onRoundSelect} dfsResult={dfsResult} />
       )}
     </tr>
   )

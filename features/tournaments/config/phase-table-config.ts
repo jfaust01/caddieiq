@@ -304,14 +304,9 @@ const liveColumns: ColumnDescriptor[] = [
   scoringPlayerColumn,
   toParColumn,
   tournamentFormColumn,
-  aiRatingColumn,
-  courseFitColumn,
-  salaryLiveColumn,
-  dkScoreLiveColumn,
-  liveValueColumn,
-  liveOwnershipColumn,
-  leverageColumn,
-  oddsScoringColumn,
+  aiIntelligenceColumn,
+  fantasyOutlookColumn,
+  marketColumn,
 ]
 
 /**
@@ -409,12 +404,28 @@ const leverageCompletedColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
-const oddsCompletedColumn: ColumnDescriptor = {
-  id: 'odds',
-  label: 'ODDS TO WIN',
-  tooltip: 'Odds to win tournament',
-  colClassName: 'w-[110px] sm:w-[130px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+const aiIntelligenceColumn: ColumnDescriptor = {
+  id: 'aiIntelligence',
+  label: 'AI Intelligence',
+  tooltip: 'Combined AI Rating and Course Fit',
+  colClassName: 'w-[180px] sm:w-[220px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+}
+
+const fantasyOutlookColumn: ColumnDescriptor = {
+  id: 'fantasyOutlook',
+  label: 'Fantasy Outlook',
+  tooltip: 'Combined Salary, DK Score, and Value',
+  colClassName: 'w-[220px] sm:w-[250px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+}
+
+const marketColumn: ColumnDescriptor = {
+  id: 'market',
+  label: 'Market',
+  tooltip: 'Combined Ownership and Odds to Win',
+  colClassName: 'w-[170px] sm:w-[200px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
 const completedColumns: ColumnDescriptor[] = [
@@ -423,13 +434,9 @@ const completedColumns: ColumnDescriptor[] = [
   scoringPlayerColumn,
   toParColumn,
   tournamentFormCompletedColumn,
-  aiRatingCompletedColumn,
-  courseFitCompletedColumn,
-  salaryCompletedColumn,
-  dkScoreCompletedColumn,
-  valueCompletedColumn,
-  leverageCompletedColumn,
-  oddsCompletedColumn,
+  aiIntelligenceColumn,
+  fantasyOutlookColumn,
+  marketColumn,
 ]
 
 // ---------------------------------------------------------------------------
