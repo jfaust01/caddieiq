@@ -158,14 +158,14 @@ export function ScorecardDrawer({
           'px-4 lg:px-6 py-4 lg:py-5'
         )}>
           {/* Top Row: Player Info and Close */}
-          <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex items-start justify-between gap-3 mb-4">
             {/* Player Avatar and Info */}
             <div className="flex items-start gap-3 flex-1 min-w-0">
               {/* Avatar */}
               <div className="flex-shrink-0 w-12 h-12 rounded-full border-2 border-emerald-500/60 bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center overflow-hidden">
-                {selectedPlayer.playerHeadshot ? (
+                {selectedPlayer.headshotUrl ? (
                   <img
-                    src={selectedPlayer.playerHeadshot}
+                    src={selectedPlayer.headshotUrl}
                     alt={selectedPlayer.playerName}
                     className="w-full h-full object-cover"
                   />
@@ -177,20 +177,20 @@ export function ScorecardDrawer({
               </div>
 
               {/* Player Name and Stats */}
-              <div className="flex-1 min-w-0 pt-0.5">
-                <div className="flex items-baseline gap-2 mb-1">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2 mb-0.5">
                   <h2 className="text-sm font-bold text-white truncate">
                     {selectedPlayer.playerName}
                   </h2>
-                  {selectedPlayer.country && (
+                  {selectedPlayer.countryCode && (
                     <span className="text-xs text-gray-400 flex-shrink-0">
-                      {selectedPlayer.country}
+                      {selectedPlayer.countryCode}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Position Badge */}
-                  <div className="px-2 py-1 rounded text-xs font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
+                  <div className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
                     T{selectedPlayer.position || '—'}
                   </div>
                   {/* Score */}
@@ -202,7 +202,7 @@ export function ScorecardDrawer({
                   </span>
                   {/* Total Strokes */}
                   <span className="text-xs text-gray-400">
-                    ({selectedPlayer.dkPoints || 0})
+                    ({selectedPlayer.totalStrokes || 0})
                   </span>
                 </div>
               </div>
@@ -260,14 +260,20 @@ export function ScorecardDrawer({
               <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
                 TO PAR
               </div>
-              <div className="text-2xl font-bold text-emerald-400 mb-2">
-                {selectedPlayer.total && selectedPlayer.total < 0 ? selectedPlayer.total : `−${Math.abs(selectedPlayer.total || 0)}`}
+              <div className="text-xl font-bold text-emerald-400 mb-2">
+                {selectedPlayer.total !== null && selectedPlayer.total !== undefined
+                  ? selectedPlayer.total > 0
+                    ? `+${selectedPlayer.total}`
+                    : selectedPlayer.total === 0
+                      ? 'E'
+                      : selectedPlayer.total
+                  : '—'}
               </div>
               <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
                 TOTAL
               </div>
-              <div className="text-2xl font-bold text-emerald-400">
-                {selectedPlayer.total ? `${selectedPlayer.total > 0 ? '+' : ''}${selectedPlayer.total}` : '—'}
+              <div className="text-xl font-bold text-emerald-400">
+                {selectedPlayer.totalStrokes || '—'}
               </div>
             </div>
           </div>
