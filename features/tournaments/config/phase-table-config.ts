@@ -322,6 +322,14 @@ const marketColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
+const recentFormLiveColumn: ColumnDescriptor = {
+  id: 'recentForm',
+  label: 'Recent Form',
+  tooltip: 'Recent form score (0–100)',
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
 const liveColumns: ColumnDescriptor[] = [
   posColumn,
   scorecardColumn,
@@ -329,6 +337,9 @@ const liveColumns: ColumnDescriptor[] = [
   toParColumn,
   tournamentFormColumn,
   aiIntelligenceColumn,
+  recentFormLiveColumn,
+  salaryLiveColumn,
+  dkScoreLiveColumn,
   marketColumn,
 ]
 
@@ -427,6 +438,14 @@ const leverageCompletedColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
+const recentFormCompletedColumn: ColumnDescriptor = {
+  id: 'recentForm',
+  label: 'Recent Form',
+  tooltip: 'Recent form score (0–100)',
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
 const completedColumns: ColumnDescriptor[] = [
   resultColumn,
   scorecardColumn,
@@ -434,6 +453,9 @@ const completedColumns: ColumnDescriptor[] = [
   toParColumn,
   tournamentFormCompletedColumn,
   aiIntelligenceColumn,
+  recentFormCompletedColumn,
+  salaryCompletedColumn,
+  dkScoreCompletedColumn,
   marketColumn,
 ]
 
