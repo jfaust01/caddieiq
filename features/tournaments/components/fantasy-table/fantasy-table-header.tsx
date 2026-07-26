@@ -53,7 +53,7 @@ export function FantasyTableHeader({
           >
             <div className="flex flex-col items-center justify-center gap-0.5 h-full">
               {col.headerKind === 'player' ? (
-                <span className="text-left flex-1">Players ({fieldSize})</span>
+                <span className="flex items-center justify-center gap-1 flex-1">Players ({fieldSize})</span>
               ) : col.headerKind === 'dk' ? (
                 <span className="inline-flex items-center justify-center gap-1 sm:gap-1.5">
                   <DraftKingsMark className="h-3 w-auto" />
