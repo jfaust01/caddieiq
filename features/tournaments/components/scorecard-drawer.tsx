@@ -142,7 +142,7 @@ export function ScorecardDrawer({
           'transition-transform duration-300 ease-out',
           isOpen ? 'translate-x-0' : 'translate-x-full',
           // Responsive widths
-          'w-full sm:w-[420px] lg:w-[480px]'
+          'w-full sm:w-[600px] lg:w-[800px]'
         )}
         role="dialog"
         aria-label="Player scorecard"
