@@ -329,7 +329,6 @@ const liveColumns: ColumnDescriptor[] = [
   toParColumn,
   tournamentFormColumn,
   aiIntelligenceColumn,
-  fantasyOutlookColumn,
   marketColumn,
 ]
 
@@ -435,7 +434,6 @@ const completedColumns: ColumnDescriptor[] = [
   toParColumn,
   tournamentFormCompletedColumn,
   aiIntelligenceColumn,
-  fantasyOutlookColumn,
   marketColumn,
 ]
 
