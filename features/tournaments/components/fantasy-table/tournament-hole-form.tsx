@@ -276,24 +276,24 @@ function getHoleStyle(hole: HoleResult): {
 } {
   const status = hole.status
 
-  // Semantic color mapping with increased visual distinction
+  // Three-color system: Birdie or Better (green), Par (gray), Bogey or Worse (red)
   const colorMap: Record<HoleResult['status'], string> = {
-    eagleOrBetter: '#10b981', // emerald-500 - bright and distinct
-    birdie: '#34d399', // emerald-400 - lighter than eagle
-    par: '#6b7280', // gray-500 - neutral baseline
-    bogey: '#f97316', // orange-500 - clear warning
-    doubleOrWorse: '#ef4444', // red-500 - obvious mistake
-    unplayed: '#374151', // gray-700 - very muted
+    eagleOrBetter: '#34d399', // emerald-400 - birdie or better
+    birdie: '#34d399',         // emerald-400 - birdie or better
+    par: '#6b7280',            // gray-500 - neutral baseline
+    bogey: '#ef4444',          // red-500 - bogey or worse
+    doubleOrWorse: '#ef4444',  // red-500 - bogey or worse
+    unplayed: '#374151',       // gray-700 - very muted
   }
 
   // Vertical offset for visual distinction - reduced for compact layout
   // Positive = down (good), Negative = up (bad)
   const offsetMap: Record<HoleResult['status'], number> = {
-    eagleOrBetter: 3,  // 3px down
-    birdie: 1.5,       // 1.5px down
+    eagleOrBetter: 2,  // 2px down - birdie or better
+    birdie: 2,         // 2px down - birdie or better
     par: 0,            // centered
-    bogey: -1.5,       // 1.5px up
-    doubleOrWorse: -3, // 3px up
+    bogey: -2,         // 2px up - bogey or worse
+    doubleOrWorse: -2, // 2px up - bogey or worse
     unplayed: 0,       // centered
   }
 
