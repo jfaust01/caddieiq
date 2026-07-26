@@ -300,7 +300,7 @@ const leverageColumn: ColumnDescriptor = {
 
 const aiIntelligenceColumn: ColumnDescriptor = {
   id: 'aiIntelligence',
-  label: 'AI Intelligence',
+  label: 'AI Rating',
   tooltip: 'Combined AI Rating and Course Fit',
   colClassName: 'w-[180px] sm:w-[220px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
