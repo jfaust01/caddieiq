@@ -101,7 +101,13 @@ export function FantasyCompletedEnhancedRowCells({
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <div className="flex h-full items-center justify-center">
           {formScore != null ? (
-            <FormSparkline formScore={formScore} />
+            <FormSparkline 
+              formScore={formScore}
+              round1DkPoints={entrant.round1DkPoints}
+              round2DkPoints={entrant.round2DkPoints}
+              round3DkPoints={entrant.round3DkPoints}
+              round4DkPoints={entrant.round4DkPoints}
+            />
           ) : (
             <MetricEmptyState />
           )}

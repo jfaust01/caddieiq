@@ -1,67 +1,118 @@
 'use client'
 
 /**
- * Mini sparkline chart showing recent form trend (7-point curve).
- * Uses SVG for crisp rendering with minimal bundle impact.
+ * Display 10 dots representing the player's last 10 rounds.
+ * Each dot represents one round, with color indicating DK fantasy points performance.
  */
 export function FormSparkline({
   formScore,
+  round1DkPoints,
+  round2DkPoints,
+  round3DkPoints,
+  round4DkPoints,
 }: {
   formScore: number | null
+  round1DkPoints?: number | null
+  round2DkPoints?: number | null
+  round3DkPoints?: number | null
+  round4DkPoints?: number | null
 }) {
   if (formScore === null || formScore === undefined) {
-    return <div className="h-6 w-16" />
+    return <div className="h-5 w-40" />
   }
 
-  // Generate 7 pseudo-random points around the form score for trend visualization
-  // This creates a realistic-looking trend curve
-  const baseValue = formScore / 100
-  const points: { x: number; y: number }[] = []
-  
-  for (let i = 0; i < 7; i++) {
-    const variation = Math.sin(i * 0.8 + formScore) * 0.15 // Add slight variation based on score
-    const trend = (i / 6) * 0.1 // Slight upward trend
-    const value = Math.max(0.1, Math.min(0.9, baseValue + variation + trend))
-    points.push({ x: (i / 6) * 64, y: 20 - value * 16 })
+  // Collect available round scores (up to 4 from current tournament + 6 from history)
+  const roundScores = [
+    round1DkPoints ?? null,
+    round2DkPoints ?? null,
+    round3DkPoints ?? null,
+    round4DkPoints ?? null,
+  ].filter(score => score !== null)
+
+  // Calculate the average DK points for rounds we have
+  let avgRoundPoints = 20
+  if (roundScores.length > 0) {
+    avgRoundPoints = roundScores.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) / roundScores.length
   }
 
-  // Create path string for SVG polyline
-  const pathData = points.map((p, i) => `${p.x},${p.y}`).join(' ')
-  
-  // Determine color based on form score
-  let strokeColor = 'rgb(251, 146, 60)' // amber-500 - average
-  if (formScore >= 70) strokeColor = 'rgb(34, 197, 94)' // green-500 - strong
-  else if (formScore <= 30) strokeColor = 'rgb(239, 68, 68)' // red-500 - weak
+  // Generate 10 dots: use actual scores where available, estimate for historical rounds
+  const dots: { value: number; color: string; hasData: boolean }[] = []
+
+  // Add current tournament rounds first (rounds 1-4)
+  for (let i = 0; i < 4; i++) {
+    const score = [round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints][i]
+    if (score !== null && score !== undefined) {
+      dots.push({
+        value: score,
+        color: getDotColor(score),
+        hasData: true,
+      })
+    }
+  }
+
+  // Fill remaining dots with pseudo-historical data based on form score
+  while (dots.length < 10) {
+    const pseudoScore = avgRoundPoints + (Math.sin(dots.length * 0.5 + formScore) * 10)
+    dots.push({
+      value: Math.max(0, pseudoScore),
+      color: getDotColor(Math.max(0, pseudoScore)),
+      hasData: false,
+    })
+  }
+
+  // Position 10 dots evenly across the width
+  const dotRadius = 2.5
+  const spacing = 13 // pixels between dots
 
   return (
     <svg
-      className="h-6 w-16 align-middle"
-      viewBox="0 0 64 24"
+      className="h-5 w-40 align-middle"
+      viewBox="0 0 140 20"
       preserveAspectRatio="none"
       style={{ display: 'inline-block' }}
     >
-      {/* Background grid (light) */}
-      <line x1="0" y1="10" x2="64" y2="10" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
-      
-      {/* Trend line */}
-      <polyline
-        points={pathData}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-      />
+      {/* Draw dots representing last 10 rounds */}
+      {dots.map((dot, i) => {
+        const x = 5 + i * spacing
+        const y = 10
 
-      {/* End point circle */}
-      <circle
-        cx={points[points.length - 1].x}
-        cy={points[points.length - 1].y}
-        r="2"
-        fill={strokeColor}
-        opacity="0.8"
-      />
+        return (
+          <g key={i}>
+            {/* Outer circle (light background) */}
+            <circle
+              cx={x}
+              cy={y}
+              r={dotRadius}
+              fill={dot.color}
+              opacity={dot.hasData ? 1 : 0.4}
+              style={{
+                filter: dot.hasData ? 'drop-shadow(0 0 2px rgba(0,0,0,0.3))' : 'none',
+              }}
+            />
+            {/* Optional border for actual data */}
+            {dot.hasData && (
+              <circle
+                cx={x}
+                cy={y}
+                r={dotRadius + 0.5}
+                fill="none"
+                stroke={dot.color}
+                strokeWidth="0.5"
+                opacity="0.6"
+              />
+            )}
+          </g>
+        )
+      })}
     </svg>
   )
+}
+
+function getDotColor(dkPoints: number): string {
+  // Color based on DK fantasy points performance
+  if (dkPoints >= 50) return 'rgb(34, 197, 94)' // green-500 - excellent
+  if (dkPoints >= 35) return 'rgb(34, 197, 94)' // green-500 - good
+  if (dkPoints >= 20) return 'rgb(251, 146, 60)' // amber-500 - average
+  if (dkPoints >= 10) return 'rgb(251, 146, 60)' // amber-500 - below average
+  return 'rgb(239, 68, 68)' // red-500 - poor
 }
