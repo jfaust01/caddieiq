@@ -162,32 +162,6 @@ export function FantasyPlayerTable({
             </table>
           </FantasyTableScrollArea>
 
-          {/* Round Selector Control - visible when Round DNA column is shown */}
-          {phase !== 'scheduled' && (
-            <div className="px-4 py-3 border-t flex items-center justify-between bg-[#0a0e12]" style={{ borderColor: 'rgba(120, 150, 165, 0.12)' }}>
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Viewing Round:</span>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4].map((round) => (
-                    <button
-                      key={`round-selector-${round}`}
-                      onClick={() => setSelectedRound(round)}
-                      className={cn(
-                        'px-3 py-1.5 rounded font-semibold text-sm transition-all',
-                        selectedRound === round
-                          ? 'bg-emerald-500 text-white shadow-lg'
-                          : 'bg-white/5 border border-white/10 text-muted-foreground hover:bg-white/10 hover:border-white/20'
-                      )}
-                    >
-                      Round {round}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <span className="text-xs text-muted-foreground/60">Hole-by-hole breakdown</span>
-            </div>
-          )}
-
           {/* Footer separator */}
           <div className="border-t" style={{ borderColor: 'rgba(120, 150, 165, 0.12)' }} />
         </div>

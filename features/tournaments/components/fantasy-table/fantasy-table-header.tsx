@@ -60,8 +60,24 @@ export function FantasyTableHeader({
                   <span>{col.label}</span>
                 </span>
               ) : col.id === 'roundDna' ? (
-                <div className="flex flex-col items-center justify-center gap-1.5 h-full">
-                  <span className="text-[11px] sm:text-[12px] font-semibold text-emerald-400">{col.label}</span>
+                <div className="flex flex-col items-center justify-center gap-1 h-full">
+                  <span className="text-[11px] sm:text-[12px] font-semibold text-emerald-400 mb-0.5">{col.label}</span>
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4].map((round) => (
+                      <button
+                        key={`header-round-${round}`}
+                        onClick={() => onRoundChange?.(round)}
+                        className={cn(
+                          'px-1.5 py-0.5 rounded text-[9px] font-semibold transition-all',
+                          selectedRound === round
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-white/5 border border-white/10 text-muted-foreground/70 hover:bg-white/10'
+                        )}
+                      >
+                        R{round}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <>
