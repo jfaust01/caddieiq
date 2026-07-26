@@ -145,34 +145,43 @@ const RoundHoleRow = memo(function RoundHoleRow({
         <svg 
           className="absolute inset-0 w-full h-full pointer-events-none" 
           aria-hidden="true"
-          style={{ overflow: 'visible' }}
+          viewBox="0 0 1800 200"
           preserveAspectRatio="none"
         >
-          <defs>
-            <style>{`
-              svg { overflow: visible; }
-            `}</style>
-          </defs>
+          <polyline
+            points={holes.map((hole, index) => {
+              const { yOffset } = getHoleStyle(hole)
+              const xPos = (index + 0.5) * 100
+              const yPos = 100 + yOffset
+              return `${xPos},${yPos}`
+            }).join(' ')}
+            fill="none"
+            stroke="url(#lineGradient)"
+            strokeWidth="2"
+            opacity="0.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
           {holes.slice(0, -1).map((hole, index) => {
-            const { yOffset: y1Offset } = getHoleStyle(hole)
+            const { color } = getHoleStyle(hole)
             const nextHole = holes[index + 1]
+            const { yOffset: y1Offset } = getHoleStyle(hole)
             const { yOffset: y2Offset } = getHoleStyle(nextHole)
-            const cellWidth = 100 / 18
-            const x1Percent = (index + 0.5) * cellWidth
-            const x2Percent = (index + 1.5) * cellWidth
-            const svgHeight = 100 // Assume SVG height as percentage
-            const y1 = 50 + (y1Offset / 200) * svgHeight // Convert px offset to SVG space
-            const y2 = 50 + (y2Offset / 200) * svgHeight
+            const x1 = (index + 0.5) * 100
+            const x2 = (index + 1.5) * 100
+            const y1 = 100 + y1Offset
+            const y2 = 100 + y2Offset
             return (
               <line
                 key={`line-${round}-${index}`}
-                x1={`${x1Percent}%`}
-                y1={`${y1}%`}
-                x2={`${x2Percent}%`}
-                y2={`${y2}%`}
-                stroke={getHoleStyle(hole).color}
-                strokeWidth="1.5"
-                opacity="0.7"
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke={color}
+                strokeWidth="2"
+                opacity="0.8"
+                strokeLinecap="round"
               />
             )
           })}
