@@ -35,12 +35,13 @@ export function FormSparkline({
     avgRoundPoints = roundScores.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) / roundScores.length
   }
 
-  // Generate 10 dots: use actual scores where available, estimate for historical rounds
+  // Generate 10 dots: use actual scores where available, realistic mock data for historical rounds
   const dots: { value: number; color: string; hasData: boolean }[] = []
 
   // Add current tournament rounds first (rounds 1-4)
+  const currentRounds = [round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints]
   for (let i = 0; i < 4; i++) {
-    const score = [round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints][i]
+    const score = currentRounds[i]
     if (score !== null && score !== undefined) {
       dots.push({
         value: score,
@@ -50,12 +51,13 @@ export function FormSparkline({
     }
   }
 
-  // Fill remaining dots with pseudo-historical data based on form score
-  while (dots.length < 10) {
-    const pseudoScore = avgRoundPoints + (Math.sin(dots.length * 0.5 + formScore) * 10)
+  // Generate realistic mock historical data for remaining rounds (rounds 5-10)
+  // Create a pseudo-random but deterministic performance curve based on player ID (formScore)
+  const mockHistoricalRounds = generateMockRoundData(formScore, 10 - dots.length)
+  for (const mockScore of mockHistoricalRounds) {
     dots.push({
-      value: Math.max(0, pseudoScore),
-      color: getDotColor(Math.max(0, pseudoScore)),
+      value: mockScore,
+      color: getDotColor(mockScore),
       hasData: false,
     })
   }
@@ -106,6 +108,31 @@ export function FormSparkline({
       })}
     </svg>
   )
+}
+
+function generateMockRoundData(seed: number, count: number): number[] {
+  // Generate realistic mock historical round data based on form score
+  // Uses a pseudo-random generator seeded by formScore for consistency
+  const rounds: number[] = []
+  
+  // Base performance around which historical rounds vary
+  const basePerformance = 20 + (seed % 20)
+  
+  // Generate 6 historical rounds with realistic variance
+  for (let i = 0; i < count; i++) {
+    // Use multiple factors to create a realistic distribution
+    const randomA = Math.sin(seed * 0.1 + i * 1.3) * 15
+    const randomB = Math.cos(seed * 0.07 + i * 0.7) * 8
+    const trend = (i / count) * 5 // Slight improvement trend over time
+    
+    // Occasionally add a really good or bad round
+    const anomaly = (seed * i) % 100 < 15 ? (Math.sin(seed + i) * 20) : 0
+    
+    const score = basePerformance + randomA + randomB + trend + anomaly
+    rounds.push(Math.max(0, Math.round(score)))
+  }
+  
+  return rounds
 }
 
 function getDotColor(dkPoints: number): string {
