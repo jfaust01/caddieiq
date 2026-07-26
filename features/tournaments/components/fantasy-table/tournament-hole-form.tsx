@@ -232,17 +232,23 @@ function generateMockHoles(roundRelToPar: number, roundNumber: number): HoleResu
     const pseudo = Math.sin(seed * 0.1) * 10000
     const frac = pseudo - Math.floor(pseudo)
     
-    // Mostly pars and birdies
+    // Balanced hole distribution
     const holePar = 4
     let relativeToPar = 0 // Default to par
     
-    if (frac < 0.3) {
+    // Birdie or better (35%)
+    if (frac < 0.35) {
       relativeToPar = -1 // Birdie
-    } else if (frac < 0.05) {
+    } 
+    // Bogey (15%)
+    else if (frac < 0.5) {
       relativeToPar = 1 // Bogey
-    } else if (frac < 0.02) {
+    } 
+    // Double or worse (5%)
+    else if (frac < 0.55) {
       relativeToPar = 2 // Double
     }
+    // Par (45% - remainder)
 
     const status = getHoleStatus(relativeToPar)
     const score = holePar + relativeToPar
