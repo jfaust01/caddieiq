@@ -62,50 +62,87 @@ export function FormSparkline({
     })
   }
 
-  // Position 10 dots evenly across the width
-  const dotRadius = 2.5
-  const spacing = 13 // pixels between dots
+  // Calculate min/max for scaling
+  const values = dots.map(d => d.value)
+  const maxValue = Math.max(...values, 50) // At least 50 for decent scaling
+  const minValue = 0
+
+  // Convert round scores to SVG coordinates
+  // SVG viewBox: 0-140 width, 0-20 height
+  const width = 140
+  const height = 20
+  const padding = 2
+  const plotWidth = width - padding * 2
+  const plotHeight = height - padding * 2
+
+  const points: { x: number; y: number; value: number; hasData: boolean; color: string }[] = []
+
+  dots.forEach((dot, i) => {
+    const x = padding + (i / (dots.length - 1)) * plotWidth
+    // Invert Y so higher values go up
+    const normalizedValue = (dot.value - minValue) / (maxValue - minValue)
+    const y = height - padding - normalizedValue * plotHeight
+
+    points.push({
+      x,
+      y,
+      value: dot.value,
+      hasData: dot.hasData,
+      color: dot.color,
+    })
+  })
+
+  // Create SVG path for line chart
+  const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+
+  // Determine line color based on overall performance
+  const avgValue = values.reduce((a, b) => a + b) / values.length
+  let lineColor = 'rgb(251, 146, 60)' // amber-500
+  if (avgValue >= 35) lineColor = 'rgb(34, 197, 94)' // green-500
+  else if (avgValue <= 20) lineColor = 'rgb(239, 68, 68)' // red-500
 
   return (
     <svg
       className="h-5 w-40 align-middle"
-      viewBox="0 0 140 20"
+      viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="none"
       style={{ display: 'inline-block' }}
     >
-      {/* Draw dots representing last 10 rounds */}
-      {dots.map((dot, i) => {
-        const x = 5 + i * spacing
-        const y = 10
+      {/* Background grid line at midpoint */}
+      <line
+        x1={padding}
+        y1={height / 2}
+        x2={width - padding}
+        y2={height / 2}
+        stroke="rgba(255,255,255,0.05)"
+        strokeWidth="0.5"
+      />
 
-        return (
-          <g key={i}>
-            {/* Outer circle (light background) */}
-            <circle
-              cx={x}
-              cy={y}
-              r={dotRadius}
-              fill={dot.color}
-              opacity={dot.hasData ? 1 : 0.4}
-              style={{
-                filter: dot.hasData ? 'drop-shadow(0 0 2px rgba(0,0,0,0.3))' : 'none',
-              }}
-            />
-            {/* Optional border for actual data */}
-            {dot.hasData && (
-              <circle
-                cx={x}
-                cy={y}
-                r={dotRadius + 0.5}
-                fill="none"
-                stroke={dot.color}
-                strokeWidth="0.5"
-                opacity="0.6"
-              />
-            )}
-          </g>
-        )
-      })}
+      {/* Line chart path */}
+      <path
+        d={pathData}
+        fill="none"
+        stroke={lineColor}
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+
+      {/* Data points on the line */}
+      {points.map((point, i) => (
+        <circle
+          key={i}
+          cx={point.x}
+          cy={point.y}
+          r={point.hasData ? 1.5 : 1}
+          fill={point.color}
+          opacity={point.hasData ? 1 : 0.5}
+          style={{
+            filter: point.hasData ? 'drop-shadow(0 0 1px rgba(0,0,0,0.5))' : 'none',
+          }}
+        />
+      ))}
     </svg>
   )
 }
