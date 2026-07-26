@@ -135,6 +135,30 @@ export function FantasyPlayerTable({
             </>
           )}
 
+          {/* Round Selector Control */}
+          <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: 'rgba(120, 150, 165, 0.12)' }}>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-muted-foreground">ROUND:</span>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4].map((round) => (
+                  <button
+                    key={`round-selector-${round}`}
+                    onClick={() => setSelectedRound(round)}
+                    className={cn(
+                      'px-3 py-1.5 rounded font-semibold text-sm transition-all',
+                      selectedRound === round
+                        ? 'bg-emerald-500 text-white shadow-lg'
+                        : 'bg-white/5 border border-white/10 text-muted-foreground hover:bg-white/10'
+                    )}
+                  >
+                    R{round}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <span className="text-xs text-muted-foreground/70">Showing hole-by-hole breakdown</span>
+          </div>
+
           {/* Table scroll area — sticky header needs to be here */}
           <FantasyTableScrollArea hasScrolled={hasScrolled} onScroll={handleTableScroll} scrollContainerRef={scrollContainerRef}>
             <table className="border-collapse min-w-max">
