@@ -5,13 +5,13 @@ import type { DfsValueResult } from '@/lib/dfs-value'
 import { formatPositionWithStatusPriority } from '@/features/tournaments/utils/format-position'
 
 import { FantasyPlayerCell } from './fantasy-player-cell'
-import { RoundDnaCell } from './round-dna-cell'
+import { RoundDnaCompact } from './round-dna-compact'
 import { ScorecardCell } from './scorecard-cell'
 import { AiIntelligenceCell, FantasyOutlookCell, MarketCell } from './premium-metric-cells'
 
 /**
- * Enhanced COMPLETED (finished) row cells with combined premium metrics.
- * Displays: RESULT · PLAYER · TO PAR · ROUND DNA · AI INTELLIGENCE · FANTASY OUTLOOK · MARKET
+ * Enhanced COMPLETED (finished) row cells with combined premium metrics and compact round DNA.
+ * Displays: RESULT · PLAYER · TO PAR · ROUND DNA (one round) · AI INTELLIGENCE · FANTASY OUTLOOK · MARKET
  */
 export function FantasyCompletedEnhancedRowCells({
   entrant,
@@ -20,6 +20,7 @@ export function FantasyCompletedEnhancedRowCells({
   onRoundSelect,
   tournamentStatus = 'COMPLETED',
   dfsResult,
+  selectedRound = 1,
 }: {
   entrant: FieldEntrant
   positionCountMap?: Map<number, number>
@@ -27,6 +28,7 @@ export function FantasyCompletedEnhancedRowCells({
   onRoundSelect?: (playerId: string, round: number) => void
   tournamentStatus?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
   dfsResult?: DfsValueResult
+  selectedRound?: number
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap ?? new Map())
 
@@ -60,13 +62,14 @@ export function FantasyCompletedEnhancedRowCells({
 
       {/* ROUND DNA */}
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <RoundDnaCell 
+        <RoundDnaCompact 
           round1RelToPar={entrant.round1RelToPar}
           round2RelToPar={entrant.round2RelToPar}
           round3RelToPar={entrant.round3RelToPar}
           round4RelToPar={entrant.round4RelToPar}
           playerId={entrant.playerId}
           tournamentStatus={tournamentStatus}
+          selectedRound={selectedRound}
           onRoundClick={onRoundSelect}
         />
       </td>

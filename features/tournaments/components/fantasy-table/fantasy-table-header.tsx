@@ -8,6 +8,9 @@ interface FantasyTableHeaderProps {
   columns: ColumnDescriptor[]
   fieldSize: number
   phase: TablePhase
+  selectedRound?: number
+  onRoundChange?: (round: number) => void
+  availableRounds?: number[]
 }
 
 /**
@@ -20,6 +23,9 @@ export function FantasyTableHeader({
   columns,
   fieldSize,
   phase,
+  selectedRound,
+  onRoundChange,
+  availableRounds = [1, 2, 3, 4],
 }: FantasyTableHeaderProps) {
   return (
     <thead
@@ -53,6 +59,26 @@ export function FantasyTableHeader({
                   <DraftKingsMark className="h-3 w-auto" />
                   <span>{col.label}</span>
                 </span>
+              ) : col.id === 'roundDna' ? (
+                <div className="flex flex-col items-center justify-center gap-2 h-full">
+                  <span className="text-[11px] sm:text-[12px] font-semibold">{col.label}</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map((round) => (
+                      <button
+                        key={`round-${round}`}
+                        onClick={() => onRoundChange?.(round)}
+                        className={cn(
+                          'px-2 py-1 rounded text-xs font-semibold transition-all',
+                          selectedRound === round
+                            ? 'bg-emerald-500/90 text-white'
+                            : 'bg-white/5 border border-white/10 text-muted-foreground hover:bg-white/10'
+                        )}
+                      >
+                        R{round}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ) : (
                 <>
                   <span className="text-[11px] sm:text-[12px] font-semibold">{col.label}</span>

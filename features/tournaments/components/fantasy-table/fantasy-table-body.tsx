@@ -12,6 +12,7 @@ interface FantasyTableBodyProps {
   positionCountMap?: Map<number, number>
   onRowClick: (playerId: string) => void
   onRoundSelect?: (playerId: string, round: number) => void
+  selectedRound?: number
 }
 
 /**
@@ -24,6 +25,7 @@ export function FantasyTableBody({
   positionCountMap,
   onRowClick,
   onRoundSelect,
+  selectedRound = 1,
 }: FantasyTableBodyProps) {
   return (
     <tbody>
@@ -37,6 +39,7 @@ export function FantasyTableBody({
           positionCountMap={positionCountMap}
           onRowClick={onRowClick}
           onRoundSelect={onRoundSelect}
+          selectedRound={selectedRound}
         />
       ))}
     </tbody>

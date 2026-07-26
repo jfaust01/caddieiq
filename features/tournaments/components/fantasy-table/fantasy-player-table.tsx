@@ -76,6 +76,27 @@ export function FantasyPlayerTable({
   const positionCountMap = buildPositionCountMap(allEntrants)
 
   const [hasScrolled, setHasScrolled] = React.useState(false)
+  
+  // Determine default round based on tournament status and data
+  const getDefaultRound = React.useMemo(() => {
+    if (phase === 'live') {
+      // For live tournaments, default to current round or latest completed
+      return 4 // This will be updated based on API feedback
+    }
+    
+    // For completed tournaments, default to R4 or latest played
+    for (let round = 4; round >= 1; round--) {
+      const hasData = entrants.some((e) => {
+        const relToPar = e[`round${round}RelToPar` as keyof typeof e]
+        return relToPar !== null && relToPar !== undefined
+      })
+      if (hasData) return round
+    }
+    
+    return 1
+  }, [phase, entrants])
+  
+  const [selectedRound, setSelectedRound] = React.useState(getDefaultRound)
 
   const handleTableScroll = React.useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
@@ -122,8 +143,22 @@ export function FantasyPlayerTable({
                   <col key={col.id} className={col.colClassName} />
                 ))}
               </colgroup>
-              <FantasyTableHeader columns={columns} fieldSize={fieldSize} phase={phase} />
-              <FantasyTableBody entrants={entrants} phase={phase} dfsByPlayer={dfsByPlayer} positionCountMap={positionCountMap} onRowClick={onRowClick} onRoundSelect={onRoundSelect} />
+              <FantasyTableHeader 
+                columns={columns} 
+                fieldSize={fieldSize} 
+                phase={phase}
+                selectedRound={selectedRound}
+                onRoundChange={setSelectedRound}
+              />
+              <FantasyTableBody 
+                entrants={entrants} 
+                phase={phase} 
+                dfsByPlayer={dfsByPlayer} 
+                positionCountMap={positionCountMap} 
+                onRowClick={onRowClick} 
+                onRoundSelect={onRoundSelect}
+                selectedRound={selectedRound}
+              />
             </table>
           </FantasyTableScrollArea>
 
