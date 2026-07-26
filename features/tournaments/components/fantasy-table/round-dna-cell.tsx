@@ -231,8 +231,11 @@ function RoundDnaRow({
         })}
       </svg>
 
-      {/* Holes dots - positioned relative to grid cells */}
-      <div className="absolute inset-0 pointer-events-none">
+      {/* Holes dots - positioned using grid layout */}
+      <div
+        className="absolute inset-0 grid pointer-events-none"
+        style={{ gridTemplateColumns: '42px 34px repeat(18, minmax(18px, 1fr))' }}
+      >
         {holes.map((hole) => (
           <RoundDnaHoleDot
             key={`hole-${round}-${hole.holeNumber}`}
@@ -269,18 +272,17 @@ function RoundDnaHoleDot({
   const dotSize = hole.isCurrentHole ? 10 : 8
   const hoverScale = 1.4
 
-  // Position using grid: 42px + 34px prefix, then 18 equal columns
-  // Each column starts at: (42 + 34) + (holeIndex * (100% - 76px) / 18)
-  const holeIndex = hole.holeNumber - 1
-  const leftPercent = `calc(${76 + (holeIndex + 0.5) * (100 / 18)}% - ${dotSize / 2}px)`
+  // Grid column: hole number maps to column index (2 + holeNumber, since 0-1 are R label and score)
+  const gridColumn = hole.holeNumber + 1
 
   return (
     <div
-      className="absolute flex items-center justify-center pointer-events-auto"
+      className="flex items-center justify-center pointer-events-auto"
       style={{ 
-        left: leftPercent,
-        top: '50%',
-        transform: `translateY(calc(-50% + ${yOffset}px))`,
+        gridColumn: `${gridColumn}`,
+        justifySelf: 'center',
+        alignSelf: 'center',
+        transform: `translateY(${yOffset}px)`,
         width: `${dotSize}px`,
         height: `${dotSize}px`,
       }}
