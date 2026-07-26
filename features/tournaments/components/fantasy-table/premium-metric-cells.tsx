@@ -115,7 +115,7 @@ export function SalaryCell({ entrant }: { entrant: FieldEntrant }) {
 export function DkScoreCell({ entrant }: { entrant: FieldEntrant }) {
   const dkScore = entrant.dkFantasyPoints
 
-  if (!dkScore) {
+  if (dkScore === null || dkScore === undefined) {
     return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
@@ -196,7 +196,7 @@ export function MarketCell({ entrant }: { entrant: FieldEntrant }) {
   const ownership = entrant.ownershipPercent
   const odds = entrant.oddsToWin
 
-  if (!ownership && !odds) {
+  if ((ownership === null || ownership === undefined) && (odds === null || odds === undefined)) {
     return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
