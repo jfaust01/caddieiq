@@ -136,7 +136,7 @@ export function ScorecardDrawer({
         ref={drawerRef}
         className={cn(
           'fixed top-0 right-0 h-screen z-[60] flex flex-col',
-          'bg-gradient-to-br from-blue-900/20 via-slate-900/40 to-slate-900/50',
+          'bg-slate-900/40',
           'border-l border-white/[0.08]',
           'shadow-[-20px_0_40px_rgba(0,0,0,0.5)]',
           'transition-transform duration-300 ease-out',
@@ -152,7 +152,7 @@ export function ScorecardDrawer({
         {/* Header */}
         <div className={cn(
           'flex-shrink-0 sticky top-0 z-10',
-          'bg-gradient-to-b from-slate-950 to-slate-900/60',
+          'bg-slate-900/40',
           'backdrop-blur-md',
           'border-b border-white/[0.08]',
           'px-4 lg:px-6 py-4 lg:py-5'
