@@ -141,8 +141,32 @@ const RoundHoleRow = memo(function RoundHoleRow({
           <div className="w-full h-px bg-white/[0.05]" />
         </div>
 
+        {/* SVG overlay for connecting lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
+          {holes.slice(0, -1).map((hole, index) => {
+            const { yOffset } = getHoleStyle(hole)
+            const nextHole = holes[index + 1]
+            const nextYOffset = getHoleStyle(nextHole).yOffset
+            const cellWidth = 100 / 18
+            const x1 = (index + 0.5) * cellWidth
+            const x2 = (index + 1.5) * cellWidth
+            return (
+              <line
+                key={`line-${round}-${index}`}
+                x1={`${x1}%`}
+                y1={`calc(50% + ${yOffset}px)`}
+                x2={`${x2}%`}
+                y2={`calc(50% + ${nextYOffset}px)`}
+                stroke={getHoleStyle(hole).color}
+                strokeWidth="1.5"
+                opacity="0.7"
+              />
+            )
+          })}
+        </svg>
+
         {/* Hole dots grid */}
-        <div className="grid w-full h-full gap-0" style={{ gridTemplateColumns: 'repeat(18, 1fr)' }}>
+        <div className="grid w-full h-full gap-0 relative z-10" style={{ gridTemplateColumns: 'repeat(18, 1fr)' }}>
           {holes.map((hole, index) => (
             <HoleDot
               key={`hole-${round}-${hole.holeNumber}`}
@@ -155,7 +179,6 @@ const RoundHoleRow = memo(function RoundHoleRow({
               isLive={isLive}
               onHover={() => onHoleHover(`R${round}H${hole.holeNumber}`)}
               onHoverEnd={() => onHoleHover(null)}
-              nextHoleStyle={index < holes.length - 1 ? getHoleStyle(holes[index + 1]) : undefined}
             />
           ))}
         </div>
@@ -178,7 +201,6 @@ const HoleDot = memo(function HoleDot({
   isLive,
   onHover,
   onHoverEnd,
-  nextHoleStyle,
 }: {
   hole: HoleResult
   round: number
@@ -189,10 +211,8 @@ const HoleDot = memo(function HoleDot({
   isLive: boolean
   onHover: () => void
   onHoverEnd: () => void
-  nextHoleStyle?: { color: string; yOffset: number }
 }) {
   const { color, yOffset } = getHoleStyle(hole)
-  const nextHole = holeIndex < totalHoles - 1 ? hole : null
   
   // Accessible label with full score details
   const holeResultText = hole.status === 'unplayed' ? '' : getHoleResultText(hole.status)
@@ -209,29 +229,6 @@ const HoleDot = memo(function HoleDot({
       role="img"
       aria-label={label}
     >
-      {/* Connecting line to next hole */}
-      {nextHole && holeIndex < totalHoles - 1 && nextHoleStyle && (
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ overflow: 'visible' }}
-          aria-hidden="true"
-        >
-          <line
-            x1="50%"
-            y1="50%"
-            x2="100%"
-            y2="50%"
-            stroke={color}
-            strokeWidth="1.5"
-            opacity="0.8"
-            style={{
-              transform: `translateY(${yOffset}px)`,
-              transformOrigin: '50% 0',
-            }}
-          />
-        </svg>
-      )}
-
       {/* Baseline reference */}
       <div className="absolute inset-0 flex items-center pointer-events-none">
         <div className="w-px h-px bg-white/[0.1]" />
