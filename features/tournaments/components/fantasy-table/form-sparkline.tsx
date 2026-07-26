@@ -131,17 +131,27 @@ export function FormSparkline({
 
       {/* Data points on the line */}
       {points.map((point, i) => (
-        <circle
-          key={i}
-          cx={point.x}
-          cy={point.y}
-          r={point.hasData ? 1.5 : 1}
-          fill={point.color}
-          opacity={point.hasData ? 1 : 0.5}
-          style={{
-            filter: point.hasData ? 'drop-shadow(0 0 1px rgba(0,0,0,0.5))' : 'none',
-          }}
-        />
+        <g key={i}>
+          {/* Larger outer circle for better visibility */}
+          <circle
+            cx={point.x}
+            cy={point.y}
+            r={point.hasData ? 2.5 : 2}
+            fill={point.color}
+            opacity={point.hasData ? 1 : 0.7}
+            style={{
+              filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.6))',
+            }}
+          />
+          {/* Inner white/light ring for contrast */}
+          <circle
+            cx={point.x}
+            cy={point.y}
+            r={point.hasData ? 1.8 : 1.3}
+            fill={point.hasData ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.1)'}
+            opacity={0.6}
+          />
+        </g>
       ))}
     </svg>
   )
