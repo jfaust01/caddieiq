@@ -128,6 +128,17 @@ export function FantasyCompletedEnhancedRowCells({
         </div>
       </td>
 
+      {/* DK SCORE */}
+      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center">
+          {entrant.dkFantasyPoints != null ? (
+            <span className="text-sm font-medium tabular-nums text-emerald-200">{entrant.dkFantasyPoints.toFixed(1)}</span>
+          ) : (
+            <MetricEmptyState />
+          )}
+        </div>
+      </td>
+
       {/* VALUE — PTS/$1K */}
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <FantasyMetricCell 

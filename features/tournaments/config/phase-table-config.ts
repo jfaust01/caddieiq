@@ -229,6 +229,16 @@ const salaryLiveColumn: ColumnDescriptor = {
   colClassName: 'w-[100px] sm:w-[110px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
+
+const dkScoreLiveColumn: ColumnDescriptor = {
+  id: 'dkScore',
+  label: 'DK Score',
+  headerKind: 'dk',
+  tooltip: 'Total DraftKings fantasy points this tournament',
+  colClassName: 'w-[110px] sm:w-[130px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
 const draftedColumn: ColumnDescriptor = {
   id: 'drafted',
   label: 'Drafted %',
@@ -303,6 +313,7 @@ const liveColumns: ColumnDescriptor[] = [
   courseFitColumn,
   recentFormColumn,
   salaryLiveColumn,
+  dkScoreLiveColumn,
   liveValueColumn,
   liveOwnershipColumn,
   leverageColumn,
@@ -337,6 +348,16 @@ const salaryCompletedColumn: ColumnDescriptor = {
   colClassName: 'w-[105px] sm:w-[115px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
+
+const dkScoreCompletedColumn: ColumnDescriptor = {
+  id: 'dkScore',
+  label: 'DK Score',
+  headerKind: 'dk',
+  tooltip: 'Total DraftKings fantasy points this tournament',
+  colClassName: 'w-[110px] sm:w-[130px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
 const valueColumn: ColumnDescriptor = {
   id: 'value',
   label: 'PTS/$1K',
@@ -419,6 +440,7 @@ const completedColumns: ColumnDescriptor[] = [
   courseFitCompletedColumn,
   recentFormCompletedColumn,
   salaryCompletedColumn,
+  dkScoreCompletedColumn,
   valueCompletedColumn,
   leverageCompletedColumn,
   projectedPtsCompletedColumn,
