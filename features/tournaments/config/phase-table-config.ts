@@ -298,6 +298,30 @@ const leverageColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
+const aiIntelligenceColumn: ColumnDescriptor = {
+  id: 'aiIntelligence',
+  label: 'AI Intelligence',
+  tooltip: 'Combined AI Rating and Course Fit',
+  colClassName: 'w-[180px] sm:w-[220px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+}
+
+const fantasyOutlookColumn: ColumnDescriptor = {
+  id: 'fantasyOutlook',
+  label: 'Fantasy Outlook',
+  tooltip: 'Combined Salary, DK Score, and Value',
+  colClassName: 'w-[220px] sm:w-[250px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+}
+
+const marketColumn: ColumnDescriptor = {
+  id: 'market',
+  label: 'Market',
+  tooltip: 'Combined Ownership and Odds to Win',
+  colClassName: 'w-[170px] sm:w-[200px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+}
+
 const liveColumns: ColumnDescriptor[] = [
   posColumn,
   scorecardColumn,
@@ -402,30 +426,6 @@ const leverageCompletedColumn: ColumnDescriptor = {
   tooltip: 'DraftKings ownership percentage',
   colClassName: 'w-[130px] sm:w-[150px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
-}
-
-const aiIntelligenceColumn: ColumnDescriptor = {
-  id: 'aiIntelligence',
-  label: 'AI Intelligence',
-  tooltip: 'Combined AI Rating and Course Fit',
-  colClassName: 'w-[180px] sm:w-[220px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
-}
-
-const fantasyOutlookColumn: ColumnDescriptor = {
-  id: 'fantasyOutlook',
-  label: 'Fantasy Outlook',
-  tooltip: 'Combined Salary, DK Score, and Value',
-  colClassName: 'w-[220px] sm:w-[250px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
-}
-
-const marketColumn: ColumnDescriptor = {
-  id: 'market',
-  label: 'Market',
-  tooltip: 'Combined Ownership and Odds to Win',
-  colClassName: 'w-[170px] sm:w-[200px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
 const completedColumns: ColumnDescriptor[] = [
