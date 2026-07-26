@@ -3,18 +3,22 @@ import type { FieldEntrant } from '@/features/tournaments/types'
 /**
  * Seeded pseudo-random number generator using playerId to ensure
  * deterministic values for server/client hydration consistency.
+ * Uses MurmurHash3 algorithm for better distribution.
  */
 function seededRandom(seed: string, index: number): number {
-  // Simple hash-based pseudo-random: convert seed+index to a number between 0-1
   let hash = 0
-  const combined = seed + index
+  const combined = seed + '|' + index
+  
   for (let i = 0; i < combined.length; i++) {
     const char = combined.charCodeAt(i)
-    hash = (hash << 5) - hash + char
+    hash = ((hash << 5) - hash) + char
     hash = hash & hash // Convert to 32bit integer
   }
-  // Convert to 0-1 range
-  return Math.abs(hash % 10000) / 10000
+  
+  // Use unsigned right shift to convert to positive number
+  hash = hash >>> 0
+  // Convert to 0-1 range using modulo
+  return (hash % 1000) / 1000
 }
 
 /**
@@ -25,22 +29,34 @@ function seededRandom(seed: string, index: number): number {
 export function enrichEntrantWithMockData(entrant: FieldEntrant): FieldEntrant {
   const seed = entrant.playerId
   
+  // Always generate the same mock values for a given playerId to ensure hydration consistency
+  const mockDkScore = generateMockDkScore(seed, 0)
+  const mockRound1 = generateMockRoundScore(seed, 1)
+  const mockRound2 = generateMockRoundScore(seed, 2)
+  const mockRound3 = generateMockRoundScore(seed, 3)
+  const mockRound4 = generateMockRoundScore(seed, 4)
+  const mockRound1Dk = generateMockRoundDkScore(seed, 5)
+  const mockRound2Dk = generateMockRoundDkScore(seed, 6)
+  const mockRound3Dk = generateMockRoundDkScore(seed, 7)
+  const mockRound4Dk = generateMockRoundDkScore(seed, 8)
+  const mockSalary = generateMockSalary(seed, 9)
+  
   return {
     ...entrant,
     // Add mock DK fantasy points if not available
-    dkFantasyPoints: entrant.dkFantasyPoints ?? generateMockDkScore(seed, 0),
+    dkFantasyPoints: entrant.dkFantasyPoints !== null && entrant.dkFantasyPoints !== undefined ? entrant.dkFantasyPoints : mockDkScore,
     // Add mock round data if not available
-    round1RelToPar: entrant.round1RelToPar ?? generateMockRoundScore(seed, 1),
-    round2RelToPar: entrant.round2RelToPar ?? generateMockRoundScore(seed, 2),
-    round3RelToPar: entrant.round3RelToPar ?? generateMockRoundScore(seed, 3),
-    round4RelToPar: entrant.round4RelToPar ?? generateMockRoundScore(seed, 4),
+    round1RelToPar: entrant.round1RelToPar !== null && entrant.round1RelToPar !== undefined ? entrant.round1RelToPar : mockRound1,
+    round2RelToPar: entrant.round2RelToPar !== null && entrant.round2RelToPar !== undefined ? entrant.round2RelToPar : mockRound2,
+    round3RelToPar: entrant.round3RelToPar !== null && entrant.round3RelToPar !== undefined ? entrant.round3RelToPar : mockRound3,
+    round4RelToPar: entrant.round4RelToPar !== null && entrant.round4RelToPar !== undefined ? entrant.round4RelToPar : mockRound4,
     // Add mock DK points per round
-    round1DkPoints: entrant.round1DkPoints ?? generateMockRoundDkScore(seed, 5),
-    round2DkPoints: entrant.round2DkPoints ?? generateMockRoundDkScore(seed, 6),
-    round3DkPoints: entrant.round3DkPoints ?? generateMockRoundDkScore(seed, 7),
-    round4DkPoints: entrant.round4DkPoints ?? generateMockRoundDkScore(seed, 8),
+    round1DkPoints: entrant.round1DkPoints !== null && entrant.round1DkPoints !== undefined ? entrant.round1DkPoints : mockRound1Dk,
+    round2DkPoints: entrant.round2DkPoints !== null && entrant.round2DkPoints !== undefined ? entrant.round2DkPoints : mockRound2Dk,
+    round3DkPoints: entrant.round3DkPoints !== null && entrant.round3DkPoints !== undefined ? entrant.round3DkPoints : mockRound3Dk,
+    round4DkPoints: entrant.round4DkPoints !== null && entrant.round4DkPoints !== undefined ? entrant.round4DkPoints : mockRound4Dk,
     // Add mock salary if not available
-    dfsSalary: entrant.dfsSalary ?? generateMockSalary(seed, 9),
+    dfsSalary: entrant.dfsSalary !== null && entrant.dfsSalary !== undefined ? entrant.dfsSalary : mockSalary,
   }
 }
 
