@@ -89,6 +89,13 @@ const scheduledColumns: ColumnDescriptor[] = [
       'px-2 sm:px-3 h-[50px] text-left text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80',
   },
   {
+    id: 'toPar',
+    label: 'To Par',
+    tooltip: 'Score relative to par (scheduled phase placeholder)',
+    colClassName: 'w-[85px] sm:w-[100px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
+  },
+  {
     id: 'salary',
     label: 'Salary',
     headerKind: 'dk',
@@ -146,6 +153,13 @@ const scoringPlayerColumn: ColumnDescriptor = {
   colClassName: 'w-[130px] sm:w-[300px]',
   thClassName:
     'px-2 sm:px-3 h-[50px] text-left text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80',
+}
+const toParColumn: ColumnDescriptor = {
+  id: 'toPar',
+  label: 'To Par',
+  tooltip: 'Score relative to par',
+  colClassName: 'w-[85px] sm:w-[100px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 const totalColumn: ColumnDescriptor = {
   id: 'total',
@@ -292,6 +306,7 @@ const liveColumns: ColumnDescriptor[] = [
   posColumn,
   scorecardColumn,
   scoringPlayerColumn,
+  toParColumn,
   aiRatingColumn,
   courseFitColumn,
   recentFormColumn,
@@ -415,6 +430,7 @@ const completedColumns: ColumnDescriptor[] = [
   resultColumn,
   scorecardColumn,
   scoringPlayerColumn,
+  toParColumn,
   aiRatingCompletedColumn,
   courseFitCompletedColumn,
   recentFormCompletedColumn,

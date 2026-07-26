@@ -57,6 +57,13 @@ export function FantasyRowCells({
         <FantasyPlayerCell entrant={entrant} />
       </td>
 
+      {/* TO PAR */}
+      <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <span className="text-sm font-mono text-muted-foreground">—</span>
+        </div>
+      </td>
+
       {/* DK SALARY */}
       <td className="px-1 sm:px-3 align-middle">
         <div className="flex h-full items-center justify-center gap-1.5 whitespace-nowrap">
