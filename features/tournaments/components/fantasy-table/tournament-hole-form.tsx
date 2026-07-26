@@ -20,6 +20,7 @@ interface RoundHoles {
   round: number
   holes: HoleResult[]
   played: boolean
+  relToPar: number | null
 }
 
 /**
@@ -59,6 +60,7 @@ export const TournamentHoleForm = memo(function TournamentHoleForm({
         .map(r => ({
           round: r.round,
           played: true,
+          relToPar: r.relToPar!,
           holes: generateMockHoles(r.relToPar!, r.round),
         }))
     }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar])
@@ -99,7 +101,12 @@ const RoundHoleRow = memo(function RoundHoleRow({
   round,
   holes,
   played,
+  relToPar,
 }: RoundHoles) {
+  // Format relative to par display
+  const toParDisplay = relToPar !== null ? (relToPar > 0 ? `+${relToPar}` : String(relToPar)) : '—'
+  const toParColor = relToPar === null ? 'text-gray-500' : relToPar < 0 ? 'text-green-400' : relToPar > 0 ? 'text-red-400' : 'text-gray-400'
+
   return (
     <div className="flex items-center gap-1.5 w-full">
       {/* Round label */}
@@ -116,6 +123,11 @@ const RoundHoleRow = memo(function RoundHoleRow({
             round={round}
           />
         ))}
+      </div>
+
+      {/* Round to-par */}
+      <div className={`w-8 text-right text-[10px] font-semibold ${toParColor}`}>
+        {toParDisplay}
       </div>
     </div>
   )
