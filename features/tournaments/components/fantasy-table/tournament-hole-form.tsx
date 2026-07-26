@@ -206,25 +206,6 @@ const HoleDot = memo(function HoleDot({
       role="img"
       aria-label={label}
     >
-      {/* Connecting line to next hole (premium visual polish) */}
-      {nextHole && holeIndex < totalHoles - 1 && (
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ overflow: 'visible' }}
-          aria-hidden="true"
-        >
-          <line
-            x1="50%"
-            y1={`calc(50% + ${yOffset}px)`}
-            x2="100%"
-            y2={`calc(50% + ${yOffset}px)`}
-            stroke={color}
-            strokeWidth="0.5"
-            opacity="0.3"
-          />
-        </svg>
-      )}
-
       {/* Baseline reference */}
       <div className="absolute inset-0 flex items-center pointer-events-none">
         <div className="w-px h-px bg-white/[0.1]" />
