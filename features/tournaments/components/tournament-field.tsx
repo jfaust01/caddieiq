@@ -21,6 +21,7 @@ import {
 } from '@/features/tournaments/config/phase-table-config'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
+import { enrichEntrantsWithMockData } from '@/features/tournaments/utils/mock-entrant-data'
 import type { DfsValueField, DfsValueResult } from '@/lib/dfs-value'
 
 const STATUS_ORDER: Record<FieldEntryStatus, number> = {
@@ -52,6 +53,9 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
   const phase = classifyPhase(status)
   const config = phaseTableConfig[phase]
 
+  // Enrich entrants with mock data for missing fields
+  const enrichedEntrants = useMemo(() => enrichEntrantsWithMockData(field.entrants), [field.entrants])
+
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
   const [sort, setSort] = useState<SortKey>(() => config.defaultSort)
@@ -65,13 +69,13 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
   // Status options limited to those actually present in this field.
   const statusOptions = useMemo<StatusOption[]>(() => {
     const present = new Set<FieldEntryStatus>()
-    for (const entrant of field.entrants) present.add(entrant.status)
+    for (const entrant of enrichedEntrants) present.add(entrant.status)
     const ordered = [...present].sort((a, b) => STATUS_ORDER[a] - STATUS_ORDER[b])
     return [
       { value: 'ALL', label: 'All statuses' },
       ...ordered.map((s) => ({ value: s, label: fieldStatusLabel(s) })),
     ]
-  }, [field.entrants])
+  }, [enrichedEntrants])
 
   // DFS Value Model lookups for the scheduled fantasy table + Elite/Value chips.
   const dfsByPlayer = useMemo(() => {
@@ -87,34 +91,34 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
 
   // Top 20 by CaddieIQ fantasy rating actually present.
   const topRatedIds = useMemo(() => {
-    const rated = field.entrants
+    const rated = enrichedEntrants
       .filter((e) => e.fantasyScore != null)
       .sort((a, b) => (b.fantasyScore ?? 0) - (a.fantasyScore ?? 0))
       .slice(0, 20)
     return new Set(rated.map((e) => e.playerId))
-  }, [field.entrants])
+  }, [enrichedEntrants])
 
   // Top 20 by in-progress tournament DK points (live phase).
   const topLiveDkIds = useMemo(() => {
-    const scored = field.entrants
+    const scored = enrichedEntrants
       .filter((e) => e.totalDkFantasyPoints != null)
       .sort((a, b) => (b.totalDkFantasyPoints ?? 0) - (a.totalDkFantasyPoints ?? 0))
       .slice(0, 20)
     return new Set(scored.map((e) => e.playerId))
-  }, [field.entrants])
+  }, [enrichedEntrants])
 
   // Top 20 by final DK points (completed phase).
   const topFinalDkIds = useMemo(() => {
-    const scored = field.entrants
+    const scored = enrichedEntrants
       .filter((e) => e.dkFantasyPoints != null)
       .sort((a, b) => (b.dkFantasyPoints ?? 0) - (a.dkFantasyPoints ?? 0))
       .slice(0, 20)
     return new Set(scored.map((e) => e.playerId))
-  }, [field.entrants])
+  }, [enrichedEntrants])
 
   // Top 20 by final DK points per $1k salary (needs both real values).
   const topValueIds = useMemo(() => {
-    const eligible = field.entrants
+    const eligible = enrichedEntrants
       .filter((e) => e.dkFantasyPoints != null && e.dfsSalary != null && e.dfsSalary > 0)
       .sort(
         (a, b) =>
@@ -122,12 +126,12 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
       )
       .slice(0, 20)
     return new Set(eligible.map((e) => e.playerId))
-  }, [field.entrants])
+  }, [enrichedEntrants])
 
   // Everything the config's filter predicates/availability checks may read.
   const filterContext = useMemo<FilterContext>(
     () => ({
-      entrants: field.entrants,
+      entrants: enrichedEntrants,
       dfsByPlayer,
       valuePlayIds,
       topRatedIds,
@@ -135,14 +139,14 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
       topFinalDkIds,
       topValueIds,
     }),
-    [field.entrants, dfsByPlayer, valuePlayIds, topRatedIds, topLiveDkIds, topFinalDkIds, topValueIds],
+    [enrichedEntrants, dfsByPlayer, valuePlayIds, topRatedIds, topLiveDkIds, topFinalDkIds, topValueIds],
   )
 
   // Search + status filter, then sort. Position/total sorts are meaningless
   // pre-tournament, so the scheduled phase falls back to CaddieIQ rating.
   const baseFiltered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    const result = field.entrants.filter((entrant) => {
+    const result = enrichedEntrants.filter((entrant) => {
       const matchesQuery =
         normalizedQuery === '' || entrant.playerName.toLowerCase().includes(normalizedQuery)
       const matchesStatus = statusFilter === 'ALL' || entrant.status === statusFilter
