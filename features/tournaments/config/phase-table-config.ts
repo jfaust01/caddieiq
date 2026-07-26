@@ -49,6 +49,7 @@ export interface PhaseAccent {
 export interface ColumnDescriptor {
   id: string
   label: string
+  subtitle?: string
   tooltip?: string
   /** `<col>` width class. */
   colClassName: string
@@ -266,9 +267,10 @@ const courseFitColumn: ColumnDescriptor = {
 
 const tournamentFormColumn: ColumnDescriptor = {
   id: 'tournamentForm',
-  label: 'Tournament Form',
+  label: 'Round DNA',
+  subtitle: 'Hole by Hole',
   tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
-  colClassName: 'w-[300px] sm:w-[340px]',
+  colClassName: 'w-[720px] sm:w-[820px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
@@ -383,9 +385,10 @@ const courseFitCompletedColumn: ColumnDescriptor = {
 
 const tournamentFormCompletedColumn: ColumnDescriptor = {
   id: 'tournamentForm',
-  label: 'TOURNAMENT FORM',
+  label: 'Round DNA',
+  subtitle: 'Hole by Hole',
   tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
-  colClassName: 'w-[300px] sm:w-[340px]',
+  colClassName: 'w-[720px] sm:w-[820px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 

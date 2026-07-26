@@ -7,7 +7,7 @@ import { formatPositionWithStatusPriority } from '@/features/tournaments/utils/f
 import { FantasyPlayerCell } from './fantasy-player-cell'
 import { FantasyMetricCell } from './fantasy-metric-cell'
 import { MetricEmptyState } from './metric-empty-state'
-import { TournamentHoleForm } from './tournament-hole-form'
+import { RoundDnaCell } from './round-dna-cell'
 import { ScorecardCell } from './scorecard-cell'
 import { formatMissing } from './helpers'
 
@@ -85,17 +85,16 @@ export function FantasyLiveEnhancedRowCells({
         </div>
       </td>
 
-      {/* TOURNAMENT FORM */}
+      {/* ROUND DNA */}
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <div className="flex h-full items-center justify-start">
-          <TournamentHoleForm 
-            round1RelToPar={entrant.round1RelToPar}
-            round2RelToPar={entrant.round2RelToPar}
-            round3RelToPar={entrant.round3RelToPar}
-            round4RelToPar={entrant.round4RelToPar}
-            tournamentStatus={tournamentStatus}
-          />
-        </div>
+        <RoundDnaCell 
+          round1RelToPar={entrant.round1RelToPar}
+          round2RelToPar={entrant.round2RelToPar}
+          round3RelToPar={entrant.round3RelToPar}
+          round4RelToPar={entrant.round4RelToPar}
+          tournamentStatus={tournamentStatus}
+          currentHole={entrant.thruHole}
+        />
       </td>
 
       {/* AI RATING */}

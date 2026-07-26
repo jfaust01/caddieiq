@@ -45,7 +45,7 @@ export function FantasyTableHeader({
             style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}
             title={col.tooltip}
           >
-            <div className="flex items-center justify-center gap-1.5 sm:gap-2 h-full">
+            <div className="flex flex-col items-center justify-center gap-0.5 h-full">
               {col.headerKind === 'player' ? (
                 <span className="text-left flex-1">Players ({fieldSize})</span>
               ) : col.headerKind === 'dk' ? (
@@ -54,7 +54,14 @@ export function FantasyTableHeader({
                   <span>{col.label}</span>
                 </span>
               ) : (
-                <span>{col.label}</span>
+                <>
+                  <span className="text-[11px] sm:text-[12px] font-semibold">{col.label}</span>
+                  {col.subtitle && (
+                    <span className="text-[9px] sm:text-[10px] font-normal text-muted-foreground/60 tracking-wider">
+                      {col.subtitle}
+                    </span>
+                  )}
+                </>
               )}
             </div>
           </th>
