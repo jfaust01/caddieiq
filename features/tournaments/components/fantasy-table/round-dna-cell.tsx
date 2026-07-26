@@ -231,18 +231,20 @@ function RoundDnaRow({
         })}
       </svg>
 
-      {/* Holes dots - positioned absolutely */}
-      {holes.map((hole) => (
-        <RoundDnaHoleDot
-          key={`hole-${round}-${hole.holeNumber}`}
-          hole={hole}
-          round={round}
-          hoveredHole={hoveredHole}
-          isHovered={hoveredHole === `R${round}H${hole.holeNumber}`}
-          onHover={() => onHoleHover(`R${round}H${hole.holeNumber}`)}
-          onHoverEnd={() => onHoleHover(null)}
-        />
-      ))}
+      {/* Holes dots - positioned relative to grid cells */}
+      <div className="absolute inset-0 pointer-events-none">
+        {holes.map((hole) => (
+          <RoundDnaHoleDot
+            key={`hole-${round}-${hole.holeNumber}`}
+            hole={hole}
+            round={round}
+            hoveredHole={hoveredHole}
+            isHovered={hoveredHole === `R${round}H${hole.holeNumber}`}
+            onHover={() => onHoleHover(`R${round}H${hole.holeNumber}`)}
+            onHoverEnd={() => onHoleHover(null)}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -267,27 +269,29 @@ function RoundDnaHoleDot({
   const dotSize = hole.isCurrentHole ? 10 : 8
   const hoverScale = 1.4
 
-  // Position relative to full container width
-  // 42px + 34px = 76px prefix, then holes span remaining width
-  const prefixPixels = 76
+  // Position using grid: 42px + 34px prefix, then 18 equal columns
+  // Each column starts at: (42 + 34) + (holeIndex * (100% - 76px) / 18)
   const holeIndex = hole.holeNumber - 1
-  const leftPercent = `calc(${prefixPixels}px + ${holeIndex} * (100% - ${prefixPixels}px) / 18 + (100% - ${prefixPixels}px) / 36)`
+  const leftPercent = `calc(${76 + (holeIndex + 0.5) * (100 / 18)}% - ${dotSize / 2}px)`
 
   return (
     <div
-      className="absolute flex items-center justify-center w-5 h-7"
-      style={{ left: leftPercent, transform: 'translateX(-50%)' }}
+      className="absolute flex items-center justify-center pointer-events-auto"
+      style={{ 
+        left: leftPercent,
+        top: '50%',
+        transform: `translateY(calc(-50% + ${yOffset}px))`,
+        width: `${dotSize}px`,
+        height: `${dotSize}px`,
+      }}
       onMouseEnter={onHover}
       onMouseLeave={onHoverEnd}
     >
       {hole.status === 'future' ? (
         // Future hole placeholder
         <div
-          className="rounded-full border"
+          className="rounded-full border w-full h-full"
           style={{
-            width: `${dotSize}px`,
-            height: `${dotSize}px`,
-            transform: `translateY(${yOffset}px)`,
             borderColor: '#2B3440',
             opacity: 0.4,
           }}
@@ -295,11 +299,8 @@ function RoundDnaHoleDot({
       ) : hole.status === 'missing' ? (
         // Missing hole (no data)
         <div
-          className="rounded-full border"
+          className="rounded-full border w-full h-full"
           style={{
-            width: `${dotSize}px`,
-            height: `${dotSize}px`,
-            transform: `translateY(${yOffset}px)`,
             borderColor: '#6B7280',
             opacity: 0.3,
           }}
@@ -308,15 +309,13 @@ function RoundDnaHoleDot({
         // Completed hole
         <div
           className={cn(
-            'rounded-full transition-all cursor-pointer',
+            'rounded-full transition-all cursor-pointer w-full h-full',
             isHovered && 'shadow-lg',
             hole.isCurrentHole && 'ring-2'
           )}
           style={{
-            width: `${dotSize}px`,
-            height: `${dotSize}px`,
             backgroundColor: color,
-            transform: `translateY(${yOffset}px) scale(${isHovered ? hoverScale : 1})`,
+            transform: `scale(${isHovered ? hoverScale : 1})`,
             outline: hole.isCurrentHole ? `2px solid #10B981` : `2px solid rgba(255, 255, 255, 0.4)`,
             outlineOffset: '-1px',
             boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.2)',
