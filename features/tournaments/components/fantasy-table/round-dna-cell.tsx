@@ -41,16 +41,16 @@ const SCORE_Y_OFFSET = {
 }
 
 // Helper function to get color based on Y offset direction
-// Negative Y (below center) = good scores (green)
-// Positive Y (above center) = bad scores (red)
+// Positive Y (above center) = good scores (green)
+// Negative Y (below center) = bad scores (red)
 const getDotColor = (status: string, yOffset: number): string => {
   if (status === 'future') return '#3F4855' // dark gray
   if (status === 'missing') return '#4B5563' // muted gray
   
-  if (yOffset < 0) {
-    return '#10B981' // green for good scores (below center)
-  } else if (yOffset > 0) {
-    return '#EF4444' // red for bad scores (above center)
+  if (yOffset > 0) {
+    return '#10B981' // green for good scores (above center)
+  } else if (yOffset < 0) {
+    return '#EF4444' // red for bad scores (below center)
   }
   return '#6B7280' // gray for par
 }
