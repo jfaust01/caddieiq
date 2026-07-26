@@ -396,7 +396,8 @@ const valueCompletedColumn: ColumnDescriptor = {
 
 const leverageCompletedColumn: ColumnDescriptor = {
   id: 'leverage',
-  label: 'DK % OWNED',
+  label: '% OWNED',
+  headerKind: 'dk',
   tooltip: 'DraftKings ownership percentage',
   colClassName: 'w-[130px] sm:w-[150px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
