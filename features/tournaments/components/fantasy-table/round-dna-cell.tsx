@@ -133,17 +133,17 @@ export const RoundDnaCell = memo(function RoundDnaCell({
 
 function HoleNumberHeader() {
   // SVG dimensions match RoundDnaRow
-  const SVG_WIDTH = 720
+  const SVG_WIDTH = 480
   const SVG_HEIGHT = 28
-  const PADDING = 10
+  const PADDING = 8
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
   const STEP_X = USABLE_WIDTH / 17
 
   return (
     <div className="w-full h-4 px-0.5 flex items-center gap-0.5">
       {/* Empty space for R label and score */}
-      <div className="w-10 flex-shrink-0" />
-      <div className="w-8 flex-shrink-0" />
+      <div className="w-9 flex-shrink-0" />
+      <div className="w-7 flex-shrink-0" />
       
       {/* Hole numbers in SVG space */}
       <svg
@@ -211,10 +211,10 @@ function RoundDnaRow({
   const scoreColor = getScoreColor(relToPar)
 
   // SVG dimensions and coordinate system
-  const SVG_WIDTH = 720
+  const SVG_WIDTH = 480
   const SVG_HEIGHT = 32
   const CENTER_Y = SVG_HEIGHT / 2
-  const PADDING = 10
+  const PADDING = 8
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
   const STEP_X = USABLE_WIDTH / 17
 

@@ -270,7 +270,7 @@ const tournamentFormColumn: ColumnDescriptor = {
   label: 'Round DNA',
   subtitle: 'Hole by Hole',
   tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
-  colClassName: 'w-[720px] sm:w-[820px]',
+  colClassName: 'w-[480px] sm:w-[520px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
@@ -388,7 +388,7 @@ const tournamentFormCompletedColumn: ColumnDescriptor = {
   label: 'Round DNA',
   subtitle: 'Hole by Hole',
   tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
-  colClassName: 'w-[720px] sm:w-[820px]',
+  colClassName: 'w-[480px] sm:w-[520px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
