@@ -143,9 +143,10 @@ function HoleNumberHeader() {
   const STEP_X = USABLE_WIDTH / 17
 
   return (
-    <div className="w-full h-6 mb-1 px-1 flex items-center justify-between">
+    <div className="w-full h-6 mb-1 px-1 flex items-center gap-1">
       {/* Empty space for R label and score */}
-      <div className="w-12" />
+      <div className="w-12 flex-shrink-0" />
+      <div className="w-10 flex-shrink-0" />
       
       {/* Hole numbers in SVG space */}
       <svg
@@ -255,7 +256,7 @@ function RoundDnaRow({
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
           className="flex-1 h-full"
           preserveAspectRatio="none"
-          style={{ overflow: 'visible' }}
+          style={{ overflow: 'visible', marginLeft: '0' }}
         >
           {/* Connecting polyline */}
           {polylinePoints && (
