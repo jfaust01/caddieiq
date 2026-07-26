@@ -27,10 +27,32 @@ interface RoundData {
   relToPar: number | null
 }
 
+// Fixed Y offsets for scoring grid (in SVG coordinate space)
+const SCORE_Y_OFFSET = {
+  albatross: -12,
+  eagle: -8,
+  birdie: -4,
+  par: 0,
+  bogey: 4,
+  double: 8,
+  triplePlus: 12,
+}
+
+const DOT_COLORS = {
+  albatross: '#06B6D4', // cyan
+  eagle: '#00E676', // bright green
+  birdie: '#22C55E', // green
+  par: '#6B7280', // gray
+  bogey: '#F59E0B', // amber
+  double: '#F97316', // orange
+  triplePlus: '#EF4444', // red
+  future: '#3F4855', // dark gray
+  missing: '#4B5563', // muted gray
+}
+
 /**
- * Round DNA - Premium hole-by-hole scoring visualization.
- * Shows R1-R4 with connected hole dots, vertical positioning based on score vs par,
- * and semantic coloring for results (albatross through triple bogey+).
+ * Round DNA - Unified SVG-based hole-by-hole scoring visualization.
+ * All dots and lines use the same coordinate system to ensure perfect alignment.
  */
 export const RoundDnaCell = memo(function RoundDnaCell({
   round1RelToPar,
@@ -57,10 +79,8 @@ export const RoundDnaCell = memo(function RoundDnaCell({
     return null
   }
 
-  const isLive = tournamentStatus === 'ACTIVE'
-
   try {
-    // Generate mock hole data for display
+    // Generate hole data for display
     const roundsData = useMemo<RoundData[]>(() => {
       const roundArray = [
         { round: 1, relToPar: round1RelToPar },
@@ -99,7 +119,6 @@ export const RoundDnaCell = memo(function RoundDnaCell({
               onHoleHover={setHoveredHole}
               onRoundHover={setHoveredRound}
               onRoundClick={onRoundClick}
-              isLive={isLive}
               currentHole={currentHole}
             />
             {idx < roundsData.length - 1 && (
@@ -116,25 +135,54 @@ export const RoundDnaCell = memo(function RoundDnaCell({
 })
 
 function HoleNumberHeader() {
+  // SVG dimensions match RoundDnaRow
+  const SVG_WIDTH = 720
+  const SVG_HEIGHT = 40
+  const PADDING = 10
+  const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
+  const STEP_X = USABLE_WIDTH / 17
+
   return (
-    <div className="grid gap-0 h-6 items-center mb-1" style={{ gridTemplateColumns: '42px 34px repeat(18, minmax(18px, 1fr))' }}>
-      {/* Round label space */}
-      <div />
-      {/* Score space */}
-      <div />
+    <div className="w-full h-6 mb-1 px-1 flex items-center justify-between">
+      {/* Empty space for R label and score */}
+      <div className="w-12" />
       
-      {/* Hole numbers 1-18 */}
-      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map((holeNum) => (
-        <div
-          key={`hole-header-${holeNum}`}
-          className={cn(
-            'text-center text-[8px] sm:text-[9px] font-medium text-gray-500',
-            holeNum === 10 && 'border-l border-white/[0.15]'
-          )}
-        >
-          {holeNum}
-        </div>
-      ))}
+      {/* Hole numbers in SVG space */}
+      <svg
+        viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
+        className="flex-1 h-full"
+        preserveAspectRatio="none"
+      >
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map((holeNum) => {
+          const xPos = PADDING + (holeNum - 1) * STEP_X
+          const isDivider = holeNum === 10
+          
+          return (
+            <g key={`hole-header-${holeNum}`}>
+              {isDivider && (
+                <line
+                  x1={xPos - STEP_X / 2}
+                  y1="0"
+                  x2={xPos - STEP_X / 2}
+                  y2={SVG_HEIGHT}
+                  stroke="rgba(255,255,255,0.15)"
+                  strokeWidth="0.5"
+                />
+              )}
+              <text
+                x={xPos}
+                y={SVG_HEIGHT - 2}
+                textAnchor="middle"
+                fontSize="8"
+                fill="rgb(107, 114, 128)"
+                fontWeight="500"
+              >
+                {holeNum}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
     </div>
   )
 }
@@ -148,7 +196,6 @@ interface RoundDnaRowProps {
   onHoleHover: (hole: string | null) => void
   onRoundHover: (round: number | null) => void
   onRoundClick?: (round: number) => void
-  isLive: boolean
   currentHole?: string | null
 }
 
@@ -161,161 +208,126 @@ function RoundDnaRow({
   onHoleHover,
   onRoundHover,
   onRoundClick,
-  isLive,
   currentHole,
 }: RoundDnaRowProps) {
   const scoreColor = getScoreColor(relToPar)
 
+  // SVG dimensions and coordinate system
+  const SVG_WIDTH = 720
+  const SVG_HEIGHT = 40
+  const CENTER_Y = SVG_HEIGHT / 2
+  const PADDING = 10
+  const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
+  const STEP_X = USABLE_WIDTH / 17
+
+  // Calculate point coordinates (shared between line and dots)
+  const points = holes.map((hole, idx) => ({
+    x: PADDING + idx * STEP_X,
+    y: CENTER_Y + SCORE_Y_OFFSET[hole.status === 'future' || hole.status === 'missing' ? 'par' : hole.status],
+    hole,
+  }))
+
+  // Build polyline for connecting line
+  const completedPoints = points.filter(p => p.hole.status !== 'future' && p.hole.status !== 'missing')
+  const polylinePoints = completedPoints.map(p => `${p.x},${p.y}`).join(' ')
+
   return (
     <div
-      className="relative w-full cursor-pointer hover:bg-white/[0.02] transition-colors"
+      className="relative w-full h-10 cursor-pointer hover:bg-white/[0.02] transition-colors"
       onMouseEnter={() => onRoundHover(round)}
       onMouseLeave={() => onRoundHover(null)}
       onClick={() => onRoundClick?.(round)}
     >
-      {/* SVG connecting lines overlay - positioned absolutely */}
-      <svg
-        className="absolute top-0 left-0 w-full h-full pointer-events-none"
-        style={{ overflow: 'visible' }}
-        aria-hidden="true"
-      >
-        {holes.slice(0, -1).map((hole, idx) => {
-          const nextHole = holes[idx + 1]
-          if (!nextHole) return null
-
-          const { color: color1, yOffset: y1 } = getHoleStyle(hole)
-          const { color: color2, yOffset: y2 } = getHoleStyle(nextHole)
-          
-          // Calculate percentage positions: 42px + 34px + hole positions
-          // Each hole occupies roughly 5.56% of the holes area (100/18)
-          const prefixWidth = (42 + 34) / 1000 * 100 // Approximate in %
-          const holeWidth = (100 - prefixWidth) / 18
-          const x1Percent = prefixWidth + (idx + 0.5) * holeWidth
-          const x2Percent = prefixWidth + (idx + 1.5) * holeWidth
-          const yBase = 50
-
-          return (
-            <line
-              key={`line-${round}-${idx}`}
-              x1={`${x1Percent}%`}
-              y1={`calc(50% + ${y1}px)`}
-              x2={`${x2Percent}%`}
-              y2={`calc(50% + ${y2}px)`}
-              stroke={color1}
-              strokeWidth="1"
-              opacity="0.6"
-              strokeLinecap="round"
-            />
-          )
-        })}
-      </svg>
-
-      {/* Grid container with labels and holes */}
-      <div
-        className="grid gap-0 items-center h-7 relative"
-        style={{ gridTemplateColumns: '42px 34px repeat(18, minmax(18px, 1fr))' }}
-      >
+      {/* Labels and SVG visualization */}
+      <div className="flex items-center gap-1 h-full">
         {/* Round label */}
-        <div className="text-center text-[10px] font-medium uppercase text-gray-400 z-10">
+        <div className="w-12 text-center text-[10px] font-medium uppercase text-gray-400 flex-shrink-0">
           R{round}
         </div>
 
         {/* Score */}
-        <div className={cn('text-center text-[11px] font-semibold tabular-nums z-10', scoreColor)}>
+        <div className={cn('w-10 text-center text-[11px] font-semibold tabular-nums flex-shrink-0', scoreColor)}>
           {formatScore(relToPar)}
         </div>
 
-        {/* Hole dots and placeholders */}
-        {holes.map((hole) => (
-          <RoundDnaHoleDot
-            key={`hole-${round}-${hole.holeNumber}`}
-            hole={hole}
-            round={round}
-            hoveredHole={hoveredHole}
-            isHovered={hoveredHole === `R${round}H${hole.holeNumber}`}
-            onHover={() => onHoleHover(`R${round}H${hole.holeNumber}`)}
-            onHoverEnd={() => onHoleHover(null)}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-interface RoundDnaHoleDotProps {
-  hole: HoleResult
-  round: number
-  hoveredHole: string | null
-  isHovered: boolean
-  onHover: () => void
-  onHoverEnd: () => void
-}
-
-function RoundDnaHoleDot({
-  hole,
-  round,
-  isHovered,
-  onHover,
-  onHoverEnd,
-}: RoundDnaHoleDotProps) {
-  const { color, yOffset } = getHoleStyle(hole)
-  const dotSize = hole.isCurrentHole ? 10 : 8
-  const hoverScale = 1.4
-
-  // Grid column: hole number maps to column index (2 + holeNumber, since 0-1 are R label and score)
-  const gridColumn = hole.holeNumber + 1
-
-  return (
-    <div
-      className="flex items-center justify-center pointer-events-auto col-span-1"
-      style={{ 
-        gridColumn: `${gridColumn}`,
-        justifySelf: 'center',
-        alignSelf: 'center',
-        width: `${dotSize}px`,
-        height: `${dotSize}px`,
-        marginTop: `${yOffset}px`,
-      }}
-      onMouseEnter={onHover}
-      onMouseLeave={onHoverEnd}
-    >
-      {hole.status === 'future' ? (
-        // Future hole placeholder
-        <div
-          className="rounded-full border w-full h-full"
-          style={{
-            borderColor: '#2B3440',
-            opacity: 0.4,
-          }}
-        />
-      ) : hole.status === 'missing' ? (
-        // Missing hole (no data)
-        <div
-          className="rounded-full border w-full h-full"
-          style={{
-            borderColor: '#6B7280',
-            opacity: 0.3,
-          }}
-        />
-      ) : (
-        // Completed hole
-        <div
-          className={cn(
-            'rounded-full transition-all cursor-pointer w-full h-full',
-            isHovered && 'shadow-lg',
-            hole.isCurrentHole && 'ring-2'
+        {/* SVG: Lines + Dots */}
+        <svg
+          viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
+          className="flex-1 h-full"
+          preserveAspectRatio="none"
+          style={{ overflow: 'visible' }}
+        >
+          {/* Connecting polyline */}
+          {polylinePoints && (
+            <polyline
+              points={polylinePoints}
+              fill="none"
+              stroke={completedPoints[0]?.hole.status === 'albatross' ? DOT_COLORS.albatross : DOT_COLORS.birdie}
+              strokeWidth="1"
+              opacity="0.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           )}
-          style={{
-            backgroundColor: color,
-            transform: `scale(${isHovered ? hoverScale : 1})`,
-            outline: hole.isCurrentHole ? `2px solid #10B981` : `2px solid rgba(255, 255, 255, 0.4)`,
-            outlineOffset: '-1px',
-            boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.2)',
-            zIndex: isHovered ? 10 : 1,
-          }}
-          title={`Hole ${hole.holeNumber} (Par ${hole.par}): Score ${hole.score ?? '—'}`}
-        />
-      )}
+
+          {/* Hole dots */}
+          {points.map((point, idx) => {
+            const isCurrentHole = currentHole === `R${round}H${point.hole.holeNumber}`
+            const isHovered = hoveredHole === `R${round}H${point.hole.holeNumber}`
+            const dotRadius = isCurrentHole ? 5 : 4
+            const hoverRadius = isHovered ? 5 : dotRadius
+
+            return (
+              <g
+                key={`hole-${round}-${point.hole.holeNumber}`}
+                onMouseEnter={() => onHoleHover(`R${round}H${point.hole.holeNumber}`)}
+                onMouseLeave={() => onHoleHover(null)}
+                style={{ cursor: 'pointer' }}
+              >
+                {/* Current hole ring */}
+                {isCurrentHole && (
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r={6}
+                    fill="none"
+                    stroke="#10B981"
+                    strokeWidth="1.5"
+                    opacity="0.8"
+                  />
+                )}
+
+                {/* Dot */}
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={hoverRadius}
+                  fill={DOT_COLORS[point.hole.status] || DOT_COLORS.par}
+                  opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.4 : 1}
+                  style={{
+                    transition: 'r 0.2s',
+                    filter: isHovered ? 'drop-shadow(0 0 4px rgba(0,0,0,0.5))' : 'none',
+                  }}
+                />
+
+                {/* Outline */}
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={hoverRadius}
+                  fill="none"
+                  stroke={point.hole.status === 'future' || point.hole.status === 'missing' ? 'rgba(200,200,200,0.3)' : 'rgba(255,255,255,0.3)'}
+                  strokeWidth="0.75"
+                  opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.3 : 0.7}
+                />
+
+                {/* Tooltip */}
+                <title>{`Hole ${point.hole.holeNumber}: ${point.hole.score ? `${point.hole.score} (${formatRelToPar(point.hole.relativeToPar)})` : '—'}`}</title>
+              </g>
+            )
+          })}
+        </svg>
+      </div>
     </div>
   )
 }
@@ -323,41 +335,54 @@ function RoundDnaHoleDot({
 // Utility functions
 
 function generateMockHoles(roundToPar: number, round: number): HoleResult[] {
-  // Generate deterministic but varied mock holes based on round total
   const holes: HoleResult[] = []
   let remaining = Math.abs(roundToPar)
   const isUnder = roundToPar < 0
 
   for (let i = 1; i <= 18; i++) {
-    const par = i <= 9 ? 4 : 4 // Simplified: assume par 4s
+    const par = 4 // Simplified: all par 4s
     let score = par
     let status: HoleResult['status'] = 'par'
+    let relativeToPar = 0
 
-    // Distribute the round's to-par across holes
     if (remaining > 0) {
       const random = Math.sin(round * 1000 + i) * 10000
-      const threshold = remaining / (18 - i + 1)
+      const frac = random - Math.floor(random)
 
-      if (random % 10 < 1 && Math.abs(remaining) > 5) {
-        // Eagle
-        score = par - 2
+      if (frac < 0.02) {
+        relativeToPar = -3
+        status = 'albatross'
+        score = par - 3
+        remaining -= 3
+      } else if (frac < 0.08) {
+        relativeToPar = -2
         status = 'eagle'
+        score = par - 2
         remaining -= 2
-      } else if (random % 10 < 2 && (isUnder ? remaining > 0 : remaining > 1)) {
-        // Birdie
-        score = par - 1
+      } else if (frac < 0.25) {
+        relativeToPar = -1
         status = 'birdie'
+        score = par - 1
         remaining -= 1
-      } else if (random % 10 < 3 && Math.abs(remaining) > 0) {
-        // Bogey
-        score = par + 1
+      } else if (frac < 0.55 && remaining > 0) {
+        relativeToPar = 0
+        status = 'par'
+        score = par
+      } else if (frac < 0.75 && (isUnder ? remaining > 0 : remaining > 0)) {
+        relativeToPar = 1
         status = 'bogey'
-        remaining -= -1
-      } else if (remaining > 0 && random % 10 < 1) {
-        // Double bogey
-        score = par + 2
+        score = par + 1
+        remaining -= 1
+      } else if (frac < 0.90 && (isUnder ? remaining > 0 : remaining > 1)) {
+        relativeToPar = 2
         status = 'double'
-        remaining -= -2
+        score = par + 2
+        remaining -= 2
+      } else if (remaining > 0) {
+        relativeToPar = 3
+        status = 'triplePlus'
+        score = par + 3
+        remaining -= 3
       }
     }
 
@@ -365,54 +390,34 @@ function generateMockHoles(roundToPar: number, round: number): HoleResult[] {
       holeNumber: i,
       par,
       score,
-      relativeToPar: score - par,
+      relativeToPar,
       status,
+      isCurrentHole: false,
     })
   }
 
   return holes
 }
 
-function getHoleStyle(hole: HoleResult): { color: string; yOffset: number } {
-  const offsetMap: Record<HoleResult['status'], number> = {
-    albatross: -9,
-    eagle: -6,
-    birdie: -3,
-    par: 0,
-    bogey: 3,
-    double: 6,
-    triplePlus: 9,
-    future: 0,
-    missing: 0,
-  }
-
-  const colorMap: Record<HoleResult['status'], string> = {
-    albatross: '#22D3EE',
-    eagle: '#00E676',
-    birdie: '#22C55E',
-    par: '#6B7280',
-    bogey: '#F59E0B',
-    double: '#F97316',
-    triplePlus: '#EF4444',
-    future: '#2B3440',
-    missing: '#4B5563',
-  }
-
-  return {
-    color: colorMap[hole.status],
-    yOffset: offsetMap[hole.status],
-  }
-}
-
 function getScoreColor(relToPar: number | null): string {
-  if (relToPar === null) return 'text-gray-400'
-  if (relToPar < 0) return 'text-emerald-400'
-  if (relToPar === 0) return 'text-gray-300'
-  return 'text-red-400'
+  if (!relToPar) return 'text-gray-400'
+  if (relToPar <= -3) return 'text-cyan-400'
+  if (relToPar === -2) return 'text-emerald-400'
+  if (relToPar === -1) return 'text-green-500'
+  if (relToPar === 0) return 'text-gray-400'
+  if (relToPar === 1) return 'text-amber-500'
+  if (relToPar === 2) return 'text-orange-500'
+  return 'text-red-500'
 }
 
 function formatScore(relToPar: number | null): string {
-  if (relToPar === null) return '—'
+  if (!relToPar && relToPar !== 0) return '—'
+  if (relToPar === 0) return 'E'
+  return (relToPar > 0 ? '+' : '') + relToPar
+}
+
+function formatRelToPar(relToPar: number | null): string {
+  if (!relToPar && relToPar !== 0) return '—'
   if (relToPar === 0) return 'E'
   return (relToPar > 0 ? '+' : '') + relToPar
 }
