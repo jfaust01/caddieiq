@@ -126,7 +126,7 @@ export function ScorecardDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/30 transition-opacity duration-300"
+        className="fixed inset-0 z-[55] bg-black/30 transition-opacity duration-300"
         onClick={handleBackdropClick}
         aria-hidden="true"
       />
@@ -135,7 +135,7 @@ export function ScorecardDrawer({
       <div
         ref={drawerRef}
         className={cn(
-          'fixed top-0 right-0 h-screen z-50 flex flex-col',
+          'fixed top-0 right-0 h-screen z-[60] flex flex-col',
           'bg-gradient-to-br from-blue-900/20 via-slate-900/40 to-slate-900/50',
           'border-l border-white/[0.08]',
           'shadow-[-20px_0_40px_rgba(0,0,0,0.5)]',
