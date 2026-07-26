@@ -151,7 +151,7 @@ function RoundDnaRow({
 
   const PADDING = 8
   const USABLE_WIDTH = 480 - 2 * PADDING
-  const STEP_X = USABLE_WIDTH / 17
+  const STEP_X = USABLE_WIDTH / 18
   const SVG_WIDTH = 480
   const SVG_HEIGHT = 40
   const CENTER_Y = SVG_HEIGHT / 2
