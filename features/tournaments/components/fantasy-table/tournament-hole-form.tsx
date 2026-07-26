@@ -104,7 +104,7 @@ const RoundHoleRow = memo(function RoundHoleRow({
   relToPar,
 }: RoundHoles) {
   // Format relative to par display
-  const toParDisplay = relToPar !== null ? (relToPar > 0 ? `+${relToPar}` : String(relToPar)) : '—'
+  const toParDisplay = relToPar !== null ? (relToPar === 0 ? 'E' : relToPar > 0 ? `+${relToPar}` : String(relToPar)) : '—'
   const toParColor = relToPar === null ? 'text-gray-500' : relToPar < 0 ? 'text-green-400' : relToPar > 0 ? 'text-red-400' : 'text-gray-400'
 
   return (
