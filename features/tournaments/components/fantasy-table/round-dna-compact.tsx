@@ -138,7 +138,7 @@ function HoleNumberHeaderRow() {
   const STEP_X = USABLE_WIDTH / 17
   
   return (
-    <svg className="w-full" height="24" viewBox="0 0 480 24" preserveAspectRatio="xMidYMid slice">
+    <svg className="w-full" height="24" viewBox="0 0 480 24" preserveAspectRatio="none">
       {Array.from({ length: 18 }).map((_, i) => {
         const holeNum = i + 1
         const xPos = PADDING + i * STEP_X + STEP_X / 2
@@ -222,7 +222,7 @@ function RoundDnaRow({
             className="w-full"
             height={SVG_HEIGHT}
             viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-            preserveAspectRatio="xMidYMid slice"
+            preserveAspectRatio="none"
             style={{ userSelect: 'none' }}
           >
             {/* Center line */}
