@@ -527,85 +527,8 @@ export const tournamentService = {
     const { items, total } = await getTournamentRepository().search(toSearchParams(query))
     const totalPages = Math.max(1, Math.ceil(total / query.pageSize))
     const safePage = Math.min(Math.max(1, query.page), totalPages)
-    
-    // Map base tournament data
-    const tournaments = items.map(mapTournamentSummary)
-    
-    // Enrich completed tournaments with winner data
-    const enrichedTournaments = await Promise.all(
-      tournaments.map(async (tournament) => {
-        if (tournament.status !== 'COMPLETED') return tournament
-        
-        try {
-          const prisma = (await import('@/lib/db')).prisma
-          
-          // Fetch tournament winner (first place finisher)
-          const winner = await prisma.historicalTournamentOutcome.findFirst({
-            where: {
-              tournamentId: tournament.id,
-              finishPosition: 1,
-            },
-            include: {
-              player: {
-                select: {
-                  id: true,
-                  fullName: true,
-                  headshotUrl: true,
-                },
-              },
-            },
-          })
-          
-          // Fetch top DK scorer
-          const topDkScorer = await prisma.historicalTournamentOutcome.findFirst({
-            where: {
-              tournamentId: tournament.id,
-              dkFantasyPoints: { not: null },
-            },
-            orderBy: {
-              dkFantasyPoints: 'desc',
-            },
-            include: {
-              player: {
-                select: {
-                  id: true,
-                  fullName: true,
-                  headshotUrl: true,
-                },
-              },
-            },
-          })
-          
-          return {
-            ...tournament,
-            tournamentWinner: winner
-              ? {
-                  playerId: winner.player.id,
-                  playerName: winner.player.fullName,
-                  headshotUrl: winner.player.headshotUrl,
-                  scoreToPar: winner.scoreToPar,
-                  dkFantasyPoints: winner.dkFantasyPoints,
-                  dfsSalary: winner.dfsSalary ?? null,
-                }
-              : null,
-            topDkScorer: topDkScorer
-              ? {
-                  playerId: topDkScorer.player.id,
-                  playerName: topDkScorer.player.fullName,
-                  headshotUrl: topDkScorer.player.headshotUrl,
-                  dkFantasyPoints: topDkScorer.dkFantasyPoints ?? 0,
-                }
-              : null,
-          }
-        } catch (error) {
-          console.error(`[v0] Error enriching tournament ${tournament.name}:`, error)
-          return tournament
-        }
-      }),
-    )
-    
     return {
-      items: enrichedTournaments,
+      items: items.map(mapTournamentSummary),
       total,
       page: safePage,
       pageSize: query.pageSize,
