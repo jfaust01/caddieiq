@@ -80,6 +80,19 @@ export function FantasyCompletedEnhancedRowCells({
         </div>
       </td>
 
+      {/* TOURNAMENT FORM */}
+      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-start">
+          <TournamentHoleForm 
+            round1RelToPar={entrant.round1RelToPar}
+            round2RelToPar={entrant.round2RelToPar}
+            round3RelToPar={entrant.round3RelToPar}
+            round4RelToPar={entrant.round4RelToPar}
+            tournamentStatus={tournamentStatus}
+          />
+        </div>
+      </td>
+
       {/* AI RATING */}
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <FantasyMetricCell 
@@ -96,19 +109,6 @@ export function FantasyCompletedEnhancedRowCells({
           meterTone="bg-cyan-400/60"
           valueClassName="text-cyan-100"
         />
-      </td>
-
-      {/* TOURNAMENT FORM */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <div className="flex h-full items-center justify-start">
-          <TournamentHoleForm 
-            round1RelToPar={entrant.round1RelToPar}
-            round2RelToPar={entrant.round2RelToPar}
-            round3RelToPar={entrant.round3RelToPar}
-            round4RelToPar={entrant.round4RelToPar}
-            tournamentStatus={tournamentStatus}
-          />
-        </div>
       </td>
 
       {/* SALARY */}
