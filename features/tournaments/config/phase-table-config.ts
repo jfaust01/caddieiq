@@ -294,14 +294,6 @@ const projectedPtsColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
-const ceilingColumn: ColumnDescriptor = {
-  id: 'ceiling',
-  label: 'Ceiling',
-  tooltip: 'Maximum likely tournament points',
-  colClassName: 'w-[95px] sm:w-[110px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
-}
-
 const liveColumns: ColumnDescriptor[] = [
   posColumn,
   scorecardColumn,
@@ -315,7 +307,6 @@ const liveColumns: ColumnDescriptor[] = [
   liveOwnershipColumn,
   leverageColumn,
   projectedPtsColumn,
-  ceilingColumn,
   oddsScoringColumn,
 ]
 
@@ -411,14 +402,6 @@ const projectedPtsCompletedColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
-const ceilingCompletedColumn: ColumnDescriptor = {
-  id: 'ceiling',
-  label: 'CEILING — 90TH %',
-  tooltip: 'Maximum likely tournament points (90th percentile)',
-  colClassName: 'w-[120px] sm:w-[140px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
-}
-
 const oddsCompletedColumn: ColumnDescriptor = {
   id: 'odds',
   label: 'ODDS TO WIN',
@@ -439,7 +422,6 @@ const completedColumns: ColumnDescriptor[] = [
   valueCompletedColumn,
   leverageCompletedColumn,
   projectedPtsCompletedColumn,
-  ceilingCompletedColumn,
   oddsCompletedColumn,
 ]
 

@@ -149,15 +149,6 @@ export function FantasyCompletedEnhancedRowCells({
         />
       </td>
 
-      {/* CEILING — 90TH % */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-        <FantasyMetricCell 
-          value={ceiling}
-          meterTone="bg-pink-400/60"
-          valueClassName="text-pink-100"
-        />
-      </td>
-
       {/* ODDS TO WIN */}
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <div className="flex h-full items-center justify-center">
