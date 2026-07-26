@@ -223,8 +223,8 @@ function RoundDnaRow({
               x2={`${x2Percent}%`}
               y2={`calc(50% + ${y2}px)`}
               stroke={color1}
-              strokeWidth="1.5"
-              opacity="0.7"
+              strokeWidth="1"
+              opacity="0.6"
               strokeLinecap="round"
             />
           )
@@ -264,8 +264,8 @@ function RoundDnaHoleDot({
   onHoverEnd,
 }: RoundDnaHoleDotProps) {
   const { color, yOffset } = getHoleStyle(hole)
-  const dotSize = hole.isCurrentHole ? 8 : 6
-  const hoverScale = 1.25
+  const dotSize = hole.isCurrentHole ? 10 : 8
+  const hoverScale = 1.4
 
   // Position relative to full container width
   // 42px + 34px = 76px prefix, then holes span remaining width
@@ -317,7 +317,9 @@ function RoundDnaHoleDot({
             height: `${dotSize}px`,
             backgroundColor: color,
             transform: `translateY(${yOffset}px) scale(${isHovered ? hoverScale : 1})`,
-            outline: hole.isCurrentHole ? `2px solid #10B981` : '1px solid rgba(0, 0, 0, 0.3)',
+            outline: hole.isCurrentHole ? `2px solid #10B981` : `2px solid rgba(255, 255, 255, 0.4)`,
+            outlineOffset: '-1px',
+            boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.2)',
             zIndex: isHovered ? 10 : 1,
           }}
           title={`Hole ${hole.holeNumber} (Par ${hole.par}): Score ${hole.score ?? '—'}`}
