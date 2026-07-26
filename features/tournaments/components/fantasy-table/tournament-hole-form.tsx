@@ -142,21 +142,34 @@ const RoundHoleRow = memo(function RoundHoleRow({
         </div>
 
         {/* SVG overlay for connecting lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
+        <svg 
+          className="absolute inset-0 w-full h-full pointer-events-none" 
+          aria-hidden="true"
+          style={{ overflow: 'visible' }}
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <style>{`
+              svg { overflow: visible; }
+            `}</style>
+          </defs>
           {holes.slice(0, -1).map((hole, index) => {
-            const { yOffset } = getHoleStyle(hole)
+            const { yOffset: y1Offset } = getHoleStyle(hole)
             const nextHole = holes[index + 1]
-            const nextYOffset = getHoleStyle(nextHole).yOffset
+            const { yOffset: y2Offset } = getHoleStyle(nextHole)
             const cellWidth = 100 / 18
-            const x1 = (index + 0.5) * cellWidth
-            const x2 = (index + 1.5) * cellWidth
+            const x1Percent = (index + 0.5) * cellWidth
+            const x2Percent = (index + 1.5) * cellWidth
+            const svgHeight = 100 // Assume SVG height as percentage
+            const y1 = 50 + (y1Offset / 200) * svgHeight // Convert px offset to SVG space
+            const y2 = 50 + (y2Offset / 200) * svgHeight
             return (
               <line
                 key={`line-${round}-${index}`}
-                x1={`${x1}%`}
-                y1={`calc(50% + ${yOffset}px)`}
-                x2={`${x2}%`}
-                y2={`calc(50% + ${nextYOffset}px)`}
+                x1={`${x1Percent}%`}
+                y1={`${y1}%`}
+                x2={`${x2Percent}%`}
+                y2={`${y2}%`}
                 stroke={getHoleStyle(hole).color}
                 strokeWidth="1.5"
                 opacity="0.7"
