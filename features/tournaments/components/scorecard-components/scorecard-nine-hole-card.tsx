@@ -80,7 +80,7 @@ export function ScorecardNineHoleCard({
         'relative overflow-hidden rounded-[16px]',
         'border',
         accents.border,
-        'bg-[#0c1318]',
+        'bg-transparent',
         'shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]'
       )}
     >
