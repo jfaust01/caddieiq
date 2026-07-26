@@ -492,14 +492,11 @@ function generateMockHoles(roundToPar: number, round: number): HoleResult[] {
 }
 
 function getScoreColor(relToPar: number | null): string {
-  if (!relToPar) return 'text-gray-400'
-  if (relToPar <= -3) return 'text-cyan-400'
-  if (relToPar === -2) return 'text-emerald-400'
-  if (relToPar === -1) return 'text-green-500'
-  if (relToPar === 0) return 'text-gray-400'
-  if (relToPar === 1) return 'text-amber-500'
-  if (relToPar === 2) return 'text-orange-500'
-  return 'text-red-500'
+  if (relToPar === null || relToPar === undefined) return 'text-gray-400'
+  if (relToPar < 0) return 'text-green-500' // negative scores (under par) are green
+  if (relToPar === 0) return 'text-gray-400' // even par is gray
+  if (relToPar > 0) return 'text-red-500' // positive scores (over par) are red
+  return 'text-gray-400'
 }
 
 function formatScore(relToPar: number | null): string {
