@@ -113,14 +113,14 @@ const RoundHoleRow = memo(function RoundHoleRow({
   const toParColor = relToPar === null ? 'text-gray-500' : relToPar < 0 ? 'text-emerald-400' : relToPar > 0 ? 'text-red-400' : 'text-gray-400'
 
   return (
-    <div className="flex items-stretch gap-2 w-full h-20">
+    <div className="flex items-stretch gap-2 w-full h-12">
       {/* Round label */}
-      <div className="flex flex-col items-end justify-center gap-1">
-        <div className="text-[9px] font-semibold text-gray-500 uppercase">
+      <div className="flex flex-col items-end justify-center gap-0">
+        <div className="text-[8px] font-semibold text-gray-500 uppercase leading-3">
           R{round}
         </div>
         {/* Round score badge */}
-        <div className={`text-xs font-bold tabular-nums ${toParColor}`}>
+        <div className={`text-[10px] font-bold tabular-nums leading-3 ${toParColor}`}>
           {toParDisplay}
         </div>
       </div>
