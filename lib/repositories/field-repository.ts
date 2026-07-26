@@ -312,7 +312,7 @@ export class FieldRepository extends BaseRepository {
         JOIN odds_events oe ON oe.id = oq."oddsEventId"
         WHERE oe."tournamentId" = tf."tournamentId"
           AND oq."playerId" = p.id
-          AND oq.market = 'TO_WIN'
+          AND oq.market = 'TOURNAMENT_WINNER'
         ORDER BY oe."updatedAt" DESC
         LIMIT 1
       ) oq ON true
