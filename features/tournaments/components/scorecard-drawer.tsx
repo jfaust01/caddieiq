@@ -28,6 +28,7 @@ export function ScorecardDrawer({
   visiblePlayers,
   status,
 }: ScorecardDrawerProps) {
+  const [selectedRound, setSelectedRound] = useState<number>(1)
   const drawerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
 
@@ -218,7 +219,7 @@ export function ScorecardDrawer({
           </div>
 
           {/* Tabs Row */}
-          <div className="flex items-center gap-6 border-b border-white/[0.08] pb-4">
+          <div className="flex items-center gap-6 mb-6 border-b border-white/[0.08] pb-4">
             <button className="text-xs font-semibold text-emerald-400 border-b-2 border-emerald-400 pb-4 -mb-4">
               SCORECARD
             </button>
@@ -228,6 +229,53 @@ export function ScorecardDrawer({
             <button className="text-xs font-semibold text-gray-400 hover:text-gray-300 transition-colors pb-4 -mb-4">
               FANTASY
             </button>
+          </div>
+
+          {/* Round Selector and Score Display */}
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                ROUND
+              </div>
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4].map((round) => (
+                  <button
+                    key={round}
+                    onClick={() => setSelectedRound(round)}
+                    className={cn(
+                      'w-9 h-9 rounded border text-xs font-semibold transition-all',
+                      selectedRound === round
+                        ? 'bg-emerald-500/30 border-emerald-500/60 text-emerald-400'
+                        : 'bg-white/5 border-white/[0.15] text-gray-300 hover:bg-white/10'
+                    )}
+                  >
+                    {round}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Score Display */}
+            <div className="text-right">
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                TO PAR
+              </div>
+              <div className="text-xl font-bold text-emerald-400 mb-2">
+                {selectedPlayer.total !== null && selectedPlayer.total !== undefined
+                  ? selectedPlayer.total > 0
+                    ? `+${selectedPlayer.total}`
+                    : selectedPlayer.total === 0
+                      ? 'E'
+                      : selectedPlayer.total
+                  : '—'}
+              </div>
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                TOTAL
+              </div>
+              <div className="text-xl font-bold text-emerald-400">
+                {selectedPlayer.totalStrokes || '—'}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -239,7 +287,7 @@ export function ScorecardDrawer({
                 playerId={selectedPlayer.playerId}
                 playerName={selectedPlayer.playerName}
                 tournamentId={tournamentId}
-                roundNumber={1}
+                roundNumber={selectedRound}
                 phase={phase}
                 isDrawerContext
               />
