@@ -170,7 +170,7 @@ function RoundDnaRow({
 
   return (
     <div
-      className="relative w-full h-12 cursor-pointer hover:bg-white/[0.02] transition-colors"
+      className="relative w-full cursor-pointer hover:bg-white/[0.02] transition-colors"
       onMouseLeave={() => {
         setHoveredHole(null)
         setTooltipHole(null)
@@ -178,7 +178,7 @@ function RoundDnaRow({
       }}
       onClick={() => playerId && onRoundClick?.(playerId, round)}
     >
-      <div className="flex items-center h-full">
+      <div className="flex h-full">
         <div className="flex-1 min-w-0">
           <svg
             className="w-full"
