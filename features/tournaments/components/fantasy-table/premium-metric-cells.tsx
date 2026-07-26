@@ -19,9 +19,6 @@ export function AiRatingCell({ entrant }: { entrant: FieldEntrant }) {
         <div className="text-cyan-400 font-semibold text-lg sm:text-xl tabular-nums">
           {Math.round(aiRating)}
         </div>
-        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
-          AI Rating
-        </div>
       </div>
     </td>
   )
