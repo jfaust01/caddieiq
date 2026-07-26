@@ -5,14 +5,14 @@ import { cn } from '@/lib/utils'
 
 /**
  * AI INTELLIGENCE CELL
- * Combines AI Rating and Course Fit scores
+ * Combines AI Rating and Recent Form scores
  */
 export function AiIntelligenceCell({ entrant }: { entrant: FieldEntrant }) {
-  const aiRating = entrant.playerRating
-  const courseFit = entrant.courseFit
+  const aiRating = entrant.rankingScore
+  const formScore = entrant.formScore
 
-  if (!aiRating && !courseFit) {
-    return <td className="px-1 sm:px-3 text-center text-gray-500">—</td>
+  if (!aiRating && !formScore) {
+    return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
   return (
@@ -28,13 +28,13 @@ export function AiIntelligenceCell({ entrant }: { entrant: FieldEntrant }) {
             </div>
           </div>
         ) : null}
-        {courseFit !== undefined && courseFit !== null ? (
+        {formScore !== undefined && formScore !== null ? (
           <div>
             <div className="text-gray-400 font-medium text-sm tabular-nums">
-              {Math.round(courseFit)}
+              {Math.round(formScore)}
             </div>
             <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
-              Course Fit
+              Recent Form
             </div>
           </div>
         ) : null}
@@ -45,7 +45,7 @@ export function AiIntelligenceCell({ entrant }: { entrant: FieldEntrant }) {
 
 /**
  * FANTASY OUTLOOK CELL
- * Combines Salary, DK Score, and PTS/$1K
+ * Combines Salary, DK Score, and Fantasy Score
  */
 export function FantasyOutlookCell({
   entrant,
@@ -54,12 +54,12 @@ export function FantasyOutlookCell({
   entrant: FieldEntrant
   dfsResult?: DfsValueResult
 }) {
-  const salary = entrant.salary
-  const dkScore = entrant.dkPoints
-  const ptsPerK = salary && dkScore ? (dkScore / salary) * 1000 : null
+  const salary = entrant.dfsSalary
+  const dkScore = entrant.dkFantasyPoints
+  const fantasyScore = entrant.fantasyScore
 
-  if (!salary && !dkScore) {
-    return <td className="px-1 sm:px-3 text-center text-gray-500">—</td>
+  if (!salary && !dkScore && !fantasyScore) {
+    return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
   return (
@@ -79,17 +79,17 @@ export function FantasyOutlookCell({
               {dkScore.toFixed(1)}
             </span>
             <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
-              DK Score
+              DK Points
             </div>
           </div>
         ) : null}
-        {ptsPerK ? (
+        {fantasyScore !== undefined && fantasyScore !== null ? (
           <div>
             <span className="text-gray-400 font-medium text-sm tabular-nums">
-              {ptsPerK.toFixed(1)}
+              {Math.round(fantasyScore)}
             </span>
             <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
-              PTS/$1K
+              Fantasy Score
             </div>
           </div>
         ) : null}
@@ -107,12 +107,11 @@ export function MarketCell({ entrant }: { entrant: FieldEntrant }) {
   const odds = entrant.oddsToWin
 
   if (!ownership && !odds) {
-    return <td className="px-1 sm:px-3 text-center text-gray-500">—</td>
+    return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
-  const formatOdds = (rawOdds: number): string => {
-    if (rawOdds > 0) return `+${rawOdds}`
-    return String(rawOdds)
+  const formatOdds = (rawOdds: string): string => {
+    return rawOdds
   }
 
   return (
