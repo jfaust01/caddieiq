@@ -1,6 +1,6 @@
 import type { FieldEntrant } from '@/features/tournaments/types'
 import type { DfsValueResult } from '@/lib/dfs-value'
-import { DraftKingsIcon } from '@/components/icons/draftkings-icon'
+import { DraftKingsMark } from '@/features/tournaments/components/draftkings-mark'
 import { cn } from '@/lib/utils'
 
 /**
@@ -67,7 +67,7 @@ export function FantasyOutlookCell({
       <div className="space-y-1.5 text-center">
         {salary ? (
           <div className="flex items-center justify-center gap-1">
-            <DraftKingsIcon className="w-3 h-3 flex-shrink-0" />
+            <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
             <span className="font-semibold text-base sm:text-lg tabular-nums">
               ${(salary / 1000).toFixed(1)}K
             </span>
