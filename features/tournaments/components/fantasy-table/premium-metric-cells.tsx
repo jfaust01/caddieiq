@@ -92,6 +92,54 @@ export function AiIntelligenceCell({ entrant }: { entrant: FieldEntrant }) {
 }
 
 /**
+ * SALARY CELL
+ */
+export function SalaryCell({ entrant }: { entrant: FieldEntrant }) {
+  const salary = entrant.dfsSalary
+
+  if (!salary) {
+    return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
+  }
+
+  return (
+    <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <div className="text-center">
+        <div className="flex items-center justify-center gap-1">
+          <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
+          <span className="font-semibold text-base sm:text-lg tabular-nums">
+            ${(salary / 1000).toFixed(1)}K
+          </span>
+        </div>
+      </div>
+    </td>
+  )
+}
+
+/**
+ * DK SCORE CELL
+ */
+export function DkScoreCell({ entrant }: { entrant: FieldEntrant }) {
+  const dkScore = entrant.dkFantasyPoints
+
+  if (!dkScore) {
+    return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
+  }
+
+  return (
+    <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <div className="text-center">
+        <div className="text-emerald-400 font-semibold text-sm sm:text-base tabular-nums">
+          {dkScore.toFixed(1)}
+        </div>
+        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
+          DK Points
+        </div>
+      </div>
+    </td>
+  )
+}
+
+/**
  * FANTASY OUTLOOK CELL
  * Combines Salary, DK Score, and Fantasy Score
  */

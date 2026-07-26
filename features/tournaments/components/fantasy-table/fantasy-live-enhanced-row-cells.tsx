@@ -7,7 +7,7 @@ import { formatPositionWithStatusPriority } from '@/features/tournaments/utils/f
 import { FantasyPlayerCell } from './fantasy-player-cell'
 import { RoundDnaCompact } from './round-dna-compact'
 import { ScorecardCell } from './scorecard-cell'
-import { AiRatingCell, RecentFormCell, FantasyOutlookCell, MarketCell } from './premium-metric-cells'
+import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, FantasyOutlookCell, MarketCell } from './premium-metric-cells'
 
 /**
  * Enhanced LIVE (in-progress) row cells with combined premium metrics and compact round DNA.
@@ -79,6 +79,12 @@ export function FantasyLiveEnhancedRowCells({
 
       {/* RECENT FORM */}
       <RecentFormCell entrant={entrant} />
+
+      {/* SALARY */}
+      <SalaryCell entrant={entrant} />
+
+      {/* DK SCORE */}
+      <DkScoreCell entrant={entrant} />
 
       {/* FANTASY OUTLOOK */}
       <FantasyOutlookCell entrant={entrant} dfsResult={dfsResult} />
