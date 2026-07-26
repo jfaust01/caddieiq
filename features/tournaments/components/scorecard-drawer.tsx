@@ -126,7 +126,7 @@ export function ScorecardDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[55] bg-black/60 transition-opacity duration-300"
+        className="fixed inset-0 z-[55] bg-black/30 transition-opacity duration-300"
         onClick={handleBackdropClick}
         aria-hidden="true"
       />
