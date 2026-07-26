@@ -4,6 +4,54 @@ import { DraftKingsMark } from '@/features/tournaments/components/draftkings-mar
 import { cn } from '@/lib/utils'
 
 /**
+ * AI RATING CELL
+ */
+export function AiRatingCell({ entrant }: { entrant: FieldEntrant }) {
+  const aiRating = entrant.rankingScore
+
+  if (!aiRating) {
+    return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
+  }
+
+  return (
+    <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <div className="text-center">
+        <div className="text-cyan-400 font-semibold text-lg sm:text-xl tabular-nums">
+          {Math.round(aiRating)}
+        </div>
+        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
+          AI Rating
+        </div>
+      </div>
+    </td>
+  )
+}
+
+/**
+ * RECENT FORM CELL
+ */
+export function RecentFormCell({ entrant }: { entrant: FieldEntrant }) {
+  const formScore = entrant.formScore
+
+  if (!formScore) {
+    return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
+  }
+
+  return (
+    <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <div className="text-center">
+        <div className="text-gray-400 font-medium text-sm tabular-nums">
+          {Math.round(formScore)}
+        </div>
+        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
+          Recent Form
+        </div>
+      </div>
+    </td>
+  )
+}
+
+/**
  * AI INTELLIGENCE CELL
  * Combines AI Rating and Recent Form scores
  */
