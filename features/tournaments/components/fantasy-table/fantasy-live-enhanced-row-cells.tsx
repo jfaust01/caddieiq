@@ -76,7 +76,7 @@ export function FantasyLiveEnhancedRowCells({
       <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
         <div className="flex h-full items-center justify-center">
           <span className="text-sm font-mono text-muted-foreground">
-            {entrant.total != null ? (entrant.total > 0 ? '+' : '') + entrant.total : '—'}
+            {entrant.total != null ? entrant.total === 0 ? 'E' : (entrant.total > 0 ? '+' : '') + entrant.total : '—'}
           </span>
         </div>
       </td>
