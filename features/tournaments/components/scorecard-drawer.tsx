@@ -280,7 +280,7 @@ export function ScorecardDrawer({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto min-w-0">
+        <div className="flex-1 overflow-y-auto min-w-0 bg-slate-900/40">
           <div className="px-4 lg:px-6 py-4 lg:py-6 w-full min-w-0 max-w-full">
             <ScorecardErrorBoundaryV2 playerName={selectedPlayer.playerName}>
               <ScorecardLoader
