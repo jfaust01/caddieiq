@@ -140,10 +140,11 @@ function HoleNumberHeaderRow() {
   return (
     <svg className="w-full h-6" viewBox="0 0 480 24" preserveAspectRatio="none">
       {Array.from({ length: 18 }).map((_, i) => {
+        const holeNum = i + 1
         const xPos = PADDING + i * STEP_X + STEP_X / 2
         return (
           <text
-            key={`hole-${i + 1}`}
+            key={`hole-${holeNum}`}
             x={xPos}
             y={18}
             textAnchor="middle"
@@ -151,7 +152,7 @@ function HoleNumberHeaderRow() {
             fill="rgb(107, 114, 128)"
             fontWeight="500"
           >
-            {i + 1}
+            {holeNum}
           </text>
         )
       })}
@@ -186,12 +187,12 @@ function RoundDnaRow({
   const completedPoints = useMemo(
     () =>
       holes
-        .filter((hole) => hole.status !== 'future' && hole.status !== 'missing')
         .map((hole, idx) => ({
           x: PADDING + (hole.holeNumber - 1) * STEP_X + STEP_X / 2,
           y: CENTER_Y + SCORE_Y_OFFSET[hole.status as keyof typeof SCORE_Y_OFFSET],
           hole,
-        })),
+        }))
+        .filter((point) => point.hole.status !== 'future' && point.hole.status !== 'missing'),
     [holes]
   )
 
