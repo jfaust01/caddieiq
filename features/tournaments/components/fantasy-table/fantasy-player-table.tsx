@@ -29,6 +29,8 @@ export interface FantasyPlayerTableProps {
   dfsByPlayer: Map<string, DfsValueResult>
   /** Opens the scorecard modal for a player row. */
   onRowClick: (playerId: string) => void
+  /** Opens scorecard with a specific round selected. */
+  onRoundSelect?: (playerId: string, round: number) => void
   /** Optional: table toolbar component to render inside the shell. */
   toolbar?: React.ReactNode
   /** Pagination props */
@@ -59,6 +61,7 @@ export function FantasyPlayerTable({
   fieldSize,
   dfsByPlayer,
   onRowClick,
+  onRoundSelect,
   toolbar,
   currentPage = 1,
   onPageChange,
@@ -120,7 +123,7 @@ export function FantasyPlayerTable({
                 ))}
               </colgroup>
               <FantasyTableHeader columns={columns} fieldSize={fieldSize} phase={phase} />
-              <FantasyTableBody entrants={entrants} phase={phase} dfsByPlayer={dfsByPlayer} positionCountMap={positionCountMap} onRowClick={onRowClick} />
+              <FantasyTableBody entrants={entrants} phase={phase} dfsByPlayer={dfsByPlayer} positionCountMap={positionCountMap} onRowClick={onRowClick} onRoundSelect={onRoundSelect} />
             </table>
           </FantasyTableScrollArea>
 

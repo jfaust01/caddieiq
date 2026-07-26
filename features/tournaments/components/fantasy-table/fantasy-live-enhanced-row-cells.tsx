@@ -19,11 +19,13 @@ export function FantasyLiveEnhancedRowCells({
   entrant,
   positionCountMap,
   onScorecardOpen,
+  onRoundSelect,
   tournamentStatus = 'ACTIVE',
 }: {
   entrant: FieldEntrant
   positionCountMap?: Map<number, number>
   onScorecardOpen?: (playerId: string) => void
+  onRoundSelect?: (playerId: string, round: number) => void
   tournamentStatus?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap ?? new Map())
@@ -92,8 +94,10 @@ export function FantasyLiveEnhancedRowCells({
           round2RelToPar={entrant.round2RelToPar}
           round3RelToPar={entrant.round3RelToPar}
           round4RelToPar={entrant.round4RelToPar}
+          playerId={entrant.playerId}
           tournamentStatus={tournamentStatus}
           currentHole={entrant.thruHole}
+          onRoundClick={onRoundSelect}
         />
       </td>
 

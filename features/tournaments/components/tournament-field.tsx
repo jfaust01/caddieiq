@@ -57,6 +57,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
   const [sort, setSort] = useState<SortKey>(() => config.defaultSort)
   const [chip, setChip] = useState<string>('all')
   const [selectedScorecardPlayer, setSelectedScorecardPlayer] = useState<string | null>(null)
+  const [selectedScorecardRound, setSelectedScorecardRound] = useState<number>(1)
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
@@ -325,6 +326,11 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
             setSelectedScorecardPlayer(playerId)
             setIsScorecardModalOpen(true)
           }}
+          onRoundSelect={(playerId, round) => {
+            setSelectedScorecardPlayer(playerId)
+            setSelectedScorecardRound(round)
+            setIsScorecardModalOpen(true)
+          }}
         />
       )}
 
@@ -337,6 +343,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
         tournamentId={tournamentId}
         visiblePlayers={filtered}
         status={status}
+        initialRound={selectedScorecardRound}
       />
     </div>
   )

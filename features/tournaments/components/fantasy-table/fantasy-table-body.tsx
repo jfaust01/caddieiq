@@ -11,6 +11,7 @@ interface FantasyTableBodyProps {
   dfsByPlayer: Map<string, DfsValueResult>
   positionCountMap?: Map<number, number>
   onRowClick: (playerId: string) => void
+  onRoundSelect?: (playerId: string, round: number) => void
 }
 
 /**
@@ -22,6 +23,7 @@ export function FantasyTableBody({
   dfsByPlayer,
   positionCountMap,
   onRowClick,
+  onRoundSelect,
 }: FantasyTableBodyProps) {
   return (
     <tbody>
@@ -34,6 +36,7 @@ export function FantasyTableBody({
           dfsResult={dfsByPlayer.get(entrant.playerId)}
           positionCountMap={positionCountMap}
           onRowClick={onRowClick}
+          onRoundSelect={onRoundSelect}
         />
       ))}
     </tbody>

@@ -17,6 +17,7 @@ interface FantasyPlayerRowProps {
   dfsResult?: DfsValueResult
   positionCountMap?: Map<number, number>
   onRowClick: (playerId: string) => void
+  onRoundSelect?: (playerId: string, round: number) => void
 }
 
 /**
@@ -30,6 +31,7 @@ export function FantasyPlayerRow({
   dfsResult,
   positionCountMap,
   onRowClick,
+  onRoundSelect,
 }: FantasyPlayerRowProps) {
   const isScheduled = phase === 'scheduled'
 
@@ -43,9 +45,9 @@ export function FantasyPlayerRow({
       {isScheduled ? (
         <FantasyRowCells entrant={entrant} dfsResult={dfsResult} rank={index + 1} onScorecardOpen={onRowClick} />
       ) : phase === 'live' ? (
-        <FantasyLiveEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} onScorecardOpen={onRowClick} />
+        <FantasyLiveEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} onScorecardOpen={onRowClick} onRoundSelect={onRoundSelect} />
       ) : (
-        <FantasyCompletedEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} onScorecardOpen={onRowClick} />
+        <FantasyCompletedEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} onScorecardOpen={onRowClick} onRoundSelect={onRoundSelect} />
       )}
     </tr>
   )

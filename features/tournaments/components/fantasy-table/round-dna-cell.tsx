@@ -81,6 +81,7 @@ export const RoundDnaCell = memo(function RoundDnaCell({
   round2DkPoints,
   round3DkPoints,
   round4DkPoints,
+  playerId,
   tournamentStatus,
   currentHole,
   onRoundClick,
@@ -93,9 +94,10 @@ export const RoundDnaCell = memo(function RoundDnaCell({
   round2DkPoints?: number | null
   round3DkPoints?: number | null
   round4DkPoints?: number | null
+  playerId?: string
   tournamentStatus: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
   currentHole?: string | null
-  onRoundClick?: (round: number) => void
+  onRoundClick?: (playerId: string, round: number) => void
 }) {
   const [hoveredHole, setHoveredHole] = useState<string | null>(null)
   const [hoveredRound, setHoveredRound] = useState<number | null>(null)
@@ -144,6 +146,7 @@ export const RoundDnaCell = memo(function RoundDnaCell({
               holes={roundData.holes}
               relToPar={roundData.relToPar}
               dkPoints={roundData.dkPoints}
+              playerId={playerId}
               hoveredHole={hoveredHole}
               hoveredRound={hoveredRound}
               onHoleHover={setHoveredHole}
@@ -258,13 +261,14 @@ interface RoundDnaRowProps {
   holes: HoleResult[]
   relToPar: number | null
   dkPoints?: number | null
+  playerId?: string
   hoveredHole: string | null
   hoveredRound: number | null
   onHoleHover: (holeId: string | null) => void
   onHoleHoverWithPosition?: (holeId: string, hole: HoleResult, x: number, y: number) => void
   onHoleHoverEnd?: () => void
   onRoundHover: (round: number | null) => void
-  onRoundClick?: (round: number) => void
+  onRoundClick?: (playerId: string, round: number) => void
   currentHole?: string | null
 }
 
@@ -273,6 +277,7 @@ function RoundDnaRow({
   holes,
   relToPar,
   dkPoints,
+  playerId,
   hoveredHole,
   hoveredRound,
   onHoleHover,
@@ -307,7 +312,7 @@ function RoundDnaRow({
       className="relative w-full h-10 cursor-pointer hover:bg-white/[0.02] transition-colors"
       onMouseEnter={() => onRoundHover(round)}
       onMouseLeave={() => onRoundHover(null)}
-      onClick={() => onRoundClick?.(round)}
+      onClick={() => playerId && onRoundClick?.(playerId, round)}
     >
       {/* Labels and SVG visualization */}
       <div className="flex items-center gap-0.5 h-full px-0.5">

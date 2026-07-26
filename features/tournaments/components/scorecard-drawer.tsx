@@ -16,6 +16,7 @@ interface ScorecardDrawerProps {
   tournamentId: string
   visiblePlayers: FieldEntrant[]
   status?: string | null
+  initialRound?: number
 }
 
 export function ScorecardDrawer({
@@ -27,10 +28,18 @@ export function ScorecardDrawer({
   tournamentId,
   visiblePlayers,
   status,
+  initialRound,
 }: ScorecardDrawerProps) {
-  const [selectedRound, setSelectedRound] = useState<number>(1)
+  const [selectedRound, setSelectedRound] = useState<number>(initialRound || 1)
   const drawerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+
+  // Update selected round when initialRound prop changes
+  useEffect(() => {
+    if (initialRound) {
+      setSelectedRound(initialRound)
+    }
+  }, [initialRound])
 
   // Determine phase based on tournament status
   const phase = useMemo(() => {
