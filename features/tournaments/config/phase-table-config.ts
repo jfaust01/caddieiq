@@ -260,7 +260,7 @@ const courseFitColumn: ColumnDescriptor = {
   id: 'courseFit',
   label: 'Course Fit',
   tooltip: 'Course fit score relative to current field',
-  colClassName: 'w-[95px] sm:w-[110px]',
+  colClassName: 'w-[130px] sm:w-[160px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 

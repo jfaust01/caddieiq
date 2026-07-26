@@ -79,10 +79,10 @@ export const TournamentHoleForm = memo(function TournamentHoleForm({
     return (
       <div className="flex flex-col gap-0 w-full">
         {rounds.map((roundData, index) => (
-          <div key={`round-${roundData.round}`} className="w-full">
+          <div key={`round-${roundData.round}`} className={`w-full ${index > 0 ? 'pt-1' : ''}`}>
             <RoundHoleRow {...roundData} hoveredHole={hoveredHole} onHoleHover={setHoveredHole} />
             {index < rounds.length - 1 && (
-              <div className="h-px bg-white/[0.07] my-0" />
+              <div className="h-px bg-white/[0.07] my-1" />
             )}
           </div>
         ))}
