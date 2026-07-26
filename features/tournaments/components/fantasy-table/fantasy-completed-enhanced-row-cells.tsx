@@ -19,10 +19,12 @@ export function FantasyCompletedEnhancedRowCells({
   entrant,
   positionCountMap,
   onScorecardOpen,
+  tournamentStatus = 'COMPLETED',
 }: {
   entrant: FieldEntrant
   positionCountMap?: Map<number, number>
   onScorecardOpen?: (playerId: string) => void
+  tournamentStatus?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap ?? new Map())
   const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null
@@ -104,7 +106,7 @@ export function FantasyCompletedEnhancedRowCells({
             round2RelToPar={entrant.round2RelToPar}
             round3RelToPar={entrant.round3RelToPar}
             round4RelToPar={entrant.round4RelToPar}
-            tournamentStatus="COMPLETED"
+            tournamentStatus={tournamentStatus}
           />
         </div>
       </td>

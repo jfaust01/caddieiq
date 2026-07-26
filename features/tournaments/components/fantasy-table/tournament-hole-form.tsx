@@ -39,44 +39,52 @@ export const TournamentHoleForm = memo(function TournamentHoleForm({
   round4RelToPar: number | null
   tournamentStatus: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
 }) {
-  // For Scheduled tournaments, omit this column entirely
+  // For Scheduled tournaments, show empty placeholder
   if (tournamentStatus === 'SCHEDULED') {
-    return null
+    return <div className="text-xs text-gray-500">—</div>
   }
 
-  // Generate mock hole data for display until real hole-level data is available
-  const rounds = useMemo<RoundHoles[]>(() => {
-    const roundData = [
-      { round: 1, relToPar: round1RelToPar },
-      { round: 2, relToPar: round2RelToPar },
-      { round: 3, relToPar: round3RelToPar },
-      { round: 4, relToPar: round4RelToPar },
-    ]
+  try {
+    // Generate mock hole data for display until real hole-level data is available
+    const rounds = useMemo<RoundHoles[]>(() => {
+      const roundData = [
+        { round: 1, relToPar: round1RelToPar },
+        { round: 2, relToPar: round2RelToPar },
+        { round: 3, relToPar: round3RelToPar },
+        { round: 4, relToPar: round4RelToPar },
+      ]
 
-    return roundData
-      .filter(r => r.relToPar !== null && r.relToPar !== undefined)
-      .map(r => ({
-        round: r.round,
-        played: true,
-        holes: generateMockHoles(r.relToPar!, r.round),
-      }))
-  }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar])
+      return roundData
+        .filter(r => r.relToPar !== null && r.relToPar !== undefined)
+        .map(r => ({
+          round: r.round,
+          played: true,
+          holes: generateMockHoles(r.relToPar!, r.round),
+        }))
+    }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar])
 
-  if (rounds.length === 0) {
+    if (rounds.length === 0) {
+      return (
+        <div className="text-xs text-gray-500">
+          —
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex flex-col gap-2">
+        {rounds.map(roundData => (
+          <RoundHoleRow key={`round-${roundData.round}`} {...roundData} />
+        ))}
+      </div>
+    )
+  } catch (error) {
     return (
       <div className="text-xs text-gray-500">
-        No data
+        Error
       </div>
     )
   }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {rounds.map(roundData => (
-        <RoundHoleRow key={`round-${roundData.round}`} {...roundData} />
-      ))}
-    </div>
-  )
 })
 
 /**
@@ -150,25 +158,38 @@ const HoleDot = memo(function HoleDot({
 /**
  * Generate mock hole-by-hole results from round score.
  * TODO: Replace with real hole-level scorecard data when available.
+ * Uses deterministic seeding to avoid hydration mismatches.
  */
 function generateMockHoles(roundRelToPar: number, roundNumber: number): HoleResult[] {
   const holes: HoleResult[] = []
-  const par = 72
   const holeCount = 18
 
-  // Create deterministic mock hole distribution that sums to roundRelToPar
+  // Create deterministic mock hole distribution using seeded pseudo-random
   for (let i = 1; i <= holeCount; i++) {
     const seed = roundNumber * 1000 + i
-    const holeScore = Math.random() < 0.5 ? 3 : 4 // Mostly 3s and 4s
-    const holePar = holeCount === 18 ? 4 : 3 // Simplified mock
-    const relativeToPar = holeScore - holePar
+    // Deterministic seed-based randomization
+    const pseudo = Math.sin(seed * 0.1) * 10000
+    const frac = pseudo - Math.floor(pseudo)
+    
+    // Mostly pars and birdies
+    const holePar = 4
+    let relativeToPar = 0 // Default to par
+    
+    if (frac < 0.3) {
+      relativeToPar = -1 // Birdie
+    } else if (frac < 0.05) {
+      relativeToPar = 1 // Bogey
+    } else if (frac < 0.02) {
+      relativeToPar = 2 // Double
+    }
 
     const status = getHoleStatus(relativeToPar)
+    const score = holePar + relativeToPar
 
     holes.push({
       holeNumber: i,
       par: holePar,
-      score: holeScore,
+      score,
       relativeToPar,
       status,
     })
