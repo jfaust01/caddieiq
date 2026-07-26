@@ -233,6 +233,7 @@ function RoundDnaRow({
               </g>
             ))}
           </svg>
+        </div>
       </div>
     </div>
   )
