@@ -152,97 +152,124 @@ export function ScorecardDrawer({
         {/* Header */}
         <div className={cn(
           'flex-shrink-0 sticky top-0 z-10',
-          'bg-gradient-to-b from-slate-900/80 to-slate-900/40',
+          'bg-gradient-to-b from-slate-950 to-slate-900/60',
           'backdrop-blur-md',
           'border-b border-white/[0.08]',
           'px-4 lg:px-6 py-4 lg:py-5'
         )}>
-          {/* Player Info Header */}
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-lg font-bold text-white truncate">
-                  {selectedPlayer.playerName}
-                </h2>
-                {selectedPlayer.country && (
-                  <span className="text-sm text-gray-400 flex-shrink-0">
-                    {selectedPlayer.country}
-                  </span>
+          {/* Top Row: Player Info and Close */}
+          <div className="flex items-start justify-between gap-4 mb-4">
+            {/* Player Avatar and Info */}
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              {/* Avatar */}
+              <div className="flex-shrink-0 w-12 h-12 rounded-full border-2 border-emerald-500/60 bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center overflow-hidden">
+                {selectedPlayer.playerHeadshot ? (
+                  <img
+                    src={selectedPlayer.playerHeadshot}
+                    alt={selectedPlayer.playerName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-sm font-bold text-white">
+                    {selectedPlayer.playerName?.charAt(0).toUpperCase()}
+                  </div>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-gray-400">Position:</span>
-                  <span className="font-bold text-emerald-400">
-                    {selectedPlayer.position ? `T${selectedPlayer.position}` : '—'}
-                  </span>
+
+              {/* Player Name and Stats */}
+              <div className="flex-1 min-w-0 pt-0.5">
+                <div className="flex items-baseline gap-2 mb-1">
+                  <h2 className="text-sm font-bold text-white truncate">
+                    {selectedPlayer.playerName}
+                  </h2>
+                  {selectedPlayer.country && (
+                    <span className="text-xs text-gray-400 flex-shrink-0">
+                      {selectedPlayer.country}
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-gray-400">Score:</span>
+                <div className="flex items-center gap-2">
+                  {/* Position Badge */}
+                  <div className="px-2 py-1 rounded text-xs font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
+                    T{selectedPlayer.position || '—'}
+                  </div>
+                  {/* Score */}
                   <span className={cn(
-                    'font-bold',
-                    selectedPlayer.total && selectedPlayer.total < 0 ? 'text-emerald-400' : 'text-white'
+                    'text-xs font-bold',
+                    selectedPlayer.total && selectedPlayer.total < 0 ? 'text-emerald-400' : 'text-gray-300'
                   )}>
                     {selectedPlayer.total ? `${selectedPlayer.total > 0 ? '+' : ''}${selectedPlayer.total}` : '—'}
                   </span>
+                  {/* Total Strokes */}
+                  <span className="text-xs text-gray-400">
+                    ({selectedPlayer.dkPoints || 0})
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Navigation Buttons */}
-            <div className="flex gap-1 flex-shrink-0">
-              <button
-                onClick={handlePreviousPlayer}
-                disabled={!canGoPrevious}
-                className={cn(
-                  'p-2 rounded-lg transition-colors',
-                  canGoPrevious
-                    ? 'hover:bg-white/10 text-white'
-                    : 'opacity-30 cursor-not-allowed text-white/50'
-                )}
-                aria-label="Previous player"
-              >
-                <ChevronUp className="h-5 w-5" />
-              </button>
-              <button
-                onClick={handleNextPlayer}
-                disabled={!canGoNext}
-                className={cn(
-                  'p-2 rounded-lg transition-colors',
-                  canGoNext
-                    ? 'hover:bg-white/10 text-white'
-                    : 'opacity-30 cursor-not-allowed text-white/50'
-                )}
-                aria-label="Next player"
-              >
-                <ChevronDown className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => onOpenChange(false)}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white ml-1"
-                aria-label="Close drawer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+            {/* Close Button */}
+            <button
+              onClick={() => onOpenChange(false)}
+              className="flex-shrink-0 p-1 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
+              aria-label="Close drawer"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
-          {/* Round Selector */}
-          <div className="flex items-center gap-2">
-            {[1, 2, 3, 4].map((round) => (
-              <button
-                key={round}
-                onClick={() => setSelectedRound(round)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                  selectedRound === round
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/[0.08]'
-                )}
-              >
-                R{round}
-              </button>
-            ))}
+          {/* Tabs Row */}
+          <div className="flex items-center gap-6 mb-6 border-b border-white/[0.08] pb-4">
+            <button className="text-xs font-semibold text-emerald-400 border-b-2 border-emerald-400 pb-4 -mb-4">
+              SCORECARD
+            </button>
+            <button className="text-xs font-semibold text-gray-400 hover:text-gray-300 transition-colors pb-4 -mb-4">
+              STATS
+            </button>
+            <button className="text-xs font-semibold text-gray-400 hover:text-gray-300 transition-colors pb-4 -mb-4">
+              FANTASY
+            </button>
+          </div>
+
+          {/* Round Selector and Score Display */}
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                ROUND
+              </div>
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4].map((round) => (
+                  <button
+                    key={round}
+                    onClick={() => setSelectedRound(round)}
+                    className={cn(
+                      'w-9 h-9 rounded border text-xs font-semibold transition-all',
+                      selectedRound === round
+                        ? 'bg-emerald-500/30 border-emerald-500/60 text-emerald-400'
+                        : 'bg-white/5 border-white/[0.15] text-gray-300 hover:bg-white/10'
+                    )}
+                  >
+                    {round}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Score Display */}
+            <div className="text-right">
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                TO PAR
+              </div>
+              <div className="text-2xl font-bold text-emerald-400 mb-2">
+                {selectedPlayer.total && selectedPlayer.total < 0 ? selectedPlayer.total : `−${Math.abs(selectedPlayer.total || 0)}`}
+              </div>
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                TOTAL
+              </div>
+              <div className="text-2xl font-bold text-emerald-400">
+                {selectedPlayer.total ? `${selectedPlayer.total > 0 ? '+' : ''}${selectedPlayer.total}` : '—'}
+              </div>
+            </div>
           </div>
         </div>
 
