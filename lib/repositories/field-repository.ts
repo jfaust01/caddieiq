@@ -253,14 +253,7 @@ export class FieldRepository extends BaseRepository {
         hto.score_to_par AS "totalRelativeToPar",
         fp."fantasyPointsDraftKings"::float AS "projection",
         -- Odds: fetch the most recent American odds for this player in this tournament
-        CASE 
-          WHEN oq."americanOdds" IS NOT NULL THEN 
-            CASE 
-              WHEN oq."americanOdds" > 0 THEN '+' || oq."americanOdds"::text
-              ELSE oq."americanOdds"::text
-            END
-          ELSE NULL
-        END AS "odds",
+        oq."americanOdds"::text AS "odds",
         -- Ownership percentage (null - not available in current schema)
         NULL::float AS "ownershipPercent",
         ds.salary AS "dfsSalary",

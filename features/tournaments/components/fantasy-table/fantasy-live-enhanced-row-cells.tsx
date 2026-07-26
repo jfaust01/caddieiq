@@ -26,7 +26,12 @@ export function FantasyLiveEnhancedRowCells({
 }) {
   const positionDisplay = formatPositionWithStatusPriority(entrant, positionCountMap ?? new Map())
   const salaryDisplay = entrant.dfsSalary ? `$${entrant.dfsSalary.toLocaleString()}` : null
-  const oddsDisplay = formatMissing(entrant.oddsToWin)
+  const oddsDisplay = entrant.oddsToWin 
+    ? (() => {
+        const odds = parseInt(entrant.oddsToWin)
+        return isNaN(odds) ? formatMissing(entrant.oddsToWin) : (odds > 0 ? '+' + odds : odds.toString())
+      })()
+    : '—'
   
   // Mock data generator based on player ID hash for consistent mock values
   const getMockValue = (seed: string, min: number, max: number) => {
