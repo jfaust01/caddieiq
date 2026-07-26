@@ -173,27 +173,6 @@ function RoundDnaRow({
       onMouseLeave={() => onRoundHover(null)}
       onClick={() => onRoundClick?.(round)}
     >
-      {/* Grid container with labels and holes */}
-      <div
-        className="grid gap-0 items-center h-7"
-        style={{ gridTemplateColumns: '42px 34px repeat(18, minmax(18px, 1fr))' }}
-      >
-        {/* Round label */}
-        <div className="text-center text-[10px] font-medium uppercase text-gray-400 z-10">
-          R{round}
-        </div>
-
-        {/* Score */}
-        <div className={cn('text-center text-[11px] font-semibold tabular-nums z-10', scoreColor)}>
-          {formatScore(relToPar)}
-        </div>
-
-        {/* Hole placeholders to maintain grid structure */}
-        {Array.from({ length: 18 }).map((_, idx) => (
-          <div key={`placeholder-${idx}`} className="relative h-7" />
-        ))}
-      </div>
-
       {/* SVG connecting lines overlay - positioned absolutely */}
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none"
@@ -231,11 +210,22 @@ function RoundDnaRow({
         })}
       </svg>
 
-      {/* Holes dots - positioned using grid layout */}
+      {/* Grid container with labels and holes */}
       <div
-        className="absolute inset-0 grid pointer-events-none"
+        className="grid gap-0 items-center h-7 relative"
         style={{ gridTemplateColumns: '42px 34px repeat(18, minmax(18px, 1fr))' }}
       >
+        {/* Round label */}
+        <div className="text-center text-[10px] font-medium uppercase text-gray-400 z-10">
+          R{round}
+        </div>
+
+        {/* Score */}
+        <div className={cn('text-center text-[11px] font-semibold tabular-nums z-10', scoreColor)}>
+          {formatScore(relToPar)}
+        </div>
+
+        {/* Hole dots and placeholders */}
         {holes.map((hole) => (
           <RoundDnaHoleDot
             key={`hole-${round}-${hole.holeNumber}`}
@@ -277,14 +267,14 @@ function RoundDnaHoleDot({
 
   return (
     <div
-      className="flex items-center justify-center pointer-events-auto"
+      className="flex items-center justify-center pointer-events-auto col-span-1"
       style={{ 
         gridColumn: `${gridColumn}`,
         justifySelf: 'center',
         alignSelf: 'center',
-        transform: `translateY(${yOffset}px)`,
         width: `${dotSize}px`,
         height: `${dotSize}px`,
+        marginTop: `${yOffset}px`,
       }}
       onMouseEnter={onHover}
       onMouseLeave={onHoverEnd}
