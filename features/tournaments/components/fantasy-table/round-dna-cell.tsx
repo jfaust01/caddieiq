@@ -8,6 +8,7 @@ interface HoleResult {
   par: number
   score: number | null
   relativeToPar: number | null
+  dkPoints?: number | null
   status:
     | 'albatross'
     | 'eagle'
@@ -25,6 +26,7 @@ interface RoundData {
   round: number
   holes: HoleResult[]
   relToPar: number | null
+  dkPoints?: number | null
 }
 
 // Fixed Y offsets for scoring grid (in SVG coordinate space)
@@ -59,6 +61,10 @@ export const RoundDnaCell = memo(function RoundDnaCell({
   round2RelToPar,
   round3RelToPar,
   round4RelToPar,
+  round1DkPoints,
+  round2DkPoints,
+  round3DkPoints,
+  round4DkPoints,
   tournamentStatus,
   currentHole,
   onRoundClick,
@@ -67,12 +73,18 @@ export const RoundDnaCell = memo(function RoundDnaCell({
   round2RelToPar: number | null
   round3RelToPar: number | null
   round4RelToPar: number | null
+  round1DkPoints?: number | null
+  round2DkPoints?: number | null
+  round3DkPoints?: number | null
+  round4DkPoints?: number | null
   tournamentStatus: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
   currentHole?: string | null
   onRoundClick?: (round: number) => void
 }) {
   const [hoveredHole, setHoveredHole] = useState<string | null>(null)
   const [hoveredRound, setHoveredRound] = useState<number | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null)
+  const [tooltipHole, setTooltipHole] = useState<HoleResult | null>(null)
 
   // Hide for scheduled tournaments
   if (tournamentStatus === 'SCHEDULED') {
@@ -83,10 +95,10 @@ export const RoundDnaCell = memo(function RoundDnaCell({
     // Generate hole data for display
     const roundsData = useMemo<RoundData[]>(() => {
       const roundArray = [
-        { round: 1, relToPar: round1RelToPar },
-        { round: 2, relToPar: round2RelToPar },
-        { round: 3, relToPar: round3RelToPar },
-        { round: 4, relToPar: round4RelToPar },
+        { round: 1, relToPar: round1RelToPar, dkPoints: round1DkPoints },
+        { round: 2, relToPar: round2RelToPar, dkPoints: round2DkPoints },
+        { round: 3, relToPar: round3RelToPar, dkPoints: round3DkPoints },
+        { round: 4, relToPar: round4RelToPar, dkPoints: round4DkPoints },
       ]
 
       return roundArray
@@ -94,16 +106,17 @@ export const RoundDnaCell = memo(function RoundDnaCell({
         .map(r => ({
           round: r.round,
           relToPar: r.relToPar!,
+          dkPoints: r.dkPoints,
           holes: generateMockHoles(r.relToPar!, r.round),
         }))
-    }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar])
+    }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar, round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints])
 
     if (roundsData.length === 0) {
       return null
     }
 
     return (
-      <div className="w-full flex flex-col gap-0">
+      <div className="relative w-full flex flex-col gap-0">
         {/* Hole number header */}
         <HoleNumberHeader />
         
@@ -114,15 +127,47 @@ export const RoundDnaCell = memo(function RoundDnaCell({
               round={roundData.round}
               holes={roundData.holes}
               relToPar={roundData.relToPar}
+              dkPoints={roundData.dkPoints}
               hoveredHole={hoveredHole}
               hoveredRound={hoveredRound}
               onHoleHover={setHoveredHole}
               onRoundHover={setHoveredRound}
+              onHoleHoverWithPosition={(holeId, hole, x, y) => {
+                setHoveredHole(holeId)
+                setTooltipHole(hole)
+                setTooltipPosition({ x, y })
+              }}
+              onHoleHoverEnd={() => {
+                setHoveredHole(null)
+                setTooltipHole(null)
+                setTooltipPosition(null)
+              }}
               onRoundClick={onRoundClick}
               currentHole={currentHole}
             />
           </div>
         ))}
+        
+        {/* Tooltip */}
+        {tooltipHole && tooltipPosition && (
+          <div
+            className="absolute bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs z-50 pointer-events-none"
+            style={{
+              left: `${tooltipPosition.x}px`,
+              top: `${tooltipPosition.y}px`,
+              transform: 'translate(-50%, -120%)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <div className="flex gap-3 font-medium">
+              <span>Par: {tooltipHole.par}</span>
+              {tooltipHole.score !== null && <span>Score: {tooltipHole.score}</span>}
+              {tooltipHole.dkPoints !== null && tooltipHole.dkPoints !== undefined && (
+                <span>DK: {tooltipHole.dkPoints.toFixed(1)}</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     )
   } catch (error) {
@@ -189,9 +234,12 @@ interface RoundDnaRowProps {
   round: number
   holes: HoleResult[]
   relToPar: number | null
+  dkPoints?: number | null
   hoveredHole: string | null
   hoveredRound: number | null
-  onHoleHover: (hole: string | null) => void
+  onHoleHover: (holeId: string | null) => void
+  onHoleHoverWithPosition?: (holeId: string, hole: HoleResult, x: number, y: number) => void
+  onHoleHoverEnd?: () => void
   onRoundHover: (round: number | null) => void
   onRoundClick?: (round: number) => void
   currentHole?: string | null
@@ -201,9 +249,12 @@ function RoundDnaRow({
   round,
   holes,
   relToPar,
+  dkPoints,
   hoveredHole,
   hoveredRound,
   onHoleHover,
+  onHoleHoverWithPosition,
+  onHoleHoverEnd,
   onRoundHover,
   onRoundClick,
   currentHole,
@@ -286,8 +337,23 @@ function RoundDnaRow({
             return (
               <g
                 key={`hole-${round}-${point.hole.holeNumber}`}
-                onMouseEnter={() => onHoleHover(`R${round}H${point.hole.holeNumber}`)}
-                onMouseLeave={() => onHoleHover(null)}
+                onMouseEnter={(e) => {
+                  const holeId = `R${round}H${point.hole.holeNumber}`
+                  onHoleHover(holeId)
+                  if (onHoleHoverWithPosition) {
+                    const svg = (e.target as SVGElement).ownerSVGElement
+                    if (svg) {
+                      const rect = svg.getBoundingClientRect()
+                      const screenX = rect.left + (point.x / parseInt(svg.viewBox.baseVal.width || '480')) * rect.width
+                      const screenY = rect.top + (point.y / parseInt(svg.viewBox.baseVal.height || '32')) * rect.height
+                      onHoleHoverWithPosition(holeId, point.hole, screenX, screenY)
+                    }
+                  }
+                }}
+                onMouseLeave={() => {
+                  onHoleHover(null)
+                  onHoleHoverEnd?.()
+                }}
                 style={{ cursor: 'pointer' }}
               >
                 {/* Current hole ring */}
