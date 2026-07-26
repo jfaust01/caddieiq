@@ -125,7 +125,7 @@ const RoundHoleRow = memo(function RoundHoleRow({
   return (
     <div className="flex items-center gap-2 w-full h-6">
       {/* Vertical chip with round and to-par */}
-      <div className="flex flex-col items-center justify-center gap-0 min-w-10 px-1.5 py-0.5 rounded border border-white/[0.1] bg-white/[0.03]">
+      <div className="flex flex-col items-center justify-center gap-0 px-1.5 py-0.5 rounded border border-white/[0.1] bg-white/[0.03]">
         <div className="text-[7px] font-semibold text-gray-500 uppercase leading-none">
           R{round}
         </div>
