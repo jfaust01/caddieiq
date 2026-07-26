@@ -59,7 +59,7 @@ export function FantasyTableHeader({
                   <DraftKingsMark className="h-3 w-auto" />
                   <span>{col.label}</span>
                 </span>
-              ) : col.id === 'roundDna' ? (
+              ) : col.id === 'tournamentForm' ? (
                 <div className="flex flex-col items-center justify-center gap-1 h-full">
                   <span className="text-[11px] sm:text-[12px] font-semibold text-emerald-400 mb-0.5">{col.label}</span>
                   <div className="flex gap-0.5">
