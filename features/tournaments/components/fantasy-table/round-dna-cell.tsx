@@ -121,9 +121,6 @@ export const RoundDnaCell = memo(function RoundDnaCell({
               onRoundClick={onRoundClick}
               currentHole={currentHole}
             />
-            {idx < roundsData.length - 1 && (
-              <div className="h-px bg-white/[0.07]" />
-            )}
           </div>
         ))}
       </div>
@@ -137,16 +134,16 @@ export const RoundDnaCell = memo(function RoundDnaCell({
 function HoleNumberHeader() {
   // SVG dimensions match RoundDnaRow
   const SVG_WIDTH = 720
-  const SVG_HEIGHT = 40
+  const SVG_HEIGHT = 28
   const PADDING = 10
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
   const STEP_X = USABLE_WIDTH / 17
 
   return (
-    <div className="w-full h-6 mb-1 px-1 flex items-center gap-1">
+    <div className="w-full h-4 px-0.5 flex items-center gap-0.5">
       {/* Empty space for R label and score */}
-      <div className="w-12 flex-shrink-0" />
       <div className="w-10 flex-shrink-0" />
+      <div className="w-8 flex-shrink-0" />
       
       {/* Hole numbers in SVG space */}
       <svg
@@ -172,9 +169,9 @@ function HoleNumberHeader() {
               )}
               <text
                 x={xPos}
-                y={SVG_HEIGHT - 2}
+                y={SVG_HEIGHT - 1}
                 textAnchor="middle"
-                fontSize="8"
+                fontSize="6"
                 fill="rgb(107, 114, 128)"
                 fontWeight="500"
               >
@@ -215,7 +212,7 @@ function RoundDnaRow({
 
   // SVG dimensions and coordinate system
   const SVG_WIDTH = 720
-  const SVG_HEIGHT = 40
+  const SVG_HEIGHT = 32
   const CENTER_Y = SVG_HEIGHT / 2
   const PADDING = 10
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
@@ -224,7 +221,7 @@ function RoundDnaRow({
   // Calculate point coordinates (shared between line and dots)
   const points = holes.map((hole, idx) => ({
     x: PADDING + idx * STEP_X,
-    y: CENTER_Y + SCORE_Y_OFFSET[hole.status === 'future' || hole.status === 'missing' ? 'par' : hole.status],
+    y: CENTER_Y + SCORE_Y_OFFSET[hole.status === 'future' || hole.status === 'missing' ? 'par' : hole.status] * 0.75,
     hole,
   }))
 
@@ -234,20 +231,20 @@ function RoundDnaRow({
 
   return (
     <div
-      className="relative w-full h-10 cursor-pointer hover:bg-white/[0.02] transition-colors"
+      className="relative w-full h-8 cursor-pointer hover:bg-white/[0.02] transition-colors"
       onMouseEnter={() => onRoundHover(round)}
       onMouseLeave={() => onRoundHover(null)}
       onClick={() => onRoundClick?.(round)}
     >
       {/* Labels and SVG visualization */}
-      <div className="flex items-center gap-1 h-full">
+      <div className="flex items-center gap-0.5 h-full px-0.5">
         {/* Round label */}
-        <div className="w-12 text-center text-[10px] font-medium uppercase text-gray-400 flex-shrink-0">
+        <div className="w-10 text-center text-[9px] font-medium uppercase text-gray-400 flex-shrink-0">
           R{round}
         </div>
 
         {/* Score */}
-        <div className={cn('w-10 text-center text-[11px] font-semibold tabular-nums flex-shrink-0', scoreColor)}>
+        <div className={cn('w-8 text-center text-[10px] font-semibold tabular-nums flex-shrink-0', scoreColor)}>
           {formatScore(relToPar)}
         </div>
 
@@ -275,8 +272,8 @@ function RoundDnaRow({
           {points.map((point, idx) => {
             const isCurrentHole = currentHole === `R${round}H${point.hole.holeNumber}`
             const isHovered = hoveredHole === `R${round}H${point.hole.holeNumber}`
-            const dotRadius = isCurrentHole ? 5 : 4
-            const hoverRadius = isHovered ? 5 : dotRadius
+            const dotRadius = isCurrentHole ? 3.5 : 3
+            const hoverRadius = isHovered ? 3.5 : dotRadius
 
             return (
               <g
