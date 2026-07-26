@@ -155,6 +155,7 @@ const RoundHoleRow = memo(function RoundHoleRow({
               isLive={isLive}
               onHover={() => onHoleHover(`R${round}H${hole.holeNumber}`)}
               onHoverEnd={() => onHoleHover(null)}
+              nextHoleStyle={index < holes.length - 1 ? getHoleStyle(holes[index + 1]) : undefined}
             />
           ))}
         </div>
@@ -177,6 +178,7 @@ const HoleDot = memo(function HoleDot({
   isLive,
   onHover,
   onHoverEnd,
+  nextHoleStyle,
 }: {
   hole: HoleResult
   round: number
@@ -187,6 +189,7 @@ const HoleDot = memo(function HoleDot({
   isLive: boolean
   onHover: () => void
   onHoverEnd: () => void
+  nextHoleStyle?: { color: string; yOffset: number }
 }) {
   const { color, yOffset } = getHoleStyle(hole)
   const nextHole = holeIndex < totalHoles - 1 ? hole : null
@@ -207,7 +210,7 @@ const HoleDot = memo(function HoleDot({
       aria-label={label}
     >
       {/* Connecting line to next hole */}
-      {nextHole && holeIndex < totalHoles - 1 && (
+      {nextHole && holeIndex < totalHoles - 1 && nextHoleStyle && (
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
           style={{ overflow: 'visible' }}
@@ -215,12 +218,16 @@ const HoleDot = memo(function HoleDot({
         >
           <line
             x1="50%"
-            y1={`calc(50% + ${yOffset}px)`}
+            y1="50%"
             x2="100%"
-            y2={`calc(50% + ${yOffset}px)`}
+            y2="50%"
             stroke={color}
-            strokeWidth="1"
-            opacity="0.6"
+            strokeWidth="1.5"
+            opacity="0.8"
+            style={{
+              transform: `translateY(${yOffset}px)`,
+              transformOrigin: '50% 0',
+            }}
           />
         </svg>
       )}
