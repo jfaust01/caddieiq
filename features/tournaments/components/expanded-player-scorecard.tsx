@@ -26,6 +26,8 @@ interface ExpandedPlayerScorecardProps {
   onPlayerChange?: (index: number) => void
   /** Tournament phase for future layout routing. */
   phase?: 'scheduled' | 'live' | 'completed'
+  /** Force mobile layout when rendered inside a drawer. */
+  isDrawerContext?: boolean
 }
 
 export function ExpandedPlayerScorecard({
@@ -35,6 +37,7 @@ export function ExpandedPlayerScorecard({
   currentPlayerIndex = 0,
   onPlayerChange,
   phase = 'scheduled',
+  isDrawerContext = false,
 }: ExpandedPlayerScorecardProps) {
   const [selectedRound, setSelectedRound] = useState(data.roundNumber)
 
@@ -79,8 +82,8 @@ export function ExpandedPlayerScorecard({
 
   return (
     <div className="w-full h-full min-w-0 max-w-full flex flex-col">
-      {/* Desktop Layout - lg and above */}
-      <div className="hidden lg:block h-full min-h-0">
+      {/* Desktop Layout - lg and above (hidden in drawer context) */}
+      <div className={cn(isDrawerContext ? 'hidden' : 'hidden lg:block', 'h-full min-h-0')}>
         <ScorecardDesktopLayout
           data={data}
           selectedRound={selectedRound}
@@ -94,8 +97,8 @@ export function ExpandedPlayerScorecard({
         />
       </div>
 
-      {/* Mobile Layout - below lg */}
-      <div className="lg:hidden w-full min-w-0 max-w-full flex flex-col gap-4">
+      {/* Mobile Layout - below lg or in drawer context */}
+      <div className={cn(isDrawerContext ? 'block' : 'lg:hidden', 'w-full min-w-0 max-w-full flex flex-col gap-4')}>
           {/* Compact Player Hero with 2-Column Metrics */}
           {/* Compact Player Hero with 2-Column Metrics */}
           <ScorecardMobileHero

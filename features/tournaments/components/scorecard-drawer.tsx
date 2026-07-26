@@ -289,6 +289,7 @@ export function ScorecardDrawer({
                 tournamentId={tournamentId}
                 roundNumber={selectedRound}
                 phase={phase}
+                isDrawerContext
               />
             </ScorecardErrorBoundaryV2>
           </div>
