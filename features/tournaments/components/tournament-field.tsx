@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-analytics-summary'
-import { PlayerScorecardModal } from '@/features/tournaments/components/player-scorecard-modal'
+import { ScorecardDrawer } from '@/features/tournaments/components/scorecard-drawer'
 import { FantasyFilterChips } from '@/features/tournaments/components/fantasy-table/fantasy-filter-chips'
 import { FantasyPlayerTable } from '@/features/tournaments/components/fantasy-table/fantasy-player-table'
 import {
@@ -328,7 +328,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
         />
       )}
 
-      <PlayerScorecardModal
+      <ScorecardDrawer
         isOpen={isScorecardModalOpen}
         onOpenChange={setIsScorecardModalOpen}
         selectedPlayerId={selectedScorecardPlayer}
