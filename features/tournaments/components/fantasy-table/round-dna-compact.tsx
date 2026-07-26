@@ -58,17 +58,28 @@ const getDotColor = (status: string): string => {
   return '#6B7280'
 }
 
-function generateMockHoles(relToPar: number, round: number): HoleResult[] {
+function seededHoleRandom(seed: string, holeNumber: number, index: number): number {
+  let hash = 0
+  const combined = seed + '|' + holeNumber + '|' + index
+  
+  for (let i = 0; i < combined.length; i++) {
+    const char = combined.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  
+  hash = hash >>> 0
+  return (hash % 1000) / 1000
+}
+
+function generateMockHoles(relToPar: number, round: number, playerId: string = ''): HoleResult[] {
   const holes: HoleResult[] = []
   const targetDeviation = relToPar
-  const holesPerSide = 9
+  const seed = playerId + '-r' + round
   
   let remainingDeviation = targetDeviation
   
   for (let hole = 1; hole <= 18; hole++) {
-    const isBack9 = hole > 9
-    const sideDeviation = isBack9 ? targetDeviation * 0.5 : targetDeviation * 0.5
-    
     let score = 0
     let status: HoleResult['status'] = 'par'
     
@@ -86,7 +97,8 @@ function generateMockHoles(relToPar: number, round: number): HoleResult[] {
         status = 'bogey'
         remainingDeviation -= 0.5
       } else if (remainingDeviation > 0.001) {
-        score = Math.random() > 0.5 ? 1 : 0
+        const rand = seededHoleRandom(seed, hole, 0)
+        score = rand > 0.5 ? 1 : 0
         if (score === 1) {
           status = 'bogey'
           remainingDeviation -= 1
@@ -104,7 +116,8 @@ function generateMockHoles(relToPar: number, round: number): HoleResult[] {
         status = 'birdie'
         remainingDeviation += 0.5
       } else if (remainingDeviation < -0.001) {
-        score = Math.random() > 0.5 ? -1 : 0
+        const rand = seededHoleRandom(seed, hole, 1)
+        score = rand > 0.5 ? -1 : 0
         if (score === -1) {
           status = 'birdie'
           remainingDeviation += 1
@@ -232,6 +245,32 @@ function RoundDnaRow({
                 />
               </g>
             ))}
+
+            {/* Tooltip */}
+            {tooltipHole && tooltipPosition && (
+              <g pointerEvents="none">
+                <rect
+                  x={tooltipPosition.x - 25}
+                  y={tooltipPosition.y - 20}
+                  width={50}
+                  height={18}
+                  fill="#1F2937"
+                  rx={3}
+                  stroke="#4B5563"
+                  strokeWidth="0.5"
+                />
+                <text
+                  x={tooltipPosition.x}
+                  y={tooltipPosition.y - 8}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fill="#F3F4F6"
+                  fontWeight="500"
+                >
+                  {`H${tooltipHole.holeNumber} ${tooltipHole.relativeToPar === 0 ? 'E' : (tooltipHole.relativeToPar ?? 0) > 0 ? '+' + tooltipHole.relativeToPar : tooltipHole.relativeToPar}`}
+                </text>
+              </g>
+            )}
           </svg>
         </div>
       </div>
@@ -286,7 +325,7 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
         round: r.round,
         relToPar: r.relToPar!,
         dkPoints: r.dkPoints,
-        holes: generateMockHoles(r.relToPar!, r.round),
+        holes: generateMockHoles(r.relToPar!, r.round, playerId),
       }))
   }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar, round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints])
 
