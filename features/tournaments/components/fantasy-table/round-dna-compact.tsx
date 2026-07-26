@@ -178,17 +178,7 @@ function RoundDnaRow({
       }}
       onClick={() => playerId && onRoundClick?.(playerId, round)}
     >
-      <div className="flex items-center justify-between px-2 h-full">
-        <div className="w-16 text-center">
-          <span className={cn('text-sm font-semibold tabular-nums', getScoreColor(relToPar))}>
-            {relToPar === null || relToPar === undefined
-              ? '—'
-              : relToPar === 0
-                ? 'E'
-                : (relToPar > 0 ? '+' : '') + relToPar}
-          </span>
-        </div>
-
+      <div className="flex items-center h-full px-2">
         <div className="flex-1 min-w-0">
           <svg
             className="w-full"
@@ -243,7 +233,6 @@ function RoundDnaRow({
               </g>
             ))}
           </svg>
-        </div>
       </div>
     </div>
   )
