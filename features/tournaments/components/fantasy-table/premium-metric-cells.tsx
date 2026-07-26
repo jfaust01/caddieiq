@@ -40,9 +40,6 @@ export function RecentFormCell({ entrant }: { entrant: FieldEntrant }) {
         <div className="text-gray-400 font-medium text-sm tabular-nums">
           {Math.round(formScore)}
         </div>
-        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
-          Recent Form
-        </div>
       </div>
     </td>
   )
