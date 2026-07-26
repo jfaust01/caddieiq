@@ -125,12 +125,24 @@ function generateMockHoles(relToPar: number, round: number, playerId: string = '
       }
     }
     
+    // Determine status based on final relative to par value
+    let finalStatus: HoleResult['status'] = 'par'
+    const finalRelToPar = remainingDeviation === targetDeviation ? 0 : (targetDeviation - remainingDeviation + score)
+    
+    if (finalRelToPar <= -3) finalStatus = 'albatross'
+    else if (finalRelToPar === -2) finalStatus = 'eagle'
+    else if (finalRelToPar === -1) finalStatus = 'birdie'
+    else if (finalRelToPar === 0) finalStatus = 'par'
+    else if (finalRelToPar === 1) finalStatus = 'bogey'
+    else if (finalRelToPar === 2) finalStatus = 'double'
+    else if (finalRelToPar >= 3) finalStatus = 'triplePlus'
+    
     holes.push({
       holeNumber: hole,
       par: 4,
       score: score,
       relativeToPar: score,
-      status,
+      status: finalStatus,
     })
   }
   
