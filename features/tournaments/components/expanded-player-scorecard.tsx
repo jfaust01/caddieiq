@@ -5,10 +5,8 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { PlayerRoundScorecardData } from '../actions/get-player-round-scorecard'
 import { ScorecardHeroHeader } from './scorecard-hero-header'
 import { ScorecardStatsCards } from './scorecard-stats-cards'
-import { ScorecardSegmentedControl } from './scorecard-segmented-control'
 import { ScorecardSidebar } from './scorecard-sidebar'
 import { ScorecardModalLayout } from './scorecard-modal-layout'
-import { ScorecardMobileHero } from './scorecard-mobile-hero'
 import { ScorecardDesktopLayout } from './scorecard-desktop-layout'
 import { NineHoleScorecard } from './nine-hole-scorecard'
 import { ScorecardLegend } from './scorecard-legend'
@@ -39,7 +37,7 @@ export function ExpandedPlayerScorecard({
   phase = 'scheduled',
   isDrawerContext = false,
 }: ExpandedPlayerScorecardProps) {
-  const [selectedRound, setSelectedRound] = useState(data.roundNumber)
+
 
   const allHoles = useMemo(() => {
     const holes = [...data.holes]
@@ -99,28 +97,6 @@ export function ExpandedPlayerScorecard({
 
       {/* Mobile Layout - below lg or in drawer context */}
       <div className={cn(isDrawerContext ? 'block' : 'lg:hidden', 'w-full min-w-0 max-w-full flex flex-col gap-4')}>
-          {/* Compact Player Hero with 2-Column Metrics */}
-          {/* Compact Player Hero with 2-Column Metrics */}
-          <ScorecardMobileHero
-            playerName={data.playerName}
-            headshotUrl={data.headshotUrl ?? null}
-            position={data.currentPosition}
-            totalScore={data.totalToPar}
-            totalStrokes={data.totalStrokes}
-            dkFantasyPoints={data.totalDkPoints}
-            courseName={data.courseName}
-            coursePar={coursePar}
-          />
-
-          {/* Full-Width Round Selector */}
-          <div className="w-full min-w-0">
-            <ScorecardSegmentedControl
-              rounds={rounds}
-              activeRound={`R${selectedRound}`}
-              onRoundChange={(round) => setSelectedRound(Number(round[1]))}
-            />
-          </div>
-
           {/* Stacked Scorecards - Responsive to container width */}
           <div className="w-full min-w-0 max-w-full grid gap-3 @4xl/scorecard:grid-cols-2">
             <NineHoleScorecard
