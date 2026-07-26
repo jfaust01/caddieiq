@@ -151,11 +151,11 @@ export const RoundDnaCell = memo(function RoundDnaCell({
         {/* Tooltip */}
         {tooltipHole && tooltipPosition && (
           <div
-            className="absolute bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs z-50 pointer-events-none"
+            className="absolute bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs z-50 pointer-events-none shadow-lg"
             style={{
               left: `${tooltipPosition.x}px`,
-              top: `${tooltipPosition.y}px`,
-              transform: 'translate(-50%, -120%)',
+              top: `${tooltipPosition.y - 8}px`,
+              transform: 'translate(-50%, -100%)',
               whiteSpace: 'nowrap',
             }}
           >
@@ -166,6 +166,13 @@ export const RoundDnaCell = memo(function RoundDnaCell({
                 <span>DK: {tooltipHole.dkPoints.toFixed(1)}</span>
               )}
             </div>
+            {/* Tooltip arrow pointing down */}
+            <div
+              className="absolute left-1/2 -bottom-1 w-2 h-2 bg-gray-900 border-r border-b border-gray-700"
+              style={{
+                transform: 'translateX(-50%) rotate(45deg)',
+              }}
+            />
           </div>
         )}
       </div>
@@ -343,10 +350,20 @@ function RoundDnaRow({
                   if (onHoleHoverWithPosition) {
                     const svg = (e.target as SVGElement).ownerSVGElement
                     if (svg) {
-                      const rect = svg.getBoundingClientRect()
-                      const screenX = rect.left + (point.x / parseInt(svg.viewBox.baseVal.width || '480')) * rect.width
-                      const screenY = rect.top + (point.y / parseInt(svg.viewBox.baseVal.height || '32')) * rect.height
-                      onHoleHoverWithPosition(holeId, point.hole, screenX, screenY)
+                      const svgRect = svg.getBoundingClientRect()
+                      const containerRect = svg.closest('.relative')?.getBoundingClientRect()
+                      
+                      if (containerRect) {
+                        // Convert SVG coordinates to screen coordinates
+                        const screenX = svgRect.left + (point.x / parseInt(svg.viewBox.baseVal.width || '480')) * svgRect.width
+                        const screenY = svgRect.top + (point.y / parseInt(svg.viewBox.baseVal.height || '32')) * svgRect.height
+                        
+                        // Convert screen coordinates to container-relative coordinates
+                        const relativeX = screenX - containerRect.left
+                        const relativeY = screenY - containerRect.top
+                        
+                        onHoleHoverWithPosition(holeId, point.hole, relativeX, relativeY)
+                      }
                     }
                   }
                 }}
