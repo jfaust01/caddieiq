@@ -168,28 +168,37 @@ function RoundDnaRow({
 
   return (
     <div
-      className="grid gap-0 items-center h-7 cursor-pointer hover:bg-white/[0.02] transition-colors"
-      style={{ gridTemplateColumns: '42px 34px repeat(18, minmax(18px, 1fr))' }}
+      className="relative w-full cursor-pointer hover:bg-white/[0.02] transition-colors"
       onMouseEnter={() => onRoundHover(round)}
       onMouseLeave={() => onRoundHover(null)}
       onClick={() => onRoundClick?.(round)}
     >
-      {/* Round label */}
-      <div className="text-center text-[10px] font-medium uppercase text-gray-400">
-        R{round}
+      {/* Grid container with labels and holes */}
+      <div
+        className="grid gap-0 items-center h-7"
+        style={{ gridTemplateColumns: '42px 34px repeat(18, minmax(18px, 1fr))' }}
+      >
+        {/* Round label */}
+        <div className="text-center text-[10px] font-medium uppercase text-gray-400 z-10">
+          R{round}
+        </div>
+
+        {/* Score */}
+        <div className={cn('text-center text-[11px] font-semibold tabular-nums z-10', scoreColor)}>
+          {formatScore(relToPar)}
+        </div>
+
+        {/* Hole placeholders to maintain grid structure */}
+        {Array.from({ length: 18 }).map((_, idx) => (
+          <div key={`placeholder-${idx}`} className="relative h-7" />
+        ))}
       </div>
 
-      {/* Score */}
-      <div className={cn('text-center text-[11px] font-semibold tabular-nums', scoreColor)}>
-        {formatScore(relToPar)}
-      </div>
-
-      {/* SVG connecting lines overlay */}
+      {/* SVG connecting lines overlay - positioned absolutely */}
       <svg
-        className="absolute w-full h-full pointer-events-none"
-        viewBox="0 0 1800 28"
-        preserveAspectRatio="none"
-        style={{ left: 0, top: 0 }}
+        className="absolute top-0 left-0 w-full h-full pointer-events-none"
+        style={{ overflow: 'visible' }}
+        aria-hidden="true"
       >
         {holes.slice(0, -1).map((hole, idx) => {
           const nextHole = holes[idx + 1]
@@ -198,17 +207,21 @@ function RoundDnaRow({
           const { color: color1, yOffset: y1 } = getHoleStyle(hole)
           const { color: color2, yOffset: y2 } = getHoleStyle(nextHole)
           
-          const x1 = 76 + idx * 100 + 50 // 42 + 34 + offset to first hole center
-          const x2 = 76 + (idx + 1) * 100 + 50
-          const yBase = 14
+          // Calculate percentage positions: 42px + 34px + hole positions
+          // Each hole occupies roughly 5.56% of the holes area (100/18)
+          const prefixWidth = (42 + 34) / 1000 * 100 // Approximate in %
+          const holeWidth = (100 - prefixWidth) / 18
+          const x1Percent = prefixWidth + (idx + 0.5) * holeWidth
+          const x2Percent = prefixWidth + (idx + 1.5) * holeWidth
+          const yBase = 50
 
           return (
             <line
               key={`line-${round}-${idx}`}
-              x1={x1}
-              y1={yBase + (y1 / 28)}
-              x2={x2}
-              y2={yBase + (y2 / 28)}
+              x1={`${x1Percent}%`}
+              y1={`calc(50% + ${y1}px)`}
+              x2={`${x2Percent}%`}
+              y2={`calc(50% + ${y2}px)`}
               stroke={color1}
               strokeWidth="1.5"
               opacity="0.7"
@@ -218,20 +231,18 @@ function RoundDnaRow({
         })}
       </svg>
 
-      {/* Holes grid */}
-      <div className="relative">
-        {holes.map((hole) => (
-          <RoundDnaHoleDot
-            key={`hole-${round}-${hole.holeNumber}`}
-            hole={hole}
-            round={round}
-            hoveredHole={hoveredHole}
-            isHovered={hoveredHole === `R${round}H${hole.holeNumber}`}
-            onHover={() => onHoleHover(`R${round}H${hole.holeNumber}`)}
-            onHoverEnd={() => onHoleHover(null)}
-          />
-        ))}
-      </div>
+      {/* Holes dots - positioned absolutely */}
+      {holes.map((hole) => (
+        <RoundDnaHoleDot
+          key={`hole-${round}-${hole.holeNumber}`}
+          hole={hole}
+          round={round}
+          hoveredHole={hoveredHole}
+          isHovered={hoveredHole === `R${round}H${hole.holeNumber}`}
+          onHover={() => onHoleHover(`R${round}H${hole.holeNumber}`)}
+          onHoverEnd={() => onHoleHover(null)}
+        />
+      ))}
     </div>
   )
 }
@@ -256,10 +267,16 @@ function RoundDnaHoleDot({
   const dotSize = hole.isCurrentHole ? 8 : 6
   const hoverScale = 1.25
 
+  // Position relative to full container width
+  // 42px + 34px = 76px prefix, then holes span remaining width
+  const prefixPixels = 76
+  const holeIndex = hole.holeNumber - 1
+  const leftPercent = `calc(${prefixPixels}px + ${holeIndex} * (100% - ${prefixPixels}px) / 18 + (100% - ${prefixPixels}px) / 36)`
+
   return (
     <div
-      className="absolute w-5 h-7 flex items-center justify-center"
-      style={{ left: `${(hole.holeNumber - 1) * 100 / 18}%` }}
+      className="absolute flex items-center justify-center w-5 h-7"
+      style={{ left: leftPercent, transform: 'translateX(-50%)' }}
       onMouseEnter={onHover}
       onMouseLeave={onHoverEnd}
     >
