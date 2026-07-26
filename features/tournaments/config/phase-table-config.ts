@@ -264,11 +264,11 @@ const courseFitColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
-const recentFormColumn: ColumnDescriptor = {
-  id: 'recentForm',
-  label: 'Recent Form',
-  tooltip: 'Form trend visualization',
-  colClassName: 'w-[120px] sm:w-[140px]',
+const tournamentFormColumn: ColumnDescriptor = {
+  id: 'tournamentForm',
+  label: 'Tournament Form',
+  tooltip: 'Hole-by-hole scoring visualization',
+  colClassName: 'w-[220px] sm:w-[260px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
@@ -303,7 +303,7 @@ const liveColumns: ColumnDescriptor[] = [
   toParColumn,
   aiRatingColumn,
   courseFitColumn,
-  recentFormColumn,
+  tournamentFormColumn,
   salaryLiveColumn,
   dkScoreLiveColumn,
   liveValueColumn,
@@ -381,11 +381,11 @@ const courseFitCompletedColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
-const recentFormCompletedColumn: ColumnDescriptor = {
-  id: 'recentForm',
-  label: 'RECENT FORM — last 10',
-  tooltip: 'Form trend visualization',
-  colClassName: 'w-[140px] sm:w-[160px]',
+const tournamentFormCompletedColumn: ColumnDescriptor = {
+  id: 'tournamentForm',
+  label: 'TOURNAMENT FORM',
+  tooltip: 'Hole-by-hole scoring visualization',
+  colClassName: 'w-[220px] sm:w-[260px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
@@ -421,7 +421,7 @@ const completedColumns: ColumnDescriptor[] = [
   toParColumn,
   aiRatingCompletedColumn,
   courseFitCompletedColumn,
-  recentFormCompletedColumn,
+  tournamentFormCompletedColumn,
   salaryCompletedColumn,
   dkScoreCompletedColumn,
   valueCompletedColumn,
