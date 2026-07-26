@@ -102,7 +102,6 @@ export function FantasyLiveEnhancedRowCells({
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <FantasyMetricCell 
           value={aiRating}
-          meterTone="bg-blue-400/60"
           valueClassName="text-blue-100"
         />
       </td>
@@ -111,7 +110,6 @@ export function FantasyLiveEnhancedRowCells({
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <FantasyMetricCell 
           value={courseFit}
-          meterTone="bg-cyan-400/60"
           valueClassName="text-cyan-100"
         />
       </td>
@@ -145,7 +143,6 @@ export function FantasyLiveEnhancedRowCells({
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <FantasyMetricCell 
           value={fantasyScore}
-          meterTone="bg-emerald-400/60"
           valueClassName="text-emerald-100"
         />
       </td>
@@ -154,7 +151,6 @@ export function FantasyLiveEnhancedRowCells({
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <FantasyMetricCell 
           value={ownership}
-          meterTone="bg-rose-400/60"
           valueClassName="text-rose-100"
         />
       </td>
@@ -163,7 +159,6 @@ export function FantasyLiveEnhancedRowCells({
       <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
         <FantasyMetricCell 
           value={leverage}
-          meterTone="bg-purple-400/60"
           valueClassName="text-purple-100"
         />
       </td>

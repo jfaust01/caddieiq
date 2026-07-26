@@ -98,7 +98,7 @@ export function FantasyRowCells({
 
       {/* RECENT FORM */}
       <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
-        <FantasyMetricCell value={formScore ?? null} meterTone="bg-amber-400/60" valueClassName="text-amber-200" isSemibold={true} />
+        <FantasyMetricCell value={formScore ?? null} valueClassName="text-amber-200" isSemibold={true} />
       </td>
 
       {/* TEE TIME */}
@@ -114,7 +114,7 @@ export function FantasyRowCells({
 
       {/* COURSE FIT */}
       <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
-        <FantasyMetricCell value={fit} meterTone="bg-sky-400/60" valueClassName="text-sky-100" />
+        <FantasyMetricCell value={fit} valueClassName="text-sky-100" />
       </td>
     </>
   )
