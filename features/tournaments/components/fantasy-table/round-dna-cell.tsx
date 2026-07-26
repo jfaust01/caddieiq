@@ -40,19 +40,30 @@ const SCORE_Y_OFFSET = {
   triplePlus: 12,
 }
 
-// Helper function to get color based on Y offset direction
-// Positive Y (above center) = good scores (green)
-// Negative Y (below center) = bad scores (red)
-const getDotColor = (status: string, yOffset: number): string => {
+// Helper function to get color based on score status
+// Birdie or better (eagle, albatross) = green (down)
+// Par = gray (centered)
+// Bogey or worse (double, triple+) = red (up)
+const getDotColor = (status: string): string => {
   if (status === 'future') return '#3F4855' // dark gray
   if (status === 'missing') return '#4B5563' // muted gray
   
-  if (yOffset > 0) {
-    return '#10B981' // green for good scores (above center)
-  } else if (yOffset < 0) {
-    return '#EF4444' // red for bad scores (below center)
+  // Good scores (birdie or better)
+  if (status === 'albatross' || status === 'eagle' || status === 'birdie') {
+    return '#10B981' // green
   }
-  return '#6B7280' // gray for par
+  
+  // Par
+  if (status === 'par') {
+    return '#6B7280' // gray
+  }
+  
+  // Bad scores (bogey or worse)
+  if (status === 'bogey' || status === 'double' || status === 'triplePlus') {
+    return '#EF4444' // red
+  }
+  
+  return '#6B7280' // default gray
 }
 
 /**
@@ -320,7 +331,7 @@ function RoundDnaRow({
             const endPoint = completedPoints[idx + 1]
             if (!endPoint) return null
             
-            const lineColor = getDotColor(endPoint.hole.status, endPoint.y - CENTER_Y)
+            const lineColor = getDotColor(endPoint.hole.status)
             
             return (
               <line
@@ -394,7 +405,7 @@ function RoundDnaRow({
                   cx={point.x}
                   cy={point.y}
                   r={hoverRadius}
-                  fill={getDotColor(point.hole.status, point.y - CENTER_Y)}
+                  fill={getDotColor(point.hole.status)}
                   opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.4 : 1}
                   style={{
                     transition: 'r 0.2s',
