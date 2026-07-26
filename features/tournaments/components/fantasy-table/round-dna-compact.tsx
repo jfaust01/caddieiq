@@ -132,34 +132,6 @@ function getScoreColor(relToPar: number | null): string {
   return 'text-gray-500'
 }
 
-function HoleNumberHeaderRow() {
-  const PADDING = 8
-  const USABLE_WIDTH = 480 - 2 * PADDING
-  const STEP_X = USABLE_WIDTH / 17
-  
-  return (
-    <svg className="w-full" height="24" viewBox="0 0 480 24" preserveAspectRatio="none">
-      {Array.from({ length: 18 }).map((_, i) => {
-        const holeNum = i + 1
-        const xPos = PADDING + i * STEP_X + STEP_X / 2
-        return (
-          <text
-            key={`hole-${holeNum}`}
-            x={xPos}
-            y={18}
-            textAnchor="middle"
-            fontSize="7.5"
-            fill="rgb(107, 114, 128)"
-            fontWeight="500"
-          >
-            {holeNum}
-          </text>
-        )
-      })}
-    </svg>
-  )
-}
-
 function RoundDnaRow({
   round,
   holes,
@@ -339,15 +311,12 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
   }
 
   return (
-    <div className="flex flex-col gap-1">
-      <HoleNumberHeaderRow />
-      <RoundDnaRow
-        round={selectedRoundData.round}
-        holes={selectedRoundData.holes}
-        relToPar={selectedRoundData.relToPar}
-        playerId={playerId}
-        onRoundClick={onRoundClick}
-      />
-    </div>
+    <RoundDnaRow
+      round={selectedRoundData.round}
+      holes={selectedRoundData.holes}
+      relToPar={selectedRoundData.relToPar}
+      playerId={playerId}
+      onRoundClick={onRoundClick}
+    />
   )
 })
