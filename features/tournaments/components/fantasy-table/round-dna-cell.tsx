@@ -331,7 +331,7 @@ function RoundDnaRow({
         {/* SVG: Lines + Dots */}
         <svg
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-          className="flex-1 h-full"
+          className="flex-1 h-full px-2"
           preserveAspectRatio="none"
           style={{ overflow: 'visible', marginLeft: '0' }}
         >
