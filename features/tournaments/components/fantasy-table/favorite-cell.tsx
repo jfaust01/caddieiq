@@ -1,6 +1,6 @@
 'use client'
 
-import { Heart } from 'lucide-react'
+import { Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FavoriteCellProps {
@@ -19,12 +19,12 @@ export function FavoriteCell({ playerId, isFavorite, onToggle }: FavoriteCellPro
       className="flex h-full items-center justify-center focus:outline-none"
       title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
     >
-      <Heart
+      <Star
         size={18}
         className={cn(
           'transition-all',
           isFavorite
-            ? 'fill-red-500 stroke-red-500'
+            ? 'fill-yellow-500 stroke-yellow-500'
             : 'stroke-muted-foreground hover:stroke-foreground'
         )}
       />
