@@ -349,7 +349,7 @@ function RoundDnaRow({
             className="absolute bg-gray-800 border border-gray-600 rounded px-2 py-1 pointer-events-none z-50 text-xs text-gray-100"
             style={{
               left: `${tooltipPosition.x}px`,
-              top: `${tooltipPosition.y - 60}px`,
+              top: `${tooltipPosition.y - 100}px`,
               transform: 'translateX(-50%)',
             }}
           >
