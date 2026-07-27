@@ -88,11 +88,14 @@ function generateMockDkScore(seed: string, index: number): number {
 }
 
 /**
- * Generates a deterministic mock round score relative to par (-8 to +8).
+ * Generates a deterministic mock round score relative to par (-6 to +6).
+ * For pro golfers, individual rounds typically range from -6 (eagle round) to +6 (tough day).
  */
 function generateMockRoundScore(seed: string, index: number): number {
   const rand = seededRandom(seed, index)
-  return Math.round((rand - 0.5) * 16)
+  // Weighted towards slightly negative (under par) for pro golfers
+  // Center around -1 (one under par average)
+  return Math.round((rand - 0.6) * 12)
 }
 
 /**
