@@ -46,7 +46,7 @@ export function FantasyCompletedEnhancedRowCells({
       </td>
 
       {/* FAVORITES */}
-      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <td className="border-l border-r border-white/[0.055] px-1 sm:px-3 align-middle">
         <div className="flex h-full items-center justify-center">
           <FavoriteCell
             playerId={entrant.playerId}
