@@ -18,6 +18,7 @@ const BAND_TONE: Record<string, string> = {
 interface CompactLeaderboardProps {
   field: TournamentField
   tournamentName: string
+  tournamentId: string
 }
 
 /**
@@ -27,6 +28,7 @@ interface CompactLeaderboardProps {
 export function CompactLeaderboard({
   field,
   tournamentName,
+  tournamentId,
 }: CompactLeaderboardProps) {
   // No live tournament scores available in TournamentField type.
   // Instead, show top-ranked players from ranking leaders (field strength).
@@ -55,7 +57,7 @@ export function CompactLeaderboard({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Top Ranked</CardTitle>
           <Link
-            href={`/tournaments/${generateTournamentSlug(tournamentName)}?tab=field`}
+            href={`/tournaments/${generateTournamentSlug(tournamentName, tournamentId)}?tab=field`}
             className="inline-flex gap-1 h-9 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors"
           >
             <span>View all</span>
