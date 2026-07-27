@@ -9,6 +9,7 @@ interface FantasyTableBodyProps {
   entrants: FieldEntrant[]
   phase: TablePhase
   dfsByPlayer: Map<string, DfsValueResult>
+  tournamentId?: string
   positionCountMap?: Map<number, number>
   onRowClick: (playerId: string) => void
   onRoundSelect?: (playerId: string, round: number) => void
@@ -22,6 +23,7 @@ export function FantasyTableBody({
   entrants,
   phase,
   dfsByPlayer,
+  tournamentId,
   positionCountMap,
   onRowClick,
   onRoundSelect,
@@ -37,6 +39,7 @@ export function FantasyTableBody({
           index={index}
           dfsResult={dfsByPlayer.get(entrant.playerId)}
           positionCountMap={positionCountMap}
+          tournamentId={tournamentId}
           onRowClick={onRowClick}
           onRoundSelect={onRoundSelect}
           selectedRound={selectedRound}

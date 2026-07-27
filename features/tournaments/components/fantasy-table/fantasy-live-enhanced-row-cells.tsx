@@ -16,6 +16,7 @@ import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, OwnershipCell, M
 export function FantasyLiveEnhancedRowCells({
   entrant,
   positionCountMap,
+  tournamentId,
   onScorecardOpen,
   onRoundSelect,
   tournamentStatus = 'ACTIVE',
@@ -24,6 +25,7 @@ export function FantasyLiveEnhancedRowCells({
 }: {
   entrant: FieldEntrant
   positionCountMap?: Map<number, number>
+  tournamentId?: string
   onScorecardOpen?: (playerId: string) => void
   onRoundSelect?: (playerId: string, round: number) => void
   tournamentStatus?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
@@ -68,6 +70,7 @@ export function FantasyLiveEnhancedRowCells({
           round3RelToPar={entrant.round3RelToPar}
           round4RelToPar={entrant.round4RelToPar}
           playerId={entrant.playerId}
+          tournamentId={tournamentId}
           tournamentStatus={tournamentStatus}
           selectedRound={selectedRound}
           onRoundClick={onRoundSelect}

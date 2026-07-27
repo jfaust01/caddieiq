@@ -317,6 +317,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           allEntrants={field.entrants}
           fieldSize={field.size}
           dfsByPlayer={dfsByPlayer}
+          tournamentId={tournamentId}
           toolbar={toolbar}
           currentPage={currentPage}
           pageSize={pageSize}
