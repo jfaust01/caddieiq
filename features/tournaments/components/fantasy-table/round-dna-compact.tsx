@@ -80,69 +80,56 @@ function generateMockHoles(relToPar: number, round: number, playerId: string = '
   let remainingDeviation = targetDeviation
   
   for (let hole = 1; hole <= 18; hole++) {
-    let score = 0
-    let status: HoleResult['status'] = 'par'
+    let holeRelToPar = 0
     
     if (Math.abs(remainingDeviation) > 0.001) {
       if (remainingDeviation >= 2) {
-        score = 1
-        status = 'double'
+        holeRelToPar = 1
         remainingDeviation -= 2
       } else if (remainingDeviation >= 1) {
-        score = 1
-        status = 'bogey'
+        holeRelToPar = 1
         remainingDeviation -= 1
       } else if (remainingDeviation >= 0.5) {
-        score = 1
-        status = 'bogey'
+        holeRelToPar = 1
         remainingDeviation -= 0.5
       } else if (remainingDeviation > 0.001) {
         const rand = seededHoleRandom(seed, hole, 0)
-        score = rand > 0.5 ? 1 : 0
-        if (score === 1) {
-          status = 'bogey'
+        holeRelToPar = rand > 0.5 ? 1 : 0
+        if (holeRelToPar === 1) {
           remainingDeviation -= 1
         }
       } else if (remainingDeviation <= -2) {
-        score = -1
-        status = 'eagle'
+        holeRelToPar = -1
         remainingDeviation += 2
       } else if (remainingDeviation <= -1) {
-        score = -1
-        status = 'birdie'
+        holeRelToPar = -1
         remainingDeviation += 1
       } else if (remainingDeviation <= -0.5) {
-        score = -1
-        status = 'birdie'
+        holeRelToPar = -1
         remainingDeviation += 0.5
       } else if (remainingDeviation < -0.001) {
         const rand = seededHoleRandom(seed, hole, 1)
-        score = rand > 0.5 ? -1 : 0
-        if (score === -1) {
-          status = 'birdie'
+        holeRelToPar = rand > 0.5 ? -1 : 0
+        if (holeRelToPar === -1) {
           remainingDeviation += 1
         }
       }
     }
     
-    // Determine status based on final relative to par value
-    let finalStatus: HoleResult['status'] = 'par'
-    const finalRelToPar = remainingDeviation === targetDeviation ? 0 : (targetDeviation - remainingDeviation + score)
-    
-    if (finalRelToPar <= -3) finalStatus = 'albatross'
-    else if (finalRelToPar === -2) finalStatus = 'eagle'
-    else if (finalRelToPar === -1) finalStatus = 'birdie'
-    else if (finalRelToPar === 0) finalStatus = 'par'
-    else if (finalRelToPar === 1) finalStatus = 'bogey'
-    else if (finalRelToPar === 2) finalStatus = 'double'
-    else if (finalRelToPar >= 3) finalStatus = 'triplePlus'
+    // Determine status based on hole's relative to par value
+    let status: HoleResult['status'] = 'par'
+    if (holeRelToPar <= -2) status = 'eagle'
+    else if (holeRelToPar === -1) status = 'birdie'
+    else if (holeRelToPar === 0) status = 'par'
+    else if (holeRelToPar === 1) status = 'bogey'
+    else if (holeRelToPar >= 2) status = 'double'
     
     holes.push({
       holeNumber: hole,
       par: 4,
-      score: score,
-      relativeToPar: score,
-      status: finalStatus,
+      score: holeRelToPar,
+      relativeToPar: holeRelToPar,
+      status,
     })
   }
   
