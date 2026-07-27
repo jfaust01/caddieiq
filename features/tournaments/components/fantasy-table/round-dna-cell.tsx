@@ -439,6 +439,11 @@ function RoundDnaRow({
             )
           })}
         </svg>
+
+        {/* To-Par Score on right */}
+        <div className={cn('w-8 text-center text-[10px] font-semibold tabular-nums flex-shrink-0', scoreColor)}>
+          {formatScore(relToPar)}
+        </div>
       </div>
     </div>
   )
