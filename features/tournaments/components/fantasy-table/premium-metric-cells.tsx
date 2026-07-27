@@ -62,7 +62,7 @@ export function AiIntelligenceCell({ entrant }: { entrant: FieldEntrant }) {
       <div className="space-y-2 text-center">
         {aiRating !== undefined && aiRating !== null ? (
           <div>
-            <div className="text-cyan-400 font-semibold text-xl sm:text-2xl tabular-nums">
+            <div className="text-cyan-400 font-semibold text-2xl sm:text-3xl tabular-nums">
               {Math.round(aiRating)}
             </div>
             <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -100,7 +100,7 @@ export function SalaryCell({ entrant }: { entrant: FieldEntrant }) {
       <div className="text-center">
         <div className="flex items-center justify-center gap-1">
           <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
-          <span className="font-semibold text-base sm:text-lg tabular-nums">
+          <span className="font-semibold text-sm sm:text-base tabular-nums">
             ${(salary / 1000).toFixed(1)}K
           </span>
         </div>
@@ -122,11 +122,8 @@ export function DkScoreCell({ entrant }: { entrant: FieldEntrant }) {
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
       <div className="text-center">
-        <div className="text-emerald-400 font-semibold text-sm sm:text-base tabular-nums">
-          {dkScore.toFixed(1)}
-        </div>
-        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
-          DK Points
+        <div className="text-emerald-400 font-semibold text-2xl sm:text-3xl tabular-nums">
+          {dkScore.toFixed(2)}
         </div>
       </div>
     </td>
