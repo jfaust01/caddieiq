@@ -55,7 +55,10 @@ export function FantasyCompletedEnhancedRowCells({
       </td>
 
       {/* ROUND DNA */}
-      <td className="border-l border-white/[0.055] align-middle">
+      <td 
+        className="border-l border-white/[0.055] align-middle w-[150px] sm:w-[180px] cursor-pointer hover:bg-white/[0.05] transition-colors"
+        onClick={() => onScorecardOpen?.(entrant.playerId)}
+      >
         <RoundDnaCompact 
           round1RelToPar={entrant.round1RelToPar}
           round2RelToPar={entrant.round2RelToPar}
