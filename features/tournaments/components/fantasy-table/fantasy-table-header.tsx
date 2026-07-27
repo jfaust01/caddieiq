@@ -80,20 +80,21 @@ export function FantasyTableHeader({
                       ))}
                     </div>
                   </div>
-                  <svg className="w-full" height="20" viewBox="0 0 480 20" preserveAspectRatio="none">
+                  <svg className="w-full" height="20" viewBox="0 0 300 20" preserveAspectRatio="none">
                     {Array.from({ length: 18 }).map((_, i) => {
                       const holeNum = i + 1
                       const PADDING = 8
-                      const USABLE_WIDTH = 480 - 2 * PADDING
-                      const STEP_X = USABLE_WIDTH / 15
-                      const xPos = PADDING + i * STEP_X + STEP_X / 2
+                      const DOT_GAP = 5
+                      const USABLE_WIDTH = 300 - 2 * PADDING
+                      const STEP_X = (USABLE_WIDTH - DOT_GAP * 17) / 17 + DOT_GAP
+                      const xPos = PADDING + i * STEP_X
                       return (
                         <text
                           key={`hole-${holeNum}`}
                           x={xPos}
                           y={16}
                           textAnchor="middle"
-                          fontSize="12"
+                          fontSize="11"
                           fill="rgb(107, 114, 128)"
                           fontWeight="500"
                         >

@@ -288,8 +288,7 @@ function RoundDnaRow({
       <div className="flex h-full relative">
         <div className="flex-1 min-w-0 overflow-hidden">
           <svg
-            className="w-full"
-            height={SVG_HEIGHT}
+            className="w-full h-full"
             viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
             preserveAspectRatio="none"
             style={{ userSelect: 'none' }}
