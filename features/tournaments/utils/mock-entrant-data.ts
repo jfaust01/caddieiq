@@ -41,15 +41,27 @@ export function enrichEntrantWithMockData(entrant: FieldEntrant): FieldEntrant {
   const mockRound4Dk = generateMockRoundDkScore(seed, 8)
   const mockSalary = generateMockSalary(seed, 9)
   
+  // Use existing values if available, otherwise use mock values
+  const r1 = entrant.round1RelToPar !== null && entrant.round1RelToPar !== undefined ? entrant.round1RelToPar : mockRound1
+  const r2 = entrant.round2RelToPar !== null && entrant.round2RelToPar !== undefined ? entrant.round2RelToPar : mockRound2
+  const r3 = entrant.round3RelToPar !== null && entrant.round3RelToPar !== undefined ? entrant.round3RelToPar : mockRound3
+  const r4 = entrant.round4RelToPar !== null && entrant.round4RelToPar !== undefined ? entrant.round4RelToPar : mockRound4
+  
+  // Calculate total by summing available round scores
+  const roundScores = [r1, r2, r3, r4].filter(score => score !== null && score !== undefined)
+  const mockTotal = roundScores.length > 0 ? roundScores.reduce((a, b) => a + b, 0) : null
+  
   return {
     ...entrant,
     // Add mock DK fantasy points if not available
     dkFantasyPoints: entrant.dkFantasyPoints !== null && entrant.dkFantasyPoints !== undefined ? entrant.dkFantasyPoints : mockDkScore,
+    // Add mock total score if not available
+    total: entrant.total !== null && entrant.total !== undefined ? entrant.total : mockTotal,
     // Add mock round data if not available
-    round1RelToPar: entrant.round1RelToPar !== null && entrant.round1RelToPar !== undefined ? entrant.round1RelToPar : mockRound1,
-    round2RelToPar: entrant.round2RelToPar !== null && entrant.round2RelToPar !== undefined ? entrant.round2RelToPar : mockRound2,
-    round3RelToPar: entrant.round3RelToPar !== null && entrant.round3RelToPar !== undefined ? entrant.round3RelToPar : mockRound3,
-    round4RelToPar: entrant.round4RelToPar !== null && entrant.round4RelToPar !== undefined ? entrant.round4RelToPar : mockRound4,
+    round1RelToPar: r1,
+    round2RelToPar: r2,
+    round3RelToPar: r3,
+    round4RelToPar: r4,
     // Add mock DK points per round
     round1DkPoints: entrant.round1DkPoints !== null && entrant.round1DkPoints !== undefined ? entrant.round1DkPoints : mockRound1Dk,
     round2DkPoints: entrant.round2DkPoints !== null && entrant.round2DkPoints !== undefined ? entrant.round2DkPoints : mockRound2Dk,
