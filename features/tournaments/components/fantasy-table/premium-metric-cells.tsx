@@ -16,7 +16,7 @@ export function AiRatingCell({ entrant }: { entrant: FieldEntrant }) {
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
       <div className="text-center">
-        <div className="text-cyan-400 font-semibold text-lg sm:text-xl tabular-nums">
+        <div className="text-cyan-400 font-semibold text-2xl sm:text-3xl tabular-nums">
           {Math.round(aiRating)}
         </div>
       </div>
@@ -37,7 +37,7 @@ export function RecentFormCell({ entrant }: { entrant: FieldEntrant }) {
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
       <div className="text-center">
-        <div className="text-gray-400 font-medium text-sm tabular-nums">
+        <div className="text-gray-400 font-medium text-2xl sm:text-3xl tabular-nums">
           {Math.round(formScore)}
         </div>
       </div>
@@ -100,7 +100,7 @@ export function SalaryCell({ entrant }: { entrant: FieldEntrant }) {
       <div className="text-center">
         <div className="flex items-center justify-center gap-1">
           <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
-          <span className="font-semibold text-sm sm:text-base tabular-nums">
+          <span className="font-semibold text-2xl sm:text-3xl tabular-nums">
             ${(salary / 1000).toFixed(1)}K
           </span>
         </div>
@@ -155,14 +155,14 @@ export function FantasyOutlookCell({
         {salary ? (
           <div className="flex items-center justify-center gap-1">
             <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
-            <span className="font-semibold text-base sm:text-lg tabular-nums">
+            <span className="font-semibold text-2xl sm:text-3xl tabular-nums">
               ${(salary / 1000).toFixed(1)}K
             </span>
           </div>
         ) : null}
         {dkScore !== undefined && dkScore !== null ? (
           <div>
-            <span className="text-emerald-400 font-semibold text-sm sm:text-base tabular-nums">
+            <span className="text-emerald-400 font-semibold text-2xl sm:text-3xl tabular-nums">
               {dkScore.toFixed(1)}
             </span>
             <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -172,7 +172,7 @@ export function FantasyOutlookCell({
         ) : null}
         {fantasyScore !== undefined && fantasyScore !== null ? (
           <div>
-            <span className="text-gray-400 font-medium text-sm tabular-nums">
+            <span className="text-gray-400 font-medium text-2xl sm:text-3xl tabular-nums">
               {Math.round(fantasyScore)}
             </span>
             <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -206,7 +206,7 @@ export function MarketCell({ entrant }: { entrant: FieldEntrant }) {
       <div className="space-y-1.5 text-center">
         {ownership !== undefined && ownership !== null ? (
           <div>
-            <div className="text-violet-400 font-semibold text-lg sm:text-xl tabular-nums">
+            <div className="text-violet-400 font-semibold text-2xl sm:text-3xl tabular-nums">
               {Math.round(ownership)}%
             </div>
             <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -216,7 +216,7 @@ export function MarketCell({ entrant }: { entrant: FieldEntrant }) {
         ) : null}
         {odds !== undefined && odds !== null ? (
           <div>
-            <div className="text-gray-400 font-medium text-sm tabular-nums">
+            <div className="text-gray-400 font-medium text-2xl sm:text-3xl tabular-nums">
               {formatOdds(odds)}
             </div>
             <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
