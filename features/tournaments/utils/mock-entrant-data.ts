@@ -40,6 +40,8 @@ export function enrichEntrantWithMockData(entrant: FieldEntrant): FieldEntrant {
   const mockRound3Dk = generateMockRoundDkScore(seed, 7)
   const mockRound4Dk = generateMockRoundDkScore(seed, 8)
   const mockSalary = generateMockSalary(seed, 9)
+  const mockOwnership = generateMockOwnership(seed, 10)
+  const mockOdds = generateMockOdds(seed, 11)
   
   // Use existing values if available, otherwise use mock values
   const r1 = entrant.round1RelToPar !== null && entrant.round1RelToPar !== undefined ? entrant.round1RelToPar : mockRound1
@@ -69,6 +71,10 @@ export function enrichEntrantWithMockData(entrant: FieldEntrant): FieldEntrant {
     round4DkPoints: entrant.round4DkPoints !== null && entrant.round4DkPoints !== undefined ? entrant.round4DkPoints : mockRound4Dk,
     // Add mock salary if not available
     dfsSalary: entrant.dfsSalary !== null && entrant.dfsSalary !== undefined ? entrant.dfsSalary : mockSalary,
+    // Add mock ownership if not available
+    ownershipPercent: entrant.ownershipPercent !== null && entrant.ownershipPercent !== undefined ? entrant.ownershipPercent : mockOwnership,
+    // Add mock odds if not available
+    oddsToWin: entrant.oddsToWin !== null && entrant.oddsToWin !== undefined ? entrant.oddsToWin : mockOdds,
   }
 }
 
@@ -112,4 +118,23 @@ function generateMockRoundDkScore(seed: string, index: number): number {
 function generateMockSalary(seed: string, index: number): number {
   const rand = seededRandom(seed, index)
   return Math.round(rand * 80 + 30) * 100
+}
+
+/**
+ * Generates a deterministic mock DFS ownership percentage (typically 0-25%).
+ */
+function generateMockOwnership(seed: string, index: number): number {
+  const rand = seededRandom(seed, index)
+  return Math.round(rand * 25)
+}
+
+/**
+ * Generates a deterministic mock odds to win in decimal format (typically +300 to +10000).
+ * Converts random value to american odds format (e.g., "+500", "+1200", etc).
+ */
+function generateMockOdds(seed: string, index: number): string {
+  const rand = seededRandom(seed, index)
+  // Generate odds ranging from +300 to +10000 in roughly $500 increments
+  const odds = Math.round(rand * 98 + 3) * 100
+  return `+${odds}`
 }
