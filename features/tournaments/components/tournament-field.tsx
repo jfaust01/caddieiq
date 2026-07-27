@@ -64,8 +64,6 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
   const [selectedScorecardPlayer, setSelectedScorecardPlayer] = useState<string | null>(null)
   const [selectedScorecardRound, setSelectedScorecardRound] = useState<number>(1)
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [favoritesLoaded, setFavoritesLoaded] = useState(false)
 
@@ -304,17 +302,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
     return baseFiltered.filter((e) => active.predicate(e, filterContext))
   }, [baseFiltered, config.filters, chip, filterContext])
 
-  // Reset pagination when filters change
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [query, statusFilter, sort, chip])
 
-  // Calculate paginated results
-  const paginatedEntrants = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    const end = start + pageSize
-    return filtered.slice(start, end)
-  }, [filtered, currentPage, pageSize])
 
   // Field genuinely empty (nothing imported yet).
   if (field.size === 0) {
@@ -379,21 +367,13 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
       ) : (
         <FantasyPlayerTable
           phase={phase}
-          entrants={paginatedEntrants}
+          entrants={filtered}
           allEntrants={field.entrants}
           fieldSize={field.size}
           dfsByPlayer={dfsByPlayer}
           tournamentId={tournamentId}
           favoriteIds={favorites}
           toolbar={toolbar}
-          currentPage={currentPage}
-          pageSize={pageSize}
-          totalItems={filtered.length}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={(newSize) => {
-            setPageSize(newSize)
-            setCurrentPage(1)
-          }}
           onRowClick={(playerId) => {
             setSelectedScorecardPlayer(playerId)
             setIsScorecardModalOpen(true)
