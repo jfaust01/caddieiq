@@ -855,88 +855,6 @@ export const tournamentService = {
   },
 
   /**
-   * Generate a strategic one-paragraph summary of why this course matters for DFS.
-   * Explains how the course characteristics translate to player selection strategy.
-   */
-  generateStrategySummary(profile: typeof import('@/lib/domain/course').CourseProfile | null, courseName: string): string {
-    if (!profile) {
-      return `Limited course data available for ${courseName}. Review player recent form and course history.`
-    }
-
-    const key = profile.avgYardage > 7200 ? 'length' : profile.fairwayWidth === 'narrow' ? 'accuracy' : profile.avgGreenSize === 'small' ? 'precision' : 'balance'
-
-    const strategies: Record<string, string> = {
-      length: `${courseName} is an ultra-long test that favors distance-based players and bombers off the tee. Target golfers with strong recent form in long-course conditions and proven accuracy in driving. Avoid short hitters unless they have elite short game skills to compensate. The length also means scoring will be lower, so stack multiple proven scorers.`,
-      accuracy: `${courseName} demands directional precision with tight fairways and punishing rough. Build your lineup around accurate drivers and consistent ball strikers who minimize mistakes. Distance becomes secondary to accuracy here—value precision over power. Consider stacking proven performers who excel in accuracy-focused courses.`,
-      precision: `${courseName} features small greens that severely punish approach misses. Prioritize players with elite approach play and short game proficiency. Look for golfers on hot streaks with strong GIR statistics and scoring averages. The small greens level the playing field—even mid-tier golfers can capitalize on good approach shots.`,
-      balance: `${courseName} presents a balanced test where multiple skills are important in equal measure. Build a diverse lineup featuring distance, accuracy, and short game. Look for well-rounded players with consistent all-around statistics rather than specialists. This course rewards consistency and punishes volatility—fade high-variance plays.`,
-    }
-
-    return strategies[key] || strategies.balance
-  },
-
-  /**
-   * Generate player archetypes for best fits and potential fades.
-   * Returns { bestFits: string[], potentialFades: string[] } with explanations.
-   */
-  generatePlayerArchetypes(profile: typeof import('@/lib/domain/course').CourseProfile | null): { bestFits: Array<{ name: string; why: string }>; potentialFades: Array<{ name: string; why: string }> } {
-    if (!profile) {
-      return {
-        bestFits: [{ name: 'Balanced Players', why: 'Data unavailable for detailed analysis' }],
-        potentialFades: [],
-      }
-    }
-
-    const bestFits: Array<{ name: string; why: string }> = []
-    const potentialFades: Array<{ name: string; why: string }> = []
-
-    // Length-based archetypes
-    if (profile.avgYardage > 7200) {
-      bestFits.push({ name: 'Long Hitters with Accuracy', why: 'Ultra-long course rewards distance without sacrificing control' })
-      potentialFades.push({ name: 'Short Hitters', why: 'Length becomes a significant disadvantage on 7,400+ yard courses' })
-    } else if (profile.avgYardage < 6500) {
-      bestFits.push({ name: 'Precision Ball Strikers', why: 'Shorter courses emphasize accuracy over pure distance' })
-      potentialFades.push({ name: 'Pure Bombers', why: 'Distance is a wasted advantage when the course is relatively short' })
-    }
-
-    // Accuracy-based archetypes
-    if (profile.fairwayWidth === 'narrow' || profile.fairwayWidth === 'very_narrow') {
-      bestFits.push({ name: 'Directionally Accurate Drivers', why: 'Tight fairways heavily punish wild tee shots' })
-      potentialFades.push({ name: 'Aggressive Risk-Takers', why: 'Missing fairways on narrow layouts leads to severe penalties' })
-    }
-
-    // Greens-based archetypes
-    if (profile.avgGreenSize === 'small' || profile.avgGreenSize === 'tiny') {
-      bestFits.push({ name: 'Elite Approach Players', why: 'Small greens reward precise approach play and punish misses' })
-      bestFits.push({ name: 'Short Game Specialists', why: 'Chipping and wedge play become critical with limited target areas' })
-      potentialFades.push({ name: 'Inconsistent Approach Players', why: 'Poor ball striking is amplified when greens are tiny' })
-    } else {
-      bestFits.push({ name: 'Elite Putters', why: 'Larger greens provide more room for putting skill to shine' })
-    }
-
-    // Wind/elevation archetypes
-    if (profile.windExposure === 'high' || profile.elevationChange > 200) {
-      bestFits.push({ name: 'Course Management Masters', why: 'Variable conditions reward smart club selection and strategy' })
-      potentialFades.push({ name: 'Wind-Sensitive Players', why: 'High-wind or elevation variance penalizes inconsistent ball striking' })
-    }
-
-    return { bestFits, potentialFades }
-  },
-
-  /**
-   * Return all rounds with player scores for a tournament. Reuses
-   * RoundRepository and PlayerRoundRepository; joins with field data for player
-   * name resolution. Returns an empty array when no rounds exist or the
-   * tournament has no scoring data yet.
-   */
-  getRoundsByTournament(id: string): Promise<RoundWithScores[]> {
-    return getRoundsByTournamentCached(id)
-  },
-
-  /**
-   * Return historical intelligence for a tournament: past winners, winning
-   * scores, cut lines, and scoring statistics from the tournament's historical
-   * results. Returns null if the tournament has no historical data (new venue
    * or no completed tournaments). All data comes from the database; nothing
    * is fabricated.
    */
@@ -952,6 +870,46 @@ export const tournamentService = {
       // For now, return null as the infrastructure needs to be built
       // TODO: Implement after tournament_results historical data is available
       return null
+    } catch {
+      return null
+    }
+  },
+
+  /**
+   * Look up a tournament by its name (case-insensitive fuzzy match).
+   * Used when navigating via URL slug that doesn't include the ID.
+   * Returns the first tournament that closely matches the name.
+   */
+  async getTournamentByName(name: string): Promise<TournamentSummary | null> {
+    try {
+      const result = await this.getTournaments({
+        page: 1,
+        limit: 100, // Get a reasonable sample to search through
+      })
+
+      if (!result.items || result.items.length === 0) {
+        return null
+      }
+
+      // Normalize the search name
+      const normalizedSearchName = name.toLowerCase().replace(/-/g, ' ').trim()
+
+      // Try exact match first (case-insensitive)
+      let match = result.items.find(
+        t => t.name.toLowerCase() === normalizedSearchName
+      )
+
+      if (match) {
+        return match
+      }
+
+      // Try partial match if exact doesn't work
+      match = result.items.find(
+        t => t.name.toLowerCase().includes(normalizedSearchName) ||
+             normalizedSearchName.includes(t.name.toLowerCase())
+      )
+
+      return match || null
     } catch {
       return null
     }

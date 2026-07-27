@@ -42,7 +42,6 @@ export function TournamentDfsHub({
       <div>
         <CompactLeaderboard
           field={field}
-          tournamentId={tournament.id}
           tournamentName={tournament.name}
         />
       </div>
@@ -52,7 +51,6 @@ export function TournamentDfsHub({
         <div>
           <CompactDfsSummary
             dfsField={dfsField}
-            tournamentId={tournament.id}
             tournamentName={tournament.name}
           />
         </div>

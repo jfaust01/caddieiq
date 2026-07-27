@@ -126,7 +126,7 @@ export function TournamentSelector({
     if (!tournament) return
     setOpen(false)
     setSearchQuery("")
-    router.push(`/tournaments/${generateTournamentSlug(tournament.name, tournamentId)}`)
+    router.push(`/tournaments/${generateTournamentSlug(tournament.name)}`)
   }
 
   const hasNoResults = showSearch && filteredOptions.length === 0

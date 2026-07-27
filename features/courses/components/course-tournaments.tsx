@@ -53,7 +53,7 @@ export function CourseTournaments({ tournaments }: CourseTournamentsProps) {
             {tournaments.map((tournament) => (
               <li key={tournament.id}>
                 <Link
-                  href={`/tournaments/${generateTournamentSlug(tournament.name, tournament.id)}`}
+                  href={`/tournaments/${generateTournamentSlug(tournament.name)}`}
                   className="flex items-center justify-between gap-3 py-3 outline-none transition-colors first:pt-0 last:pb-0 hover:text-primary focus-visible:text-primary"
                 >
                   <div className="flex min-w-0 flex-col gap-1">

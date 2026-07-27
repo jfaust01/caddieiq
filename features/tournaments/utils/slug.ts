@@ -1,9 +1,9 @@
 /**
- * Generates a URL-friendly slug from a tournament name and ID.
- * Format: "tournament-name-2024-tournamentId"
- * This ensures uniqueness while being human-readable.
+ * Generates a URL-friendly slug from a tournament name.
+ * Format: "tournament-name"
+ * Human-readable but does not include the ID for a cleaner URL.
  */
-export function generateTournamentSlug(name: string, tournamentId: string): string {
+export function generateTournamentSlug(name: string): string {
   const slugName = name
     .toLowerCase()
     .trim()
@@ -12,15 +12,17 @@ export function generateTournamentSlug(name: string, tournamentId: string): stri
     .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
     .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
 
-  return `${slugName}-${tournamentId}`
+  return slugName
 }
 
 /**
- * Extracts the tournament ID from a slug.
- * Assumes the format: "tournament-name-tournamentId"
- * The ID is always the last segment after splitting by hyphen.
+ * Converts a slug back to a tournament name.
+ * Since the slug is just the tournament name, this reverses it.
+ * Note: This is a best-effort approach for lookups.
  */
-export function extractTournamentIdFromSlug(slug: string): string {
-  const parts = slug.split('-')
-  return parts[parts.length - 1]
+export function slugToTournamentName(slug: string): string {
+  return slug
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
