@@ -93,7 +93,7 @@ export function FantasyTableHeader({
                           x={xPos}
                           y={16}
                           textAnchor="middle"
-                          fontSize="7"
+                          fontSize="12"
                           fill="rgb(107, 114, 128)"
                           fontWeight="500"
                         >
