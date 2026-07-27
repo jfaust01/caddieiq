@@ -16,7 +16,6 @@ interface ScorecardDrawerProps {
   tournamentId: string
   visiblePlayers: FieldEntrant[]
   status?: string | null
-  initialRound?: number
 }
 
 export function ScorecardDrawer({
@@ -28,18 +27,10 @@ export function ScorecardDrawer({
   tournamentId,
   visiblePlayers,
   status,
-  initialRound,
 }: ScorecardDrawerProps) {
-  const [selectedRound, setSelectedRound] = useState<number>(initialRound || 1)
+  const [selectedRound, setSelectedRound] = useState<number>(1)
   const drawerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
-
-  // Update selected round when initialRound prop changes
-  useEffect(() => {
-    if (initialRound) {
-      setSelectedRound(initialRound)
-    }
-  }, [initialRound])
 
   // Determine phase based on tournament status
   const phase = useMemo(() => {
@@ -145,7 +136,7 @@ export function ScorecardDrawer({
         ref={drawerRef}
         className={cn(
           'fixed top-0 right-0 h-screen z-[60] flex flex-col',
-          'bg-slate-900',
+          'bg-slate-900/40',
           'border-l border-white/[0.08]',
           'shadow-[-20px_0_40px_rgba(0,0,0,0.5)]',
           'transition-transform duration-300 ease-out',
@@ -161,7 +152,7 @@ export function ScorecardDrawer({
         {/* Header */}
         <div className={cn(
           'flex-shrink-0 sticky top-0 z-10',
-          'bg-slate-900',
+          'bg-slate-900/40',
           'backdrop-blur-md',
           'border-b border-white/[0.08]',
           'px-4 lg:px-6 py-4 lg:py-5'
@@ -289,7 +280,7 @@ export function ScorecardDrawer({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto min-w-0 bg-slate-900">
+        <div className="flex-1 overflow-y-auto min-w-0 bg-slate-900/40">
           <div className="px-4 lg:px-6 py-4 lg:py-6 w-full min-w-0 max-w-full">
             <ScorecardErrorBoundaryV2 playerName={selectedPlayer.playerName}>
               <ScorecardLoader

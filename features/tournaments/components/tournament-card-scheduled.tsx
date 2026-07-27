@@ -19,7 +19,6 @@ import {
   formatPurse,
   tourShortLabel,
 } from '@/features/tournaments/utils/format'
-import { generateTournamentSlug } from '@/features/tournaments/utils/slug'
 import { cn } from '@/lib/utils'
 
 interface TournamentCardScheduledProps {
@@ -38,7 +37,7 @@ export function TournamentCardScheduled({ tournament }: TournamentCardScheduledP
   const hasDefendingChamp = !!tournament.defendingChampion
 
   return (
-    <Link href={`/tournaments/${generateTournamentSlug(tournament.id)}`}>
+    <Link href={`/tournaments/${tournament.id}`}>
       <div
         className={cn(
           'group relative overflow-hidden rounded-lg cursor-pointer',

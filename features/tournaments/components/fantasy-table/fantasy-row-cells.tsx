@@ -7,6 +7,7 @@ import type { DfsValueResult } from '@/lib/dfs-value'
 import { FantasyPlayerCell } from './fantasy-player-cell'
 import { FantasyMetricCell } from './fantasy-metric-cell'
 import { MetricEmptyState } from './metric-empty-state'
+import { ScorecardCell } from './scorecard-cell'
 import {
   formatMissing,
   courseFitScore,
@@ -44,6 +45,13 @@ export function FantasyRowCells({
 
   return (
     <>
+      {/* SCORECARD */}
+      <td className="px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <ScorecardCell entrant={entrant} onOpen={onScorecardOpen} />
+        </div>
+      </td>
+
       {/* PLAYER */}
       <td className="px-2 sm:px-3 align-middle">
         <FantasyPlayerCell entrant={entrant} />

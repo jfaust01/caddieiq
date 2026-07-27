@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { ChevronRight, Users2 } from 'lucide-react'
 import type { TournamentField } from '@/features/tournaments/types'
-import { generateTournamentSlug } from '@/features/tournaments/utils/slug'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
@@ -55,7 +54,7 @@ export function CompactLeaderboard({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Top Ranked</CardTitle>
           <Link
-            href={`/tournaments/${generateTournamentSlug(tournamentId)}?tab=field`}
+            href={`/tournaments/${tournamentId}?tab=field`}
             className="inline-flex gap-1 h-9 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors"
           >
             <span>View all</span>
