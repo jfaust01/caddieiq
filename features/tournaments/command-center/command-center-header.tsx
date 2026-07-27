@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from "react"
+import { type ReactNode } from "react"
 import { CalendarDays, CloudSun, MapPin, Users, Heart, Share2, Bell } from "lucide-react"
 
 import { TournamentStatusBadge } from "@/features/tournaments/components/tournament-status-badge"
@@ -63,22 +63,9 @@ export function CommandCenterHeader({
   dataConfidence,
   tournamentOptions = [],
 }: CommandCenterHeaderProps) {
-  const headerRef = useRef<HTMLElement>(null)
-  
   // Determine if tournament is completed
   const isCompleted =
     tournament.status?.trim().toUpperCase() === "COMPLETED"
-  
-  useEffect(() => {
-    // Measure TopNav height and set CommandCenterHeader offset to appear below it
-    const topNav = document.querySelector('header[class*="sticky"][class*="top-0"][class*="z-50"]')
-    if (!topNav) return
-    
-    const topNavHeight = topNav.getBoundingClientRect().height
-    if (headerRef.current) {
-      headerRef.current.style.setProperty('--sticky-top', `${topNavHeight}px`)
-    }
-  }, [])
 
   // Format purse if available
   const formatPurse = (purse: number | null) => {
@@ -90,11 +77,7 @@ export function CommandCenterHeader({
 
   return (
     <header 
-      ref={headerRef}
-      className="sticky top-0 z-40 border-b border-white/5 bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 w-full"
-      style={{ 
-        top: 'var(--sticky-top, 0px)',
-      } as React.CSSProperties & { '--sticky-top': string }}
+      className="border-b border-white/5 bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 w-full"
     >
       <div className="px-4 py-4 sm:px-6 md:py-5">
         {/* Main header row: title on left, actions on right */}
