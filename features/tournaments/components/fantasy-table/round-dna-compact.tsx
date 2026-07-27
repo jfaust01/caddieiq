@@ -77,44 +77,58 @@ function generateMockHoles(relToPar: number, round: number, playerId: string = '
   const targetDeviation = relToPar
   const seed = playerId + '-r' + round
   
-  let remainingDeviation = targetDeviation
-  
+  // Generate random scores for all holes first
+  const holeScores: number[] = []
   for (let hole = 1; hole <= 18; hole++) {
-    let holeRelToPar = 0
+    const rand = seededHoleRandom(seed, hole, 0)
+    let score = 0
     
-    if (Math.abs(remainingDeviation) > 0.001) {
-      if (remainingDeviation >= 2) {
-        holeRelToPar = 1
-        remainingDeviation -= 2
-      } else if (remainingDeviation >= 1) {
-        holeRelToPar = 1
-        remainingDeviation -= 1
-      } else if (remainingDeviation >= 0.5) {
-        holeRelToPar = 1
-        remainingDeviation -= 0.5
-      } else if (remainingDeviation > 0.001) {
-        const rand = seededHoleRandom(seed, hole, 0)
-        holeRelToPar = rand > 0.5 ? 1 : 0
-        if (holeRelToPar === 1) {
-          remainingDeviation -= 1
+    // Weighted distribution to create varied scores
+    if (rand < 0.05) {
+      score = -2  // Eagle (5%)
+    } else if (rand < 0.25) {
+      score = -1  // Birdie (20%)
+    } else if (rand < 0.70) {
+      score = 0   // Par (45%)
+    } else if (rand < 0.95) {
+      score = 1   // Bogey (25%)
+    } else {
+      score = 2   // Double Bogey (5%)
+    }
+    
+    holeScores.push(score)
+  }
+  
+  // Calculate current total and adjust to match target
+  let currentTotal = holeScores.reduce((a, b) => a + b, 0)
+  let deviation = currentTotal - targetDeviation
+  
+  // Adjust holes to match target while maintaining variety
+  let holesRemaining = 18
+  while (Math.abs(deviation) > 0.001 && holesRemaining > 0) {
+    for (let i = 0; i < 18 && Math.abs(deviation) > 0.001; i++) {
+      if (deviation > 0.5) {
+        // Need to improve score
+        if (holeScores[i] < 2) {
+          const adjustment = Math.min(1, deviation)
+          holeScores[i] += adjustment
+          deviation -= adjustment
         }
-      } else if (remainingDeviation <= -2) {
-        holeRelToPar = -1
-        remainingDeviation += 2
-      } else if (remainingDeviation <= -1) {
-        holeRelToPar = -1
-        remainingDeviation += 1
-      } else if (remainingDeviation <= -0.5) {
-        holeRelToPar = -1
-        remainingDeviation += 0.5
-      } else if (remainingDeviation < -0.001) {
-        const rand = seededHoleRandom(seed, hole, 1)
-        holeRelToPar = rand > 0.5 ? -1 : 0
-        if (holeRelToPar === -1) {
-          remainingDeviation += 1
+      } else if (deviation < -0.5) {
+        // Need to worsen score
+        if (holeScores[i] > -2) {
+          const adjustment = Math.min(1, Math.abs(deviation))
+          holeScores[i] -= adjustment
+          deviation += adjustment
         }
       }
     }
+    holesRemaining--
+  }
+  
+  // Create hole results with adjusted scores
+  for (let hole = 1; hole <= 18; hole++) {
+    const holeRelToPar = holeScores[hole - 1]
     
     // Determine status based on hole's relative to par value
     let status: HoleResult['status'] = 'par'
