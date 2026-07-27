@@ -27,6 +27,8 @@ export interface FantasyPlayerTableProps {
   fieldSize: number
   /** DFS Value Model lookups for the scheduled fantasy columns. */
   dfsByPlayer: Map<string, DfsValueResult>
+  /** Tournament ID for fetching hole-by-hole data. */
+  tournamentId?: string
   /** Opens the scorecard modal for a player row. */
   onRowClick: (playerId: string) => void
   /** Opens scorecard with a specific round selected. */
@@ -60,6 +62,7 @@ export function FantasyPlayerTable({
   allEntrants,
   fieldSize,
   dfsByPlayer,
+  tournamentId,
   onRowClick,
   onRoundSelect,
   toolbar,
@@ -155,6 +158,7 @@ export function FantasyPlayerTable({
                 phase={phase} 
                 dfsByPlayer={dfsByPlayer} 
                 positionCountMap={positionCountMap} 
+                tournamentId={tournamentId}
                 onRowClick={onRowClick} 
                 onRoundSelect={onRoundSelect}
                 selectedRound={selectedRound}

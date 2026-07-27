@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useMemo, useState } from 'react'
+import { memo, useMemo, useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 
 interface HoleResult {
@@ -70,6 +70,61 @@ function seededHoleRandom(seed: string, holeNumber: number, index: number): numb
   
   hash = hash >>> 0
   return (hash % 1000) / 1000
+}
+
+async function fetchRealHoles(tournamentId: string, playerId: string, round: number): Promise<HoleResult[] | null> {
+  try {
+    const response = await fetch(
+      `/api/tournaments/${tournamentId}/players/${playerId}/rounds/${round}/scorecard`
+    )
+    
+    if (!response.ok) {
+      console.error('[v0] Failed to fetch holes:', response.status)
+      return null
+    }
+
+    const { data } = await response.json()
+    
+    if (!data || !data.holes || data.holes.length === 0) {
+      return null
+    }
+
+    // Convert database hole scores to HoleResult format
+    return data.holes.map((hole: any) => {
+      let status: HoleResult['status'] = 'par'
+      const relToPar = hole.toPar
+
+      if (relToPar === null || relToPar === undefined) {
+        status = 'missing'
+      } else if (relToPar <= -3) {
+        status = 'albatross'
+      } else if (relToPar === -2) {
+        status = 'eagle'
+      } else if (relToPar === -1) {
+        status = 'birdie'
+      } else if (relToPar === 0) {
+        status = 'par'
+      } else if (relToPar === 1) {
+        status = 'bogey'
+      } else if (relToPar === 2) {
+        status = 'double'
+      } else if (relToPar >= 3) {
+        status = 'triplePlus'
+      }
+
+      return {
+        holeNumber: hole.holeNumber,
+        par: hole.par || 4,
+        score: hole.score,
+        relativeToPar: relToPar,
+        dkPoints: hole.dkPoints,
+        status,
+      }
+    })
+  } catch (error) {
+    console.error('[v0] Error fetching real holes:', error)
+    return null
+  }
 }
 
 function generateMockHoles(relToPar: number, round: number, playerId: string = '', skillLevel: number = 50): HoleResult[] {
@@ -186,12 +241,14 @@ function RoundDnaRow({
   holes,
   relToPar,
   playerId,
+  tournamentId,
   onRoundClick,
 }: {
   round: number
   holes: HoleResult[]
   relToPar: number | null
   playerId?: string
+  tournamentId?: string
   onRoundClick?: (playerId: string, round: number) => void
 }) {
   const [hoveredHole, setHoveredHole] = useState<string | null>(null)
@@ -325,6 +382,7 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
   round4DkPoints,
   selectedRound,
   playerId,
+  tournamentId,
   tournamentStatus,
   currentHole,
   onRoundClick,
@@ -340,6 +398,7 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
   round4DkPoints?: number | null
   selectedRound: number
   playerId?: string
+  tournamentId?: string
   tournamentStatus: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
   currentHole?: string | null
   onRoundClick?: (playerId: string, round: number) => void
@@ -348,6 +407,22 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
   if (tournamentStatus === 'SCHEDULED') {
     return null
   }
+
+  const [realHolesCache, setRealHolesCache] = useState<Record<number, HoleResult[] | null>>({})
+  const [loadingRound, setLoadingRound] = useState<number | null>(null)
+
+  // Fetch real holes for selected round when tournament and player IDs are available
+  useEffect(() => {
+    if (!tournamentId || !playerId || !selectedRound || realHolesCache[selectedRound] !== undefined) {
+      return
+    }
+
+    setLoadingRound(selectedRound)
+    fetchRealHoles(tournamentId, playerId, selectedRound).then((holes) => {
+      setRealHolesCache((prev) => ({ ...prev, [selectedRound]: holes }))
+      setLoadingRound(null)
+    })
+  }, [tournamentId, playerId, selectedRound, realHolesCache])
 
   const roundsData = useMemo<RoundData[]>(() => {
     const roundArray = [
@@ -359,12 +434,18 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
 
     return roundArray
       .filter((r) => r.relToPar !== null && r.relToPar !== undefined)
-      .map((r) => ({
-        round: r.round,
-        relToPar: r.relToPar!,
-        dkPoints: r.dkPoints,
-        holes: generateMockHoles(r.relToPar!, r.round, playerId, skillLevel),
-      }))
+      .map((r) => {
+        // Use real holes from cache if available, otherwise generate mock
+        const realHoles = realHolesCache[r.round]
+        const holes = realHoles ?? generateMockHoles(r.relToPar!, r.round, playerId, skillLevel)
+        
+        return {
+          round: r.round,
+          relToPar: r.relToPar!,
+          dkPoints: r.dkPoints,
+          holes,
+        }
+      })
   }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar, round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints, skillLevel])
 
   const selectedRoundData = roundsData.find((r) => r.round === selectedRound)
@@ -383,6 +464,7 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
       holes={selectedRoundData.holes}
       relToPar={selectedRoundData.relToPar}
       playerId={playerId}
+      tournamentId={tournamentId}
       onRoundClick={onRoundClick}
     />
   )

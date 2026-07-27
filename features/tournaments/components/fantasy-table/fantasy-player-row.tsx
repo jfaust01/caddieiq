@@ -15,6 +15,7 @@ interface FantasyPlayerRowProps {
   phase: TablePhase
   index: number
   dfsResult?: DfsValueResult
+  tournamentId?: string
   positionCountMap?: Map<number, number>
   onRowClick: (playerId: string) => void
   onRoundSelect?: (playerId: string, round: number) => void
@@ -30,6 +31,7 @@ export function FantasyPlayerRow({
   phase,
   index,
   dfsResult,
+  tournamentId,
   positionCountMap,
   onRowClick,
   onRoundSelect,
@@ -47,9 +49,9 @@ export function FantasyPlayerRow({
       {isScheduled ? (
         <FantasyRowCells entrant={entrant} dfsResult={dfsResult} rank={index + 1} onScorecardOpen={onRowClick} />
       ) : phase === 'live' ? (
-        <FantasyLiveEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} onScorecardOpen={onRowClick} onRoundSelect={onRoundSelect} dfsResult={dfsResult} selectedRound={selectedRound} />
+        <FantasyLiveEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} tournamentId={tournamentId} onScorecardOpen={onRowClick} onRoundSelect={onRoundSelect} dfsResult={dfsResult} selectedRound={selectedRound} />
       ) : (
-        <FantasyCompletedEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} onScorecardOpen={onRowClick} onRoundSelect={onRoundSelect} dfsResult={dfsResult} selectedRound={selectedRound} />
+        <FantasyCompletedEnhancedRowCells entrant={entrant} positionCountMap={positionCountMap} tournamentId={tournamentId} onScorecardOpen={onRowClick} onRoundSelect={onRoundSelect} dfsResult={dfsResult} selectedRound={selectedRound} />
       )}
     </tr>
   )
