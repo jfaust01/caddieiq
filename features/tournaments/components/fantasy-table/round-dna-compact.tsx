@@ -285,7 +285,7 @@ function RoundDnaRow({
       onClick={() => playerId && onRoundClick?.(playerId, round)}
     >
       <div className="flex h-full">
-        <div className="flex-1 min-w-0 max-w-[200px]">
+        <div className="flex-1 min-w-0">
           <svg
             className="w-full"
             height={SVG_HEIGHT}
