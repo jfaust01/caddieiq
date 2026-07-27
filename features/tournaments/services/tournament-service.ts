@@ -880,7 +880,7 @@ export const tournamentService = {
    * Used when navigating via URL slug that doesn't include the ID.
    * Returns the first tournament that closely matches the name.
    */
-  async getTournamentByName(name: string): Promise<TournamentSummary | null> {
+  async getTournamentByName(slug: string): Promise<TournamentSummary | null> {
     try {
       const result = await this.getTournaments({
         page: 1,
@@ -891,22 +891,43 @@ export const tournamentService = {
         return null
       }
 
-      // Normalize the search name
-      const normalizedSearchName = name.toLowerCase().replace(/-/g, ' ').trim()
+      // Normalize both slug and tournament names for comparison
+      const normalizedSlug = slug.toLowerCase().replace(/-/g, ' ').trim()
+      
+      // Remove common words and extra spaces to create a searchable key
+      const normalize = (str: string) => 
+        str.toLowerCase()
+          .replace(/\s+/g, ' ')
+          .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+          .trim()
 
-      // Try exact match first (case-insensitive)
-      let match = result.items.find(
-        t => t.name.toLowerCase() === normalizedSearchName
+      const normalizedSearchKey = normalize(normalizedSlug)
+
+      // Try exact match first (case-insensitive, normalized)
+      let match = result.items.find(t => 
+        normalize(t.name) === normalizedSearchKey
       )
 
       if (match) {
         return match
       }
 
-      // Try partial match if exact doesn't work
-      match = result.items.find(
-        t => t.name.toLowerCase().includes(normalizedSearchName) ||
-             normalizedSearchName.includes(t.name.toLowerCase())
+      // Try close match - if most words are present
+      match = result.items.find(t => {
+        const tName = normalize(t.name)
+        const searchWords = normalizedSearchKey.split(' ').filter(w => w.length > 2)
+        const matchedWords = searchWords.filter(w => tName.includes(w))
+        return matchedWords.length >= Math.max(1, Math.ceil(searchWords.length * 0.7))
+      })
+
+      if (match) {
+        return match
+      }
+
+      // Fallback: partial substring match
+      match = result.items.find(t => 
+        normalize(t.name).includes(normalizedSearchKey) ||
+        normalizedSearchKey.includes(normalize(t.name))
       )
 
       return match || null
