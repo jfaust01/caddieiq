@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import type { TournamentSummary } from '@/features/tournaments/types'
 import { tourShortLabel } from '@/features/tournaments/utils/format'
+import { generateTournamentSlug } from '@/features/tournaments/utils/slug'
 import { cn } from '@/lib/utils'
 
 interface TournamentCardLiveProps {
@@ -37,7 +38,7 @@ export function TournamentCardLive({ tournament }: TournamentCardLiveProps) {
       : null
 
   return (
-    <Link href={`/tournaments/${tournament.id}`}>
+    <Link href={`/tournaments/${generateTournamentSlug(tournament.id)}`}>
       <div
         className={cn(
           'group relative overflow-hidden rounded-lg cursor-pointer',

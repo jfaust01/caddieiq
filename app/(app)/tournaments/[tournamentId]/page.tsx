@@ -43,7 +43,7 @@ export default async function TournamentDetailPage({
   const { tournamentId } = await params
   const tournament = await tournamentService.getTournamentById(tournamentId)
 
-  // Invalid or unknown id → proper HTTP 404 via the nearest not-found boundary.
+  // Invalid or unknown tournament ID → proper HTTP 404 via the nearest not-found boundary.
   if (!tournament) {
     notFound()
   }
