@@ -327,8 +327,10 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
             setCurrentPage(1)
           }}
           onRowClick={(playerId) => {
+            console.log('[v0] Tournament field onRowClick triggered with playerId:', playerId)
             setSelectedScorecardPlayer(playerId)
             setIsScorecardModalOpen(true)
+            console.log('[v0] State updated - shouldOpen:', true)
           }}
           onRoundSelect={(playerId, round) => {
             setSelectedScorecardPlayer(playerId)
