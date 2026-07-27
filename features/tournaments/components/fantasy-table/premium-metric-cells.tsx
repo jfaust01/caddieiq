@@ -101,7 +101,7 @@ export function SalaryCell({ entrant }: { entrant: FieldEntrant }) {
         <div className="flex items-center justify-center gap-1">
           <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
           <span className="font-semibold text-lg sm:text-lg tabular-nums">
-            ${salary.toLocaleString()}
+            ${(salary / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
           </span>
         </div>
       </div>
@@ -156,7 +156,7 @@ export function FantasyOutlookCell({
           <div className="flex items-center justify-center gap-1">
             <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
             <span className="font-semibold text-lg sm:text-lg tabular-nums">
-              ${salary.toLocaleString()}
+              ${(salary / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
             </span>
           </div>
         ) : null}
