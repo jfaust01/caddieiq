@@ -85,7 +85,7 @@ export function FantasyTableHeader({
                       const holeNum = i + 1
                       const PADDING = 8
                       const USABLE_WIDTH = 480 - 2 * PADDING
-                      const STEP_X = USABLE_WIDTH / 18
+                      const STEP_X = USABLE_WIDTH / 15
                       const xPos = PADDING + i * STEP_X + STEP_X / 2
                       return (
                         <text
