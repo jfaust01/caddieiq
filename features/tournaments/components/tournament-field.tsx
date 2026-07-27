@@ -8,7 +8,6 @@ import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-a
 import { ScorecardDrawer } from '@/features/tournaments/components/scorecard-drawer'
 import { FantasyFilterChips } from '@/features/tournaments/components/fantasy-table/fantasy-filter-chips'
 import { FantasyPlayerTable } from '@/features/tournaments/components/fantasy-table/fantasy-player-table'
-import { FavoritesTable } from '@/features/tournaments/components/fantasy-table/favorites-table'
 import {
   TournamentPlayerToolbar,
   type StatusOption,
@@ -22,7 +21,6 @@ import {
 } from '@/features/tournaments/config/phase-table-config'
 import type { FieldEntrant, FieldEntryStatus, TournamentField } from '@/features/tournaments/types'
 import { fieldStatusLabel } from '@/features/tournaments/utils/format'
-import { enrichEntrantsWithMockData } from '@/features/tournaments/utils/mock-entrant-data'
 import type { DfsValueField, DfsValueResult } from '@/lib/dfs-value'
 
 const STATUS_ORDER: Record<FieldEntryStatus, number> = {
@@ -54,72 +52,25 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
   const phase = classifyPhase(status)
   const config = phaseTableConfig[phase]
 
-  // Enrich entrants with mock data for missing fields
-  const enrichedEntrants = useMemo(() => enrichEntrantsWithMockData(field.entrants), [field.entrants])
-
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FieldEntryStatus | 'ALL'>('ALL')
   const [sort, setSort] = useState<SortKey>(() => config.defaultSort)
   const [chip, setChip] = useState<string>('all')
   const [selectedScorecardPlayer, setSelectedScorecardPlayer] = useState<string | null>(null)
-  const [selectedScorecardRound, setSelectedScorecardRound] = useState<number>(1)
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
-  const [favoritesLoaded, setFavoritesLoaded] = useState(false)
-
-  // Load favorites from localStorage after hydration
-  useEffect(() => {
-    const saved = localStorage.getItem(`favorites-${tournamentId}`)
-    if (saved) {
-      setFavorites(new Set(JSON.parse(saved)))
-    }
-    setFavoritesLoaded(true)
-  }, [tournamentId])
-
-  // Persist favorites to localStorage
-  useEffect(() => {
-    if (favoritesLoaded) {
-      localStorage.setItem(`favorites-${tournamentId}`, JSON.stringify([...favorites]))
-    }
-  }, [favorites, tournamentId, favoritesLoaded])
-
-  // Prevent background scroll when scorecard modal is open
-  useEffect(() => {
-    if (isScorecardModalOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isScorecardModalOpen])
-
-  const handleToggleFavorite = (playerId: string) => {
-    setFavorites((prev) => {
-      const next = new Set(prev)
-      if (next.has(playerId)) {
-        next.delete(playerId)
-      } else {
-        next.add(playerId)
-      }
-      return next
-    })
-  }
 
   // Status options limited to those actually present in this field.
   const statusOptions = useMemo<StatusOption[]>(() => {
     const present = new Set<FieldEntryStatus>()
-    for (const entrant of enrichedEntrants) present.add(entrant.status)
+    for (const entrant of field.entrants) present.add(entrant.status)
     const ordered = [...present].sort((a, b) => STATUS_ORDER[a] - STATUS_ORDER[b])
     return [
       { value: 'ALL', label: 'All statuses' },
       ...ordered.map((s) => ({ value: s, label: fieldStatusLabel(s) })),
     ]
-  }, [enrichedEntrants])
+  }, [field.entrants])
 
   // DFS Value Model lookups for the scheduled fantasy table + Elite/Value chips.
   const dfsByPlayer = useMemo(() => {
@@ -135,34 +86,34 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
 
   // Top 20 by CaddieIQ fantasy rating actually present.
   const topRatedIds = useMemo(() => {
-    const rated = enrichedEntrants
+    const rated = field.entrants
       .filter((e) => e.fantasyScore != null)
       .sort((a, b) => (b.fantasyScore ?? 0) - (a.fantasyScore ?? 0))
       .slice(0, 20)
     return new Set(rated.map((e) => e.playerId))
-  }, [enrichedEntrants])
+  }, [field.entrants])
 
   // Top 20 by in-progress tournament DK points (live phase).
   const topLiveDkIds = useMemo(() => {
-    const scored = enrichedEntrants
+    const scored = field.entrants
       .filter((e) => e.totalDkFantasyPoints != null)
       .sort((a, b) => (b.totalDkFantasyPoints ?? 0) - (a.totalDkFantasyPoints ?? 0))
       .slice(0, 20)
     return new Set(scored.map((e) => e.playerId))
-  }, [enrichedEntrants])
+  }, [field.entrants])
 
   // Top 20 by final DK points (completed phase).
   const topFinalDkIds = useMemo(() => {
-    const scored = enrichedEntrants
+    const scored = field.entrants
       .filter((e) => e.dkFantasyPoints != null)
       .sort((a, b) => (b.dkFantasyPoints ?? 0) - (a.dkFantasyPoints ?? 0))
       .slice(0, 20)
     return new Set(scored.map((e) => e.playerId))
-  }, [enrichedEntrants])
+  }, [field.entrants])
 
   // Top 20 by final DK points per $1k salary (needs both real values).
   const topValueIds = useMemo(() => {
-    const eligible = enrichedEntrants
+    const eligible = field.entrants
       .filter((e) => e.dkFantasyPoints != null && e.dfsSalary != null && e.dfsSalary > 0)
       .sort(
         (a, b) =>
@@ -170,12 +121,12 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
       )
       .slice(0, 20)
     return new Set(eligible.map((e) => e.playerId))
-  }, [enrichedEntrants])
+  }, [field.entrants])
 
   // Everything the config's filter predicates/availability checks may read.
   const filterContext = useMemo<FilterContext>(
     () => ({
-      entrants: enrichedEntrants,
+      entrants: field.entrants,
       dfsByPlayer,
       valuePlayIds,
       topRatedIds,
@@ -183,14 +134,14 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
       topFinalDkIds,
       topValueIds,
     }),
-    [enrichedEntrants, dfsByPlayer, valuePlayIds, topRatedIds, topLiveDkIds, topFinalDkIds, topValueIds],
+    [field.entrants, dfsByPlayer, valuePlayIds, topRatedIds, topLiveDkIds, topFinalDkIds, topValueIds],
   )
 
   // Search + status filter, then sort. Position/total sorts are meaningless
   // pre-tournament, so the scheduled phase falls back to CaddieIQ rating.
   const baseFiltered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    const result = enrichedEntrants.filter((entrant) => {
+    const result = field.entrants.filter((entrant) => {
       const matchesQuery =
         normalizedQuery === '' || entrant.playerName.toLowerCase().includes(normalizedQuery)
       const matchesStatus = statusFilter === 'ALL' || entrant.status === statusFilter
@@ -348,28 +299,6 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
         <FantasyFilterChips chips={chips} active={chip} onSelect={setChip} accent={config.accent} />
       </div>
 
-      {/* Favorites Table */}
-      {favorites.size > 0 && (
-        <FavoritesTable
-          favoriteIds={favorites}
-          allEntrants={enrichedEntrants}
-          fieldSize={field.size}
-          dfsByPlayer={dfsByPlayer}
-          phase={phase}
-          tournamentId={tournamentId}
-          onToggleFavorite={handleToggleFavorite}
-          onRowClick={(playerId) => {
-            setSelectedScorecardPlayer(playerId)
-            setIsScorecardModalOpen(true)
-          }}
-          onRoundSelect={(playerId, round) => {
-            setSelectedScorecardPlayer(playerId)
-            setSelectedScorecardRound(round)
-            setIsScorecardModalOpen(true)
-          }}
-        />
-      )}
-
       {filtered.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -383,8 +312,6 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           allEntrants={field.entrants}
           fieldSize={field.size}
           dfsByPlayer={dfsByPlayer}
-          tournamentId={tournamentId}
-          favoriteIds={favorites}
           toolbar={toolbar}
           currentPage={currentPage}
           pageSize={pageSize}
@@ -396,12 +323,6 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           }}
           onRowClick={(playerId) => {
             setSelectedScorecardPlayer(playerId)
-            setIsScorecardModalOpen(true)
-          }}
-          onToggleFavorite={handleToggleFavorite}
-          onRoundSelect={(playerId, round) => {
-            setSelectedScorecardPlayer(playerId)
-            setSelectedScorecardRound(round)
             setIsScorecardModalOpen(true)
           }}
         />
@@ -416,7 +337,6 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
         tournamentId={tournamentId}
         visiblePlayers={filtered}
         status={status}
-        initialRound={selectedScorecardRound}
       />
     </div>
   )

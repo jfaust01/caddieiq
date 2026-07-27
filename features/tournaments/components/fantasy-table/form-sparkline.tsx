@@ -118,6 +118,17 @@ export function FormSparkline({
         strokeWidth="0.5"
       />
 
+      {/* Line chart path */}
+      <path
+        d={pathData}
+        fill="none"
+        stroke={lineColor}
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+
       {/* Data points on the line */}
       {points.map((point, i) => (
         <g key={i}>

@@ -85,7 +85,7 @@ export async function GET(
     })
 
     // Fetch course holes for par data
-    // Path: tournament -> tournamentCourses -> course -> holes
+    // Path: tournament -> tournament_courses -> course -> course_holes
     let courseHoles: Array<{ holeNumber: number; par: number | null }> = []
     
     try {
@@ -94,7 +94,7 @@ export async function GET(
         where: { id: tournamentId },
         select: {
           id: true,
-          tournamentCourses: {
+          courses: {
             select: {
               course: {
                 select: {
@@ -112,9 +112,9 @@ export async function GET(
         },
       })
 
-      if (tournament?.tournamentCourses && tournament.tournamentCourses.length > 0) {
+      if (tournament?.courses && tournament.courses.length > 0) {
         // Use first course's holes (most tournaments have one primary course)
-        const courseHolesData = tournament.tournamentCourses[0]?.course?.holes || []
+        const courseHolesData = tournament.courses[0]?.course?.holes || []
         if (courseHolesData.length === 18) {
           courseHoles = courseHolesData.map(hole => ({
             holeNumber: hole.holeNumber,

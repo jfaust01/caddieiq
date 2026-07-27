@@ -3,7 +3,6 @@
 import { ChevronRight, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import type { DfsValueField } from '@/features/tournaments/services/tournament-service'
-import { generateTournamentSlug } from '@/features/tournaments/utils/slug'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface CompactDfsSummaryProps {
@@ -38,7 +37,7 @@ export function CompactDfsSummary({
         <div className="flex items-center justify-between">
           <CardTitle>Value Plays</CardTitle>
           <Link
-            href={`/tournaments/${generateTournamentSlug(tournamentId)}?tab=draftkings`}
+            href={`/tournaments/${tournamentId}?tab=draftkings`}
             className="inline-flex gap-1 h-9 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors"
           >
             <span>View all DFS</span>

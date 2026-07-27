@@ -6,7 +6,6 @@ import { useMemo } from 'react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FieldLifecycleBadge } from '@/features/tournaments/components/field-lifecycle-badge'
-import { generateTournamentSlug } from '@/features/tournaments/utils/slug'
 import type { FieldIntelligenceReport } from '@/lib/data-coverage/types'
 import type { FieldStatus } from '@/lib/tournament-context/types'
 import { cn } from '@/lib/utils'
@@ -91,7 +90,7 @@ export function FieldIntelligencePanel({ report }: { report: FieldIntelligenceRe
                   >
                     <td className="py-3 pr-4">
                       <Link
-                        href={`/tournaments/${generateTournamentSlug(row.tournamentId)}`}
+                        href={`/tournaments/${row.tournamentId}`}
                         className="font-medium text-card-foreground hover:underline"
                       >
                         {row.name}

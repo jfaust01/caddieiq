@@ -141,54 +141,8 @@ const RoundHoleRow = memo(function RoundHoleRow({
           <div className="w-full h-px bg-white/[0.05]" />
         </div>
 
-        {/* SVG overlay for connecting lines */}
-        <svg 
-          className="absolute inset-0 w-full h-full pointer-events-none" 
-          aria-hidden="true"
-          viewBox="0 0 1800 200"
-          preserveAspectRatio="none"
-        >
-          <polyline
-            points={holes.map((hole, index) => {
-              const { yOffset } = getHoleStyle(hole)
-              const xPos = (index + 0.5) * 100
-              const yPos = 100 + yOffset
-              return `${xPos},${yPos}`
-            }).join(' ')}
-            fill="none"
-            stroke="url(#lineGradient)"
-            strokeWidth="2"
-            opacity="0.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {holes.slice(0, -1).map((hole, index) => {
-            const { color } = getHoleStyle(hole)
-            const nextHole = holes[index + 1]
-            const { yOffset: y1Offset } = getHoleStyle(hole)
-            const { yOffset: y2Offset } = getHoleStyle(nextHole)
-            const x1 = (index + 0.5) * 100
-            const x2 = (index + 1.5) * 100
-            const y1 = 100 + y1Offset
-            const y2 = 100 + y2Offset
-            return (
-              <line
-                key={`line-${round}-${index}`}
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke={color}
-                strokeWidth="2"
-                opacity="0.8"
-                strokeLinecap="round"
-              />
-            )
-          })}
-        </svg>
-
         {/* Hole dots grid */}
-        <div className="grid w-full h-full gap-0 relative z-10" style={{ gridTemplateColumns: 'repeat(18, 1fr)' }}>
+        <div className="grid w-full h-full gap-0" style={{ gridTemplateColumns: 'repeat(18, 1fr)' }}>
           {holes.map((hole, index) => (
             <HoleDot
               key={`hole-${round}-${hole.holeNumber}`}
@@ -235,6 +189,7 @@ const HoleDot = memo(function HoleDot({
   onHoverEnd: () => void
 }) {
   const { color, yOffset } = getHoleStyle(hole)
+  const nextHole = holeIndex < totalHoles - 1 ? hole : null
   
   // Accessible label with full score details
   const holeResultText = hole.status === 'unplayed' ? '' : getHoleResultText(hole.status)
@@ -251,6 +206,25 @@ const HoleDot = memo(function HoleDot({
       role="img"
       aria-label={label}
     >
+      {/* Connecting line to next hole (premium visual polish) */}
+      {nextHole && holeIndex < totalHoles - 1 && (
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{ overflow: 'visible' }}
+          aria-hidden="true"
+        >
+          <line
+            x1="50%"
+            y1={`calc(50% + ${yOffset}px)`}
+            x2="100%"
+            y2={`calc(50% + ${yOffset}px)`}
+            stroke={color}
+            strokeWidth="0.5"
+            opacity="0.3"
+          />
+        </svg>
+      )}
+
       {/* Baseline reference */}
       <div className="absolute inset-0 flex items-center pointer-events-none">
         <div className="w-px h-px bg-white/[0.1]" />
