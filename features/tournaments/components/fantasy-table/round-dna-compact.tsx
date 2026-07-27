@@ -285,7 +285,7 @@ function RoundDnaRow({
       onClick={() => playerId && onRoundClick?.(playerId, round)}
     >
       <div className="flex h-full relative">
-        <div className="flex-1 min-w-0 overflow-hidden relative">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <svg
             className="w-full"
             height={SVG_HEIGHT}
@@ -341,8 +341,9 @@ function RoundDnaRow({
 
 
           </svg>
+        </div>
 
-        {/* Tooltip - rendered outside SVG for proper z-indexing */}
+        {/* Tooltip - rendered outside overflow-hidden for proper visibility */}
         {tooltipHole && tooltipPosition && (
           <div
             className="absolute bg-gray-800 border border-gray-600 rounded px-2 py-1 pointer-events-none z-50 text-xs text-gray-100"
@@ -360,7 +361,6 @@ function RoundDnaRow({
             )}
           </div>
         )}
-        </div>
       </div>
     </div>
   )
