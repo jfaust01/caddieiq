@@ -18,7 +18,7 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
     .slice(0, 2)
 
   return (
-    <div className="flex gap-2 items-start py-1">
+    <div className="flex gap-2 items-start py-1 pr-2">
       {entrant.headshotUrl ? (
         <img
           src={entrant.headshotUrl || '/placeholder.svg'}
