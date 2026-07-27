@@ -72,7 +72,7 @@ export function AiIntelligenceCell({ entrant }: { entrant: FieldEntrant }) {
         ) : null}
         {formScore !== undefined && formScore !== null ? (
           <div>
-            <div className="text-gray-400 font-medium text-sm tabular-nums">
+            <div className="text-gray-400 font-medium text-2xl sm:text-3xl tabular-nums">
               {Math.round(formScore)}
             </div>
             <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
