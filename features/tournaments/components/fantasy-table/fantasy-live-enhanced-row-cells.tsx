@@ -71,6 +71,7 @@ export function FantasyLiveEnhancedRowCells({
           tournamentStatus={tournamentStatus}
           selectedRound={selectedRound}
           onRoundClick={onRoundSelect}
+          skillLevel={entrant.rankingScore}
         />
       </td>
 

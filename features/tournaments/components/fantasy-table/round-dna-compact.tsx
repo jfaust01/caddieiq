@@ -72,28 +72,43 @@ function seededHoleRandom(seed: string, holeNumber: number, index: number): numb
   return (hash % 1000) / 1000
 }
 
-function generateMockHoles(relToPar: number, round: number, playerId: string = ''): HoleResult[] {
+function generateMockHoles(relToPar: number, round: number, playerId: string = '', skillLevel: number = 50): HoleResult[] {
   const holes: HoleResult[] = []
   const targetDeviation = relToPar
   const seed = playerId + '-r' + round
   
-  // Generate random scores for all holes first
+  // Skill level affects score distribution (0-100, where 100 is pro level)
+  // Higher skill = more birdies and eagles, fewer bogeys
+  const skillFactor = Math.max(0, Math.min(100, skillLevel)) / 100
+  
+  // Generate random scores for all holes with skill-based distribution
   const holeScores: number[] = []
   for (let hole = 1; hole <= 18; hole++) {
     const rand = seededHoleRandom(seed, hole, 0)
+    const rand2 = seededHoleRandom(seed, hole, 1)
     let score = 0
     
-    // Weighted distribution to create varied scores
-    if (rand < 0.05) {
-      score = -2  // Eagle (5%)
-    } else if (rand < 0.25) {
-      score = -1  // Birdie (20%)
-    } else if (rand < 0.70) {
-      score = 0   // Par (45%)
-    } else if (rand < 0.95) {
-      score = 1   // Bogey (25%)
+    // Skill-adjusted weighted distribution
+    // Higher skilled players get better scores
+    const eagleThreshold = 0.02 + (skillFactor * 0.08)        // 2%-10% eagles
+    const birdieThreshold = eagleThreshold + (0.15 + (skillFactor * 0.15))  // 15%-30% birdies
+    const parThreshold = birdieThreshold + (0.35 + ((1 - skillFactor) * 0.2))  // 35%-55% pars
+    const bogeyThreshold = parThreshold + (0.30 - (skillFactor * 0.15))  // 15%-30% bogeys
+    const doubleThreshold = bogeyThreshold + (0.08 - (skillFactor * 0.06))  // 2%-8% double bogeys
+    
+    if (rand < eagleThreshold) {
+      score = -2  // Eagle
+    } else if (rand < birdieThreshold) {
+      score = -1  // Birdie
+    } else if (rand < parThreshold) {
+      score = 0   // Par
+    } else if (rand < bogeyThreshold) {
+      score = 1   // Bogey
+    } else if (rand < doubleThreshold) {
+      score = 2   // Double Bogey
     } else {
-      score = 2   // Double Bogey (5%)
+      // Triple bogey or worse (rare)
+      score = rand2 < 0.5 ? 3 : 2
     }
     
     holeScores.push(score)
@@ -104,12 +119,12 @@ function generateMockHoles(relToPar: number, round: number, playerId: string = '
   let deviation = currentTotal - targetDeviation
   
   // Adjust holes to match target while maintaining variety
-  let holesRemaining = 18
-  while (Math.abs(deviation) > 0.001 && holesRemaining > 0) {
-    for (let i = 0; i < 18 && Math.abs(deviation) > 0.001; i++) {
+  let adjustmentPasses = 0
+  while (Math.abs(deviation) > 0.1 && adjustmentPasses < 5) {
+    for (let i = 0; i < 18 && Math.abs(deviation) > 0.1; i++) {
       if (deviation > 0.5) {
         // Need to improve score
-        if (holeScores[i] < 2) {
+        if (holeScores[i] < 3) {
           const adjustment = Math.min(1, deviation)
           holeScores[i] += adjustment
           deviation -= adjustment
@@ -123,12 +138,12 @@ function generateMockHoles(relToPar: number, round: number, playerId: string = '
         }
       }
     }
-    holesRemaining--
+    adjustmentPasses++
   }
   
   // Create hole results with adjusted scores
   for (let hole = 1; hole <= 18; hole++) {
-    const holeRelToPar = holeScores[hole - 1]
+    const holeRelToPar = Math.round(holeScores[hole - 1] * 2) / 2  // Round to nearest 0.5
     
     // Determine status based on hole's relative to par value
     let status: HoleResult['status'] = 'par'
@@ -136,7 +151,8 @@ function generateMockHoles(relToPar: number, round: number, playerId: string = '
     else if (holeRelToPar === -1) status = 'birdie'
     else if (holeRelToPar === 0) status = 'par'
     else if (holeRelToPar === 1) status = 'bogey'
-    else if (holeRelToPar >= 2) status = 'double'
+    else if (holeRelToPar === 2) status = 'double'
+    else if (holeRelToPar >= 3) status = 'triplePlus'
     
     holes.push({
       holeNumber: hole,
@@ -305,6 +321,7 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
   tournamentStatus,
   currentHole,
   onRoundClick,
+  skillLevel,
 }: {
   round1RelToPar: number | null
   round2RelToPar: number | null
@@ -319,6 +336,7 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
   tournamentStatus: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
   currentHole?: string | null
   onRoundClick?: (playerId: string, round: number) => void
+  skillLevel?: number
 }) {
   if (tournamentStatus === 'SCHEDULED') {
     return null
@@ -338,9 +356,9 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
         round: r.round,
         relToPar: r.relToPar!,
         dkPoints: r.dkPoints,
-        holes: generateMockHoles(r.relToPar!, r.round, playerId),
+        holes: generateMockHoles(r.relToPar!, r.round, playerId, skillLevel),
       }))
-  }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar, round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints])
+  }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar, round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints, skillLevel])
 
   const selectedRoundData = roundsData.find((r) => r.round === selectedRound)
 
