@@ -66,16 +66,24 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
-  const [favorites, setFavorites] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set()
+  const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false)
+
+  // Load favorites from localStorage after hydration
+  useEffect(() => {
     const saved = localStorage.getItem(`favorites-${tournamentId}`)
-    return saved ? new Set(JSON.parse(saved)) : new Set()
-  })
+    if (saved) {
+      setFavorites(new Set(JSON.parse(saved)))
+    }
+    setFavoritesLoaded(true)
+  }, [tournamentId])
 
   // Persist favorites to localStorage
   useEffect(() => {
-    localStorage.setItem(`favorites-${tournamentId}`, JSON.stringify([...favorites]))
-  }, [favorites, tournamentId])
+    if (favoritesLoaded) {
+      localStorage.setItem(`favorites-${tournamentId}`, JSON.stringify([...favorites]))
+    }
+  }, [favorites, tournamentId, favoritesLoaded])
 
   // Prevent background scroll when scorecard modal is open
   useEffect(() => {
