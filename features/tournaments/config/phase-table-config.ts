@@ -318,8 +318,8 @@ const marketColumn: ColumnDescriptor = {
   id: 'market',
   label: 'Market',
   tooltip: 'Combined Ownership and Odds to Win',
-  colClassName: 'w-[170px] sm:w-[200px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const recentFormLiveColumn: ColumnDescriptor = {
