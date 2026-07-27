@@ -72,7 +72,7 @@ export function FantasyLiveEnhancedRowCells({
 
       {/* ROUND DNA */}
       <td 
-        className="border-l border-white/[0.055] align-middle cursor-pointer hover:bg-white/[0.05] transition-colors"
+        className="border-l border-white/[0.055] align-middle cursor-pointer"
         onClick={() => onScorecardOpen?.(entrant.playerId)}
       >
         <RoundDnaCompact 
