@@ -91,7 +91,7 @@ export function FieldIntelligencePanel({ report }: { report: FieldIntelligenceRe
                   >
                     <td className="py-3 pr-4">
                       <Link
-                        href={`/tournaments/${generateTournamentSlug(row.name, row.tournamentId)}`}
+                        href={`/tournaments/${generateTournamentSlug(row.tournamentId)}`}
                         className="font-medium text-card-foreground hover:underline"
                       >
                         {row.name}

@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import { TournamentCommandCenter } from '@/features/tournaments/command-center/tournament-command-center'
 import { TournamentBreadcrumbProvider } from '@/features/tournaments/tournament-breadcrumb-provider'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
-import { extractTournamentIdFromSlug } from '@/features/tournaments/utils/slug'
 
 interface TournamentDetailPageProps {
   params: Promise<{ slug: string }>
@@ -14,20 +13,9 @@ export async function generateMetadata({
   params,
 }: TournamentDetailPageProps): Promise<Metadata> {
   const { slug } = await params
-  const tournamentId = extractTournamentIdFromSlug(slug)
 
   try {
-    let tournament = null
-    
-    // Try to get by ID first
-    if (tournamentId) {
-      tournament = await tournamentService.getTournamentById(tournamentId)
-    }
-    
-    // Fallback to name-based lookup if ID extraction failed or tournament not found
-    if (!tournament) {
-      tournament = await tournamentService.getTournamentByName(slug)
-    }
+    const tournament = await tournamentService.getTournamentById(slug)
 
     if (!tournament) {
       return {
@@ -53,21 +41,9 @@ export default async function TournamentDetailPage({
   params,
 }: TournamentDetailPageProps) {
   const { slug } = await params
-  const tournamentId = extractTournamentIdFromSlug(slug)
-  
-  let tournament = null
-  
-  // Try to get by ID first
-  if (tournamentId) {
-    tournament = await tournamentService.getTournamentById(tournamentId)
-  }
-  
-  // Fallback to name-based lookup if ID extraction failed or tournament not found
-  if (!tournament) {
-    tournament = await tournamentService.getTournamentByName(slug)
-  }
+  const tournament = await tournamentService.getTournamentById(slug)
 
-  // Invalid or unknown slug → proper HTTP 404 via the nearest not-found boundary.
+  // Invalid or unknown tournament ID → proper HTTP 404 via the nearest not-found boundary.
   if (!tournament) {
     notFound()
   }

@@ -122,11 +122,9 @@ export function TournamentSelector({
   }, [searchQuery])
 
   const handleSelectTournament = (tournamentId: string) => {
-    const tournament = options.find(opt => opt.id === tournamentId)
-    if (!tournament) return
     setOpen(false)
     setSearchQuery("")
-    router.push(`/tournaments/${generateTournamentSlug(tournament.name, tournamentId)}`)
+    router.push(`/tournaments/${generateTournamentSlug(tournamentId)}`)
   }
 
   const hasNoResults = showSearch && filteredOptions.length === 0

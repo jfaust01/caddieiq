@@ -1,30 +1,15 @@
 /**
- * Generates a URL-friendly slug from a tournament name and ID.
- * Format: "tournament-name_tournamentId"
- * Uses underscore to separate name from ID for reliable extraction.
+ * Simply return the tournament ID as the slug.
+ * This ensures URLs are always resolvable via direct ID lookup.
  */
-export function generateTournamentSlug(name: string, tournamentId: string): string {
-  const slugName = name
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-
-  return `${slugName}_${tournamentId}`
+export function generateTournamentSlug(tournamentId: string): string {
+  return tournamentId
 }
 
 /**
  * Extracts the tournament ID from a slug.
- * Format: "tournament-name_tournamentId"
- * The ID is after the underscore.
- * Returns empty string if no underscore found (backward compatibility).
+ * Since the slug IS the ID, just return it.
  */
 export function extractTournamentIdFromSlug(slug: string): string {
-  const parts = slug.split('_')
-  if (parts.length > 1) {
-    return parts[parts.length - 1]
-  }
-  return ''
+  return slug
 }
