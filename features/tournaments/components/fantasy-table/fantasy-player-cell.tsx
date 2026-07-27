@@ -32,7 +32,7 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
       )}
       <div className="flex min-w-0 flex-col">
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className="text-sm font-medium text-foreground">
+          <span className="min-w-0 truncate text-sm font-medium text-foreground">
             {entrant.playerName}
           </span>
           {entrant.countryCode && (

@@ -6,16 +6,16 @@ import { TournamentBreadcrumbProvider } from '@/features/tournaments/tournament-
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
 
 interface TournamentDetailPageProps {
-  params: Promise<{ tournamentId: string }>
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata({
   params,
 }: TournamentDetailPageProps): Promise<Metadata> {
-  const { tournamentId } = await params
+  const { slug } = await params
 
   try {
-    const tournament = await tournamentService.getTournamentById(tournamentId)
+    const tournament = await tournamentService.getTournamentById(slug)
 
     if (!tournament) {
       return {
@@ -40,10 +40,10 @@ export async function generateMetadata({
 export default async function TournamentDetailPage({
   params,
 }: TournamentDetailPageProps) {
-  const { tournamentId } = await params
-  const tournament = await tournamentService.getTournamentById(tournamentId)
+  const { slug } = await params
+  const tournament = await tournamentService.getTournamentById(slug)
 
-  // Invalid or unknown id → proper HTTP 404 via the nearest not-found boundary.
+  // Invalid or unknown tournament ID → proper HTTP 404 via the nearest not-found boundary.
   if (!tournament) {
     notFound()
   }

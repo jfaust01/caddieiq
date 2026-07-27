@@ -49,6 +49,7 @@ export interface PhaseAccent {
 export interface ColumnDescriptor {
   id: string
   label: string
+  subtitle?: string
   tooltip?: string
   /** `<col>` width class. */
   colClassName: string
@@ -66,20 +67,12 @@ const TH_SCORE =
   'h-[50px] text-center text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] tabular-nums text-muted-foreground/80'
 
 // Scorecard column (common to all phases)
-const scorecardColumn: ColumnDescriptor = {
-  id: 'scorecard',
-  label: 'Card',
-  colClassName: 'w-[50px] sm:w-[60px]',
-  thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
-}
-
 /**
  * Scheduled (pre-tournament) columns for fantasy lineup building.
  * Sorted by mobile priority: Player, Salary, Odds, World Ranking first,
  * then Recent Form, Tee Time, Course Fit via horizontal scroll.
  */
 const scheduledColumns: ColumnDescriptor[] = [
-  scorecardColumn,
   {
     id: 'player',
     label: 'Players',
@@ -201,6 +194,13 @@ const resultColumn: ColumnDescriptor = {
   colClassName: 'w-[90px] sm:w-[100px]',
   thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
 }
+const favoritesColumn: ColumnDescriptor = {
+  id: 'favorites',
+  label: 'Favorites',
+  tooltip: 'Mark as favorite player',
+  colClassName: 'w-[60px] sm:w-[70px]',
+  thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
+}
 
 /**
  * Live (in-progress) columns for real-time fantasy tracking.
@@ -266,9 +266,10 @@ const courseFitColumn: ColumnDescriptor = {
 
 const tournamentFormColumn: ColumnDescriptor = {
   id: 'tournamentForm',
-  label: 'Tournament Form',
+  label: 'Round DNA',
+  subtitle: 'Hole by Hole',
   tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
-  colClassName: 'w-[300px] sm:w-[340px]',
+  colClassName: 'w-[480px] sm:w-[520px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
@@ -296,20 +297,49 @@ const leverageColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
+const aiIntelligenceColumn: ColumnDescriptor = {
+  id: 'aiIntelligence',
+  label: 'AI Rating',
+  tooltip: 'Combined AI Rating and Course Fit',
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const fantasyOutlookColumn: ColumnDescriptor = {
+  id: 'fantasyOutlook',
+  label: 'Fantasy Outlook',
+  tooltip: 'Combined Salary, DK Score, and Value',
+  colClassName: 'w-[220px] sm:w-[250px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+}
+
+const marketColumn: ColumnDescriptor = {
+  id: 'market',
+  label: 'Market',
+  tooltip: 'Combined Ownership and Odds to Win',
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
+const recentFormLiveColumn: ColumnDescriptor = {
+  id: 'recentForm',
+  label: 'Recent Form',
+  tooltip: 'Recent form score (0–100)',
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
 const liveColumns: ColumnDescriptor[] = [
   posColumn,
-  scorecardColumn,
   scoringPlayerColumn,
   toParColumn,
   tournamentFormColumn,
-  aiRatingColumn,
-  courseFitColumn,
+  aiIntelligenceColumn,
+  recentFormLiveColumn,
   salaryLiveColumn,
   dkScoreLiveColumn,
-  liveValueColumn,
   liveOwnershipColumn,
-  leverageColumn,
-  oddsScoringColumn,
+  marketColumn,
 ]
 
 /**
@@ -383,9 +413,10 @@ const courseFitCompletedColumn: ColumnDescriptor = {
 
 const tournamentFormCompletedColumn: ColumnDescriptor = {
   id: 'tournamentForm',
-  label: 'TOURNAMENT FORM',
+  label: 'Round DNA',
+  subtitle: 'Hole by Hole',
   tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
-  colClassName: 'w-[300px] sm:w-[340px]',
+  colClassName: 'w-[480px] sm:w-[520px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
@@ -406,27 +437,26 @@ const leverageCompletedColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
-const oddsCompletedColumn: ColumnDescriptor = {
-  id: 'odds',
-  label: 'ODDS TO WIN',
-  tooltip: 'Odds to win tournament',
-  colClassName: 'w-[110px] sm:w-[130px]',
+const recentFormCompletedColumn: ColumnDescriptor = {
+  id: 'recentForm',
+  label: 'Recent Form',
+  tooltip: 'Recent form score (0–100)',
+  colClassName: 'w-[100px] sm:w-[120px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const completedColumns: ColumnDescriptor[] = [
   resultColumn,
-  scorecardColumn,
+  favoritesColumn,
   scoringPlayerColumn,
   toParColumn,
   tournamentFormCompletedColumn,
-  aiRatingCompletedColumn,
-  courseFitCompletedColumn,
+  aiIntelligenceColumn,
+  recentFormCompletedColumn,
   salaryCompletedColumn,
   dkScoreCompletedColumn,
-  valueCompletedColumn,
-  leverageCompletedColumn,
-  oddsCompletedColumn,
+  ownershipCompletedColumn,
+  marketColumn,
 ]
 
 // ---------------------------------------------------------------------------
