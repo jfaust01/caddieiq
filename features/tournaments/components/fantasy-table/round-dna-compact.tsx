@@ -446,7 +446,7 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
           holes,
         }
       })
-  }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar, round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints, skillLevel])
+  }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar, round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints, realHolesCache, skillLevel])
 
   const selectedRoundData = roundsData.find((r) => r.round === selectedRound)
 
