@@ -284,8 +284,8 @@ function RoundDnaRow({
       }}
       onClick={() => playerId && onRoundClick?.(playerId, round)}
     >
-      <div className="flex h-full">
-        <div className="flex-1 min-w-0">
+      <div className="flex h-full relative">
+        <div className="flex-1 min-w-0 overflow-hidden relative">
           <svg
             className="w-full"
             height={SVG_HEIGHT}
@@ -339,32 +339,27 @@ function RoundDnaRow({
               </g>
             ))}
 
-            {/* Tooltip */}
-            {tooltipHole && tooltipPosition && (
-              <g pointerEvents="none">
-                <rect
-                  x={tooltipPosition.x - 25}
-                  y={tooltipPosition.y - 20}
-                  width={50}
-                  height={18}
-                  fill="#1F2937"
-                  rx={3}
-                  stroke="#4B5563"
-                  strokeWidth="0.5"
-                />
-                <text
-                  x={tooltipPosition.x}
-                  y={tooltipPosition.y - 8}
-                  textAnchor="middle"
-                  fontSize="10"
-                  fill="#F3F4F6"
-                  fontWeight="500"
-                >
-                  {`H${tooltipHole.holeNumber} ${tooltipHole.relativeToPar === 0 ? 'E' : (tooltipHole.relativeToPar ?? 0) > 0 ? '+' + tooltipHole.relativeToPar : tooltipHole.relativeToPar}`}
-                </text>
-              </g>
-            )}
+
           </svg>
+
+        {/* Tooltip - rendered outside SVG for proper z-indexing */}
+        {tooltipHole && tooltipPosition && (
+          <div
+            className="absolute bg-gray-800 border border-gray-600 rounded px-2 py-1 pointer-events-none z-50 text-xs text-gray-100"
+            style={{
+              left: `${tooltipPosition.x}px`,
+              top: `${tooltipPosition.y - 40}px`,
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <div className="font-semibold">H{tooltipHole.holeNumber}</div>
+            <div className="text-gray-300">Par: {tooltipHole.par}</div>
+            <div className="text-gray-300">Score: {tooltipHole.score ?? '-'}</div>
+            {tooltipHole.dkPoints !== undefined && tooltipHole.dkPoints !== null && (
+              <div className="text-yellow-400">DK: {tooltipHole.dkPoints}</div>
+            )}
+          </div>
+        )}
         </div>
       </div>
     </div>
