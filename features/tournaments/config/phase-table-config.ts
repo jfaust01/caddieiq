@@ -196,9 +196,9 @@ const resultColumn: ColumnDescriptor = {
 }
 const favoritesColumn: ColumnDescriptor = {
   id: 'favorites',
-  label: 'Favorites',
+  label: '',
   tooltip: 'Mark as favorite player',
-  colClassName: 'w-[60px] sm:w-[70px]',
+  colClassName: 'w-[45px]',
   thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
 }
 
@@ -269,7 +269,7 @@ const tournamentFormColumn: ColumnDescriptor = {
   label: 'Round DNA',
   subtitle: 'Hole by Hole',
   tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
-  colClassName: 'w-[480px] sm:w-[520px]',
+  colClassName: 'w-[300px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
@@ -416,7 +416,7 @@ const tournamentFormCompletedColumn: ColumnDescriptor = {
   label: 'Round DNA',
   subtitle: 'Hole by Hole',
   tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
-  colClassName: 'w-[480px] sm:w-[520px]',
+  colClassName: 'w-[300px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 

@@ -204,11 +204,12 @@ export const RoundDnaCell = memo(function RoundDnaCell({
 
 function HoleNumberHeader() {
   // SVG dimensions match RoundDnaRow
-  const SVG_WIDTH = 480
+  const SVG_WIDTH = 300
   const SVG_HEIGHT = 28
   const PADDING = 8
+  const DOT_GAP = 5 // 5px gap between each dot
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
-  const STEP_X = USABLE_WIDTH / 17
+  const STEP_X = (USABLE_WIDTH - DOT_GAP * 17) / 17 + DOT_GAP
 
   return (
     <div className="w-full h-4 px-0.5 flex items-center gap-0.5">
@@ -222,8 +223,8 @@ function HoleNumberHeader() {
         className="flex-1 h-full"
         preserveAspectRatio="none"
       >
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map((holeNum) => {
-          const xPos = PADDING + (holeNum - 1) * STEP_X
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map((holeNum, idx) => {
+          const xPos = PADDING + idx * STEP_X
           const isDivider = holeNum === 10
           
           return (
@@ -242,7 +243,7 @@ function HoleNumberHeader() {
                 x={xPos}
                 y={SVG_HEIGHT - 1}
                 textAnchor="middle"
-                fontSize="7.5"
+                fontSize="10"
                 fill="rgb(107, 114, 128)"
                 fontWeight="500"
               >
@@ -290,12 +291,13 @@ function RoundDnaRow({
   const scoreColor = getScoreColor(relToPar)
 
   // SVG dimensions and coordinate system
-  const SVG_WIDTH = 480
+  const SVG_WIDTH = 300
   const SVG_HEIGHT = 40
   const CENTER_Y = SVG_HEIGHT / 2
   const PADDING = 8
+  const DOT_GAP = 5 // 5px gap between each dot
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
-  const STEP_X = USABLE_WIDTH / 17
+  const STEP_X = (USABLE_WIDTH - DOT_GAP * 17) / 17 + DOT_GAP
 
   // Calculate point coordinates (shared between line and dots)
   const points = holes.map((hole, idx) => ({

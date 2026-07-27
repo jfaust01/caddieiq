@@ -57,7 +57,7 @@ export function FantasyLiveEnhancedRowCells({
       </td>
 
       {/* PLAYER */}
-      <td className="px-2 sm:px-3 py-2.5 align-middle text-left">
+      <td className="px-2 sm:px-3 py-[10px] align-middle text-left">
         <FantasyPlayerCell entrant={entrant} />
       </td>
 
