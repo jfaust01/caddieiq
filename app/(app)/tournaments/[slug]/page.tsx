@@ -17,7 +17,17 @@ export async function generateMetadata({
   const tournamentId = extractTournamentIdFromSlug(slug)
 
   try {
-    const tournament = await tournamentService.getTournamentById(tournamentId)
+    let tournament = null
+    
+    // Try to get by ID first
+    if (tournamentId) {
+      tournament = await tournamentService.getTournamentById(tournamentId)
+    }
+    
+    // Fallback to name-based lookup if ID extraction failed or tournament not found
+    if (!tournament) {
+      tournament = await tournamentService.getTournamentByName(slug)
+    }
 
     if (!tournament) {
       return {
@@ -44,9 +54,20 @@ export default async function TournamentDetailPage({
 }: TournamentDetailPageProps) {
   const { slug } = await params
   const tournamentId = extractTournamentIdFromSlug(slug)
-  const tournament = await tournamentService.getTournamentById(tournamentId)
+  
+  let tournament = null
+  
+  // Try to get by ID first
+  if (tournamentId) {
+    tournament = await tournamentService.getTournamentById(tournamentId)
+  }
+  
+  // Fallback to name-based lookup if ID extraction failed or tournament not found
+  if (!tournament) {
+    tournament = await tournamentService.getTournamentByName(slug)
+  }
 
-  // Invalid or unknown id → proper HTTP 404 via the nearest not-found boundary.
+  // Invalid or unknown slug → proper HTTP 404 via the nearest not-found boundary.
   if (!tournament) {
     notFound()
   }

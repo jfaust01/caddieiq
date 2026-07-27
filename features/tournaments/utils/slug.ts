@@ -19,8 +19,12 @@ export function generateTournamentSlug(name: string, tournamentId: string): stri
  * Extracts the tournament ID from a slug.
  * Format: "tournament-name_tournamentId"
  * The ID is after the underscore.
+ * Returns empty string if no underscore found (backward compatibility).
  */
 export function extractTournamentIdFromSlug(slug: string): string {
   const parts = slug.split('_')
-  return parts[parts.length - 1]
+  if (parts.length > 1) {
+    return parts[parts.length - 1]
+  }
+  return ''
 }
