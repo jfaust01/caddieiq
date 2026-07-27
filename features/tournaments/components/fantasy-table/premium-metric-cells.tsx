@@ -186,14 +186,38 @@ export function FantasyOutlookCell({
 }
 
 /**
+ * OWNERSHIP CELL
+ * Displays DFS ownership percentage
+ */
+export function OwnershipCell({ entrant }: { entrant: FieldEntrant }) {
+  const ownership = entrant.ownershipPercent
+
+  if (ownership === null || ownership === undefined) {
+    return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
+  }
+
+  return (
+    <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <div className="text-center">
+        <div className="text-violet-400 font-semibold text-lg sm:text-lg tabular-nums">
+          {Math.round(ownership)}%
+        </div>
+        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
+          Owned
+        </div>
+      </div>
+    </td>
+  )
+}
+
+/**
  * MARKET CELL
- * Combines Ownership % and Odds to Win
+ * Displays Odds to Win
  */
 export function MarketCell({ entrant }: { entrant: FieldEntrant }) {
-  const ownership = entrant.ownershipPercent
   const odds = entrant.oddsToWin
 
-  if ((ownership === null || ownership === undefined) && (odds === null || odds === undefined)) {
+  if (odds === null || odds === undefined) {
     return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
@@ -203,27 +227,13 @@ export function MarketCell({ entrant }: { entrant: FieldEntrant }) {
 
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-      <div className="space-y-1.5 text-center">
-        {ownership !== undefined && ownership !== null ? (
-          <div>
-            <div className="text-violet-400 font-semibold text-lg sm:text-lg tabular-nums">
-              {Math.round(ownership)}%
-            </div>
-            <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
-              Owned
-            </div>
-          </div>
-        ) : null}
-        {odds !== undefined && odds !== null ? (
-          <div>
-            <div className="text-gray-400 font-medium text-lg sm:text-lg tabular-nums">
-              {formatOdds(odds)}
-            </div>
-            <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
-              Odds to Win
-            </div>
-          </div>
-        ) : null}
+      <div className="text-center">
+        <div className="text-gray-400 font-medium text-lg sm:text-lg tabular-nums">
+          {formatOdds(odds)}
+        </div>
+        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
+          Odds to Win
+        </div>
       </div>
     </td>
   )

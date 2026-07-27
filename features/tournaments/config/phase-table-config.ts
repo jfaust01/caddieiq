@@ -340,6 +340,7 @@ const liveColumns: ColumnDescriptor[] = [
   recentFormLiveColumn,
   salaryLiveColumn,
   dkScoreLiveColumn,
+  liveOwnershipColumn,
   marketColumn,
 ]
 
@@ -456,6 +457,7 @@ const completedColumns: ColumnDescriptor[] = [
   recentFormCompletedColumn,
   salaryCompletedColumn,
   dkScoreCompletedColumn,
+  ownershipCompletedColumn,
   marketColumn,
 ]
 

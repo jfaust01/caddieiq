@@ -7,7 +7,7 @@ import { formatPositionWithStatusPriority } from '@/features/tournaments/utils/f
 import { FantasyPlayerCell } from './fantasy-player-cell'
 import { RoundDnaCompact } from './round-dna-compact'
 import { ScorecardCell } from './scorecard-cell'
-import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, MarketCell } from './premium-metric-cells'
+import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, OwnershipCell, MarketCell } from './premium-metric-cells'
 
 /**
  * Enhanced COMPLETED (finished) row cells with combined premium metrics and compact round DNA.
@@ -86,6 +86,9 @@ export function FantasyCompletedEnhancedRowCells({
 
       {/* DK SCORE */}
       <DkScoreCell entrant={entrant} />
+
+      {/* OWNERSHIP */}
+      <OwnershipCell entrant={entrant} />
 
       {/* MARKET */}
       <MarketCell entrant={entrant} />
