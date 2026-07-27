@@ -276,7 +276,7 @@ function RoundDnaRow({
 
   return (
     <div
-      className="relative w-full cursor-pointer hover:bg-white/[0.02] transition-colors"
+      className="relative w-full cursor-pointer"
       onMouseLeave={() => {
         setHoveredHole(null)
         setTooltipHole(null)
