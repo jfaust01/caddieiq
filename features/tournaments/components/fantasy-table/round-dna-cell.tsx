@@ -317,14 +317,14 @@ function RoundDnaRow({
       onClick={() => playerId && onRoundClick?.(playerId, round)}
     >
       {/* Labels and SVG visualization */}
-      <div className="flex items-center gap-0.5 h-full px-0.5">
+      <div className="flex items-center gap-1 h-full px-0.5">
         {/* Round label */}
-        <div className="w-10 text-center text-[9px] font-medium uppercase text-gray-400 flex-shrink-0">
+        <div className="w-9 text-center text-[9px] font-medium uppercase text-gray-400 flex-shrink-0">
           R{round}
         </div>
 
-        {/* Score */}
-        <div className={cn('w-8 text-center text-[10px] font-semibold tabular-nums flex-shrink-0', scoreColor)}>
+        {/* Score left */}
+        <div className={cn('w-7 text-center text-[10px] font-semibold tabular-nums flex-shrink-0', scoreColor)}>
           {formatScore(relToPar)}
         </div>
 
@@ -441,7 +441,7 @@ function RoundDnaRow({
         </svg>
 
         {/* To-Par Score on right */}
-        <div className={cn('w-8 text-center text-[10px] font-semibold tabular-nums flex-shrink-0', scoreColor)}>
+        <div className={cn('w-7 text-center text-[10px] font-semibold tabular-nums flex-shrink-0', scoreColor)}>
           {formatScore(relToPar)}
         </div>
       </div>
