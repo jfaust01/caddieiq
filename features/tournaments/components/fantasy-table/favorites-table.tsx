@@ -1,6 +1,6 @@
 'use client'
 
-import { Heart } from 'lucide-react'
+import { Star } from 'lucide-react'
 import type { FieldEntrant } from '@/features/tournaments/types'
 import type { TablePhase } from '@/features/tournaments/config/phase-table-config'
 import type { DfsValueResult } from '@/lib/dfs-value'
@@ -40,7 +40,7 @@ export function FavoritesTable({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 px-1">
-        <Heart size={16} className="fill-red-500 stroke-red-500" />
+        <Star size={16} className="fill-yellow-500 stroke-yellow-500" />
         <h3 className="text-sm font-semibold text-white">Favorites ({favoriteEntrants.length})</h3>
       </div>
       <FantasyPlayerTable

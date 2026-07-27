@@ -60,9 +60,9 @@ export function FantasyTableHeader({
                   <span>{col.label}</span>
                 </span>
               ) : col.id === 'tournamentForm' ? (
-                <div className="flex flex-col gap-1 h-full">
-                  <div className="flex flex-col items-center justify-center gap-1">
-                    <span className="text-[11px] sm:text-[12px] font-semibold text-emerald-400">{col.label}</span>
+                <div className="flex flex-col gap-1 h-full mt-[5px]">
+                  <div className="flex flex-col items-center justify-center gap-1 mt-[5px]">
+                    <span className="text-[11px] sm:text-[12px] font-semibold text-muted-foreground/70">{col.label}</span>
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4].map((round) => (
                         <button
@@ -85,7 +85,7 @@ export function FantasyTableHeader({
                       const holeNum = i + 1
                       const PADDING = 8
                       const USABLE_WIDTH = 480 - 2 * PADDING
-                      const STEP_X = USABLE_WIDTH / 18
+                      const STEP_X = USABLE_WIDTH / 15
                       const xPos = PADDING + i * STEP_X + STEP_X / 2
                       return (
                         <text
@@ -93,7 +93,7 @@ export function FantasyTableHeader({
                           x={xPos}
                           y={16}
                           textAnchor="middle"
-                          fontSize="7"
+                          fontSize="12"
                           fill="rgb(107, 114, 128)"
                           fontWeight="500"
                         >

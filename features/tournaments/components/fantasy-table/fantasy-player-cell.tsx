@@ -30,7 +30,7 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
           {initials}
         </div>
       )}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-0">
         <div className="flex items-center gap-1">
           <span className="text-sm font-medium text-foreground whitespace-nowrap">
             {entrant.playerName}
