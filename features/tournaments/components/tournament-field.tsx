@@ -8,6 +8,7 @@ import { FieldAnalyticsSummary } from '@/features/tournaments/components/field-a
 import { ScorecardDrawer } from '@/features/tournaments/components/scorecard-drawer'
 import { FantasyFilterChips } from '@/features/tournaments/components/fantasy-table/fantasy-filter-chips'
 import { FantasyPlayerTable } from '@/features/tournaments/components/fantasy-table/fantasy-player-table'
+import { FavoritesTable } from '@/features/tournaments/components/fantasy-table/favorites-table'
 import {
   TournamentPlayerToolbar,
   type StatusOption,
@@ -65,6 +66,28 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    const saved = localStorage.getItem(`favorites-${tournamentId}`)
+    return saved ? new Set(JSON.parse(saved)) : new Set()
+  })
+
+  // Persist favorites to localStorage
+  useEffect(() => {
+    localStorage.setItem(`favorites-${tournamentId}`, JSON.stringify([...favorites]))
+  }, [favorites, tournamentId])
+
+  const handleToggleFavorite = (playerId: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev)
+      if (next.has(playerId)) {
+        next.delete(playerId)
+      } else {
+        next.add(playerId)
+      }
+      return next
+    })
+  }
 
   // Status options limited to those actually present in this field.
   const statusOptions = useMemo<StatusOption[]>(() => {
@@ -304,6 +327,28 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
         <FantasyFilterChips chips={chips} active={chip} onSelect={setChip} accent={config.accent} />
       </div>
 
+      {/* Favorites Table */}
+      {favorites.size > 0 && (
+        <FavoritesTable
+          favoriteIds={favorites}
+          allEntrants={enrichedEntrants}
+          fieldSize={field.size}
+          dfsByPlayer={dfsByPlayer}
+          phase={phase}
+          tournamentId={tournamentId}
+          onToggleFavorite={handleToggleFavorite}
+          onRowClick={(playerId) => {
+            setSelectedScorecardPlayer(playerId)
+            setIsScorecardModalOpen(true)
+          }}
+          onRoundSelect={(playerId, round) => {
+            setSelectedScorecardPlayer(playerId)
+            setSelectedScorecardRound(round)
+            setIsScorecardModalOpen(true)
+          }}
+        />
+      )}
+
       {filtered.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -318,6 +363,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           fieldSize={field.size}
           dfsByPlayer={dfsByPlayer}
           tournamentId={tournamentId}
+          favoriteIds={favorites}
           toolbar={toolbar}
           currentPage={currentPage}
           pageSize={pageSize}
@@ -331,6 +377,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
             setSelectedScorecardPlayer(playerId)
             setIsScorecardModalOpen(true)
           }}
+          onToggleFavorite={handleToggleFavorite}
           onRoundSelect={(playerId, round) => {
             setSelectedScorecardPlayer(playerId)
             setSelectedScorecardRound(round)

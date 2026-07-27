@@ -6,6 +6,7 @@ import { formatPositionWithStatusPriority } from '@/features/tournaments/utils/f
 
 import { FantasyPlayerCell } from './fantasy-player-cell'
 import { RoundDnaCompact } from './round-dna-compact'
+import { FavoriteCell } from './favorite-cell'
 import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, OwnershipCell, MarketCell } from './premium-metric-cells'
 
 /**
@@ -18,6 +19,8 @@ export function FantasyLiveEnhancedRowCells({
   tournamentId,
   onScorecardOpen,
   onRoundSelect,
+  onToggleFavorite,
+  isFavorite,
   tournamentStatus = 'ACTIVE',
   dfsResult,
   selectedRound = 1,
@@ -27,6 +30,8 @@ export function FantasyLiveEnhancedRowCells({
   tournamentId?: string
   onScorecardOpen?: (playerId: string) => void
   onRoundSelect?: (playerId: string, round: number) => void
+  onToggleFavorite?: (playerId: string) => void
+  isFavorite?: boolean
   tournamentStatus?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
   dfsResult?: DfsValueResult
   selectedRound?: number
@@ -38,6 +43,17 @@ export function FantasyLiveEnhancedRowCells({
       {/* POS */}
       <td className="border-r align-middle text-center" style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}>
         <span className="text-sm font-medium tabular-nums text-white">{positionDisplay}</span>
+      </td>
+
+      {/* FAVORITES */}
+      <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <FavoriteCell
+            playerId={entrant.playerId}
+            isFavorite={isFavorite ?? false}
+            onToggle={onToggleFavorite ?? (() => {})}
+          />
+        </div>
       </td>
 
       {/* PLAYER */}

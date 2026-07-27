@@ -194,6 +194,13 @@ const resultColumn: ColumnDescriptor = {
   colClassName: 'w-[90px] sm:w-[100px]',
   thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
 }
+const favoritesColumn: ColumnDescriptor = {
+  id: 'favorites',
+  label: 'Favorites',
+  tooltip: 'Mark as favorite player',
+  colClassName: 'w-[60px] sm:w-[70px]',
+  thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
+}
 
 /**
  * Live (in-progress) columns for real-time fantasy tracking.
@@ -440,6 +447,7 @@ const recentFormCompletedColumn: ColumnDescriptor = {
 
 const completedColumns: ColumnDescriptor[] = [
   resultColumn,
+  favoritesColumn,
   scoringPlayerColumn,
   toParColumn,
   tournamentFormCompletedColumn,
