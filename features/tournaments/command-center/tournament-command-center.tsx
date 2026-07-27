@@ -46,6 +46,8 @@ function weatherSummary(weather: WeatherIntelligence | null): string | null {
  * returned, and empty engines degrade to honest placeholders.
  */
 export async function TournamentCommandCenter({ tournament }: TournamentCommandCenterProps) {
+  const isAdminPromise = isCurrentUserAdmin()
+  
   const [
     field,
     fieldReport,
@@ -54,20 +56,22 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
     weather,
     isAdmin,
     tournamentOptions,
+    weatherImportStatus,
   ] = await Promise.all([
     tournamentService.getTournamentField(tournament.id),
     tournamentService.getFieldReport(tournament.id),
     tournamentService.getFieldFitBoard(tournament.id),
     tournamentService.getDfsValueField(tournament.id),
     tournamentService.getWeatherIntelligence(tournament.id),
-    isCurrentUserAdmin(),
+    isAdminPromise,
     fetchTournamentsForSelector(),
+    isAdminPromise.then(admin => admin ? tournamentService.getWeatherImportStatus(tournament.id) : null),
   ])
 
-  const weatherAdmin = isAdmin
+  const weatherAdmin = isAdmin && weatherImportStatus
     ? {
         tournamentId: tournament.id,
-        importStatus: await tournamentService.getWeatherImportStatus(tournament.id),
+        importStatus: weatherImportStatus,
       }
     : undefined
 
@@ -95,6 +99,8 @@ export async function TournamentCommandCenter({ tournament }: TournamentCommandC
             tournament={tournament}
             field={field}
             fieldReport={fieldReport}
+            weather={weather}
+            dfsField={dfsField}
           />
         }
         additionalTabs={[

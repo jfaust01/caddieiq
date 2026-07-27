@@ -128,12 +128,6 @@ const getRoundsByTournamentCached = cache(
     // Fetch all rounds for the tournament
     const rounds = await roundRepo.getByTournament(tournamentId)
 
-    console.log('[v0] ════════════════════════════════════════════════════')
-    console.log('[v0] getRoundsByTournament service')
-    console.log('[v0] tournamentId:', tournamentId)
-    console.log('[v0] roundRepo.getByTournament returned:', rounds.length, 'rounds')
-    console.log('[v0] ════════════════════════════════════════════════════')
-
     if (rounds.length === 0) {
       return []
     }

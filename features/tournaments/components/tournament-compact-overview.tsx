@@ -1,14 +1,18 @@
 'use client'
 
 import type { TournamentSummary, TournamentField } from '@/features/tournaments/types'
-import { EventDetailsPills } from './event-details-pills'
+import type { WeatherIntelligence } from '@/lib/weather-intelligence'
+import type { DfsValueField } from '@/lib/dfs-value'
+import { TournamentIntelligence } from './tournament-intelligence'
+import { SlateOutlookSection } from './intelligence/slate-outlook-section'
 import { TournamentField } from './tournament-field'
-import { TournamentWinnerCard } from './tournament-elevation/tournament-winner-card'
 
 interface TournamentCompactOverviewProps {
   tournament: TournamentSummary
   field: TournamentField
   fieldReport?: { cutLine?: string; averageScore?: number } | null
+  weather?: WeatherIntelligence | null
+  dfsField?: DfsValueField | null
 }
 
 /**
@@ -96,6 +100,8 @@ export function TournamentCompactOverview({
   tournament,
   field,
   fieldReport,
+  weather,
+  dfsField,
 }: TournamentCompactOverviewProps) {
   const tournamentId = tournament.id
   const hasField = field.size > 0
@@ -103,26 +109,36 @@ export function TournamentCompactOverview({
 
   return (
     <div className="flex flex-col gap-6 min-w-0">
-      {/* Event Details Pills */}
+      {/* Status-adaptive fantasy intelligence cards */}
       <div className="min-w-0">
-        <EventDetailsPills tournament={tournament} />
+        <TournamentIntelligence
+          tournament={tournament}
+          field={field}
+          weather={weather}
+        />
       </div>
 
-      {/* Winner Card - displayed above Field section */}
-      {hasField && (
-        <div className="border-t border-border pt-6">
-          <TournamentWinnerCard
-            tournamentWinner={resolvedWinner}
-            isCompleted={isTournamentCompleted(tournament.status)}
-          />
-        </div>
-      )}
+      {/* Phase-adaptive second section: AI Slate Outlook / Live Insights / Recap */}
+      <div className="min-w-0">
+        <SlateOutlookSection
+          tournament={tournament}
+          field={field}
+          dfsField={dfsField}
+        />
+      </div>
+
+
 
       {/* Field Section */}
       {hasField && (
         <div className="min-w-0">
           <div className="min-w-0">
-            <TournamentField field={field} tournamentId={tournamentId} />
+            <TournamentField
+              field={field}
+              tournamentId={tournamentId}
+              status={tournament.status}
+              dfsField={dfsField}
+            />
           </div>
         </div>
       )}
