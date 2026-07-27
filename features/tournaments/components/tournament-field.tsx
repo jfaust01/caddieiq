@@ -77,6 +77,19 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
     localStorage.setItem(`favorites-${tournamentId}`, JSON.stringify([...favorites]))
   }, [favorites, tournamentId])
 
+  // Prevent background scroll when scorecard modal is open
+  useEffect(() => {
+    if (isScorecardModalOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isScorecardModalOpen])
+
   const handleToggleFavorite = (playerId: string) => {
     setFavorites((prev) => {
       const next = new Set(prev)
