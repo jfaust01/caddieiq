@@ -29,8 +29,12 @@ export interface FantasyPlayerTableProps {
   dfsByPlayer: Map<string, DfsValueResult>
   /** Tournament ID for fetching hole-by-hole data. */
   tournamentId?: string
+  /** Set of favorite player IDs. */
+  favoriteIds?: Set<string>
   /** Opens the scorecard modal for a player row. */
   onRowClick: (playerId: string) => void
+  /** Toggles a player as favorite. */
+  onToggleFavorite?: (playerId: string) => void
   /** Opens scorecard with a specific round selected. */
   onRoundSelect?: (playerId: string, round: number) => void
   /** Optional: table toolbar component to render inside the shell. */
@@ -63,7 +67,9 @@ export function FantasyPlayerTable({
   fieldSize,
   dfsByPlayer,
   tournamentId,
+  favoriteIds = new Set(),
   onRowClick,
+  onToggleFavorite,
   onRoundSelect,
   toolbar,
   currentPage = 1,
@@ -158,8 +164,10 @@ export function FantasyPlayerTable({
                 phase={phase} 
                 dfsByPlayer={dfsByPlayer} 
                 positionCountMap={positionCountMap} 
-                tournamentId={tournamentId}
+                tournammentId={tournamentId}
+                favoriteIds={favoriteIds}
                 onRowClick={onRowClick} 
+                onToggleFavorite={onToggleFavorite}
                 onRoundSelect={onRoundSelect}
                 selectedRound={selectedRound}
               />

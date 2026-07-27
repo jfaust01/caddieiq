@@ -67,20 +67,12 @@ const TH_SCORE =
   'h-[50px] text-center text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] tabular-nums text-muted-foreground/80'
 
 // Scorecard column (common to all phases)
-const scorecardColumn: ColumnDescriptor = {
-  id: 'scorecard',
-  label: 'Card',
-  colClassName: 'w-[50px] sm:w-[60px]',
-  thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
-}
-
 /**
  * Scheduled (pre-tournament) columns for fantasy lineup building.
  * Sorted by mobile priority: Player, Salary, Odds, World Ranking first,
  * then Recent Form, Tee Time, Course Fit via horizontal scroll.
  */
 const scheduledColumns: ColumnDescriptor[] = [
-  scorecardColumn,
   {
     id: 'player',
     label: 'Players',
@@ -202,6 +194,13 @@ const resultColumn: ColumnDescriptor = {
   colClassName: 'w-[90px] sm:w-[100px]',
   thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
 }
+const favoritesColumn: ColumnDescriptor = {
+  id: 'favorites',
+  label: 'Favorites',
+  tooltip: 'Mark as favorite player',
+  colClassName: 'w-[60px] sm:w-[70px]',
+  thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
+}
 
 /**
  * Live (in-progress) columns for real-time fantasy tracking.
@@ -302,8 +301,8 @@ const aiIntelligenceColumn: ColumnDescriptor = {
   id: 'aiIntelligence',
   label: 'AI Rating',
   tooltip: 'Combined AI Rating and Course Fit',
-  colClassName: 'w-[180px] sm:w-[220px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const fantasyOutlookColumn: ColumnDescriptor = {
@@ -318,8 +317,8 @@ const marketColumn: ColumnDescriptor = {
   id: 'market',
   label: 'Market',
   tooltip: 'Combined Ownership and Odds to Win',
-  colClassName: 'w-[170px] sm:w-[200px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const recentFormLiveColumn: ColumnDescriptor = {
@@ -332,7 +331,6 @@ const recentFormLiveColumn: ColumnDescriptor = {
 
 const liveColumns: ColumnDescriptor[] = [
   posColumn,
-  scorecardColumn,
   scoringPlayerColumn,
   toParColumn,
   tournamentFormColumn,
@@ -449,7 +447,7 @@ const recentFormCompletedColumn: ColumnDescriptor = {
 
 const completedColumns: ColumnDescriptor[] = [
   resultColumn,
-  scorecardColumn,
+  favoritesColumn,
   scoringPlayerColumn,
   toParColumn,
   tournamentFormCompletedColumn,

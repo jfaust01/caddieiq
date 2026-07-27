@@ -6,7 +6,7 @@ import { formatPositionWithStatusPriority } from '@/features/tournaments/utils/f
 
 import { FantasyPlayerCell } from './fantasy-player-cell'
 import { RoundDnaCompact } from './round-dna-compact'
-import { ScorecardCell } from './scorecard-cell'
+import { FavoriteCell } from './favorite-cell'
 import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, OwnershipCell, MarketCell } from './premium-metric-cells'
 
 /**
@@ -19,6 +19,8 @@ export function FantasyCompletedEnhancedRowCells({
   tournamentId,
   onScorecardOpen,
   onRoundSelect,
+  onToggleFavorite,
+  isFavorite,
   tournamentStatus = 'COMPLETED',
   dfsResult,
   selectedRound = 1,
@@ -28,6 +30,8 @@ export function FantasyCompletedEnhancedRowCells({
   tournamentId?: string
   onScorecardOpen?: (playerId: string) => void
   onRoundSelect?: (playerId: string, round: number) => void
+  onToggleFavorite?: (playerId: string) => void
+  isFavorite?: boolean
   tournamentStatus?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELED'
   dfsResult?: DfsValueResult
   selectedRound?: number
@@ -41,10 +45,14 @@ export function FantasyCompletedEnhancedRowCells({
         <span className="text-sm font-medium tabular-nums text-white">{positionDisplay}</span>
       </td>
 
-      {/* SCORECARD */}
-      <td className="px-1 sm:px-3 align-middle">
+      {/* FAVORITES */}
+      <td className="border-l border-r border-white/[0.055] px-1 sm:px-3 align-middle">
         <div className="flex h-full items-center justify-center">
-          <ScorecardCell entrant={entrant} onOpen={onScorecardOpen} />
+          <FavoriteCell
+            playerId={entrant.playerId}
+            isFavorite={isFavorite ?? false}
+            onToggle={onToggleFavorite ?? (() => {})}
+          />
         </div>
       </td>
 
@@ -63,7 +71,10 @@ export function FantasyCompletedEnhancedRowCells({
       </td>
 
       {/* ROUND DNA */}
-      <td className="border-l border-white/[0.055] align-middle">
+      <td 
+        className="border-l border-white/[0.055] align-middle w-[150px] sm:w-[180px] cursor-pointer"
+        onClick={() => onScorecardOpen?.(entrant.playerId)}
+      >
         <RoundDnaCompact 
           round1RelToPar={entrant.round1RelToPar}
           round2RelToPar={entrant.round2RelToPar}
