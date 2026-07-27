@@ -58,10 +58,9 @@ export function usePlayerColumnWidth(
         // Calculate total column width
         let totalWidth = HEADSHOT_WIDTH + GAP_BETWEEN + maxNameWidth + HORIZONTAL_PADDING
         
-        // Clamp between min (220px) and max (360px)
+        // Clamp between min (220px) and max (none - allow full width needed)
         const MIN_WIDTH = 220
-        const MAX_WIDTH = 360
-        totalWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, totalWidth))
+        totalWidth = Math.max(MIN_WIDTH, totalWidth)
 
         setColumnWidth(`${totalWidth}px`)
       } catch (error) {
