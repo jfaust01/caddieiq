@@ -6,7 +6,6 @@ import { formatPositionWithStatusPriority } from '@/features/tournaments/utils/f
 
 import { FantasyPlayerCell } from './fantasy-player-cell'
 import { RoundDnaCompact } from './round-dna-compact'
-import { ScorecardCell } from './scorecard-cell'
 import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, OwnershipCell, MarketCell } from './premium-metric-cells'
 
 /**
@@ -39,13 +38,6 @@ export function FantasyLiveEnhancedRowCells({
       {/* POS */}
       <td className="border-r align-middle text-center" style={{ borderColor: 'rgba(130, 155, 168, 0.12)' }}>
         <span className="text-sm font-medium tabular-nums text-white">{positionDisplay}</span>
-      </td>
-
-      {/* SCORECARD */}
-      <td className="px-1 sm:px-3 align-middle">
-        <div className="flex h-full items-center justify-center">
-          <ScorecardCell entrant={entrant} onOpen={onScorecardOpen} />
-        </div>
       </td>
 
       {/* PLAYER */}

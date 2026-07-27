@@ -67,20 +67,12 @@ const TH_SCORE =
   'h-[50px] text-center text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] tabular-nums text-muted-foreground/80'
 
 // Scorecard column (common to all phases)
-const scorecardColumn: ColumnDescriptor = {
-  id: 'scorecard',
-  label: 'Card',
-  colClassName: 'w-[50px] sm:w-[60px]',
-  thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
-}
-
 /**
  * Scheduled (pre-tournament) columns for fantasy lineup building.
  * Sorted by mobile priority: Player, Salary, Odds, World Ranking first,
  * then Recent Form, Tee Time, Course Fit via horizontal scroll.
  */
 const scheduledColumns: ColumnDescriptor[] = [
-  scorecardColumn,
   {
     id: 'player',
     label: 'Players',
@@ -332,7 +324,6 @@ const recentFormLiveColumn: ColumnDescriptor = {
 
 const liveColumns: ColumnDescriptor[] = [
   posColumn,
-  scorecardColumn,
   scoringPlayerColumn,
   toParColumn,
   tournamentFormColumn,
@@ -449,7 +440,6 @@ const recentFormCompletedColumn: ColumnDescriptor = {
 
 const completedColumns: ColumnDescriptor[] = [
   resultColumn,
-  scorecardColumn,
   scoringPlayerColumn,
   toParColumn,
   tournamentFormCompletedColumn,
