@@ -77,7 +77,6 @@ export function CommandCenterHeader({
 
   return (
     <header 
-      ref={headerRef}
       className="border-b border-white/5 bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 w-full"
     >
       <div className="px-4 py-4 sm:px-6 md:py-5">
