@@ -63,7 +63,7 @@ export function FantasyLiveEnhancedRowCells({
       </td>
 
       {/* ROUND DNA */}
-      <td className="border-l border-white/[0.055] align-middle w-[150px] sm:w-[180px]">
+      <td className="border-l border-white/[0.055] align-middle">
         <RoundDnaCompact 
           round1RelToPar={entrant.round1RelToPar}
           round2RelToPar={entrant.round2RelToPar}
