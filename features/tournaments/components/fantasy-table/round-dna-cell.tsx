@@ -311,7 +311,7 @@ function RoundDnaRow({
 
   return (
     <div
-      className="relative w-full h-10 cursor-pointer hover:bg-white/[0.02] transition-colors"
+      className="relative w-full h-full cursor-pointer hover:bg-white/[0.02] transition-colors"
       onMouseEnter={() => onRoundHover(round)}
       onMouseLeave={() => onRoundHover(null)}
       onClick={() => playerId && onRoundClick?.(playerId, round)}
