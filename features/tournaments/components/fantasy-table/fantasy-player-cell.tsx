@@ -18,7 +18,7 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
     .slice(0, 2)
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 items-start py-1">
       {entrant.headshotUrl ? (
         <img
           src={entrant.headshotUrl || '/placeholder.svg'}
@@ -30,15 +30,15 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
           {initials}
         </div>
       )}
-      <div className="flex flex-col">
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-1">
           <span className="text-sm font-medium text-foreground whitespace-nowrap">
             {entrant.playerName}
           </span>
           {entrant.countryCode && (
             <PlayerFlag
               countryCode={entrant.countryCode}
-              className="h-[14px] w-auto shrink-0 rounded-[2px]"
+              className="h-[16px] sm:h-[18px] w-auto shrink-0 rounded-[2px]"
             />
           )}
         </div>
