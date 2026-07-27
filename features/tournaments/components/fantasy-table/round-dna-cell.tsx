@@ -204,7 +204,7 @@ export const RoundDnaCell = memo(function RoundDnaCell({
 
 function HoleNumberHeader() {
   // SVG dimensions match RoundDnaRow
-  const SVG_WIDTH = 480
+  const SVG_WIDTH = 300
   const SVG_HEIGHT = 28
   const PADDING = 8
   const DOT_GAP = 5 // 5px gap between each dot
@@ -291,7 +291,7 @@ function RoundDnaRow({
   const scoreColor = getScoreColor(relToPar)
 
   // SVG dimensions and coordinate system
-  const SVG_WIDTH = 480
+  const SVG_WIDTH = 300
   const SVG_HEIGHT = 40
   const CENTER_Y = SVG_HEIGHT / 2
   const PADDING = 8

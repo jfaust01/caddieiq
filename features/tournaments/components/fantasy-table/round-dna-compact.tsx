@@ -256,10 +256,10 @@ function RoundDnaRow({
   const [tooltipHole, setTooltipHole] = useState<HoleResult | null>(null)
 
   const PADDING = 8
-  const USABLE_WIDTH = 480 - 2 * PADDING
+  const SVG_WIDTH = 300
+  const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
   const DOT_GAP = 5 // 5px max gap between each dot
   const STEP_X = (USABLE_WIDTH - DOT_GAP * 18) / 18 + DOT_GAP
-  const SVG_WIDTH = 480
   const SVG_HEIGHT = 40
   const CENTER_Y = SVG_HEIGHT / 2
 
