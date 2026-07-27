@@ -243,7 +243,7 @@ function HoleNumberHeader() {
                 x={xPos}
                 y={SVG_HEIGHT - 1}
                 textAnchor="middle"
-                fontSize="7.5"
+                fontSize="10"
                 fill="rgb(107, 114, 128)"
                 fontWeight="500"
               >
