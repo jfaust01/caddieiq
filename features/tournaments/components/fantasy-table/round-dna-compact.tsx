@@ -88,15 +88,19 @@ function generateMockHoles(relToPar: number, round: number, playerId: string = '
     const rand2 = seededHoleRandom(seed, hole, 1)
     let score = 0
     
-    // Skill-adjusted weighted distribution
+    // Skill-adjusted weighted distribution with full range of scores
     // Higher skilled players get better scores
-    const eagleThreshold = 0.02 + (skillFactor * 0.08)        // 2%-10% eagles
+    const albatrossThreshold = 0.005 + (skillFactor * 0.015)    // 0.5%-2% albatross
+    const eagleThreshold = albatrossThreshold + (0.02 + (skillFactor * 0.08))        // 2%-10% eagles
     const birdieThreshold = eagleThreshold + (0.15 + (skillFactor * 0.15))  // 15%-30% birdies
     const parThreshold = birdieThreshold + (0.35 + ((1 - skillFactor) * 0.2))  // 35%-55% pars
-    const bogeyThreshold = parThreshold + (0.30 - (skillFactor * 0.15))  // 15%-30% bogeys
-    const doubleThreshold = bogeyThreshold + (0.08 - (skillFactor * 0.06))  // 2%-8% double bogeys
+    const bogeyThreshold = parThreshold + (0.25 - (skillFactor * 0.12))  // 13%-25% bogeys
+    const doubleThreshold = bogeyThreshold + (0.08 - (skillFactor * 0.05))  // 3%-8% double bogeys
+    const tripleThreshold = doubleThreshold + (0.03 - (skillFactor * 0.02))  // 1%-3% triple bogeys
     
-    if (rand < eagleThreshold) {
+    if (rand < albatrossThreshold) {
+      score = -3  // Albatross (rare)
+    } else if (rand < eagleThreshold) {
       score = -2  // Eagle
     } else if (rand < birdieThreshold) {
       score = -1  // Birdie
@@ -106,9 +110,11 @@ function generateMockHoles(relToPar: number, round: number, playerId: string = '
       score = 1   // Bogey
     } else if (rand < doubleThreshold) {
       score = 2   // Double Bogey
+    } else if (rand < tripleThreshold) {
+      score = 3   // Triple Bogey
     } else {
-      // Triple bogey or worse (rare)
-      score = rand2 < 0.5 ? 3 : 2
+      // Very rare - quadruple or worse (only for lower skilled players)
+      score = skillFactor > 0.6 ? 3 : (rand2 < 0.3 ? 4 : 3)
     }
     
     holeScores.push(score)
@@ -124,14 +130,14 @@ function generateMockHoles(relToPar: number, round: number, playerId: string = '
     for (let i = 0; i < 18 && Math.abs(deviation) > 0.1; i++) {
       if (deviation > 0.5) {
         // Need to improve score
-        if (holeScores[i] < 3) {
+        if (holeScores[i] < 4) {
           const adjustment = Math.min(1, deviation)
           holeScores[i] += adjustment
           deviation -= adjustment
         }
       } else if (deviation < -0.5) {
         // Need to worsen score
-        if (holeScores[i] > -2) {
+        if (holeScores[i] > -3) {
           const adjustment = Math.min(1, Math.abs(deviation))
           holeScores[i] -= adjustment
           deviation += adjustment
@@ -147,7 +153,8 @@ function generateMockHoles(relToPar: number, round: number, playerId: string = '
     
     // Determine status based on hole's relative to par value
     let status: HoleResult['status'] = 'par'
-    if (holeRelToPar <= -2) status = 'eagle'
+    if (holeRelToPar <= -3) status = 'albatross'
+    else if (holeRelToPar === -2) status = 'eagle'
     else if (holeRelToPar === -1) status = 'birdie'
     else if (holeRelToPar === 0) status = 'par'
     else if (holeRelToPar === 1) status = 'bogey'
