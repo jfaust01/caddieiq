@@ -207,8 +207,9 @@ function HoleNumberHeader() {
   const SVG_WIDTH = 480
   const SVG_HEIGHT = 28
   const PADDING = 8
+  const DOT_GAP = 5 // 5px gap between each dot
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
-  const STEP_X = USABLE_WIDTH / 17
+  const STEP_X = (USABLE_WIDTH - DOT_GAP * 17) / 17 + DOT_GAP
 
   return (
     <div className="w-full h-4 px-0.5 flex items-center gap-0.5">
@@ -294,8 +295,9 @@ function RoundDnaRow({
   const SVG_HEIGHT = 40
   const CENTER_Y = SVG_HEIGHT / 2
   const PADDING = 8
+  const DOT_GAP = 5 // 5px gap between each dot
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
-  const STEP_X = USABLE_WIDTH / 17
+  const STEP_X = (USABLE_WIDTH - DOT_GAP * 17) / 17 + DOT_GAP
 
   // Calculate point coordinates (shared between line and dots)
   const points = holes.map((hole, idx) => ({
