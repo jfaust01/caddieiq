@@ -38,7 +38,7 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
           {entrant.countryCode && (
             <PlayerFlag
               countryCode={entrant.countryCode}
-              className="h-[16px] sm:h-[18px] w-auto shrink-0 rounded-[2px]"
+              className="h-[14px] w-auto shrink-0 rounded-[2px]"
             />
           )}
         </div>
