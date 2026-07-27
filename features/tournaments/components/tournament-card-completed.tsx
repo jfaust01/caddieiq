@@ -11,6 +11,7 @@ import Link from 'next/link'
 
 import type { TournamentSummary } from '@/features/tournaments/types'
 import { formatDateRange } from '@/features/tournaments/utils/format'
+import { generateTournamentSlug } from '@/features/tournaments/utils/slug'
 import { cn } from '@/lib/utils'
 
 interface TournamentCardCompletedProps {
@@ -35,7 +36,7 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
       : null
 
   return (
-    <Link href={`/tournaments/${tournament.id}`}>
+    <Link href={`/tournaments/${generateTournamentSlug(tournament.name, tournament.id)}`}>
       <div
         className={cn(
           'group relative overflow-hidden rounded-lg cursor-pointer',

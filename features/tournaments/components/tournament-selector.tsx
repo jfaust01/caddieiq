@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { TournamentTourChip } from "@/features/tournaments/components/tournament-tour-chip"
 import { normalizeTournamentStatus, getTournamentStatusTone } from "@/features/tournaments/utils/normalize-tournament-status"
 import { formatDateRange } from "@/features/tournaments/utils/format"
+import { generateTournamentSlug } from "@/features/tournaments/utils/slug"
 import type { TournamentSelectorOption } from "@/features/tournaments/actions/fetch-tournaments-for-selector"
 
 interface TournamentSelectorProps {
@@ -121,9 +122,11 @@ export function TournamentSelector({
   }, [searchQuery])
 
   const handleSelectTournament = (tournamentId: string) => {
+    const tournament = options.find(opt => opt.id === tournamentId)
+    if (!tournament) return
     setOpen(false)
     setSearchQuery("")
-    router.push(`/tournaments/${tournamentId}`)
+    router.push(`/tournaments/${generateTournamentSlug(tournament.name, tournamentId)}`)
   }
 
   const hasNoResults = showSearch && filteredOptions.length === 0

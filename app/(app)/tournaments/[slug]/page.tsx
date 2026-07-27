@@ -4,15 +4,17 @@ import { notFound } from 'next/navigation'
 import { TournamentCommandCenter } from '@/features/tournaments/command-center/tournament-command-center'
 import { TournamentBreadcrumbProvider } from '@/features/tournaments/tournament-breadcrumb-provider'
 import { tournamentService } from '@/features/tournaments/services/tournament-service'
+import { extractTournamentIdFromSlug } from '@/features/tournaments/utils/slug'
 
 interface TournamentDetailPageProps {
-  params: Promise<{ tournamentId: string }>
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata({
   params,
 }: TournamentDetailPageProps): Promise<Metadata> {
-  const { tournamentId } = await params
+  const { slug } = await params
+  const tournamentId = extractTournamentIdFromSlug(slug)
 
   try {
     const tournament = await tournamentService.getTournamentById(tournamentId)
@@ -40,7 +42,8 @@ export async function generateMetadata({
 export default async function TournamentDetailPage({
   params,
 }: TournamentDetailPageProps) {
-  const { tournamentId } = await params
+  const { slug } = await params
+  const tournamentId = extractTournamentIdFromSlug(slug)
   const tournament = await tournamentService.getTournamentById(tournamentId)
 
   // Invalid or unknown id → proper HTTP 404 via the nearest not-found boundary.
