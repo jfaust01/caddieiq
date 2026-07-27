@@ -70,8 +70,8 @@ const TH_SCORE =
 const scorecardColumn: ColumnDescriptor = {
   id: 'scorecard',
   label: 'Card',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `px-5 ${TH_CENTER}`,
+  colClassName: 'w-[50px] sm:w-[60px]',
+  thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
 }
 
 /**
@@ -85,58 +85,58 @@ const scheduledColumns: ColumnDescriptor[] = [
     id: 'player',
     label: 'Players',
     headerKind: 'player',
-    colClassName: 'flex-1.5 min-w-0',
+    colClassName: 'w-[130px] sm:w-[240px]',
     thClassName:
-      'px-5 h-[50px] text-left text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80',
+      'px-2 sm:px-3 h-[50px] text-left text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80',
   },
   {
     id: 'toPar',
     label: 'To Par',
     tooltip: 'Score relative to par (scheduled phase placeholder)',
-    colClassName: 'flex-1 min-w-0',
-    thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+    colClassName: 'w-[85px] sm:w-[100px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
   },
   {
     id: 'salary',
     label: 'Salary',
     headerKind: 'dk',
-    colClassName: 'flex-1 min-w-0',
-    thClassName: `px-5 ${TH_CENTER}`,
+    colClassName: 'w-[105px] sm:w-[115px]',
+    thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
   },
   {
     id: 'odds',
     label: 'Odds',
     tooltip: 'Betting Odds to Win Tournament',
-    colClassName: 'flex-1 min-w-0',
-    thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+    colClassName: 'w-[90px] sm:w-[110px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
   },
   {
     id: 'worldRank',
     label: 'World Rank',
     tooltip: 'Most recent season World Golf Ranking',
-    colClassName: 'flex-1 min-w-0',
-    thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+    colClassName: 'w-[100px] sm:w-[120px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
   },
   {
     id: 'form',
     label: 'Form',
     tooltip: 'Recent Form score (0–100) — how well they are playing',
-    colClassName: 'flex-1 min-w-0',
-    thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+    colClassName: 'w-[85px] sm:w-[100px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
   },
   {
     id: 'teeTime',
     label: 'Tee Time',
     tooltip: 'Scheduled first-round tee time',
-    colClassName: 'flex-1 min-w-0',
-    thClassName: `border-l border-white/[0.055] px-5 h-[50px] text-center text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80`,
+    colClassName: 'w-[95px] sm:w-[110px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 h-[50px] text-center text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80`,
   },
   {
     id: 'fit',
     label: 'Fit',
     tooltip: 'Course Fit signal from the DFS Value Model (0–100)',
-    colClassName: 'flex-1 min-w-0',
-    thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+    colClassName: 'w-[85px] sm:w-[100px]',
+    thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
   },
 ]
 
@@ -144,63 +144,63 @@ const scheduledColumns: ColumnDescriptor[] = [
 const posColumn: ColumnDescriptor = {
   id: 'pos',
   label: 'POS',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[54px] sm:w-[64px]',
+  thClassName: `px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 const scoringPlayerColumn: ColumnDescriptor = {
   id: 'player',
   label: 'Players',
   headerKind: 'player',
-  colClassName: 'flex-1.5 min-w-0',
+  colClassName: 'w-[130px] sm:w-[300px]',
   thClassName:
-    'px-5 h-[50px] text-left text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80',
+    'px-2 sm:px-3 h-[50px] text-left text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80',
 }
 const toParColumn: ColumnDescriptor = {
   id: 'toPar',
   label: 'To Par',
   tooltip: 'Score relative to par',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[85px] sm:w-[100px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 const totalColumn: ColumnDescriptor = {
   id: 'total',
   label: 'TOTAL',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[110px] sm:w-[125px]',
+  thClassName: `px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 const thruColumn: ColumnDescriptor = {
   id: 'thru',
   label: 'THRU',
   tooltip: 'Holes completed this round + current round score',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[85px] sm:w-[100px]',
+  thClassName: `px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 const roundColumns: ColumnDescriptor[] = [1, 2, 3, 4].map((n) => ({
   id: `r${n}`,
   label: `R${n}`,
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `px-5 ${TH_SCORE}`,
+  colClassName: 'w-[76px] sm:w-[82px]',
+  thClassName: `px-1 sm:px-3 ${TH_SCORE}`,
 }))
 const dfsColumn: ColumnDescriptor = {
   id: 'dfs',
   label: 'DFS',
   headerKind: 'dk',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground`,
+  colClassName: 'w-[110px] sm:w-[126px]',
+  thClassName: `border-l border-white/[0.055] px-2 sm:px-4 h-12 text-center text-[11px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground`,
 }
 const oddsScoringColumn: ColumnDescriptor = {
   id: 'odds',
   label: 'ODDS',
   tooltip: 'Betting Odds to Win Tournament',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_SCORE}`,
+  colClassName: 'w-[76px] sm:w-[80px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_SCORE}`,
 }
 const resultColumn: ColumnDescriptor = {
   id: 'result',
   label: 'RESULT',
   tooltip: 'Final placement (Won / T-position / MC / WD / DQ)',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `px-5 ${TH_CENTER}`,
+  colClassName: 'w-[90px] sm:w-[100px]',
+  thClassName: `px-1 sm:px-3 ${TH_CENTER}`,
 }
 
 /**
@@ -213,22 +213,22 @@ const liveColumn: ColumnDescriptor = {
   id: 'liveDk',
   label: 'Live DK',
   headerKind: 'dk',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[110px] sm:w-[130px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 const todayColumn: ColumnDescriptor = {
   id: 'today',
   label: 'Today',
   tooltip: 'Current round score relative to par',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[85px] sm:w-[100px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 const salaryLiveColumn: ColumnDescriptor = {
   id: 'salary',
   label: 'Salary',
   headerKind: 'dk',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER}`,
+  colClassName: 'w-[100px] sm:w-[110px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
 const dkScoreLiveColumn: ColumnDescriptor = {
@@ -236,16 +236,16 @@ const dkScoreLiveColumn: ColumnDescriptor = {
   label: 'DK Score',
   headerKind: 'dk',
   tooltip: 'Total DraftKings fantasy points this tournament',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[110px] sm:w-[130px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const draftedColumn: ColumnDescriptor = {
   id: 'drafted',
   label: 'Drafted %',
   tooltip: 'DFS ownership percentage',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[95px] sm:w-[110px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 
 // New columns for enhanced LIVE phase display
@@ -253,16 +253,16 @@ const aiRatingColumn: ColumnDescriptor = {
   id: 'aiRating',
   label: 'AI Rating',
   tooltip: 'Overall player rating (0-100 scale)',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const courseFitColumn: ColumnDescriptor = {
   id: 'courseFit',
   label: 'Course Fit',
   tooltip: 'Course fit score relative to current field',
-  colClassName: 'flex-2 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[130px] sm:w-[160px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const tournamentFormColumn: ColumnDescriptor = {
@@ -270,64 +270,64 @@ const tournamentFormColumn: ColumnDescriptor = {
   label: 'Round DNA',
   subtitle: 'Hole by Hole',
   tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
-  colClassName: 'flex-3 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER}`,
+  colClassName: 'w-[480px] sm:w-[520px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
 const liveValueColumn: ColumnDescriptor = {
   id: 'value',
   label: 'Value PTS/$1K',
   tooltip: 'Fantasy points per $1,000 salary',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[110px] sm:w-[130px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const liveOwnershipColumn: ColumnDescriptor = {
   id: 'ownership',
   label: 'Ownership',
   tooltip: 'Expected DFS ownership %',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[95px] sm:w-[110px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const leverageColumn: ColumnDescriptor = {
   id: 'leverage',
   label: 'Leverage (Down Prob)',
   tooltip: 'Leverage / Downside probability',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[120px] sm:w-[140px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const aiIntelligenceColumn: ColumnDescriptor = {
   id: 'aiIntelligence',
   label: 'AI Rating',
   tooltip: 'Combined AI Rating and Course Fit',
-  colClassName: 'flex-2 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER}`,
+  colClassName: 'w-[180px] sm:w-[220px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
 const fantasyOutlookColumn: ColumnDescriptor = {
   id: 'fantasyOutlook',
   label: 'Fantasy Outlook',
   tooltip: 'Combined Salary, DK Score, and Value',
-  colClassName: 'flex-2 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER}`,
+  colClassName: 'w-[220px] sm:w-[250px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
 const marketColumn: ColumnDescriptor = {
   id: 'market',
   label: 'Market',
   tooltip: 'Combined Ownership and Odds to Win',
-  colClassName: 'flex-2 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER}`,
+  colClassName: 'w-[170px] sm:w-[200px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
 const recentFormLiveColumn: ColumnDescriptor = {
   id: 'recentForm',
   label: 'Recent Form',
   tooltip: 'Recent form score (0–100)',
-  colClassName: 'flex-1 min-w-0',
-  thClassName: `border-l border-white/[0.055] px-5 ${TH_CENTER_NUM}`,
+  colClassName: 'w-[100px] sm:w-[120px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
 const liveColumns: ColumnDescriptor[] = [

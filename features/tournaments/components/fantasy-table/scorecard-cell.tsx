@@ -18,8 +18,6 @@ export function ScorecardCell({ entrant, onOpen }: ScorecardCellProps) {
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
-      console.log('[v0] Scorecard cell clicked for player:', entrant.playerId)
-      console.log('[v0] onOpen callback exists:', !!onOpen)
       onOpen?.(entrant.playerId)
     },
     [entrant.playerId, onOpen]
