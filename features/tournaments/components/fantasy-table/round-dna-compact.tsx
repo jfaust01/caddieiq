@@ -260,8 +260,8 @@ function RoundDnaRow({
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
   const DOT_GAP = 5 // 5px max gap between each dot
   const STEP_X = (USABLE_WIDTH - DOT_GAP * 18) / 18 + DOT_GAP
-  const SVG_HEIGHT = 40
-  const CENTER_Y = SVG_HEIGHT / 2
+  const SVG_HEIGHT = 60
+  const CENTER_Y = SVG_HEIGHT / 2 + 5 // offset down slightly to make room for labels above
 
   const completedPoints = useMemo(
     () =>
