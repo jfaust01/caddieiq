@@ -155,26 +155,32 @@ export function DkScoreCell({ entrant }: { entrant: FieldEntrant }) {
 
 /**
  * DK VALUE PER DOLLAR CELL
- * Calculates DK Points / Salary in thousands
+ * Calculates DK Points / Salary in thousands: dkFantasyPoints ÷ (salary / 1000)
+ * Shows value/salary efficiency ratio with one decimal place (e.g. 16.8x or 18.2 pts/$1K)
  */
 export function DkValuePerDollarCell({ entrant }: { entrant: FieldEntrant }) {
   const dkScore = entrant.dkFantasyPoints
   const salary = entrant.dfsSalary
 
-  if (!salary || dkScore === null || dkScore === undefined) {
+  if (!salary || salary === 0 || dkScore === null || dkScore === undefined) {
     return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
-  const valuePerDollar = (dkScore / (salary / 1000)).toFixed(2)
+  const valuePerDollar = (dkScore / (salary / 1000)).toFixed(1)
 
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
       <div className="text-center">
-        <div className="flex items-center justify-center gap-1">
-          <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
-          <span className="font-semibold tabular-nums" style={{ color: '#FF6600', fontSize: '18px' }}>
-            {valuePerDollar}
-          </span>
+        <div className="flex flex-col gap-0.5 items-center py-1">
+          <div className="flex items-center justify-center gap-1">
+            <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
+            <span className="font-semibold tabular-nums" style={{ color: '#FF6600', fontSize: '18px' }}>
+              {valuePerDollar}x
+            </span>
+          </div>
+          <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground/70">
+            pts/$1K
+          </div>
         </div>
       </div>
     </td>

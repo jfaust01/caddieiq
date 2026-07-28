@@ -293,6 +293,24 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           const dkB = b.dkFantasyPoints ?? Number.MAX_VALUE
           return dkA !== dkB ? dkA - dkB : name(a, b)
         }
+        case 'value-desc': {
+          const valA = (a.dfsSalary && a.dfsSalary > 0 && a.dkFantasyPoints != null) 
+            ? a.dkFantasyPoints / (a.dfsSalary / 1000) 
+            : Number.MIN_VALUE
+          const valB = (b.dfsSalary && b.dfsSalary > 0 && b.dkFantasyPoints != null) 
+            ? b.dkFantasyPoints / (b.dfsSalary / 1000) 
+            : Number.MIN_VALUE
+          return valB !== valA ? valB - valA : name(a, b)
+        }
+        case 'value-asc': {
+          const valA = (a.dfsSalary && a.dfsSalary > 0 && a.dkFantasyPoints != null) 
+            ? a.dkFantasyPoints / (a.dfsSalary / 1000) 
+            : Number.MAX_VALUE
+          const valB = (b.dfsSalary && b.dfsSalary > 0 && b.dkFantasyPoints != null) 
+            ? b.dkFantasyPoints / (b.dfsSalary / 1000) 
+            : Number.MAX_VALUE
+          return valA !== valB ? valA - valB : name(a, b)
+        }
         default:
           return 0
       }

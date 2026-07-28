@@ -503,6 +503,8 @@ export type SortKey =
   | 'fit-desc'
   | 'dkScore-asc'
   | 'dkScore-desc'
+  | 'value-asc'
+  | 'value-desc'
 
 export interface SortOption {
   value: SortKey
@@ -513,6 +515,8 @@ export interface SortOption {
 const scoringSortOptions: SortOption[] = [
   { value: 'pos-asc', label: 'Position (↑)' },
   { value: 'pos-desc', label: 'Position (↓)' },
+  { value: 'value-desc', label: 'Value (High)' },
+  { value: 'value-asc', label: 'Value (Low)' },
   { value: 'dkScore-desc', label: 'DK Score (High)' },
   { value: 'dkScore-asc', label: 'DK Score (Low)' },
   { value: 'name-asc', label: 'Name (A–Z)' },
