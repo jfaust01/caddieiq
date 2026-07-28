@@ -8,7 +8,7 @@ import { FantasyPlayerCell } from './fantasy-player-cell'
 import { RoundDnaCompact } from './round-dna-compact'
 import { FavoriteCell } from './favorite-cell'
 import { ScorecardCell } from './scorecard-cell'
-import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, OwnershipCell, MarketCell } from './premium-metric-cells'
+import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, DkValuePerDollarCell, OwnershipCell, MarketCell } from './premium-metric-cells'
 
 /**
  * Enhanced LIVE (in-progress) row cells with combined premium metrics and compact round DNA.
@@ -107,6 +107,9 @@ export function FantasyLiveEnhancedRowCells({
 
       {/* DK SCORE */}
       <DkScoreCell entrant={entrant} />
+
+      {/* DK VALUE PER DOLLAR */}
+      <DkValuePerDollarCell entrant={entrant} />
 
       {/* OWNERSHIP */}
       <OwnershipCell entrant={entrant} />

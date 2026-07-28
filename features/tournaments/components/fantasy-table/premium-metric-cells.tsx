@@ -122,8 +122,33 @@ export function DkScoreCell({ entrant }: { entrant: FieldEntrant }) {
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
       <div className="text-center">
-        <div className="text-emerald-400 font-semibold text-lg sm:text-lg tabular-nums">
+        <div className="font-semibold text-lg sm:text-lg tabular-nums" style={{ color: '#FF6600' }}>
           {dkScore.toFixed(2)}
+        </div>
+      </div>
+    </td>
+  )
+}
+
+/**
+ * DK VALUE PER DOLLAR CELL
+ * Calculates DK Points / Salary in thousands
+ */
+export function DkValuePerDollarCell({ entrant }: { entrant: FieldEntrant }) {
+  const dkScore = entrant.dkFantasyPoints
+  const salary = entrant.dfsSalary
+
+  if (!salary || dkScore === null || dkScore === undefined) {
+    return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
+  }
+
+  const valuePerDollar = (dkScore / (salary / 1000)).toFixed(3)
+
+  return (
+    <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <div className="text-center">
+        <div className="font-semibold text-lg sm:text-lg tabular-nums" style={{ color: '#FF6600' }}>
+          {valuePerDollar}
         </div>
       </div>
     </td>
