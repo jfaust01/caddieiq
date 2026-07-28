@@ -66,7 +66,7 @@ export function RecentFormCell({ entrant }: { entrant: FieldEntrant }) {
         <div className={cn('font-semibold text-lg sm:text-lg tabular-nums', colorClass)}>
           {Math.round(formScore)}
         </div>
-        <div className={cn('flex items-center justify-center', colorClass)}>
+        <div className="flex items-center justify-center text-muted-foreground/70">
           {iconMap[iconName]}
         </div>
       </div>
