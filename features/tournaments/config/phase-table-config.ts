@@ -499,6 +499,8 @@ export type SortKey =
   | 'odds-desc'
   | 'rating-asc'
   | 'rating-desc'
+  | 'fit-asc'
+  | 'fit-desc'
 
 export interface SortOption {
   value: SortKey
@@ -525,6 +527,8 @@ const scoringSortOptions: SortOption[] = [
 const scheduledSortOptions: SortOption[] = [
   { value: 'rating-desc', label: 'CaddieIQ Rating (High)' },
   { value: 'rating-asc', label: 'CaddieIQ Rating (Low)' },
+  { value: 'fit-desc', label: 'Course Fit (High)' },
+  { value: 'fit-asc', label: 'Course Fit (Low)' },
   { value: 'salary-desc', label: 'DK Salary (High)' },
   { value: 'salary-asc', label: 'DK Salary (Low)' },
   { value: 'own-desc', label: 'Proj Ownership (High)' },

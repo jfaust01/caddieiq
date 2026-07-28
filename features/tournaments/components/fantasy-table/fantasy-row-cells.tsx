@@ -7,6 +7,7 @@ import type { DfsValueResult } from '@/lib/dfs-value'
 import { FantasyPlayerCell } from './fantasy-player-cell'
 import { FantasyMetricCell } from './fantasy-metric-cell'
 import { MetricEmptyState } from './metric-empty-state'
+import { CourseFitCell } from './course-fit-cell'
 import {
   formatMissing,
   courseFitScore,
@@ -106,7 +107,7 @@ export function FantasyRowCells({
 
       {/* COURSE FIT */}
       <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
-        <FantasyMetricCell value={fit} valueClassName="text-sky-100" />
+        <CourseFitCell score={fit} />
       </td>
     </>
   )

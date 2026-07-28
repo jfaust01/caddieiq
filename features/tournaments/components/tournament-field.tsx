@@ -13,7 +13,7 @@ import {
   TournamentPlayerToolbar,
   type StatusOption,
 } from '@/features/tournaments/components/fantasy-table/tournament-player-toolbar'
-import { parseOdds } from '@/features/tournaments/components/fantasy-table/helpers'
+import { parseOdds, courseFitScore } from '@/features/tournaments/components/fantasy-table/helpers'
 import {
   type FilterContext,
   type SortKey,
@@ -272,6 +272,16 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           const oddsA = parseOdds(a.oddsToWin)
           const oddsB = parseOdds(b.oddsToWin)
           return oddsB !== oddsA ? oddsB - oddsA : name(a, b)
+        }
+        case 'fit-desc': {
+          const fitA = courseFitScore(dfsByPlayer.get(a.playerId)) ?? Number.MIN_VALUE
+          const fitB = courseFitScore(dfsByPlayer.get(b.playerId)) ?? Number.MIN_VALUE
+          return fitB !== fitA ? fitB - fitA : name(a, b)
+        }
+        case 'fit-asc': {
+          const fitA = courseFitScore(dfsByPlayer.get(a.playerId)) ?? Number.MAX_VALUE
+          const fitB = courseFitScore(dfsByPlayer.get(b.playerId)) ?? Number.MAX_VALUE
+          return fitA !== fitB ? fitA - fitB : name(a, b)
         }
         default:
           return 0
