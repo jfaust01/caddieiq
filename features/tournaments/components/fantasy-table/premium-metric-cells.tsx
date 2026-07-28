@@ -277,6 +277,11 @@ export function OwnershipCell({ entrant }: { entrant: FieldEntrant }) {
  * MARKET CELL
  * Displays Odds to Win
  */
+/**
+ * MARKET CELL
+ * Displays Vegas odds to win from provider data. Uses American odds format (+650, +1200, etc).
+ * Sorts by implied probability (lower odds = higher probability = better value for favorites).
+ */
 export function MarketCell({ entrant }: { entrant: FieldEntrant }) {
   const odds = entrant.oddsToWin
 
@@ -284,18 +289,14 @@ export function MarketCell({ entrant }: { entrant: FieldEntrant }) {
     return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
-  const formatOdds = (rawOdds: string): string => {
-    return rawOdds
-  }
-
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
       <div className="text-center">
-        <div className="text-gray-400 font-medium text-lg sm:text-lg tabular-nums">
-          {formatOdds(odds)}
+        <div className="text-gray-300 font-semibold text-lg sm:text-lg tabular-nums">
+          {odds}
         </div>
-        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
-          Odds to Win
+        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground/70">
+          to Win
         </div>
       </div>
     </td>
