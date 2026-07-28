@@ -269,7 +269,7 @@ const tournamentFormColumn: ColumnDescriptor = {
   label: 'Round DNA',
   subtitle: 'Hole by Hole',
   tooltip: 'Hole-by-hole scoring visualization - scoring fingerprint',
-  colClassName: 'w-[300px]',
+  colClassName: 'w-[400px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
 }
 
