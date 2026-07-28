@@ -224,13 +224,13 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
         case 'name-desc':
           return name(b, a)
         case 'rating-desc': {
-          const ra = a.fantasyScore ?? Number.MIN_VALUE
-          const rb = b.fantasyScore ?? Number.MIN_VALUE
+          const ra = a.rankingScore ?? Number.MIN_VALUE
+          const rb = b.rankingScore ?? Number.MIN_VALUE
           return rb !== ra ? rb - ra : name(a, b)
         }
         case 'rating-asc': {
-          const ra = a.fantasyScore ?? Number.MAX_VALUE
-          const rb = b.fantasyScore ?? Number.MAX_VALUE
+          const ra = a.rankingScore ?? Number.MAX_VALUE
+          const rb = b.rankingScore ?? Number.MAX_VALUE
           return ra !== rb ? ra - rb : name(a, b)
         }
         case 'total-asc': {
