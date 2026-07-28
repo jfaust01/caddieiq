@@ -153,19 +153,33 @@ export function ScorecardDesktopLayout({
           </div>
 
           {/* Round DNA Chart */}
-          <div className="flex flex-col">
-            <div className="text-xs font-semibold uppercase tracking-wider text-white/60 mb-2">
-              Round DNA
+          {data.holes && data.holes.length > 0 && (
+            <div className="flex flex-col">
+              <div className="text-xs font-semibold uppercase tracking-wider text-white/60 mb-2">
+                Round DNA
+              </div>
+              <div className="h-16 bg-white/[0.02] rounded-lg border border-white/[0.05] overflow-hidden">
+                <RoundDnaCompact
+                  round={selectedRound}
+                  holes={data.holes.map((hole: any) => ({
+                    holeNumber: hole.holeNumber,
+                    par: hole.par,
+                    score: hole.score,
+                    relativeToPar: hole.toPar,
+                    status: hole.toPar === null || hole.toPar === undefined ? 'missing' : 
+                            hole.toPar <= -3 ? 'albatross' :
+                            hole.toPar === -2 ? 'eagle' :
+                            hole.toPar === -1 ? 'birdie' :
+                            hole.toPar === 0 ? 'par' :
+                            hole.toPar === 1 ? 'bogey' :
+                            hole.toPar === 2 ? 'double' : 'triplePlus'
+                  }))}
+                  onRoundHover={() => {}}
+                  onRoundClick={() => {}}
+                />
+              </div>
             </div>
-            <div className="h-16 bg-white/[0.02] rounded-lg border border-white/[0.05] overflow-hidden">
-              <RoundDnaCompact
-                round={selectedRound}
-                holes={data.holes}
-                onRoundHover={() => {}}
-                onRoundClick={() => {}}
-              />
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
