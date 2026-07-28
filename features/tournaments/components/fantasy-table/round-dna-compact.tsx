@@ -346,7 +346,7 @@ function RoundDnaRow({
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="500"
-                  fill="rgb(229, 231, 235)"
+                  fill={getDotColor(point.hole.status)}
                   pointerEvents="none"
                   style={{ zIndex: 10 }}
                 >
