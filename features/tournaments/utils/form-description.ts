@@ -1,24 +1,24 @@
 /**
- * Maps form score to contextual descriptive labels
+ * Maps form score to contextual icon names and colors
  * Helps users understand player form at a glance
  */
-export function getFormDescription(formScore: number): string {
+export function getFormIcon(formScore: number): string {
   if (formScore >= 80) {
-    return 'Hot'
+    return 'Flame' // Hot
   }
   if (formScore >= 65) {
-    return 'Heating Up'
+    return 'TrendingUp' // Heating Up
   }
   if (formScore >= 50) {
-    return 'Solid'
+    return 'Circle' // Solid
   }
   if (formScore >= 35) {
-    return 'Cooling Off'
+    return 'TrendingDown' // Cooling Off
   }
   if (formScore >= 20) {
-    return 'Cold'
+    return 'Snowflake' // Cold
   }
-  return 'Slump'
+  return 'SkipBack' // Slump
 }
 
 export function getFormColor(formScore: number): string {
