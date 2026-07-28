@@ -7,6 +7,7 @@ import { ScorecardLegend } from './scorecard-legend'
 import { ScorecardRoundTabs } from './scorecard-round-tabs'
 import { DraftKingsMark } from './draftkings-mark'
 import { PlayerFlag } from './player-flag'
+import { RoundDnaCompact } from './fantasy-table/round-dna-compact'
 import { cn } from '@/lib/utils'
 
 interface DesktopScorecardLayoutProps {
@@ -133,21 +134,38 @@ export function ScorecardDesktopLayout({
 
       {/* Round Tabs */}
       <div className="flex-shrink-0 px-0 mt-6">
-        <div className="w-[360px] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] grid grid-cols-4">
-          {[1, 2, 3, 4].map((round) => (
-            <button
-              key={round}
-              onClick={() => onRoundChange(round)}
-              className={cn(
-                'py-3 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0',
-                selectedRound === round
-                  ? 'bg-emerald-500/15 text-emerald-300'
-                  : 'text-white/60 hover:text-white'
-              )}
-            >
-              R{round}
-            </button>
-          ))}
+        <div className="flex flex-col gap-4">
+          <div className="w-[360px] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] grid grid-cols-4">
+            {[1, 2, 3, 4].map((round) => (
+              <button
+                key={round}
+                onClick={() => onRoundChange(round)}
+                className={cn(
+                  'py-3 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0',
+                  selectedRound === round
+                    ? 'bg-emerald-500/15 text-emerald-300'
+                    : 'text-white/60 hover:text-white'
+                )}
+              >
+                R{round}
+              </button>
+            ))}
+          </div>
+
+          {/* Round DNA Chart */}
+          <div className="flex flex-col">
+            <div className="text-xs font-semibold uppercase tracking-wider text-white/60 mb-2">
+              Round DNA
+            </div>
+            <div className="h-16 bg-white/[0.02] rounded-lg border border-white/[0.05] overflow-hidden">
+              <RoundDnaCompact
+                round={selectedRound}
+                holes={data.holes}
+                onRoundHover={() => {}}
+                onRoundClick={() => {}}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
