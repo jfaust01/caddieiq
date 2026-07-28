@@ -2,6 +2,7 @@ import type { FieldEntrant } from '@/features/tournaments/types'
 import type { DfsValueResult } from '@/lib/dfs-value'
 import { DraftKingsMark } from '@/features/tournaments/components/draftkings-mark'
 import { getRatingBand } from '@/features/tournaments/utils/ai-rating-band'
+import { getFormDescription, getFormColor } from '@/features/tournaments/utils/form-description'
 import { cn } from '@/lib/utils'
 
 /**
@@ -35,10 +36,9 @@ export function AiRatingCell({ entrant }: { entrant: FieldEntrant }) {
 
 /**
  * RECENT FORM CELL
- */
-/**
- * RECENT FORM CELL
- * Displays recent performance form score with contextual help.
+ * Displays recent performance form score with semantic descriptions.
+ * Shows contextual labels (Hot, Heating Up, Solid, Cooling Off, Cold, Slump)
+ * with color coding to help users assess player form at a glance.
  */
 export function RecentFormCell({ entrant }: { entrant: FieldEntrant }) {
   const formScore = entrant.formScore
@@ -47,17 +47,17 @@ export function RecentFormCell({ entrant }: { entrant: FieldEntrant }) {
     return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
+  const description = getFormDescription(formScore)
+  const colorClass = getFormColor(formScore)
+
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
       <div className="flex flex-col gap-1 items-center py-1">
         <div className="text-gray-400 font-medium text-lg sm:text-lg tabular-nums">
           {Math.round(formScore)}
         </div>
-        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground/70">
-          Recent Form
-        </div>
-        <div className="text-[7px] sm:text-[8px] text-muted-foreground/60 max-w-[80px]">
-          Last 12 months
+        <div className={cn('text-[9px] sm:text-[10px] uppercase tracking-wide font-semibold', colorClass)}>
+          {description}
         </div>
       </div>
     </td>
