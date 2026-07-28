@@ -244,13 +244,13 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           return totB !== totA ? totB - totA : name(a, b)
         }
         case 'salary-asc': {
-          const salA = a.dfsSalary ?? Number.MAX_VALUE
-          const salB = b.dfsSalary ?? Number.MAX_VALUE
+          const salA = (a.dfsSalary ?? 0) > 0 ? a.dfsSalary : Number.MAX_VALUE
+          const salB = (b.dfsSalary ?? 0) > 0 ? b.dfsSalary : Number.MAX_VALUE
           return salA !== salB ? salA - salB : name(a, b)
         }
         case 'salary-desc': {
-          const salA = a.dfsSalary ?? Number.MIN_VALUE
-          const salB = b.dfsSalary ?? Number.MIN_VALUE
+          const salA = (a.dfsSalary ?? 0) > 0 ? a.dfsSalary : Number.MIN_VALUE
+          const salB = (b.dfsSalary ?? 0) > 0 ? b.dfsSalary : Number.MIN_VALUE
           return salB !== salA ? salB - salA : name(a, b)
         }
         case 'own-asc': {

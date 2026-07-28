@@ -105,11 +105,13 @@ export function AiIntelligenceCell({ entrant }: { entrant: FieldEntrant }) {
 
 /**
  * SALARY CELL
+ * Displays DraftKings salary from provider. Never displays $0 or missing salaries.
  */
 export function SalaryCell({ entrant }: { entrant: FieldEntrant }) {
   const salary = entrant.dfsSalary
 
-  if (!salary) {
+  // Show em-dash for missing or zero salary
+  if (!salary || salary === 0) {
     return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
