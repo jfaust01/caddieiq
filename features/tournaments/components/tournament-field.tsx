@@ -283,6 +283,16 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           const fitB = courseFitScore(dfsByPlayer.get(b.playerId)) ?? Number.MAX_VALUE
           return fitA !== fitB ? fitA - fitB : name(a, b)
         }
+        case 'dkScore-desc': {
+          const dkA = a.dkFantasyPoints ?? Number.MIN_VALUE
+          const dkB = b.dkFantasyPoints ?? Number.MIN_VALUE
+          return dkB !== dkA ? dkB - dkA : name(a, b)
+        }
+        case 'dkScore-asc': {
+          const dkA = a.dkFantasyPoints ?? Number.MAX_VALUE
+          const dkB = b.dkFantasyPoints ?? Number.MAX_VALUE
+          return dkA !== dkB ? dkA - dkB : name(a, b)
+        }
         default:
           return 0
       }
