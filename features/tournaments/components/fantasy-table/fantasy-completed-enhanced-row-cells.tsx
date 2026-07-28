@@ -59,7 +59,7 @@ export function FantasyCompletedEnhancedRowCells({
 
       {/* PLAYER */}
       <td className="px-2 sm:px-3 py-[10px] align-middle text-left">
-        <FantasyPlayerCell entrant={entrant} />
+        <FantasyPlayerCell entrant={entrant} onClick={onScorecardOpen} />
       </td>
 
       {/* TO PAR */}

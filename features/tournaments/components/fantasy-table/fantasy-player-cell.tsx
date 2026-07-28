@@ -1,3 +1,5 @@
+'use client'
+
 import { PlayerFlag } from '@/features/tournaments/components/player-flag'
 import { PlayerPerformanceBadges } from './player-performance-badges'
 import type { FieldEntrant } from '@/features/tournaments/types'
@@ -7,9 +9,17 @@ import type { FieldEntrant } from '@/features/tournaments/types'
  * truncated name, and country flag. Shared by every phase's rows so the player
  * column looks and behaves identically across Scheduled / Live / Completed.
  *
- * Renders the inner cell content only — the parent supplies the wrapping <td>.
+ * Clicking anywhere in the cell opens the scorecard drawer. Gracefully handles
+ * missing headshots, flags, and long names. Displays up to 2 real badges
+ * (Elite, Hot, Value, etc.) based on ranking and form scores.
  */
-export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
+export function FantasyPlayerCell({
+  entrant,
+  onClick,
+}: {
+  entrant: FieldEntrant
+  onClick?: (playerId: string) => void
+}) {
   const initials = entrant.playerName
     .split(' ')
     .map((n) => n[0])
@@ -18,10 +28,14 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
     .slice(0, 2)
 
   return (
-    <div className="flex gap-2 items-start py-0 pr-2">
+    <button
+      onClick={() => onClick?.(entrant.playerId)}
+      className="flex gap-2 items-start py-0 pr-2 w-full text-left hover:opacity-80 transition-opacity duration-150"
+      type="button"
+    >
       {entrant.headshotUrl ? (
         <img
-          src={entrant.headshotUrl || '/placeholder.svg'}
+          src={entrant.headshotUrl}
           alt={entrant.playerName}
           className="h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] shrink-0 rounded-full border border-white/[0.12] object-cover"
         />
@@ -30,9 +44,9 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
           {initials}
         </div>
       )}
-      <div className="flex flex-col gap-0">
-        <div className="flex items-center gap-1">
-          <span className="text-sm font-medium text-foreground whitespace-nowrap">
+      <div className="flex flex-col gap-0 min-w-0">
+        <div className="flex items-center gap-1 min-w-0">
+          <span className="text-sm font-medium text-foreground truncate">
             {entrant.playerName}
           </span>
           {entrant.countryCode && (
@@ -44,6 +58,6 @@ export function FantasyPlayerCell({ entrant }: { entrant: FieldEntrant }) {
         </div>
         <PlayerPerformanceBadges entrant={entrant} />
       </div>
-    </div>
+    </button>
   )
 }

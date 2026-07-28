@@ -46,7 +46,7 @@ export function FantasyRowCells({
     <>
       {/* PLAYER */}
       <td className="px-2 sm:px-3 align-middle">
-        <FantasyPlayerCell entrant={entrant} />
+        <FantasyPlayerCell entrant={entrant} onClick={onScorecardOpen} />
       </td>
 
       {/* TO PAR */}
