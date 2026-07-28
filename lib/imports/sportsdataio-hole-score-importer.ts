@@ -137,7 +137,6 @@ export async function importHoleScoresForTournament(
           playerId: sdioPlayer.PlayerID,
           name: sdioPlayer.Name,
         })
-        console.log(`[v0] Could not match player ${sdioPlayer.Name} (${playerSourceRecordId}) to internal database`)
         continue
       }
 
