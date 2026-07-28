@@ -122,7 +122,7 @@ export function DkScoreCell({ entrant }: { entrant: FieldEntrant }) {
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
       <div className="text-center">
-        <div className="font-semibold text-lg sm:text-lg tabular-nums" style={{ color: '#FF6600' }}>
+        <div className="font-semibold tabular-nums" style={{ color: '#FF6600', fontSize: '18px' }}>
           {dkScore.toFixed(2)}
         </div>
       </div>
@@ -142,12 +142,12 @@ export function DkValuePerDollarCell({ entrant }: { entrant: FieldEntrant }) {
     return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
-  const valuePerDollar = (dkScore / (salary / 1000)).toFixed(3)
+  const valuePerDollar = (dkScore / (salary / 1000)).toFixed(2)
 
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
       <div className="text-center">
-        <div className="font-semibold text-lg sm:text-lg tabular-nums" style={{ color: '#FF6600' }}>
+        <div className="font-semibold tabular-nums" style={{ color: '#FF6600', fontSize: '18px' }}>
           {valuePerDollar}
         </div>
       </div>
