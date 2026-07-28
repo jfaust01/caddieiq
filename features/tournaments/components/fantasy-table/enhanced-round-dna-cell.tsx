@@ -1,109 +1,66 @@
 'use client'
 
-import { useEffect, useState, useMemo, memo } from 'react'
+import { useMemo, memo } from 'react'
 import { RoundDnaSummaryBox } from './round-dna-summary-box'
 import { EnhancedRoundDnaTable } from './enhanced-round-dna-table'
 import { HoleData } from '@/features/tournaments/utils/round-dna-helpers'
 
 interface EnhancedRoundDnaCellProps {
-  playerId: string
+  holes: Array<{ holeNumber: number; score: number | null; par: number | null; toPar: number | null; dkPoints: number | null }>
   round: number
-  tournamentId: string
-  onScorecardOpen?: (playerId: string, round: number) => void
-}
-
-async function fetchRoundScorecard(
-  tournamentId: string,
-  playerId: string,
-  round: number
-): Promise<HoleData[]> {
-  try {
-    const response = await fetch(
-      `/api/tournaments/${tournamentId}/players/${playerId}/rounds/${round}/scorecard`
-    )
-    
-    if (!response.ok) {
-      return []
-    }
-    
-    const data = await response.json()
-    
-    // Transform API response to HoleData format
-    return (data.holes || []).map((hole: any) => ({
-      holeNumber: hole.holeNumber,
-      par: hole.par,
-      score: hole.score,
-      toPar: hole.toPar,
-      dkPoints: hole.dkPoints
-    }))
-  } catch (error) {
-    console.error(`[v0] Failed to fetch scorecard for player ${playerId} round ${round}:`, error)
-    return []
-  }
 }
 
 function EnhancedRoundDnaCellInner({
-  playerId,
-  round,
-  tournamentId,
-  onScorecardOpen
+  holes,
+  round
 }: EnhancedRoundDnaCellProps) {
-  const [holes, setHoles] = useState<HoleData[]>([])
-  const [loading, setLoading] = useState(true)
+  // Transform input to HoleData format
+  const holeData: HoleData[] = useMemo(() => {
+    return (holes || []).map((hole: any) => ({
+      holeNumber: hole.holeNumber,
+      par: hole.par,
+      score: hole.score,
+      toPar: hole.toPar || 0,
+      dkPoints: hole.dkPoints || 0,
+      status: hole.toPar === null || hole.toPar === undefined ? 'missing' : 
+              hole.toPar <= -3 ? 'albatross' :
+              hole.toPar === -2 ? 'eagle' :
+              hole.toPar === -1 ? 'birdie' :
+              hole.toPar === 0 ? 'par' :
+              hole.toPar === 1 ? 'bogey' :
+              hole.toPar === 2 ? 'double' : 'triplePlus'
+    }))
+  }, [holes])
   
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true)
-      const data = await fetchRoundScorecard(tournamentId, playerId, round)
-      setHoles(data)
-      setLoading(false)
-    }
-    
-    loadData()
-  }, [playerId, round, tournamentId])
-  
-  // Create a cache key for memoization
-  const cacheKey = useMemo(() => `${playerId}-${round}`, [playerId, round])
-  
-  if (loading) {
+  if (!holeData || holeData.length === 0) {
     return (
-      <div className="h-48 flex items-center justify-center text-white/40">
-        <div className="text-sm">Loading...</div>
+      <div className="h-48 flex items-center justify-center text-white/40 bg-white/[0.02] border border-white/[0.05] rounded-lg">
+        <div className="text-sm">No scorecard data available</div>
       </div>
     )
   }
-  
+
   return (
     <div className="flex gap-4 p-4 bg-white/[0.02] border border-white/[0.05] rounded-lg">
       {/* Left sidebar with summary */}
       <div className="flex-shrink-0">
-        <RoundDnaSummaryBox round={round} holes={holes} />
+        <RoundDnaSummaryBox round={round} holes={holeData} />
       </div>
       
       {/* Main table */}
-      <div className="flex-1 min-w-0">
-        <EnhancedRoundDnaTable holes={holes} round={round} />
+      <div className="flex-1 min-w-0 overflow-x-auto">
+        <EnhancedRoundDnaTable holes={holeData} round={round} />
       </div>
       
-      {/* Scorecard button */}
-      <div className="flex items-center">
-        <button
-          onClick={() => onScorecardOpen?.(playerId, round)}
-          className="px-3 py-2 rounded bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-colors text-xs font-semibold"
-        >
-          View
-        </button>
-      </div>
     </div>
   )
 }
 
-// Memoize by playerId and round
+// Memoize by holes and round
 export const EnhancedRoundDnaCell = memo(EnhancedRoundDnaCellInner, (prevProps, nextProps) => {
   return (
-    prevProps.playerId === nextProps.playerId &&
     prevProps.round === nextProps.round &&
-    prevProps.tournamentId === nextProps.tournamentId
+    JSON.stringify(prevProps.holes) === JSON.stringify(nextProps.holes)
   )
 })
 

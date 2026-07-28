@@ -153,11 +153,10 @@ export function ScorecardDesktopLayout({
           </div>
 
           {/* Enhanced Round DNA Chart */}
-          {data.playerId && data.tournamentId && (
+          {(frontNine.length > 0 || backNine.length > 0) && (
             <div className="mt-4">
               <EnhancedRoundDnaCell
-                playerId={data.playerId}
-                tournamentId={data.tournamentId}
+                holes={[...frontNine, ...backNine]}
                 round={selectedRound}
               />
             </div>
