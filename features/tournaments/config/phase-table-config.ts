@@ -241,7 +241,7 @@ const dkScoreLiveColumn: ColumnDescriptor = {
 
 const dkValuePerDollarColumn: ColumnDescriptor = {
   id: 'dkValuePerDollar',
-  label: 'DK Value Per Dollar',
+  label: 'DK PTS/$1k',
   headerKind: 'dk',
   tooltip: 'DK Points per $1,000 salary (value efficiency)',
   colClassName: 'w-[110px] sm:w-[140px]',
