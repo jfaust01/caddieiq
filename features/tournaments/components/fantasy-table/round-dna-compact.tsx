@@ -74,20 +74,32 @@ function seededHoleRandom(seed: string, holeNumber: number, index: number): numb
 
 async function fetchRealHoles(tournamentId: string, playerId: string, round: number): Promise<HoleResult[] | null> {
   try {
+    console.log('[v0] RoundDNA: Fetching real holes from API', { tournamentId, playerId, round })
+    
     const response = await fetch(
       `/api/tournaments/${tournamentId}/players/${playerId}/rounds/${round}/scorecard`
     )
     
     if (!response.ok) {
-      console.error('[v0] Failed to fetch holes:', response.status)
+      console.error('[v0] RoundDNA: Failed to fetch holes from API', { status: response.status, tournamentId, playerId, round })
       return null
     }
 
     const { data } = await response.json()
     
     if (!data || !data.holes || data.holes.length === 0) {
+      console.log('[v0] RoundDNA: API returned no holes (empty or null)', { tournamentId, playerId, round, hasData: !!data, holesCount: data?.holes?.length })
       return null
     }
+
+    console.log('[v0] RoundDNA: API returned persisted holes from hole_scores table', { 
+      tournamentId, 
+      playerId, 
+      round, 
+      holesCount: data.holes.length,
+      sources: data.holes.map((h: any) => h.source),
+      firstHole: data.holes[0]
+    })
 
     // Convert database hole scores to HoleResult format
     return data.holes.map((hole: any) => {
@@ -448,7 +460,18 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
       .map((r) => {
         // Use real holes from cache if available, otherwise generate mock
         const realHoles = realHolesCache[r.round]
+        const isUsingRealData = realHoles !== null && realHoles !== undefined
         const holes = realHoles ?? generateMockHoles(r.relToPar!, r.round, playerId, skillLevel)
+        
+        console.log('[v0] RoundDNA: Round data source', {
+          round: r.round,
+          isUsingRealData,
+          holesCount: holes.length,
+          source: isUsingRealData ? 'persisted hole_scores' : 'generated mock',
+          relToPar: r.relToPar,
+          dkPoints: r.dkPoints,
+          cacheStatus: realHoles === undefined ? 'not_fetched' : realHoles === null ? 'fetched_but_empty' : 'fetched_success'
+        })
         
         return {
           round: r.round,
