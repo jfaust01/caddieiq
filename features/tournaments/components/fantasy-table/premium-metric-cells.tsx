@@ -1,12 +1,12 @@
 import type { FieldEntrant } from '@/features/tournaments/types'
 import type { DfsValueResult } from '@/lib/dfs-value'
 import { DraftKingsMark } from '@/features/tournaments/components/draftkings-mark'
-import { getRatingBand, getProgressBarFillColor, getProgressBarColor } from '@/features/tournaments/utils/ai-rating-band'
+import { getRatingBand } from '@/features/tournaments/utils/ai-rating-band'
 import { cn } from '@/lib/utils'
 
 /**
  * AI RATING CELL
- * Displays rating from Analytics Engine with progress bar and semantic colors.
+ * Displays rating from Analytics Engine with semantic colors and band label.
  */
 export function AiRatingCell({ entrant }: { entrant: FieldEntrant }) {
   const aiRating = entrant.rankingScore
@@ -16,21 +16,12 @@ export function AiRatingCell({ entrant }: { entrant: FieldEntrant }) {
   }
 
   const { band, colorClass } = getRatingBand(aiRating)
-  const fillColor = getProgressBarFillColor(aiRating)
-  const bgColor = getProgressBarColor(aiRating)
-  const percentage = Math.min((aiRating / 100) * 100, 100)
 
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-      <div className="flex flex-col gap-2 items-center py-1">
+      <div className="flex flex-col gap-1 items-center py-1">
         <div className={cn('font-semibold text-lg sm:text-lg tabular-nums', colorClass)}>
           {Math.round(aiRating)}
-        </div>
-        <div className={cn('w-full h-1.5 rounded-full overflow-hidden', bgColor)}>
-          <div
-            className={cn('h-full rounded-full transition-all duration-300', fillColor)}
-            style={{ width: `${percentage}%` }}
-          />
         </div>
         {band && (
           <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground/70">
