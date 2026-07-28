@@ -56,7 +56,7 @@ export function RecentFormCell({ entrant }: { entrant: FieldEntrant }) {
         <div className={cn('font-semibold text-lg sm:text-lg tabular-nums', colorClass)}>
           {Math.round(formScore)}
         </div>
-        <div className={cn('text-[9px] sm:text-[10px] uppercase tracking-wide font-semibold', colorClass)}>
+        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide font-semibold text-muted-foreground/70">
           {description}
         </div>
       </div>
