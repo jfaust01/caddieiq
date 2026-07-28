@@ -244,7 +244,8 @@ export function FantasyOutlookCell({
 
 /**
  * OWNERSHIP CELL
- * Displays DFS ownership percentage
+ * Displays tournament ownership percentage with compact progress bar.
+ * Shows percentage (0-100%) from provider data. Never fabricates values.
  */
 export function OwnershipCell({ entrant }: { entrant: FieldEntrant }) {
   const ownership = entrant.ownershipPercent
@@ -253,14 +254,19 @@ export function OwnershipCell({ entrant }: { entrant: FieldEntrant }) {
     return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
   }
 
+  const percentage = Math.min(Math.max(0, ownership), 100)
+
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-      <div className="text-center">
+      <div className="flex flex-col gap-1.5 items-center py-1">
         <div className="text-violet-400 font-semibold text-lg sm:text-lg tabular-nums">
-          {Math.round(ownership)}%
+          {ownership.toFixed(0)}%
         </div>
-        <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
-          Owned
+        <div className="w-full h-1 rounded-full overflow-hidden bg-white/[0.08]">
+          <div
+            className="h-full bg-violet-500 rounded-full transition-all duration-300"
+            style={{ width: `${percentage}%` }}
+          />
         </div>
       </div>
     </td>
