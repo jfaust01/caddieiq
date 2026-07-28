@@ -260,8 +260,8 @@ function RoundDnaRow({
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
   const DOT_GAP = 5 // 5px max gap between each dot
   const STEP_X = (USABLE_WIDTH - DOT_GAP * 18) / 18 + DOT_GAP
-  const SVG_HEIGHT = 40
-  const CENTER_Y = SVG_HEIGHT / 2
+  const SVG_HEIGHT = 60
+  const CENTER_Y = SVG_HEIGHT / 2 + 5 // offset down slightly to make room for labels above
 
   const completedPoints = useMemo(
     () =>
@@ -318,8 +318,13 @@ function RoundDnaRow({
 
             {/* Dots */}
             {completedPoints.map((point) => (
-              <g
+              <circle
                 key={`dot-${point.hole.holeNumber}`}
+                cx={point.x}
+                cy={point.y}
+                r={3}
+                fill={getDotColor(point.hole.status)}
+                opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.4 : 1}
                 style={{
                   cursor: 'pointer',
                 }}
@@ -328,15 +333,26 @@ function RoundDnaRow({
                   setTooltipHole(point.hole)
                   setTooltipPosition({ x: point.x, y: point.y })
                 }}
-              >
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r={3}
+              />
+            ))}
+
+            {/* To-par labels (rendered last to appear in front) */}
+            {completedPoints.map((point) => (
+              point.hole.relativeToPar !== null && point.hole.relativeToPar !== undefined && (
+                <text
+                  key={`label-${point.hole.holeNumber}`}
+                  x={point.x}
+                  y={point.y - 8}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="500"
                   fill={getDotColor(point.hole.status)}
-                  opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.4 : 1}
-                />
-              </g>
+                  pointerEvents="none"
+                  style={{ zIndex: 10 }}
+                >
+                  {point.hole.relativeToPar === 0 ? 'E' : (point.hole.relativeToPar > 0 ? '+' : '') + point.hole.relativeToPar}
+                </text>
+              )
             ))}
 
 
@@ -349,7 +365,7 @@ function RoundDnaRow({
             className="absolute bg-gray-800 border border-gray-600 rounded px-2 py-1 pointer-events-none z-50 text-xs text-gray-100"
             style={{
               left: `${tooltipPosition.x}px`,
-              top: `${tooltipPosition.y - 40}px`,
+              top: `${tooltipPosition.y - 100}px`,
               transform: 'translateX(-50%)',
             }}
           >
