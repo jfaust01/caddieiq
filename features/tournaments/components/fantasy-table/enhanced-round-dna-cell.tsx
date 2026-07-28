@@ -14,11 +14,9 @@ function EnhancedRoundDnaCellInner({
   holes,
   round
 }: EnhancedRoundDnaCellProps) {
-  console.log('[v0] EnhancedRoundDnaCell rendered with holes:', holes?.length, 'round:', round)
-  
   // Transform input to HoleData format
   const holeData: HoleData[] = useMemo(() => {
-    const transformed = (holes || []).map((hole: any) => ({
+    return (holes || []).map((hole: any) => ({
       holeNumber: hole.holeNumber,
       par: hole.par,
       score: hole.score,
@@ -32,8 +30,6 @@ function EnhancedRoundDnaCellInner({
               hole.toPar === 1 ? 'bogey' :
               hole.toPar === 2 ? 'double' : 'triplePlus'
     }))
-    console.log('[v0] Transformed holeData:', transformed.length, 'items')
-    return transformed
   }, [holes])
   
   if (!holeData || holeData.length === 0) {
