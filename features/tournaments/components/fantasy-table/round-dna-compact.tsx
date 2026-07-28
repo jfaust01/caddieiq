@@ -58,20 +58,6 @@ const getDotColor = (status: string): string => {
   return '#6B7280'
 }
 
-function seededHoleRandom(seed: string, holeNumber: number, index: number): number {
-  let hash = 0
-  const combined = seed + '|' + holeNumber + '|' + index
-  
-  for (let i = 0; i < combined.length; i++) {
-    const char = combined.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash
-  }
-  
-  hash = hash >>> 0
-  return (hash % 1000) / 1000
-}
-
 async function fetchRealHoles(tournamentId: string, playerId: string, round: number): Promise<HoleResult[] | null> {
   try {
     console.log('[v0] RoundDNA: Fetching real holes from API', { tournamentId, playerId, round })
@@ -137,107 +123,6 @@ async function fetchRealHoles(tournamentId: string, playerId: string, round: num
     console.error('[v0] Error fetching real holes:', error)
     return null
   }
-}
-
-function generateMockHoles(relToPar: number, round: number, playerId: string = '', skillLevel: number = 50): HoleResult[] {
-  const holes: HoleResult[] = []
-  const targetDeviation = relToPar
-  const seed = playerId + '-r' + round
-  
-  // Skill level affects score distribution (0-100, where 100 is pro level)
-  // Higher skill = more birdies and eagles, fewer bogeys
-  const skillFactor = Math.max(0, Math.min(100, skillLevel)) / 100
-  
-  // Generate random scores for all holes with skill-based distribution
-  const holeScores: number[] = []
-  for (let hole = 1; hole <= 18; hole++) {
-    const rand = seededHoleRandom(seed, hole, 0)
-    const rand2 = seededHoleRandom(seed, hole, 1)
-    let score = 0
-    
-    // Skill-adjusted weighted distribution with full range of scores
-    // Higher skilled players get better scores
-    const albatrossThreshold = 0.005 + (skillFactor * 0.015)    // 0.5%-2% albatross
-    const eagleThreshold = albatrossThreshold + (0.02 + (skillFactor * 0.08))        // 2%-10% eagles
-    const birdieThreshold = eagleThreshold + (0.15 + (skillFactor * 0.15))  // 15%-30% birdies
-    const parThreshold = birdieThreshold + (0.35 + ((1 - skillFactor) * 0.2))  // 35%-55% pars
-    const bogeyThreshold = parThreshold + (0.25 - (skillFactor * 0.12))  // 13%-25% bogeys
-    const doubleThreshold = bogeyThreshold + (0.08 - (skillFactor * 0.05))  // 3%-8% double bogeys
-    const tripleThreshold = doubleThreshold + (0.03 - (skillFactor * 0.02))  // 1%-3% triple bogeys
-    
-    if (rand < albatrossThreshold) {
-      score = -3  // Albatross (rare)
-    } else if (rand < eagleThreshold) {
-      score = -2  // Eagle
-    } else if (rand < birdieThreshold) {
-      score = -1  // Birdie
-    } else if (rand < parThreshold) {
-      score = 0   // Par
-    } else if (rand < bogeyThreshold) {
-      score = 1   // Bogey
-    } else if (rand < doubleThreshold) {
-      score = 2   // Double Bogey
-    } else if (rand < tripleThreshold) {
-      score = 3   // Triple Bogey
-    } else {
-      // Very rare - quadruple or worse (only for lower skilled players)
-      score = skillFactor > 0.6 ? 3 : (rand2 < 0.3 ? 4 : 3)
-    }
-    
-    holeScores.push(score)
-  }
-  
-  // Calculate current total and adjust to match target
-  let currentTotal = holeScores.reduce((a, b) => a + b, 0)
-  let deviation = currentTotal - targetDeviation
-  
-  // Adjust holes to match target while maintaining variety
-  let adjustmentPasses = 0
-  while (Math.abs(deviation) > 0.1 && adjustmentPasses < 5) {
-    for (let i = 0; i < 18 && Math.abs(deviation) > 0.1; i++) {
-      if (deviation > 0.5) {
-        // Need to improve score
-        if (holeScores[i] < 4) {
-          const adjustment = Math.min(1, deviation)
-          holeScores[i] += adjustment
-          deviation -= adjustment
-        }
-      } else if (deviation < -0.5) {
-        // Need to worsen score
-        if (holeScores[i] > -3) {
-          const adjustment = Math.min(1, Math.abs(deviation))
-          holeScores[i] -= adjustment
-          deviation += adjustment
-        }
-      }
-    }
-    adjustmentPasses++
-  }
-  
-  // Create hole results with adjusted scores
-  for (let hole = 1; hole <= 18; hole++) {
-    const holeRelToPar = Math.round(holeScores[hole - 1] * 2) / 2  // Round to nearest 0.5
-    
-    // Determine status based on hole's relative to par value
-    let status: HoleResult['status'] = 'par'
-    if (holeRelToPar <= -3) status = 'albatross'
-    else if (holeRelToPar === -2) status = 'eagle'
-    else if (holeRelToPar === -1) status = 'birdie'
-    else if (holeRelToPar === 0) status = 'par'
-    else if (holeRelToPar === 1) status = 'bogey'
-    else if (holeRelToPar === 2) status = 'double'
-    else if (holeRelToPar >= 3) status = 'triplePlus'
-    
-    holes.push({
-      holeNumber: hole,
-      par: 4,
-      score: holeRelToPar,
-      relativeToPar: holeRelToPar,
-      status,
-    })
-  }
-  
-  return holes
 }
 
 function getScoreColor(relToPar: number | null): string {
@@ -458,16 +343,14 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
     return roundArray
       .filter((r) => r.relToPar !== null && r.relToPar !== undefined)
       .map((r) => {
-        // Use real holes from cache if available, otherwise generate mock
+        // Use only real holes from cache - no mock generation
         const realHoles = realHolesCache[r.round]
-        const isUsingRealData = realHoles !== null && realHoles !== undefined
-        const holes = realHoles ?? generateMockHoles(r.relToPar!, r.round, playerId, skillLevel)
         
         console.log('[v0] RoundDNA: Round data source', {
           round: r.round,
-          isUsingRealData,
-          holesCount: holes.length,
-          source: isUsingRealData ? 'persisted hole_scores' : 'generated mock',
+          hasRealData: realHoles !== null && realHoles !== undefined,
+          holesCount: realHoles?.length ?? 0,
+          source: realHoles !== null && realHoles !== undefined ? 'persisted hole_scores' : 'none - using unavailable state',
           relToPar: r.relToPar,
           dkPoints: r.dkPoints,
           cacheStatus: realHoles === undefined ? 'not_fetched' : realHoles === null ? 'fetched_but_empty' : 'fetched_success'
@@ -477,7 +360,7 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
           round: r.round,
           relToPar: r.relToPar!,
           dkPoints: r.dkPoints,
-          holes,
+          holes: realHoles ?? [], // Empty array if no real data
         }
       })
   }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar, round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints, realHolesCache, skillLevel])
@@ -488,6 +371,15 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
     return (
       <div className="flex items-center justify-center h-12 text-muted-foreground text-sm">
         Did not play R{selectedRound}
+      </div>
+    )
+  }
+
+  // If no real holes available, show unavailable state
+  if (selectedRoundData.holes.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-12 text-muted-foreground text-sm">
+        Scorecard data unavailable
       </div>
     )
   }
