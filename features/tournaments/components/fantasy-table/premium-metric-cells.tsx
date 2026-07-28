@@ -62,7 +62,7 @@ export function RecentFormCell({ entrant }: { entrant: FieldEntrant }) {
 
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
-      <div className="flex flex-col gap-1.5 items-center py-1">
+      <div className="flex flex-col gap-0.5 items-center py-1">
         <div className={cn('font-semibold text-lg sm:text-lg tabular-nums', colorClass)}>
           {Math.round(formScore)}
         </div>
