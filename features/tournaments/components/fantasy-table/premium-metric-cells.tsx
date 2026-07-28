@@ -101,7 +101,7 @@ export function SalaryCell({ entrant }: { entrant: FieldEntrant }) {
         <div className="flex items-center justify-center gap-1">
           <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
           <span className="font-semibold tabular-nums" style={{ fontSize: '18px' }}>
-            ${(salary / 1000).toFixed(1)}K
+            ${salary.toLocaleString()}
           </span>
         </div>
       </div>
