@@ -87,14 +87,14 @@ export async function importHoleScoresForTournament(
         id: true,
         name: true,
         externalId: true,
-        tournamentFields: {
+        field: {
           select: {
             playerId: true,
+            sourceRecordId: true,
             player: {
               select: {
                 id: true,
-                externalId: true,
-                name: true,
+                fullName: true,
               },
             },
           },
@@ -102,11 +102,11 @@ export async function importHoleScoresForTournament(
       },
     })
 
-    if (!tournament || !tournament.externalId) {
-      throw new Error(`Tournament ${internalTournamentId} not found or missing externalId`)
+    if (!tournament) {
+      throw new Error(`Tournament ${internalTournamentId} not found`)
     }
 
-    summary.providerTournamentId = parseInt(tournament.externalId, 10)
+    summary.providerTournamentId = parseInt(tournament.externalId || '0', 10) || null
 
     // Step 2: Fetch leaderboard from SportsDataIO
     const provider = SportsDataProvider.fromEnv()
@@ -119,25 +119,25 @@ export async function importHoleScoresForTournament(
 
     console.log(`[v0] Importing hole scores for tournament ${tournament.name} (provider: ${tournament.externalId})`)
 
-    // Step 3: Build player lookup by external ID
-    const playersByExternalId = new Map(
-      tournament.tournamentFields
-        .filter((f) => f.player.externalId)
-        .map((f) => [f.player.externalId, f.player]),
+    // Step 3: Build player lookup by source record ID (SportsDataIO PlayerID)
+    const playersBySourceRecordId = new Map(
+      tournament.field
+        .filter((f) => f.sourceRecordId)
+        .map((f) => [f.sourceRecordId, f.player]),
     )
 
     // Step 4: Process each player's rounds and holes
     for (const sdioPlayer of leaderboard.Players) {
-      const playerExternalId = String(sdioPlayer.PlayerID)
+      const playerSourceRecordId = String(sdioPlayer.PlayerID)
 
-      // Find matching internal player
-      let internalPlayer = playersByExternalId.get(playerExternalId)
+      // Find matching internal player by source record ID
+      let internalPlayer = playersBySourceRecordId.get(playerSourceRecordId)
       if (!internalPlayer) {
         summary.playersUnmatched.push({
           playerId: sdioPlayer.PlayerID,
           name: sdioPlayer.Name,
         })
-        console.log(`[v0] Could not match player ${sdioPlayer.Name} (${playerExternalId}) to internal database`)
+        console.log(`[v0] Could not match player ${sdioPlayer.Name} (${playerSourceRecordId}) to internal database`)
         continue
       }
 
