@@ -316,10 +316,15 @@ function RoundDnaRow({
               )
             })}
 
-            {/* Dots with to-par labels */}
+            {/* Dots */}
             {completedPoints.map((point) => (
-              <g
+              <circle
                 key={`dot-${point.hole.holeNumber}`}
+                cx={point.x}
+                cy={point.y}
+                r={3}
+                fill={getDotColor(point.hole.status)}
+                opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.4 : 1}
                 style={{
                   cursor: 'pointer',
                 }}
@@ -328,29 +333,26 @@ function RoundDnaRow({
                   setTooltipHole(point.hole)
                   setTooltipPosition({ x: point.x, y: point.y })
                 }}
-              >
-                {/* To-par label above dot */}
-                {point.hole.relativeToPar !== null && point.hole.relativeToPar !== undefined && (
-                  <text
-                    x={point.x}
-                    y={point.y - 8}
-                    textAnchor="middle"
-                    fontSize="10"
-                    fontWeight="500"
-                    fill="rgb(229, 231, 235)"
-                    pointerEvents="none"
-                  >
-                    {point.hole.relativeToPar === 0 ? 'E' : (point.hole.relativeToPar > 0 ? '+' : '') + point.hole.relativeToPar}
-                  </text>
-                )}
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r={3}
-                  fill={getDotColor(point.hole.status)}
-                  opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.4 : 1}
-                />
-              </g>
+              />
+            ))}
+
+            {/* To-par labels (rendered last to appear in front) */}
+            {completedPoints.map((point) => (
+              point.hole.relativeToPar !== null && point.hole.relativeToPar !== undefined && (
+                <text
+                  key={`label-${point.hole.holeNumber}`}
+                  x={point.x}
+                  y={point.y - 8}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="500"
+                  fill="rgb(229, 231, 235)"
+                  pointerEvents="none"
+                  style={{ zIndex: 10 }}
+                >
+                  {point.hole.relativeToPar === 0 ? 'E' : (point.hole.relativeToPar > 0 ? '+' : '') + point.hole.relativeToPar}
+                </text>
+              )
             ))}
 
 
