@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { FileJson } from 'lucide-react'
+import { FileJson, TrendingDown } from 'lucide-react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const metadata: Metadata = {
@@ -9,6 +9,12 @@ export const metadata: Metadata = {
 }
 
 const importTools = [
+  {
+    title: 'Hole Score Import',
+    description: 'Import hole-by-hole scorecard data from SportsDataIO.',
+    href: '/admin/imports/hole-scores',
+    icon: TrendingDown,
+  },
   {
     title: 'GolfCourse API',
     description: 'Search, re-import, and debug GolfCourseAPI course data.',
