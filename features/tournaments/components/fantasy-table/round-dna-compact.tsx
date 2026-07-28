@@ -316,7 +316,7 @@ function RoundDnaRow({
               )
             })}
 
-            {/* Dots */}
+            {/* Dots with to-par labels */}
             {completedPoints.map((point) => (
               <g
                 key={`dot-${point.hole.holeNumber}`}
@@ -329,6 +329,20 @@ function RoundDnaRow({
                   setTooltipPosition({ x: point.x, y: point.y })
                 }}
               >
+                {/* To-par label above dot */}
+                {point.hole.relativeToPar !== null && point.hole.relativeToPar !== undefined && (
+                  <text
+                    x={point.x}
+                    y={point.y - 8}
+                    textAnchor="middle"
+                    fontSize="10"
+                    fontWeight="500"
+                    fill="rgb(229, 231, 235)"
+                    pointerEvents="none"
+                  >
+                    {point.hole.relativeToPar === 0 ? 'E' : (point.hole.relativeToPar > 0 ? '+' : '') + point.hole.relativeToPar}
+                  </text>
+                )}
                 <circle
                   cx={point.x}
                   cy={point.y}
