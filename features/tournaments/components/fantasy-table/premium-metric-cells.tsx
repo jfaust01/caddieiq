@@ -100,7 +100,7 @@ export function SalaryCell({ entrant }: { entrant: FieldEntrant }) {
       <div className="text-center">
         <div className="flex items-center justify-center gap-1">
           <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
-          <span className="font-semibold text-lg sm:text-lg tabular-nums">
+          <span className="font-semibold tabular-nums" style={{ fontSize: '18px' }}>
             ${(salary / 1000).toFixed(1)}K
           </span>
         </div>
@@ -122,8 +122,39 @@ export function DkScoreCell({ entrant }: { entrant: FieldEntrant }) {
   return (
     <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
       <div className="text-center">
-        <div className="text-emerald-400 font-semibold text-lg sm:text-lg tabular-nums">
-          {dkScore.toFixed(2)}
+        <div className="flex items-center justify-center gap-1">
+          <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
+          <span className="font-semibold tabular-nums" style={{ color: '#FF6600', fontSize: '18px' }}>
+            {dkScore.toFixed(2)}
+          </span>
+        </div>
+      </div>
+    </td>
+  )
+}
+
+/**
+ * DK VALUE PER DOLLAR CELL
+ * Calculates DK Points / Salary in thousands
+ */
+export function DkValuePerDollarCell({ entrant }: { entrant: FieldEntrant }) {
+  const dkScore = entrant.dkFantasyPoints
+  const salary = entrant.dfsSalary
+
+  if (!salary || dkScore === null || dkScore === undefined) {
+    return <td className="border-l border-white/[0.055] px-1 sm:px-3 text-center text-gray-500">—</td>
+  }
+
+  const valuePerDollar = (dkScore / (salary / 1000)).toFixed(2)
+
+  return (
+    <td className="border-l border-white/[0.055] px-1 sm:px-3 align-middle">
+      <div className="text-center">
+        <div className="flex items-center justify-center gap-1">
+          <DraftKingsMark className="h-3 w-auto flex-shrink-0" />
+          <span className="font-semibold tabular-nums" style={{ color: '#FF6600', fontSize: '18px' }}>
+            {valuePerDollar}
+          </span>
         </div>
       </div>
     </td>

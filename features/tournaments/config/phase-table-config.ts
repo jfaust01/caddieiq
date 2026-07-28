@@ -239,6 +239,15 @@ const dkScoreLiveColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
+const dkValuePerDollarColumn: ColumnDescriptor = {
+  id: 'dkValuePerDollar',
+  label: 'DK PTS/$1k',
+  headerKind: 'dk',
+  tooltip: 'DK Points per $1,000 salary (value efficiency)',
+  colClassName: 'w-[110px] sm:w-[140px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
+}
+
 const draftedColumn: ColumnDescriptor = {
   id: 'drafted',
   label: 'Drafted %',
@@ -347,9 +356,10 @@ const liveColumns: ColumnDescriptor[] = [
   recentFormLiveColumn,
   salaryLiveColumn,
   dkScoreLiveColumn,
+  dkValuePerDollarColumn,
   liveOwnershipColumn,
   marketColumn,
-]
+  ]
 
 /**
  * Completed (finished) columns for fantasy recap and analysis.
@@ -465,6 +475,7 @@ const completedColumns: ColumnDescriptor[] = [
   recentFormCompletedColumn,
   salaryCompletedColumn,
   dkScoreCompletedColumn,
+  dkValuePerDollarColumn,
   ownershipCompletedColumn,
   marketColumn,
 ]
