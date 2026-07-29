@@ -53,22 +53,23 @@ const ScoreRow = memo(function ScoreRow({
   label: string
   values: (string | number)[]
 }) {
+  const isHoleRow = label === 'HOLE'
   return (
-    <div className="flex border-b border-gray-700/20 text-xs tracking-tight">
-      <div className="w-32 px-3 py-1.5 font-medium text-gray-300 bg-gray-900/50">{label}</div>
+    <div className={`flex border-b border-gray-700/10 text-xs tracking-tight ${isHoleRow ? 'font-semibold' : ''}`}>
+      <div className="w-32 px-3 py-1.5 font-medium text-gray-500 text-xs bg-gray-900/50">{label}</div>
       {/* Holes 1-9 */}
       <div className="flex flex-1">
         {values.slice(0, 9).map((val, i) => (
           <div
             key={i}
-            className="flex-1 min-w-0 px-1.5 py-1.5 text-center border-r border-gray-700/15 text-gray-300"
+            className={`flex-1 min-w-0 px-1.5 py-1.5 text-center border-r border-gray-700/10 text-gray-300 ${isHoleRow ? 'text-sm font-bold' : ''}`}
           >
             {val}
           </div>
         ))}
       </div>
       {/* OUT separator */}
-      <div className="w-14 px-2 py-1.5 text-center font-medium border-r border-gray-600/40 text-gray-200 bg-gray-900/30">
+      <div className={`w-14 px-2 py-1.5 text-center font-medium border-r border-gray-600/30 text-gray-200 bg-gray-900/30 ${isHoleRow ? 'text-sm font-bold' : ''}`}>
         {values[9]}
       </div>
       {/* Holes 10-18 */}
@@ -76,18 +77,18 @@ const ScoreRow = memo(function ScoreRow({
         {values.slice(10, 19).map((val, i) => (
           <div
             key={i}
-            className="flex-1 min-w-0 px-1.5 py-1.5 text-center border-r border-gray-700/15 text-gray-300"
+            className={`flex-1 min-w-0 px-1.5 py-1.5 text-center border-r border-gray-700/10 text-gray-300 ${isHoleRow ? 'text-sm font-bold' : ''}`}
           >
             {val}
           </div>
         ))}
       </div>
       {/* IN separator */}
-      <div className="w-14 px-2 py-1.5 text-center font-medium border-r border-gray-600/40 text-gray-200 bg-gray-900/30">
+      <div className={`w-14 px-2 py-1.5 text-center font-medium border-r border-gray-600/30 text-gray-200 bg-gray-900/30 ${isHoleRow ? 'text-sm font-bold' : ''}`}>
         {values[19]}
       </div>
       {/* TOT */}
-      <div className="w-14 px-2 py-1.5 text-center font-medium text-gray-200 bg-gray-900/30">
+      <div className={`w-14 px-2 py-1.5 text-center font-medium text-gray-200 bg-gray-900/30 ${isHoleRow ? 'text-sm font-bold' : ''}`}>
         {values[20]}
       </div>
     </div>
@@ -100,8 +101,8 @@ const CumulativeScoreRow = memo(function CumulativeScoreRow({
   values: (string | number)[]
 }) {
   return (
-    <div className="flex border-b border-gray-700/20 text-xs tracking-tight">
-      <div className="w-32 px-3 py-1.5 font-medium text-gray-300 bg-gray-900/50 leading-tight">
+    <div className="flex border-b border-gray-700/10 text-xs tracking-tight">
+      <div className="w-32 px-3 py-1.5 font-medium text-gray-500 bg-gray-900/50 leading-tight text-xs">
         CUMULATIVE<br />SCORE (TO PAR)
       </div>
       {/* Holes 1-9 */}
@@ -111,7 +112,7 @@ const CumulativeScoreRow = memo(function CumulativeScoreRow({
           return (
             <div
               key={i}
-              className={`flex-1 min-w-0 px-1.5 py-1.5 text-center border-r border-gray-700/15 font-medium text-xs ${getToParColor(numVal)}`}
+              className={`flex-1 min-w-0 px-1.5 py-1.5 text-center border-r border-gray-700/10 font-medium text-xs ${getToParColor(numVal)}`}
             >
               {val}
             </div>
@@ -120,7 +121,7 @@ const CumulativeScoreRow = memo(function CumulativeScoreRow({
       </div>
       {/* OUT separator */}
       <div
-        className={`w-14 px-2 py-1.5 text-center font-medium border-r border-gray-600/40 text-xs bg-gray-900/30 ${getToParColor(
+        className={`w-14 px-2 py-1.5 text-center font-medium border-r border-gray-600/30 text-xs bg-gray-900/30 ${getToParColor(
           typeof values[9] === 'number' ? values[9] : parseInt(values[9] as string) || 0
         )}`}
       >
@@ -133,7 +134,7 @@ const CumulativeScoreRow = memo(function CumulativeScoreRow({
           return (
             <div
               key={i}
-              className={`flex-1 min-w-0 px-1.5 py-1.5 text-center border-r border-gray-700/15 font-medium text-xs ${getToParColor(numVal)}`}
+              className={`flex-1 min-w-0 px-1.5 py-1.5 text-center border-r border-gray-700/10 font-medium text-xs ${getToParColor(numVal)}`}
             >
               {val}
             </div>
@@ -142,7 +143,7 @@ const CumulativeScoreRow = memo(function CumulativeScoreRow({
       </div>
       {/* IN separator */}
       <div
-        className={`w-14 px-2 py-1.5 text-center font-medium border-r border-gray-600/40 text-xs bg-gray-900/30 ${getToParColor(
+        className={`w-14 px-2 py-1.5 text-center font-medium border-r border-gray-600/30 text-xs bg-gray-900/30 ${getToParColor(
           typeof values[19] === 'number' ? values[19] : parseInt(values[19] as string) || 0
         )}`}
       >
@@ -214,13 +215,18 @@ const RoundDnaChart = memo(function RoundDnaChart({
   }
 
   const getDotRadius = (result: number | null, isWorst: boolean, isBest: boolean): number => {
-    if (isWorst || isBest) return 6
-    if (result === 0) return 4
-    return 4.5
+    if (isBest) return 5.5
+    if (isWorst) return 5
+    if (result === null) return 2.5
+    if (result <= -2) return 5 // eagle
+    if (result === -1) return 4.5 // birdie
+    if (result === 0) return 4 // par
+    if (result === 1) return 4.5 // bogey
+    return 5 // double+
   }
 
   return (
-    <div className="relative w-full bg-gray-800/30 rounded-lg p-3 border border-gray-700/15">
+    <div className="relative w-full bg-gray-800/20 rounded-lg p-3 border border-gray-700/10">
       <svg
         className="w-full"
         viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
@@ -228,7 +234,7 @@ const RoundDnaChart = memo(function RoundDnaChart({
         style={{ minHeight: '160px' }}
         shapeRendering="crispEdges"
       >
-        {/* Reference lines */}
+        {/* Reference lines - very subtle */}
         {referenceLines.map((level) => {
           const y = CENTER_Y - level * LEVEL_SPACING
           return (
@@ -238,10 +244,10 @@ const RoundDnaChart = memo(function RoundDnaChart({
                 y1={y}
                 x2={SVG_WIDTH - PADDING}
                 y2={y}
-                stroke="#374151"
+                stroke="#1F2937"
                 strokeWidth="1"
                 strokeDasharray="4,4"
-                opacity="0.25"
+                opacity="0.15"
               />
               <text
                 x={PADDING - 8}
@@ -259,46 +265,61 @@ const RoundDnaChart = memo(function RoundDnaChart({
 
         {/* Line connecting dots */}
         {points.filter((p) => p.result !== null).length > 1 && (
-          <polyline
-            points={points
-              .filter((p) => p.result !== null)
-              .map((p) => `${p.x},${p.y}`)
-              .join(' ')}
-            fill="none"
-            stroke="#8B5CF6"
-            strokeWidth="2"
-            opacity="0.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
+          <>
+            <polyline
+              points={points
+                .filter((p) => p.result !== null)
+                .map((p) => `${p.x},${p.y}`)
+                .join(' ')}
+              fill="none"
+              stroke="#8B5CF6"
+              strokeWidth="2"
+              opacity="0.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </>
         )}
 
-        {/* Dots */}
+        {/* Dots with glow on birdies/eagles */}
         {points.map((point) => {
           const isBest = point.hole.holeNumber === bestHole.holeNumber
           const isWorst = point.hole.holeNumber === worstHole.holeNumber
           const dotR = getDotRadius(point.result, isWorst, isBest)
+          const isEagleOrBirdie = point.result !== null && point.result <= -1
+          
           return (
             <g key={`dot-${point.hole.holeNumber}`}>
+              {/* Glow for eagles/birdies */}
+              {isEagleOrBirdie && (
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={dotR + 2}
+                  fill={getDotColor(point.result)}
+                  opacity="0.15"
+                />
+              )}
+              
               <circle
                 cx={point.x}
                 cy={point.y}
                 r={dotR}
                 fill={getDotColor(point.result)}
-                opacity={point.result === null ? 0.4 : 1}
+                opacity={point.result === null ? 0.3 : 1}
               />
 
-              {/* Best hole marker */}
+              {/* Best hole marker - larger */}
               {isBest && (
-                <text x={point.x} y={point.y + 14} textAnchor="middle" fontSize="13" fontWeight="bold">
+                <text x={point.x} y={point.y + 16} textAnchor="middle" fontSize="16" fontWeight="bold">
                   ⭐
                 </text>
               )}
 
-              {/* Worst hole marker */}
+              {/* Worst hole marker - larger */}
               {isWorst && (
-                <text x={point.x} y={point.y - 14} textAnchor="middle" fontSize="13" fontWeight="bold">
+                <text x={point.x} y={point.y - 16} textAnchor="middle" fontSize="16" fontWeight="bold">
                   🔥
                 </text>
               )}
@@ -338,8 +359,8 @@ const ScoreByHoleRow = memo(function ScoreByHoleRow({
   }
 
   return (
-    <div className="flex border-b border-gray-700/20 text-xs tracking-tight">
-      <div className="w-32 px-3 py-2 font-medium text-gray-300 bg-gray-900/50">SCORE BY HOLE</div>
+    <div className="flex border-b border-gray-700/10 text-xs tracking-tight">
+      <div className="w-32 px-3 py-2 font-medium text-gray-500 bg-gray-900/50">HOLE SCORE</div>
       {/* Holes 1-9 */}
       <div className="flex flex-1">
         {holes1to9.map((hole) => {
@@ -347,23 +368,23 @@ const ScoreByHoleRow = memo(function ScoreByHoleRow({
           return (
             <div
               key={hole.holeNumber}
-              className="flex-1 min-w-0 px-1.5 py-2 flex items-center justify-center border-r border-gray-700/15"
+              className="flex-1 min-w-0 px-1.5 py-2 flex items-center justify-center border-r border-gray-700/10"
             >
               {score !== null ? (
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm ${getBadgeColor(hole)}`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${getBadgeColor(hole)}`}
                 >
                   {score}
                 </div>
               ) : (
-                <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gray-700 text-gray-500 font-semibold text-sm">-</div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-700 text-gray-500 font-bold text-sm">-</div>
               )}
             </div>
           )
         })}
       </div>
       {/* OUT */}
-      <div className="w-14 px-2 py-2 flex items-center justify-center font-medium border-r border-gray-600/40 bg-gray-900/30 text-xs text-gray-200">
+      <div className="w-14 px-2 py-2 flex items-center justify-center font-medium border-r border-gray-600/30 bg-gray-900/30 text-xs text-gray-200">
         {out}
       </div>
       {/* Holes 10-18 */}
@@ -373,23 +394,23 @@ const ScoreByHoleRow = memo(function ScoreByHoleRow({
           return (
             <div
               key={hole.holeNumber}
-              className="flex-1 min-w-0 px-1.5 py-2 flex items-center justify-center border-r border-gray-700/15"
+              className="flex-1 min-w-0 px-1.5 py-2 flex items-center justify-center border-r border-gray-700/10"
             >
               {score !== null ? (
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm ${getBadgeColor(hole)}`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${getBadgeColor(hole)}`}
                 >
                   {score}
                 </div>
               ) : (
-                <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gray-700 text-gray-500 font-semibold text-sm">-</div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-700 text-gray-500 font-bold text-sm">-</div>
               )}
             </div>
           )
         })}
       </div>
       {/* IN */}
-      <div className="w-14 px-2 py-2 flex items-center justify-center font-medium border-r border-gray-600/40 bg-gray-900/30 text-xs text-gray-200">
+      <div className="w-14 px-2 py-2 flex items-center justify-center font-medium border-r border-gray-600/30 bg-gray-900/30 text-xs text-gray-200">
         {inn}
       </div>
       {/* TOT */}
@@ -513,18 +534,18 @@ export const RoundDnaScorecard = memo(function RoundDnaScorecard({
   ]
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Header */}
-      <div className="text-center space-y-3">
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">ROUND DNA</h2>
+      <div className="text-center space-y-1.5">
+        <h2 className="text-3xl font-black text-white tracking-tighter">ROUND DNA</h2>
 
         {/* Round Selector */}
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-3 pt-1">
           {[1, 2, 3, 4].map((r) => (
             <button
               key={r}
               onClick={() => handleRoundChange(r)}
-              className={`px-4 py-1.5 rounded-lg font-bold text-sm transition-all duration-100 tracking-tight ${
+              className={`px-3 py-1 rounded-lg font-bold text-xs transition-all duration-120 tracking-tight ${
                 currentRound === r
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
                   : 'bg-gray-800/30 text-gray-400 border border-gray-700/40 hover:text-gray-300'
@@ -536,7 +557,7 @@ export const RoundDnaScorecard = memo(function RoundDnaScorecard({
         </div>
 
         {/* Legend */}
-        <div className="flex justify-center gap-5 text-xs text-gray-400 flex-wrap">
+        <div className="flex justify-center gap-4 text-xs text-gray-500 flex-wrap pt-0.5">
           <div className="flex items-center gap-1.5">
             <div className="text-lg">🦅</div>
             <span>Eagle or Better</span>
@@ -586,9 +607,9 @@ export const RoundDnaScorecard = memo(function RoundDnaScorecard({
         <ScoreRow label="SCORE" values={scoreValues} />
 
         {/* ROUND DNA CHART row */}
-        <div className="border-b border-gray-700/20 px-3 py-3">
+        <div className="border-b border-gray-700/10 px-3 py-3">
           <div className="flex gap-3">
-            <div className="w-32 font-medium text-gray-300 text-xs tracking-tight">ROUND DNA</div>
+            <div className="w-32 font-medium text-gray-500 text-xs tracking-tight">ROUND DNA</div>
             <div className="flex-1">
               <RoundDnaChart holeScores={allHoles} />
             </div>
