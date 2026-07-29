@@ -189,7 +189,7 @@ function RoundDnaRow({
         setTooltipHole(null)
         setTooltipPosition(null)
       }}
-      onClick={() => playerId && onRoundClick?.(playerId, selectedRound)}
+      onClick={() => playerId && onRoundClick?.(playerId, round)}
     >
       <div className="flex h-full relative">
         <div className="flex-1 min-w-0 overflow-hidden relative" ref={svgContainerRef}>
