@@ -7,6 +7,7 @@ import { ScorecardRoundSelector } from './scorecard-components/scorecard-round-s
 
 interface DesktopScorecardLayoutProps {
   currentRound: number
+  onRoundSelect?: (round: number) => void
   data: PlayerRoundScorecardData
   frontNine: Array<{ holeNumber: number; score: number | null; par: number | null; toPar: number | null; dkPoints: number | null }>
   backNine: Array<{ holeNumber: number; score: number | null; par: number | null; toPar: number | null; dkPoints: number | null }>
@@ -18,6 +19,7 @@ interface DesktopScorecardLayoutProps {
 
 export function ScorecardDesktopLayout({
   currentRound,
+  onRoundSelect,
   data,
   frontNine,
   backNine,
@@ -49,7 +51,7 @@ export function ScorecardDesktopLayout({
     <div className="flex h-full min-h-0 flex-col gap-0">
       {/* Round Selector */}
       <div className="flex-shrink-0 px-4 py-4">
-        <ScorecardRoundSelector currentRound={currentRound} phase="completed" />
+        <ScorecardRoundSelector currentRound={currentRound} phase="completed" onRoundSelect={onRoundSelect} />
       </div>
 
       {/* Main Content Grid */}

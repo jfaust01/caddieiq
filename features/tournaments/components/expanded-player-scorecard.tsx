@@ -17,6 +17,8 @@ interface ExpandedPlayerScorecardProps {
   isDrawerContext?: boolean
   /** The round number being displayed. */
   roundNumber?: number
+  /** Callback when user selects a different round. */
+  onRoundSelect?: (round: number) => void
 }
 
 export function ExpandedPlayerScorecard({
@@ -28,6 +30,7 @@ export function ExpandedPlayerScorecard({
   phase = 'scheduled',
   isDrawerContext = false,
   roundNumber = 1,
+  onRoundSelect,
 }: ExpandedPlayerScorecardProps) {
 
 
@@ -74,6 +77,7 @@ export function ExpandedPlayerScorecard({
       <div className={cn(isDrawerContext ? 'block' : 'hidden lg:block', 'h-full min-h-0')}>
         <ScorecardDesktopLayout
           currentRound={roundNumber}
+          onRoundSelect={onRoundSelect}
           data={data}
           frontNine={frontNine}
           backNine={backNine}
