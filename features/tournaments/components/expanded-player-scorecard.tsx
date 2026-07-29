@@ -18,8 +18,6 @@ interface ExpandedPlayerScorecardProps {
   phase?: 'scheduled' | 'live' | 'completed'
   /** Force mobile layout when rendered inside a drawer. */
   isDrawerContext?: boolean
-  /** Callback when round tab is clicked */
-  onRoundChange?: (round: number) => void
 }
 
 export function ExpandedPlayerScorecard({
@@ -30,7 +28,6 @@ export function ExpandedPlayerScorecard({
   onPlayerChange,
   phase = 'scheduled',
   isDrawerContext = false,
-  onRoundChange,
 }: ExpandedPlayerScorecardProps) {
 
 
@@ -71,20 +68,12 @@ export function ExpandedPlayerScorecard({
       data.courseHoles.slice(9, 18).reduce((sum, h) => sum + (h.par || 0), 0)
     : null
 
-  const rounds = ['R1', 'R2', 'R3', 'R4']
-  const [selectedRound, setSelectedRound] = useState(1)
-
   return (
     <div className="w-full h-full min-w-0 max-w-full flex flex-col">
       {/* Desktop Layout - lg and above, or in drawer context */}
       <div className={cn(isDrawerContext ? 'block' : 'hidden lg:block', 'h-full min-h-0')}>
         <ScorecardDesktopLayout
           data={data}
-          selectedRound={selectedRound}
-          onRoundChange={(round) => {
-            setSelectedRound(round)
-            onRoundChange?.(round)
-          }}
           frontNine={frontNine}
           backNine={backNine}
           outTotal={outTotal}
