@@ -1,6 +1,7 @@
 'use client'
 
 import { ScorecardMetricCard } from './scorecard-metric-card'
+import { ScorecardRoundSelector } from './scorecard-round-selector'
 import { ScorecardNineHoleCard } from './scorecard-nine-hole-card'
 import { ScorecardLegend } from './scorecard-legend'
 import { ScorecardEmptyState } from './scorecard-empty-state'
@@ -14,6 +15,7 @@ interface HoleData {
 }
 
 interface ScorecardScheduledContentProps {
+  currentRound: number
   holes: HoleData[]
   projectedScore: number | null
   makeCutProbability: number | null
@@ -31,6 +33,7 @@ interface ScorecardScheduledContentProps {
  * Only displays projections backed by real data; uses honest empty states otherwise.
  */
 export function ScorecardScheduledContent({
+  currentRound,
   holes,
   projectedScore,
   makeCutProbability,
@@ -117,6 +120,9 @@ export function ScorecardScheduledContent({
 
       {/* Divider */}
       <div className="border-t border-white/[0.05]" />
+
+      {/* Round Selector */}
+      <ScorecardRoundSelector currentRound={currentRound} phase="scheduled" />
 
       {/* Preview Scorecard - Front 9 and Back 9 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

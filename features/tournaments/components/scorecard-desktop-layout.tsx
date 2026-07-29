@@ -7,8 +7,6 @@ import { cn } from '@/lib/utils'
 
 interface DesktopScorecardLayoutProps {
   data: PlayerRoundScorecardData
-  selectedRound: number
-  onRoundChange: (round: number) => void
   frontNine: Array<{ holeNumber: number; score: number | null; par: number | null; toPar: number | null; dkPoints: number | null }>
   backNine: Array<{ holeNumber: number; score: number | null; par: number | null; toPar: number | null; dkPoints: number | null }>
   outTotal: { strokes: number; toPar: number; dkPoints: number }
@@ -19,8 +17,6 @@ interface DesktopScorecardLayoutProps {
 
 export function ScorecardDesktopLayout({
   data,
-  selectedRound,
-  onRoundChange,
   frontNine,
   backNine,
   outTotal,
