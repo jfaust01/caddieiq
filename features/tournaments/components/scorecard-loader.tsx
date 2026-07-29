@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { ExpandedPlayerScorecard } from './expanded-player-scorecard'
 import { ScorecardErrorBoundary } from './scorecard-error-boundary'
 import type { PlayerRoundScorecardData } from '@/features/tournaments/actions/get-player-round-scorecard'
@@ -32,6 +32,10 @@ export function ScorecardLoader({
   const [state, setState] = useState<LoadingState>('idle')
   const [data, setData] = useState<PlayerRoundScorecardData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  
+  // Track request ID to prevent race conditions
+  const requestIdRef = useRef(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Validate required props
   if (!playerId || !playerName || !tournamentId || roundNumber === undefined) {
@@ -54,13 +58,22 @@ export function ScorecardLoader({
   }
 
   const fetchScorecard = useCallback(async () => {
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Increment request ID to prevent race conditions
+    const currentRequestId = ++requestIdRef.current
+
     // Reset state
     setState('loading')
     setError(null)
     setData(null)
 
-    // Create abort controller with 10 second timeout
+    // Create new abort controller with 10 second timeout
     const controller = new AbortController()
+    abortControllerRef.current = controller
     const timeoutId = setTimeout(() => controller.abort(), 10000)
 
     try {
@@ -69,6 +82,11 @@ export function ScorecardLoader({
 
       clearTimeout(timeoutId)
 
+      // Ignore response if a newer request has been made
+      if (currentRequestId !== requestIdRef.current) {
+        return
+      }
+
       if (!response.ok) {
         setState('error')
         setError('Unable to load scorecard.')
@@ -76,6 +94,11 @@ export function ScorecardLoader({
       }
 
       const json = await response.json()
+
+      // Double-check request ID before updating state
+      if (currentRequestId !== requestIdRef.current) {
+        return
+      }
 
       if (!json.data) {
         setState('empty')
@@ -87,6 +110,11 @@ export function ScorecardLoader({
       setState('success')
     } catch (err) {
       clearTimeout(timeoutId)
+
+      // Ignore errors from aborted or outdated requests
+      if (currentRequestId !== requestIdRef.current) {
+        return
+      }
 
       if (err instanceof Error && err.name === 'AbortError') {
         setState('error')
@@ -102,6 +130,13 @@ export function ScorecardLoader({
   // Fetch when props change
   useEffect(() => {
     fetchScorecard()
+
+    // Cleanup: cancel request on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
   }, [fetchScorecard])
 
   // Always show the scorecard grid, even with empty data

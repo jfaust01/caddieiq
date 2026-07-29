@@ -385,10 +385,13 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           tournamentId={tournamentId}
           onToggleFavorite={handleToggleFavorite}
           onRowClick={(playerId) => {
+            // Set state BEFORE opening modal
             setSelectedScorecardPlayer(playerId)
+            setSelectedScorecardRound(1)
             setIsScorecardModalOpen(true)
           }}
           onRoundSelect={(playerId, round) => {
+            // Set all state BEFORE opening modal
             setSelectedScorecardPlayer(playerId)
             setSelectedScorecardRound(round)
             setIsScorecardModalOpen(true)
@@ -413,11 +416,14 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           favoriteIds={favorites}
           toolbar={toolbar}
           onRowClick={(playerId) => {
+            // Set state BEFORE opening modal
             setSelectedScorecardPlayer(playerId)
+            setSelectedScorecardRound(1)
             setIsScorecardModalOpen(true)
           }}
           onToggleFavorite={handleToggleFavorite}
           onRoundSelect={(playerId, round) => {
+            // Set all state BEFORE opening modal
             setSelectedScorecardPlayer(playerId)
             setSelectedScorecardRound(round)
             setIsScorecardModalOpen(true)
