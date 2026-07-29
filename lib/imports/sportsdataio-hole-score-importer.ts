@@ -89,6 +89,7 @@ export async function importHoleScoresForTournament(
         externalId: true,
         field: {
           select: {
+            id: true,
             playerId: true,
             sourceRecordId: true,
             player: {
@@ -120,10 +121,11 @@ export async function importHoleScoresForTournament(
     console.log(`[v0] Importing hole scores for tournament ${tournament.name} (provider: ${tournament.externalId})`)
 
     // Step 3: Build player lookup by source record ID (SportsDataIO PlayerID)
+    // Also map to TournamentField for PlayerRound upsert
     const playersBySourceRecordId = new Map(
       tournament.field
         .filter((f) => f.sourceRecordId)
-        .map((f) => [f.sourceRecordId, f.player]),
+        .map((f) => [f.sourceRecordId, { player: f.player, tournamentFieldId: f.id }]),
     )
 
     // Step 4: Process each player's rounds and holes
@@ -132,8 +134,8 @@ export async function importHoleScoresForTournament(
       const playerSourceRecordId = String(sdioPlayer.PlayerID)
 
       // Find matching internal player by source record ID
-      let internalPlayer = playersBySourceRecordId.get(playerSourceRecordId)
-      if (!internalPlayer) {
+      let playerRecord = playersBySourceRecordId.get(playerSourceRecordId)
+      if (!playerRecord) {
         summary.playersUnmatched.push({
           playerId: sdioPlayer.PlayerID,
           name: sdioPlayer.Name,
@@ -141,131 +143,128 @@ export async function importHoleScoresForTournament(
         continue
       }
 
-      // LOG: First matched player raw data
-      if (!firstMatchedPlayerLogged) {
-        console.log('[v0] ===== FIRST MATCHED PLAYER (Scottie Scheffler check) =====')
-        console.log(`[v0] Player: ${sdioPlayer.Name} (ID: ${sdioPlayer.PlayerID})`)
-        console.log(`[v0] Internal Player ID: ${internalPlayer.id}`)
-        console.log(`[v0] Rounds array exists: ${!!sdioPlayer.Rounds}`)
-        console.log(`[v0] Rounds count: ${sdioPlayer.Rounds?.length ?? 0}`)
-        if (sdioPlayer.Rounds && sdioPlayer.Rounds.length > 0) {
-          console.log(`[v0] First round: ${JSON.stringify(sdioPlayer.Rounds[0], null, 2)}`)
-          if (sdioPlayer.Rounds[0].Holes) {
-            console.log(`[v0] First round Holes count: ${sdioPlayer.Rounds[0].Holes.length}`)
-            console.log(`[v0] First hole: ${JSON.stringify(sdioPlayer.Rounds[0].Holes[0], null, 2)}`)
-          } else {
-            console.log(`[v0] First round has NO Holes array`)
-          }
-        }
-        firstMatchedPlayerLogged = true
-      }
-
+      const internalPlayer = playerRecord.player
+      const tournamentFieldId = playerRecord.tournamentFieldId
       summary.playersProcessed++
 
       // Process rounds with hole data
       if (!sdioPlayer.Rounds || sdioPlayer.Rounds.length === 0) {
-        console.log(`[v0] Player ${sdioPlayer.Name}: Skipping - no rounds in response`)
         continue
       }
 
       for (const sdioRound of sdioPlayer.Rounds) {
-        // Step 5: Resolve/create Round
+        // Step 5: Upsert Round record (create if doesn't exist)
         const roundNumber = sdioRound.Number || 1
-        console.log(`[v0] Player ${sdioPlayer.Name}: Looking for Round ${roundNumber}...`)
         
-        const round = await prisma.round.findFirst({
+        const round = await prisma.round.upsert({
           where: {
-            tournamentId: internalTournamentId,
-            roundNumber: roundNumber,
-          },
-          select: { id: true },
-        })
-
-        if (!round) {
-          console.log(`[v0] Player ${sdioPlayer.Name}: Round ${roundNumber} NOT FOUND in database - SKIPPING`)
-          continue
-        }
-        
-        console.log(`[v0] Player ${sdioPlayer.Name}: Round ${roundNumber} found (ID: ${round.id})`)
-
-        // Step 6: Resolve/create PlayerRound
-        let playerRound = await prisma.playerRound.findFirst({
-          where: {
-            playerId: internalPlayer.id,
-            round: { id: round.id },
-          },
-          select: { id: true },
-        })
-
-        if (!playerRound) {
-          // Create PlayerRound with round summary data from SportsDataIO
-          playerRound = await prisma.playerRound.create({
-            data: {
-              playerId: internalPlayer.id,
-              roundId: round.id,
-              score: sdioRound.Score || null,
-              toPar: (sdioRound.Score && sdioRound.Par) ? sdioRound.Score - sdioRound.Par : null,
-              position: null, // Position is set at tournament level
+            tournamentId_roundNumber: {
+              tournamentId: internalTournamentId,
+              roundNumber,
             },
-            select: { id: true },
-          })
-        }
+          },
+          create: {
+            tournamentId: internalTournamentId,
+            roundNumber,
+            scheduledDate: null,
+            status: 'SCHEDULED',
+            completed: false,
+          },
+          update: {
+            completed: false, // Update completed status if new data received
+          },
+          select: { id: true },
+        })
+        
+        // Step 6: Upsert PlayerRound with round-level score data
+        const playerRoundToPar = sdioRound.Score && sdioRound.Par 
+          ? sdioRound.Score - sdioRound.Par 
+          : null
+        
+        const playerRound = await prisma.playerRound.upsert({
+          where: {
+            roundId_tournamentFieldId: {
+              roundId: round.id,
+              tournamentFieldId,
+            },
+          },
+          create: {
+            roundId: round.id,
+            tournamentFieldId,
+            score: sdioRound.Score || null,
+            toPar: playerRoundToPar,
+            position: null,
+          },
+          update: {
+            score: sdioRound.Score || null,
+            toPar: playerRoundToPar,
+          },
+          select: { id: true },
+        })
 
         summary.roundsProcessed++
-        console.log(`[v0] Player ${sdioPlayer.Name}: Processing round ${roundNumber}...`)
 
-        // Step 7: Upsert hole scores
+        // Step 7: Batch validate and prepare hole scores
         if (!sdioRound.Holes || sdioRound.Holes.length === 0) {
-          console.log(`[v0] Player ${sdioPlayer.Name}: Round ${roundNumber} has NO Holes array - SKIPPING`)
           continue
         }
 
-        console.log(`[v0] Player ${sdioPlayer.Name}: Round ${roundNumber} has ${sdioRound.Holes.length} holes`)
+        const validHoles: Array<{
+          holeNumber: number
+          score: number
+          par: number
+          toPar: number
+          dkPoints: number | null
+          externalId: string
+        }> = []
 
         for (const sdioHole of sdioRound.Holes) {
           const holeNumber = sdioHole.Number
           if (!holeNumber || holeNumber < 1 || holeNumber > 18) {
-            const err = `Invalid hole number: ${holeNumber}`
-            console.log(`[v0] REJECTED: ${err}`)
             summary.errors.push({
-              error: err,
+              error: `Invalid hole number: ${holeNumber}`,
               playerRoundId: playerRound.id,
             })
             continue
           }
 
           if (!sdioHole.Par || sdioHole.Par < 3 || sdioHole.Par > 5) {
-            const err = `Invalid par: ${sdioHole.Par} for hole ${holeNumber}`
-            console.log(`[v0] REJECTED: ${err}`)
             summary.errors.push({
-              error: err,
+              error: `Invalid par: ${sdioHole.Par} for hole ${holeNumber}`,
               playerRoundId: playerRound.id,
             })
             continue
           }
 
           if (!sdioHole.Score || sdioHole.Score < 1 || sdioHole.Score > 14) {
-            const err = `Invalid score: ${sdioHole.Score} for hole ${holeNumber}`
-            console.log(`[v0] REJECTED: ${err}`)
             summary.errors.push({
-              error: err,
+              error: `Invalid score: ${sdioHole.Score} for hole ${holeNumber}`,
               playerRoundId: playerRound.id,
             })
             continue
           }
-          
-          console.log(`[v0] ACCEPTED: Hole ${holeNumber} - Score: ${sdioHole.Score}, Par: ${sdioHole.Par}`)
 
           const toPar = sdioHole.ToPar ?? sdioHole.Score - sdioHole.Par
           const dkPoints = calculateDkPoints(sdioHole.Score, sdioHole.Par)
           const externalId = `${tournament.externalId}_h${holeNumber}_p${sdioPlayer.PlayerID}`
 
-          // Upsert using the unique constraint on (playerRoundId, holeNumber)
+          validHoles.push({
+            holeNumber,
+            score: sdioHole.Score,
+            par: sdioHole.Par,
+            toPar,
+            dkPoints,
+            externalId,
+          })
+        }
+
+        // Batch upsert all valid holes for this round
+        for (const hole of validHoles) {
           const existingHole = await prisma.holeScore.findUnique({
             where: {
               playerRoundId_holeNumber: {
                 playerRoundId: playerRound.id,
-                holeNumber,
+                holeNumber: hole.holeNumber,
               },
             },
             select: { id: true },
@@ -275,12 +274,12 @@ export async function importHoleScoresForTournament(
             await prisma.holeScore.update({
               where: { id: existingHole.id },
               data: {
-                score: sdioHole.Score,
-                par: sdioHole.Par,
-                toPar,
-                dkPoints,
+                score: hole.score,
+                par: hole.par,
+                toPar: hole.toPar,
+                dkPoints: hole.dkPoints,
                 source: 'sportsdataio',
-                externalId,
+                externalId: hole.externalId,
                 importedAt: new Date(),
               },
             })
@@ -289,13 +288,13 @@ export async function importHoleScoresForTournament(
             await prisma.holeScore.create({
               data: {
                 playerRoundId: playerRound.id,
-                holeNumber,
-                score: sdioHole.Score,
-                par: sdioHole.Par,
-                toPar,
-                dkPoints,
+                holeNumber: hole.holeNumber,
+                score: hole.score,
+                par: hole.par,
+                toPar: hole.toPar,
+                dkPoints: hole.dkPoints,
                 source: 'sportsdataio',
-                externalId,
+                externalId: hole.externalId,
                 importedAt: new Date(),
               },
             })
