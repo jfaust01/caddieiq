@@ -10,6 +10,8 @@ interface ScorecardLoaderProps {
   playerName: string
   tournamentId: string
   roundNumber: number
+  /** Whether the scorecard drawer is open. Only fetches when true. */
+  isOpen: boolean
   /** Tournament phase: scheduled, live, or completed. */
   phase?: 'scheduled' | 'live' | 'completed'
   /** Whether this scorecard is being rendered inside a drawer (affects layout selection). */
@@ -25,6 +27,7 @@ export function ScorecardLoader({
   playerName,
   tournamentId,
   roundNumber,
+  isOpen,
   phase = 'scheduled',
   isDrawerContext = false,
   onRoundChange,
@@ -127,8 +130,13 @@ export function ScorecardLoader({
     }
   }, [playerId, roundNumber, tournamentId])
 
-  // Fetch when props change
+  // Only fetch when drawer is open and all required IDs exist
   useEffect(() => {
+    // Explicit guard: do not fetch unless drawer is open
+    if (!isOpen || !tournamentId || !playerId || roundNumber === undefined) {
+      return
+    }
+
     fetchScorecard()
 
     // Cleanup: cancel request on unmount
@@ -137,39 +145,22 @@ export function ScorecardLoader({
         abortControllerRef.current.abort()
       }
     }
-  }, [fetchScorecard])
+  }, [fetchScorecard, isOpen, tournamentId, playerId, roundNumber])
 
-  // Always show the scorecard grid, even with empty data
-  // Generate empty scorecard structure if data is null, using courseHoles from API
-  const displayData =
-    data ||
-    ({
-      playerName,
-      roundNumber,
-      totalStrokes: null,
-      totalToPar: null,
-      totalDkPoints: null,
-      courseHoles: data?.courseHoles || Array.from({ length: 18 }, (_, i) => ({
-        holeNumber: i + 1,
-        par: null,
-      })),
-      holes: Array.from({ length: 18 }, (_, i) => ({
-        holeNumber: i + 1,
-        score: null,
-        par: null,
-        toPar: null,
-        dkPoints: null,
-      })),
-    } as PlayerRoundScorecardData)
-
+  // Only render scorecard when data is actually loaded
   const isLoading = state === 'loading'
 
-  return (
-    <div>
-      <ScorecardErrorBoundary playerName={playerName}>
-        <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} phase={phase} isDrawerContext={isDrawerContext} roundNumber={roundNumber} onRoundChange={onRoundChange} onRoundSelect={onRoundChange} />
-      </ScorecardErrorBoundary>
-      {state === 'error' && (
+  // Do not render scorecard UI until data is loaded
+  if (!data) {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-sm text-muted-foreground">Loading scorecard...</div>
+        </div>
+      )
+    }
+    if (state === 'error') {
+      return (
         <div className="mt-4 p-3 bg-muted/20 rounded">
           <div className="text-center text-xs text-muted-foreground mb-2">
             {error || 'Unable to load scorecard data.'}
@@ -183,7 +174,16 @@ export function ScorecardLoader({
             </button>
           </div>
         </div>
-      )}
+      )
+    }
+    return null
+  }
+
+  return (
+    <div>
+      <ScorecardErrorBoundary playerName={playerName}>
+        <ExpandedPlayerScorecard data={data} isLoading={isLoading} phase={phase} isDrawerContext={isDrawerContext} roundNumber={roundNumber} onRoundChange={onRoundChange} onRoundSelect={onRoundChange} />
+      </ScorecardErrorBoundary>
     </div>
   )
 }

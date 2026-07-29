@@ -16,7 +16,7 @@ interface ScorecardDrawerProps {
   tournamentId: string
   visiblePlayers: FieldEntrant[]
   status?: string | null
-  initialRound?: number
+  initialRound?: number | null
 }
 
 interface ScorecardState {
@@ -61,6 +61,12 @@ export function ScorecardDrawer({
       return
     }
 
+    // Only proceed if initialRound is explicitly set
+    if (initialRound === null || initialRound === undefined) {
+      setScorecardState(null)
+      return
+    }
+
     // Find the selected player
     const player = players.find((p) => p.playerId === selectedPlayerId)
     if (!player) {
@@ -73,7 +79,7 @@ export function ScorecardDrawer({
       tournamentId,
       playerId: selectedPlayerId,
       playerName: player.playerName,
-      selectedRound: initialRound ?? 1,
+      selectedRound: initialRound,
       isOpen: true,
     })
   }, [isOpen, selectedPlayerId, tournamentId, players, initialRound])
@@ -323,6 +329,7 @@ export function ScorecardDrawer({
                 playerName={scorecardState.playerName}
                 tournamentId={scorecardState.tournamentId}
                 roundNumber={scorecardState.selectedRound}
+                isOpen={scorecardState.isOpen}
                 phase={phase}
                 isDrawerContext
                 onRoundChange={handleRoundChange}

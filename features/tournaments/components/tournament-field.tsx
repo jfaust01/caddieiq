@@ -62,7 +62,7 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
   const [sort, setSort] = useState<SortKey>(() => config.defaultSort)
   const [chip, setChip] = useState<string>('all')
   const [selectedScorecardPlayer, setSelectedScorecardPlayer] = useState<string | null>(null)
-  const [selectedScorecardRound, setSelectedScorecardRound] = useState<number>(1)
+  const [selectedScorecardRound, setSelectedScorecardRound] = useState<number | null>(null)
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false)
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [favoritesLoaded, setFavoritesLoaded] = useState(false)
