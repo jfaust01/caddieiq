@@ -29,31 +29,41 @@ interface RoundData {
   dkPoints?: number | null
 }
 
-const SCORE_Y_OFFSET = {
-  albatross: 12,
-  eagle: 8,
-  birdie: 4,
-  par: 0,
-  bogey: -4,
-  double: -8,
-  triplePlus: -12,
+/**
+ * Normalize hole result to a single true value
+ * Priority: (score - par) > provider toPar > null
+ */
+const normalizeHoleResult = (hole: HoleResult): number | null => {
+  // Calculate from score and par if available (most reliable)
+  if (typeof hole.score === 'number' && typeof hole.par === 'number') {
+    return hole.score - hole.par
+  }
+  
+  // Fall back to provider relativeToPar
+  if (typeof hole.relativeToPar === 'number') {
+    return hole.relativeToPar
+  }
+  
+  return null
 }
 
-const getDotColor = (status: string): string => {
-  if (status === 'future') return '#3F4855'
-  if (status === 'missing') return '#4B5563'
+const getDotColorFromNormalizedResult = (normalizedResult: number | null): string => {
+  if (normalizedResult === null || normalizedResult === undefined) return '#4B5563'
   
-  if (status === 'albatross' || status === 'eagle' || status === 'birdie') {
-    return '#10B981'
-  }
+  const level = Math.max(-3, Math.min(3, normalizedResult))
   
-  if (status === 'par') {
-    return '#6B7280'
-  }
+  // Under par (green shades)
+  if (level === -1) return '#10B981' // green
+  if (level === -2) return '#059669' // emerald
+  if (level <= -3) return '#7C3AED' // purple
   
-  if (status === 'bogey' || status === 'double' || status === 'triplePlus') {
-    return '#EF4444'
-  }
+  // Par (gray)
+  if (level === 0) return '#6B7280' // gray
+  
+  // Over par (red/orange shades)
+  if (level === 1) return '#F97316' // amber/red
+  if (level === 2) return '#FF8C42' // orange
+  if (level >= 3) return '#EF4444' // red
   
   return '#6B7280'
 }
@@ -146,15 +156,26 @@ function RoundDnaRow({
   const SVG_HEIGHT = 60
   const CENTER_Y = SVG_HEIGHT / 2 + 5 // offset down slightly to make room for labels above
 
+  const LEVEL_SPACING = 4 // pixels between each level above/below par
+  
   const completedPoints = useMemo(
-    () =>
-      holes
-        .map((hole, idx) => ({
-          x: PADDING + (hole.holeNumber - 1) * STEP_X + STEP_X / 2,
-          y: CENTER_Y + SCORE_Y_OFFSET[hole.status as keyof typeof SCORE_Y_OFFSET],
-          hole,
-        }))
-        .filter((point) => point.hole.status !== 'future' && point.hole.status !== 'missing'),
+    () => {
+      const levelSpacing = LEVEL_SPACING
+      return holes
+        .map((hole) => {
+          const normalizedResult = normalizeHoleResult(hole)
+          const displayLevel = normalizedResult === null ? 0 : Math.max(-3, Math.min(3, normalizedResult))
+          const yOffset = -displayLevel * levelSpacing
+          
+          return {
+            x: PADDING + (hole.holeNumber - 1) * STEP_X + STEP_X / 2,
+            y: CENTER_Y + yOffset,
+            hole,
+            normalizedResult,
+          }
+        })
+        .filter((point) => point.hole.score !== null && point.hole.score !== undefined)
+    },
     [holes]
   )
 
@@ -184,7 +205,7 @@ function RoundDnaRow({
               const endPoint = completedPoints[idx + 1]
               if (!endPoint) return null
 
-              const lineColor = getDotColor(endPoint.hole.status)
+              const lineColor = getDotColorFromNormalizedResult(endPoint.normalizedResult)
               return (
                 <line
                   key={`line-${idx}`}
@@ -206,8 +227,8 @@ function RoundDnaRow({
                 cx={point.x}
                 cy={point.y}
                 r={3}
-                fill={getDotColor(point.hole.status)}
-                opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.4 : 1}
+                fill={getDotColorFromNormalizedResult(point.normalizedResult)}
+                opacity={point.hole.score === null ? 0.4 : 1}
                 style={{
                   cursor: 'pointer',
                 }}
@@ -220,8 +241,13 @@ function RoundDnaRow({
             ))}
 
             {/* To-par labels (rendered last to appear in front) */}
-            {completedPoints.map((point) => (
-              point.hole.relativeToPar !== null && point.hole.relativeToPar !== undefined && (
+            {completedPoints.map((point) => {
+              const labelText = point.normalizedResult === null ? '-' :
+                point.normalizedResult === 0 ? 'E' :
+                point.normalizedResult > 0 ? `+${point.normalizedResult}` :
+                `${point.normalizedResult}`
+              
+              return (
                 <text
                   key={`label-${point.hole.holeNumber}`}
                   x={point.x}
@@ -229,37 +255,46 @@ function RoundDnaRow({
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="500"
-                  fill={getDotColor(point.hole.status)}
+                  fill={getDotColorFromNormalizedResult(point.normalizedResult)}
                   pointerEvents="none"
                   style={{ zIndex: 10 }}
                 >
-                  {point.hole.relativeToPar === 0 ? 'E' : (point.hole.relativeToPar > 0 ? '+' : '') + point.hole.relativeToPar}
+                  {labelText}
                 </text>
               )
-            ))}
+            })}
 
 
           </svg>
         </div>
 
         {/* Tooltip - rendered outside overflow-hidden for proper visibility */}
-        {tooltipHole && tooltipPosition && (
-          <div
-            className="absolute bg-gray-800 border border-gray-600 rounded px-2 py-1 pointer-events-none z-50 text-xs text-gray-100"
-            style={{
-              left: `${tooltipPosition.x}px`,
-              top: `${tooltipPosition.y - 100}px`,
-              transform: 'translateX(-50%)',
-            }}
-          >
-            <div className="font-semibold">H{tooltipHole.holeNumber}</div>
-            <div className="text-gray-300">Par: {tooltipHole.par}</div>
-            <div className="text-gray-300">Score: {tooltipHole.score ?? '-'}</div>
-            {tooltipHole.dkPoints !== undefined && tooltipHole.dkPoints !== null && (
-              <div className="text-yellow-400">DK: {tooltipHole.dkPoints}</div>
-            )}
-          </div>
-        )}
+        {tooltipHole && tooltipPosition && (() => {
+          const normalizedResult = normalizeHoleResult(tooltipHole)
+          const resultLabel = normalizedResult === null ? '-' : 
+            normalizedResult === 0 ? 'E' :
+            normalizedResult > 0 ? `+${normalizedResult}` : 
+            `${normalizedResult}`
+          
+          return (
+            <div
+              className="absolute bg-gray-800 border border-gray-600 rounded px-2 py-1 pointer-events-none z-50 text-xs text-gray-100"
+              style={{
+                left: `${tooltipPosition.x}px`,
+                top: `${tooltipPosition.y - 100}px`,
+                transform: 'translateX(-50%)',
+              }}
+            >
+              <div className="font-semibold">H{tooltipHole.holeNumber}</div>
+              <div className="text-gray-300">Par: {tooltipHole.par}</div>
+              <div className="text-gray-300">Score: {tooltipHole.score ?? '-'}</div>
+              <div className="text-amber-300 font-bold">{resultLabel}</div>
+              {tooltipHole.dkPoints !== undefined && tooltipHole.dkPoints !== null && (
+                <div className="text-yellow-400">DK: {tooltipHole.dkPoints}</div>
+              )}
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
