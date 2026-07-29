@@ -2,6 +2,7 @@
 
 import { memo, useMemo, useState, useEffect, useRef } from 'react'
 import { DraftKingsMark } from '../draftkings-mark'
+import { RoundDnaSkeleton } from './round-dna-skeleton'
 import { cn } from '@/lib/utils'
 
 interface HoleResult {
@@ -502,6 +503,11 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
         Did not play R{selectedRound}
       </div>
     )
+  }
+
+  // Show skeleton while loading
+  if (loadingRound === selectedRound) {
+    return <RoundDnaSkeleton />
   }
 
   // If no real holes available, show unavailable state
