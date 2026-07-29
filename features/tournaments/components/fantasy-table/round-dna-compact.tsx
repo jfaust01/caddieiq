@@ -329,60 +329,17 @@ function RoundDnaRow({
                 transform: 'translate(-50%, -100%)',
               }}
             >
-              {/* Dark glass panel with backdrop blur - compact size */}
-              <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-lg shadow-lg w-56">
-                {/* Header */}
-                <div className="px-3 pt-3 pb-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-lg font-bold text-white">
-                      Hole {tooltipHole.holeNumber}
-                    </h3>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      tooltipHole.par === 3 ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' :
-                      tooltipHole.par === 4 ? 'bg-gray-600/20 text-gray-300 border border-gray-500/30' :
-                      'bg-amber-600/20 text-amber-300 border border-amber-500/30'
-                    }`}>
-                      Par {tooltipHole.par}
-                    </span>
+              {/* Minimal compact tooltip */}
+              <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded px-2 py-1 shadow-md w-auto min-w-fit">
+                <div className="flex flex-col gap-1 text-xs whitespace-nowrap">
+                  <div className="font-semibold text-white">H{tooltipHole.holeNumber} Par {tooltipHole.par}</div>
+                  <div className="text-gray-300">Score: <span className="font-semibold text-white">{tooltipHole.score ?? '-'}</span></div>
+                  <div className={`font-semibold ${getToParColor(normalizedResult)}`}>
+                    {golfTerm}: {toParDisplay}
                   </div>
-                </div>
-                
-                {/* Divider */}
-                <div className="h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent opacity-50" />
-                
-                {/* Content - Two Column Layout */}
-                <div className="px-3 py-2 space-y-2">
-                  {/* Score Row */}
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-gray-400">Score</span>
-                    <span className="text-lg font-semibold text-white">
-                      {tooltipHole.score ?? '-'}
-                    </span>
-                  </div>
-                  
-                  {/* Result Row */}
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-gray-400">Result</span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${getResultColor(normalizedResult)}`}>
-                      {golfTerm}
-                    </span>
-                  </div>
-                  
-                  {/* To Par Row */}
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-gray-400">To Par</span>
-                    <span className={`text-lg font-semibold ${getToParColor(normalizedResult)}`}>
-                      {toParDisplay}
-                    </span>
-                  </div>
-                  
-                  {/* DK Points Row */}
                   {tooltipHole.dkPoints !== undefined && tooltipHole.dkPoints !== null && (
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-gray-400">DK Points</span>
-                      <span className={`text-lg font-semibold ${getDkPointsColor(tooltipHole.dkPoints)}`}>
-                        {tooltipHole.dkPoints > 0 ? '+' : ''}{tooltipHole.dkPoints.toFixed(1)}
-                      </span>
+                    <div className={`font-semibold ${getDkPointsColor(tooltipHole.dkPoints)}`}>
+                      DK: {tooltipHole.dkPoints > 0 ? '+' : ''}{tooltipHole.dkPoints.toFixed(1)}
                     </div>
                   )}
                 </div>
