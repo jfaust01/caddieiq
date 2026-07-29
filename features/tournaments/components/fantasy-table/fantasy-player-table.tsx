@@ -69,6 +69,7 @@ export function FantasyPlayerTable({
   const config = phaseTableConfig[phase]
   const { columns, footnote } = config
   const scrollContainerRef = useDragScroll({ dragThreshold: 5 })
+  // Use allEntrants to ensure favorites and main table have the same player column width
   const playerColumnWidth = usePlayerColumnWidth(allEntrants, '.tournament-table-container')
   const positionCountMap = buildPositionCountMap(allEntrants)
 
