@@ -17,7 +17,14 @@ export function RoundScoreCell({
   entrant: FieldEntrant
   selectedRound?: number
 }) {
-  // Get the round-specific to-par value
+  // Get the round-specific score data
+  const roundScoreMap: Record<number, number | null> = {
+    1: entrant.round1,
+    2: entrant.round2,
+    3: entrant.round3,
+    4: entrant.round4,
+  }
+
   const roundToParMap: Record<number, number | null> = {
     1: entrant.round1RelToPar,
     2: entrant.round2RelToPar,
@@ -25,6 +32,7 @@ export function RoundScoreCell({
     4: entrant.round4RelToPar,
   }
 
+  const roundScore = roundScoreMap[selectedRound] ?? null
   const roundToPar = roundToParMap[selectedRound] ?? null
 
   // Determine color based on to-par
@@ -51,14 +59,18 @@ export function RoundScoreCell({
     }
   }
 
-  // Calculate the round score from the round to-par
-  // We need to get the course par for the round to calculate the actual score
-  // For now, we'll just display the to-par since we don't have the course par data readily available
-  // The user can see the actual score in the scorecard view
+  // Format the score display value
+  let scoreDisplay = '—'
+  if (roundScore !== null && roundScore !== undefined) {
+    scoreDisplay = roundScore.toString()
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-1">
-      <div className={`text-sm font-semibold font-mono tabular-nums ${toParColorClass}`}>
+    <div className="flex flex-col items-center justify-center gap-0.5">
+      <div className="text-sm font-semibold font-mono tabular-nums text-foreground">
+        {scoreDisplay}
+      </div>
+      <div className={`text-xs font-medium font-mono tabular-nums ${toParColorClass}`}>
         {toParDisplay}
       </div>
     </div>
