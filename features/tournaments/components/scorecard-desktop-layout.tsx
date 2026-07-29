@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 
 interface DesktopScorecardLayoutProps {
   data: PlayerRoundScorecardData
+  selectedRound: number
+  onRoundChange: (round: number) => void
   frontNine: Array<{ holeNumber: number; score: number | null; par: number | null; toPar: number | null; dkPoints: number | null }>
   backNine: Array<{ holeNumber: number; score: number | null; par: number | null; toPar: number | null; dkPoints: number | null }>
   outTotal: { strokes: number; toPar: number; dkPoints: number }
@@ -17,6 +19,8 @@ interface DesktopScorecardLayoutProps {
 
 export function ScorecardDesktopLayout({
   data,
+  selectedRound,
+  onRoundChange,
   frontNine,
   backNine,
   outTotal,
@@ -45,6 +49,26 @@ export function ScorecardDesktopLayout({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-0">
+
+      {/* Round Tabs */}
+      <div className="flex-shrink-0 px-0 mt-6">
+        <div className="w-[360px] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] grid grid-cols-4">
+          {[1, 2, 3, 4].map((round) => (
+            <button
+              key={round}
+              onClick={() => onRoundChange(round)}
+              className={cn(
+                'py-3 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0',
+                selectedRound === round
+                  ? 'bg-emerald-500/15 text-emerald-300'
+                  : 'text-white/60 hover:text-white'
+              )}
+            >
+              R{round}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Main Content Grid */}
       <div className="min-h-0 flex-1 overflow-y-auto mt-5">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { PlayerRoundScorecardData } from '../actions/get-player-round-scorecard'
 import { ScorecardDesktopLayout } from './scorecard-desktop-layout'
 import { cn } from '@/lib/utils'
@@ -69,6 +69,7 @@ export function ExpandedPlayerScorecard({
     : null
 
   const rounds = ['R1', 'R2', 'R3', 'R4']
+  const [selectedRound, setSelectedRound] = useState(1)
 
   return (
     <div className="w-full h-full min-w-0 max-w-full flex flex-col">
@@ -76,6 +77,8 @@ export function ExpandedPlayerScorecard({
       <div className={cn(isDrawerContext ? 'block' : 'hidden lg:block', 'h-full min-h-0')}>
         <ScorecardDesktopLayout
           data={data}
+          selectedRound={selectedRound}
+          onRoundChange={setSelectedRound}
           frontNine={frontNine}
           backNine={backNine}
           outTotal={outTotal}
