@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { ExpandedPlayerScorecard } from './expanded-player-scorecard'
 import { ScorecardErrorBoundary } from './scorecard-error-boundary'
+import { ScorecardSkeleton } from './scorecard-skeleton'
 import type { PlayerRoundScorecardData } from '@/features/tournaments/actions/get-player-round-scorecard'
 
 interface ScorecardLoaderProps {
@@ -153,11 +154,7 @@ export function ScorecardLoader({
   // Do not render scorecard UI until data is loaded
   if (!data) {
     if (isLoading) {
-      return (
-        <div className="flex items-center justify-center py-8">
-          <div className="text-sm text-muted-foreground">Loading scorecard...</div>
-        </div>
-      )
+      return <ScorecardSkeleton />
     }
     if (state === 'error') {
       return (
