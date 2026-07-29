@@ -154,6 +154,13 @@ const toParColumn: ColumnDescriptor = {
   colClassName: 'w-[85px] sm:w-[100px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
+const roundScoreColumn: ColumnDescriptor = {
+  id: 'roundScore',
+  label: 'Round Score',
+  tooltip: 'Current round score and to-par',
+  colClassName: 'w-[120px] sm:w-[140px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
+}
 const totalColumn: ColumnDescriptor = {
   id: 'total',
   label: 'TOTAL',
@@ -342,6 +349,7 @@ const liveColumns: ColumnDescriptor[] = [
   posColumn,
   scoringPlayerColumn,
   toParColumn,
+  roundScoreColumn,
   tournamentFormColumn,
   aiIntelligenceColumn,
   recentFormLiveColumn,
@@ -460,6 +468,7 @@ const completedColumns: ColumnDescriptor[] = [
   favoritesColumn,
   scoringPlayerColumn,
   toParColumn,
+  roundScoreColumn,
   tournamentFormCompletedColumn,
   aiIntelligenceColumn,
   recentFormCompletedColumn,

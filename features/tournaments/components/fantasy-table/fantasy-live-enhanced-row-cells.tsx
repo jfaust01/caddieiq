@@ -8,6 +8,7 @@ import { FantasyPlayerCell } from './fantasy-player-cell'
 import { RoundDnaCompact } from './round-dna-compact'
 import { FavoriteCell } from './favorite-cell'
 import { ToParCell } from './to-par-cell'
+import { RoundScoreCell } from './round-score-cell'
 import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, DkValuePerDollarCell, OwnershipCell, MarketCell } from './premium-metric-cells'
 
 /**
@@ -66,6 +67,13 @@ export function FantasyLiveEnhancedRowCells({
       <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
         <div className="flex h-full items-center justify-center">
           <ToParCell entrant={entrant} />
+        </div>
+      </td>
+
+      {/* ROUND SCORE */}
+      <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
+        <div className="flex h-full items-center justify-center">
+          <RoundScoreCell entrant={entrant} selectedRound={selectedRound} />
         </div>
       </td>
 
