@@ -7,8 +7,8 @@ import type { FieldEntrant } from '@/features/tournaments/types'
  * Matches the Round DNA visualization for the selected round.
  * 
  * Format:
- * Line 1: Total score (e.g., "68")
- * Line 2: To par (e.g., "-4")
+ * Line 1: To par (e.g., "-4") - larger, emphasized
+ * Line 2: Total score (e.g., "68") - smaller
  */
 export function RoundScoreCell({
   entrant,
@@ -67,11 +67,11 @@ export function RoundScoreCell({
 
   return (
     <div className="flex flex-col items-center justify-center gap-0.5">
-      <div className="text-sm font-semibold font-mono tabular-nums text-foreground">
-        {scoreDisplay}
-      </div>
-      <div className={`text-xs font-medium font-mono tabular-nums ${toParColorClass}`}>
+      <div className={`text-sm font-semibold font-mono tabular-nums ${toParColorClass}`}>
         {toParDisplay}
+      </div>
+      <div className="text-xs font-medium font-mono tabular-nums text-foreground">
+        {scoreDisplay}
       </div>
     </div>
   )
