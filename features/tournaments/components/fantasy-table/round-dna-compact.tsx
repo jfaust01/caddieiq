@@ -515,7 +515,7 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
 
   return (
     <RoundDnaRow
-      round={selectedRoundData.round}
+      round={selectedRound}
       holes={selectedRoundData.holes}
       relToPar={selectedRoundData.relToPar}
       playerId={playerId}
