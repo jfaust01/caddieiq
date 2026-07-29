@@ -61,9 +61,9 @@ const getDotColorFromNormalizedResult = (normalizedResult: number | null): strin
   // Par (gray)
   if (level === 0) return '#6B7280' // gray
   
-  // Over par (red/orange shades)
-  if (level === 1) return '#F97316' // amber/red
-  if (level === 2) return '#FF8C42' // orange
+  // Over par (red shades) - all positive scores use red to match to-par styling
+  if (level === 1) return '#EF4444' // red (matches to-par + color)
+  if (level === 2) return '#EF4444' // red
   if (level >= 3) return '#EF4444' // red
   
   return '#6B7280'
@@ -249,12 +249,6 @@ function RoundDnaRow({
                 point.normalizedResult > 0 ? `+${point.normalizedResult}` :
                 `${point.normalizedResult}`
               
-              // Use red color for positive numbers to match to-par + styling
-              let labelColor = getDotColorFromNormalizedResult(point.normalizedResult)
-              if (point.normalizedResult !== null && point.normalizedResult > 0) {
-                labelColor = '#EF4444' // text-red-400 equivalent from to-par-cell
-              }
-              
               return (
                 <text
                   key={`label-${point.hole.holeNumber}`}
@@ -263,7 +257,7 @@ function RoundDnaRow({
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="500"
-                  fill={labelColor}
+                  fill={getDotColorFromNormalizedResult(point.normalizedResult)}
                   pointerEvents="none"
                 >
                   {labelText}
