@@ -8,6 +8,7 @@ import { FantasyPlayerCell } from './fantasy-player-cell'
 import { RoundDnaCompact } from './round-dna-compact'
 import { FavoriteCell } from './favorite-cell'
 import { ScorecardCell } from './scorecard-cell'
+import { ToParCell } from './to-par-cell'
 import { AiRatingCell, RecentFormCell, SalaryCell, DkScoreCell, DkValuePerDollarCell, OwnershipCell, MarketCell } from './premium-metric-cells'
 
 /**
@@ -59,15 +60,13 @@ export function FantasyCompletedEnhancedRowCells({
 
       {/* PLAYER */}
       <td className="px-2 sm:px-3 py-[10px] align-middle text-left">
-        <FantasyPlayerCell entrant={entrant} />
+        <FantasyPlayerCell entrant={entrant} onClick={onScorecardOpen} />
       </td>
 
       {/* TO PAR */}
       <td className="border-l border-white/[0.055] px-1 sm:px-2 align-middle">
         <div className="flex h-full items-center justify-center">
-          <span className="text-lg font-semibold font-mono tabular-nums" style={{color: entrant.total !== null && entrant.total !== undefined ? (entrant.total < 0 ? '#10b981' : entrant.total > 0 ? '#ef4444' : '#9ca3af') : '#9ca3af'}}>
-            {entrant.total != null ? entrant.total === 0 ? 'E' : (entrant.total > 0 ? '+' : '') + entrant.total : '—'}
-          </span>
+          <ToParCell entrant={entrant} />
         </div>
       </td>
 

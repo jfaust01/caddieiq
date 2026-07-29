@@ -32,20 +32,68 @@ interface RoundData {
 // Fixed Y offsets for scoring grid (in SVG coordinate space)
 // Negative Y = above center line (red, bogey or worse)
 // Positive Y = below center line (green, birdie or better)
-const SCORE_Y_OFFSET = {
-  albatross: 12,
-  eagle: 8,
-  birdie: 4,
-  par: 0,
-  bogey: -4,
-  double: -8,
-  triplePlus: -12,
+const LEVEL_SPACING = 4 // pixels between each level above/below par
+
+/**
+ * Normalize hole result to a single true value
+ * Priority: (score - par) > provider toPar > null
+ * This ensures all rendering uses consistent values
+ */
+const normalizeHoleResult = (hole: any): number | null => {
+  // Calculate from score and par if available (most reliable)
+  if (typeof hole.score === 'number' && typeof hole.par === 'number') {
+    const calculated = hole.score - hole.par
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[v0] Hole ${hole.holeNumber}: par=${hole.par}, score=${hole.score}, providerToPar=${hole.toPar}, calculated=${calculated}`)
+    }
+    return calculated
+  }
+
+  // Fall back to provider toPar
+  if (typeof hole.toPar === 'number') {
+    return hole.toPar
+  }
+
+  return null
 }
 
-// Helper function to get color based on score status
-// Birdie or better (eagle, albatross) = green (down)
-// Par = gray (centered)
-// Bogey or worse (double, triple+) = red (up)
+// Get Y offset based on normalized result
+// Positive result (over par) = smaller Y (above baseline)
+// Negative result (under par) = larger Y (below baseline)
+// result = 0 = baseline Y
+const getYOffsetFromNormalizedResult = (normalizedResult: number | null): number => {
+  if (normalizedResult === null || normalizedResult === undefined) return 0
+  // Clamp to [-3, 3] range and invert for SVG coordinates
+  const displayLevel = Math.max(-3, Math.min(3, normalizedResult))
+  return -displayLevel * LEVEL_SPACING
+}
+
+// Get color based on normalized result
+// Under par (negative) = green shades
+// Par (0) = gray
+// Over par (positive) = red/orange shades
+const getDotColorFromNormalizedResult = (normalizedResult: number | null): string => {
+  if (normalizedResult === null || normalizedResult === undefined) return '#4B5563' // muted gray for missing
+  
+  const level = Math.max(-3, Math.min(3, normalizedResult))
+  
+  // Under par (green shades)
+  if (level === -1) return '#10B981' // green
+  if (level === -2) return '#059669' // emerald
+  if (level <= -3) return '#7C3AED' // purple
+  
+  // Par (gray)
+  if (level === 0) return '#6B7280' // gray
+  
+  // Over par (red/orange shades)
+  if (level === 1) return '#F97316' // amber/red
+  if (level === 2) return '#FF8C42' // orange
+  if (level >= 3) return '#EF4444' // red
+  
+  return '#6B7280' // default gray
+}
+
+// Legacy function for backwards compatibility (not used in new toPar-based logic)
 const getDotColor = (status: string): string => {
   if (status === 'future') return '#3F4855' // dark gray
   if (status === 'missing') return '#4B5563' // muted gray
@@ -110,7 +158,9 @@ export const RoundDnaCell = memo(function RoundDnaCell({
   }
 
   try {
-    // Generate hole data for display
+    // Prepare round data with real to-par values only
+    // Note: Actual hole data is fetched via RoundDnaCompact's scorecard API
+    // This component displays the aggregated round-level scores
     const roundsData = useMemo<RoundData[]>(() => {
       const roundArray = [
         { round: 1, relToPar: round1RelToPar, dkPoints: round1DkPoints },
@@ -125,7 +175,8 @@ export const RoundDnaCell = memo(function RoundDnaCell({
           round: r.round,
           relToPar: r.relToPar!,
           dkPoints: r.dkPoints,
-          holes: generateMockHoles(r.relToPar!, r.round),
+          // Use placeholder holes array - actual holes fetched from scorecard API
+          holes: generatePlaceholderHoles(r.relToPar!, r.round),
         }))
     }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar, round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints])
 
@@ -168,32 +219,42 @@ export const RoundDnaCell = memo(function RoundDnaCell({
         ))}
         
         {/* Tooltip */}
-        {tooltipHole && tooltipPosition && (
-          <div
-            className="absolute bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs z-50 pointer-events-none shadow-lg"
-            style={{
-              left: `${tooltipPosition.x}px`,
-              top: `${tooltipPosition.y - 8}px`,
-              transform: 'translate(-50%, -100%)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <div className="flex gap-3 font-medium">
-              <span>Par: {tooltipHole.par}</span>
-              {tooltipHole.score !== null && <span>Score: {tooltipHole.score}</span>}
-              {tooltipHole.dkPoints !== null && tooltipHole.dkPoints !== undefined && (
-                <span>DK: {tooltipHole.dkPoints.toFixed(1)}</span>
-              )}
-            </div>
-            {/* Tooltip arrow pointing down */}
+        {tooltipHole && tooltipPosition && (() => {
+          const normalizedResult = normalizeHoleResult(tooltipHole)
+          const resultLabel = normalizedResult === null ? '-' : 
+            normalizedResult === 0 ? 'E' :
+            normalizedResult > 0 ? `+${normalizedResult}` : 
+            `${normalizedResult}`
+          
+          return (
             <div
-              className="absolute left-1/2 -bottom-1 w-2 h-2 bg-gray-900 border-r border-b border-gray-700"
+              className="absolute bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs z-50 pointer-events-none shadow-lg"
               style={{
-                transform: 'translateX(-50%) rotate(45deg)',
+                left: `${tooltipPosition.x}px`,
+                top: `${tooltipPosition.y - 8}px`,
+                transform: 'translate(-50%, -100%)',
+                whiteSpace: 'nowrap',
               }}
-            />
-          </div>
-        )}
+            >
+              <div className="flex gap-3 font-medium">
+                <span>Hole {tooltipHole.holeNumber}</span>
+                <span>Par: {tooltipHole.par}</span>
+                {tooltipHole.score !== null && <span>Score: {tooltipHole.score}</span>}
+                <span className="font-bold text-amber-300">{resultLabel}</span>
+                {tooltipHole.dkPoints !== null && tooltipHole.dkPoints !== undefined && (
+                  <span>DK: {tooltipHole.dkPoints.toFixed(1)}</span>
+                )}
+              </div>
+              {/* Tooltip arrow pointing down */}
+              <div
+                className="absolute left-1/2 -bottom-1 w-2 h-2 bg-gray-900 border-r border-b border-gray-700"
+                style={{
+                  transform: 'translateX(-50%) rotate(45deg)',
+                }}
+              />
+            </div>
+          )
+        })()}
       </div>
     )
   } catch (error) {
@@ -299,15 +360,20 @@ function RoundDnaRow({
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
   const STEP_X = (USABLE_WIDTH - DOT_GAP * 17) / 17 + DOT_GAP
 
-  // Calculate point coordinates (shared between line and dots)
-  const points = holes.map((hole, idx) => ({
-    x: PADDING + idx * STEP_X,
-    y: CENTER_Y + SCORE_Y_OFFSET[hole.status === 'future' || hole.status === 'missing' ? 'par' : hole.status],
-    hole,
-  }))
+  // Calculate point coordinates based on normalized results
+  // All rendering uses the same normalized value
+  const points = holes.map((hole, idx) => {
+    const normalizedResult = normalizeHoleResult(hole)
+    return {
+      x: PADDING + idx * STEP_X,
+      y: CENTER_Y + getYOffsetFromNormalizedResult(normalizedResult),
+      hole,
+      normalizedResult,
+    }
+  })
 
-  // Filter completed points for line segments
-  const completedPoints = points.filter(p => p.hole.status !== 'future' && p.hole.status !== 'missing')
+  // Filter completed points for line segments (holes with actual scores)
+  const completedPoints = points.filter(p => p.hole.score !== null && p.hole.score !== undefined)
 
   return (
     <div
@@ -335,12 +401,12 @@ function RoundDnaRow({
           preserveAspectRatio="none"
           style={{ overflow: 'visible', marginLeft: '0' }}
         >
-          {/* Connecting line segments - each line takes color of the next dot */}
+          {/* Connecting line segments - each line takes color of the next dot based on normalized result */}
           {completedPoints.slice(0, -1).map((startPoint, idx) => {
             const endPoint = completedPoints[idx + 1]
             if (!endPoint) return null
             
-            const lineColor = getDotColor(endPoint.hole.status)
+            const lineColor = getDotColorFromNormalizedResult(endPoint.normalizedResult)
             
             return (
               <line
@@ -414,8 +480,8 @@ function RoundDnaRow({
                   cx={point.x}
                   cy={point.y}
                   r={hoverRadius}
-                  fill={getDotColor(point.hole.status)}
-                  opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.4 : 1}
+                  fill={getDotColorFromNormalizedResult(point.normalizedResult)}
+                  opacity={point.hole.score === null ? 0.4 : 1}
                   style={{
                     transition: 'r 0.2s',
                     filter: isHovered ? 'drop-shadow(0 0 4px rgba(0,0,0,0.5))' : 'none',
@@ -428,9 +494,9 @@ function RoundDnaRow({
                   cy={point.y}
                   r={hoverRadius}
                   fill="none"
-                  stroke={point.hole.status === 'future' || point.hole.status === 'missing' ? 'rgba(200,200,200,0.3)' : 'rgba(255,255,255,0.3)'}
+                  stroke={point.hole.score === null ? 'rgba(200,200,200,0.3)' : 'rgba(255,255,255,0.3)'}
                   strokeWidth="0.75"
-                  opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.3 : 0.7}
+                  opacity={point.hole.score === null ? 0.3 : 0.7}
                 />
 
                 {/* Tooltip */}
@@ -451,64 +517,25 @@ function RoundDnaRow({
 
 // Utility functions
 
-function generateMockHoles(roundToPar: number, round: number): HoleResult[] {
+/**
+ * Generate placeholder holes for UI layout/rendering.
+ * Real hole data comes from scorecard API in RoundDnaCompact.
+ * This function creates visual placeholders that maintain the correct layout structure
+ * while actual per-hole data is fetched asynchronously from the database.
+ */
+function generatePlaceholderHoles(roundToPar: number, round: number): HoleResult[] {
+  // Create 18 simple placeholder holes for layout
+  // All values are placeholders - actual data from scorecard API
   const holes: HoleResult[] = []
-  let remaining = Math.abs(roundToPar)
-  const isUnder = roundToPar < 0
 
   for (let i = 1; i <= 18; i++) {
-    const par = 4 // Simplified: all par 4s
-    let score = par
-    let status: HoleResult['status'] = 'par'
-    let relativeToPar = 0
-
-    if (remaining > 0) {
-      const random = Math.sin(round * 1000 + i) * 10000
-      const frac = random - Math.floor(random)
-
-      if (frac < 0.02) {
-        relativeToPar = -3
-        status = 'albatross'
-        score = par - 3
-        remaining -= 3
-      } else if (frac < 0.08) {
-        relativeToPar = -2
-        status = 'eagle'
-        score = par - 2
-        remaining -= 2
-      } else if (frac < 0.25) {
-        relativeToPar = -1
-        status = 'birdie'
-        score = par - 1
-        remaining -= 1
-      } else if (frac < 0.55 && remaining > 0) {
-        relativeToPar = 0
-        status = 'par'
-        score = par
-      } else if (frac < 0.75 && (isUnder ? remaining > 0 : remaining > 0)) {
-        relativeToPar = 1
-        status = 'bogey'
-        score = par + 1
-        remaining -= 1
-      } else if (frac < 0.90 && (isUnder ? remaining > 0 : remaining > 1)) {
-        relativeToPar = 2
-        status = 'double'
-        score = par + 2
-        remaining -= 2
-      } else if (remaining > 0) {
-        relativeToPar = 3
-        status = 'triplePlus'
-        score = par + 3
-        remaining -= 3
-      }
-    }
-
+    const par = 4 // Standard par 4 for layout
     holes.push({
       holeNumber: i,
       par,
-      score,
-      relativeToPar,
-      status,
+      score: null,
+      relativeToPar: null,
+      status: 'missing', // Placeholder status
       isCurrentHole: false,
     })
   }

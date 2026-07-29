@@ -499,6 +499,12 @@ export type SortKey =
   | 'odds-desc'
   | 'rating-asc'
   | 'rating-desc'
+  | 'fit-asc'
+  | 'fit-desc'
+  | 'dkScore-asc'
+  | 'dkScore-desc'
+  | 'value-asc'
+  | 'value-desc'
 
 export interface SortOption {
   value: SortKey
@@ -509,6 +515,10 @@ export interface SortOption {
 const scoringSortOptions: SortOption[] = [
   { value: 'pos-asc', label: 'Position (↑)' },
   { value: 'pos-desc', label: 'Position (↓)' },
+  { value: 'value-desc', label: 'Value (High)' },
+  { value: 'value-asc', label: 'Value (Low)' },
+  { value: 'dkScore-desc', label: 'DK Score (High)' },
+  { value: 'dkScore-asc', label: 'DK Score (Low)' },
   { value: 'name-asc', label: 'Name (A–Z)' },
   { value: 'name-desc', label: 'Name (Z–A)' },
   { value: 'total-asc', label: 'Total (Low)' },
@@ -525,6 +535,8 @@ const scoringSortOptions: SortOption[] = [
 const scheduledSortOptions: SortOption[] = [
   { value: 'rating-desc', label: 'CaddieIQ Rating (High)' },
   { value: 'rating-asc', label: 'CaddieIQ Rating (Low)' },
+  { value: 'fit-desc', label: 'Course Fit (High)' },
+  { value: 'fit-asc', label: 'Course Fit (Low)' },
   { value: 'salary-desc', label: 'DK Salary (High)' },
   { value: 'salary-asc', label: 'DK Salary (Low)' },
   { value: 'own-desc', label: 'Proj Ownership (High)' },

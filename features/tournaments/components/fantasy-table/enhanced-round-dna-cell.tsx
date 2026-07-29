@@ -1,8 +1,7 @@
 'use client'
 
 import { useMemo, memo } from 'react'
-import { RoundDnaSummaryBox } from './round-dna-summary-box'
-import { EnhancedRoundDnaTable } from './enhanced-round-dna-table'
+import { RoundDnaScorecard } from './round-dna-scorecard'
 import { HoleData } from '@/features/tournaments/utils/round-dna-helpers'
 
 interface EnhancedRoundDnaCellProps {
@@ -41,18 +40,16 @@ function EnhancedRoundDnaCellInner({
   }
 
   return (
-    <div className="flex gap-4 p-4 bg-white/[0.02] border border-white/[0.05] rounded-lg">
-      {/* Left sidebar with summary */}
-      <div className="flex-shrink-0">
-        <RoundDnaSummaryBox round={round} holes={holeData} />
-      </div>
-      
-      {/* Main table */}
-      <div className="flex-1 min-w-0 overflow-x-auto">
-        <EnhancedRoundDnaTable holes={holeData} round={round} />
-      </div>
-      
-    </div>
+    <RoundDnaScorecard 
+      holeScores={holeData.map(h => ({
+        holeNumber: h.holeNumber,
+        par: h.par || 0,
+        score: h.score,
+        toPar: h.toPar || 0,
+        dkPoints: h.dkPoints || 0,
+      }))}
+      currentRound={round}
+    />
   )
 }
 

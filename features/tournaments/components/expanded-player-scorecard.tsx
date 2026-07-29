@@ -80,8 +80,8 @@ export function ExpandedPlayerScorecard({
 
   return (
     <div className="w-full h-full min-w-0 max-w-full flex flex-col">
-      {/* Desktop Layout - lg and above (hidden in drawer context) */}
-      <div className={cn(isDrawerContext ? 'hidden' : 'hidden lg:block', 'h-full min-h-0')}>
+      {/* Desktop Layout - lg and above, or in drawer context */}
+      <div className={cn(isDrawerContext ? 'block' : 'hidden lg:block', 'h-full min-h-0')}>
         <ScorecardDesktopLayout
           data={data}
           selectedRound={data.roundNumber}
@@ -95,8 +95,8 @@ export function ExpandedPlayerScorecard({
         />
       </div>
 
-      {/* Mobile Layout - below lg or in drawer context */}
-      <div className={cn(isDrawerContext ? 'block' : 'lg:hidden', 'w-full min-w-0 max-w-full flex flex-col gap-4')}>
+      {/* Mobile Layout - below lg (not in drawer context) */}
+      <div className={cn(isDrawerContext ? 'hidden' : 'lg:hidden', 'w-full min-w-0 max-w-full flex flex-col gap-4')}>
           {/* Stacked Scorecards - Responsive to container width */}
           <div className="w-full min-w-0 max-w-full grid gap-3 @4xl/scorecard:grid-cols-2">
             <NineHoleScorecard

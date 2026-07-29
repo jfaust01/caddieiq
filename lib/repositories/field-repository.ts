@@ -158,6 +158,8 @@ export class FieldRepository extends BaseRepository {
       finalPosition: entry.finalPosition,
       teeTime: entry.teeTime,
       earnings: entry.earnings == null ? null : new Prisma.Decimal(entry.earnings),
+      // Persist the SportsDataIO PlayerID for provider-based matching
+      sourceRecordId: entry.externalRef?.externalId ?? null,
     }
     try {
       const existing = await this.prisma.tournamentField.findUnique({

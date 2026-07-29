@@ -13,7 +13,7 @@ import {
   TournamentPlayerToolbar,
   type StatusOption,
 } from '@/features/tournaments/components/fantasy-table/tournament-player-toolbar'
-import { parseOdds } from '@/features/tournaments/components/fantasy-table/helpers'
+import { parseOdds, courseFitScore } from '@/features/tournaments/components/fantasy-table/helpers'
 import {
   type FilterContext,
   type SortKey,
@@ -224,13 +224,13 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
         case 'name-desc':
           return name(b, a)
         case 'rating-desc': {
-          const ra = a.fantasyScore ?? Number.MIN_VALUE
-          const rb = b.fantasyScore ?? Number.MIN_VALUE
+          const ra = a.rankingScore ?? Number.MIN_VALUE
+          const rb = b.rankingScore ?? Number.MIN_VALUE
           return rb !== ra ? rb - ra : name(a, b)
         }
         case 'rating-asc': {
-          const ra = a.fantasyScore ?? Number.MAX_VALUE
-          const rb = b.fantasyScore ?? Number.MAX_VALUE
+          const ra = a.rankingScore ?? Number.MAX_VALUE
+          const rb = b.rankingScore ?? Number.MAX_VALUE
           return ra !== rb ? ra - rb : name(a, b)
         }
         case 'total-asc': {
@@ -244,13 +244,13 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           return totB !== totA ? totB - totA : name(a, b)
         }
         case 'salary-asc': {
-          const salA = a.dfsSalary ?? Number.MAX_VALUE
-          const salB = b.dfsSalary ?? Number.MAX_VALUE
+          const salA = (a.dfsSalary ?? 0) > 0 ? a.dfsSalary : Number.MAX_VALUE
+          const salB = (b.dfsSalary ?? 0) > 0 ? b.dfsSalary : Number.MAX_VALUE
           return salA !== salB ? salA - salB : name(a, b)
         }
         case 'salary-desc': {
-          const salA = a.dfsSalary ?? Number.MIN_VALUE
-          const salB = b.dfsSalary ?? Number.MIN_VALUE
+          const salA = (a.dfsSalary ?? 0) > 0 ? a.dfsSalary : Number.MIN_VALUE
+          const salB = (b.dfsSalary ?? 0) > 0 ? b.dfsSalary : Number.MIN_VALUE
           return salB !== salA ? salB - salA : name(a, b)
         }
         case 'own-asc': {
@@ -272,6 +272,44 @@ export function TournamentField({ field, tournamentId, status, dfsField }: Tourn
           const oddsA = parseOdds(a.oddsToWin)
           const oddsB = parseOdds(b.oddsToWin)
           return oddsB !== oddsA ? oddsB - oddsA : name(a, b)
+        }
+        case 'fit-desc': {
+          const fitA = courseFitScore(dfsByPlayer.get(a.playerId)) ?? Number.MIN_VALUE
+          const fitB = courseFitScore(dfsByPlayer.get(b.playerId)) ?? Number.MIN_VALUE
+          return fitB !== fitA ? fitB - fitA : name(a, b)
+        }
+        case 'fit-asc': {
+          const fitA = courseFitScore(dfsByPlayer.get(a.playerId)) ?? Number.MAX_VALUE
+          const fitB = courseFitScore(dfsByPlayer.get(b.playerId)) ?? Number.MAX_VALUE
+          return fitA !== fitB ? fitA - fitB : name(a, b)
+        }
+        case 'dkScore-desc': {
+          const dkA = a.dkFantasyPoints ?? Number.MIN_VALUE
+          const dkB = b.dkFantasyPoints ?? Number.MIN_VALUE
+          return dkB !== dkA ? dkB - dkA : name(a, b)
+        }
+        case 'dkScore-asc': {
+          const dkA = a.dkFantasyPoints ?? Number.MAX_VALUE
+          const dkB = b.dkFantasyPoints ?? Number.MAX_VALUE
+          return dkA !== dkB ? dkA - dkB : name(a, b)
+        }
+        case 'value-desc': {
+          const valA = (a.dfsSalary && a.dfsSalary > 0 && a.dkFantasyPoints != null) 
+            ? a.dkFantasyPoints / (a.dfsSalary / 1000) 
+            : Number.MIN_VALUE
+          const valB = (b.dfsSalary && b.dfsSalary > 0 && b.dkFantasyPoints != null) 
+            ? b.dkFantasyPoints / (b.dfsSalary / 1000) 
+            : Number.MIN_VALUE
+          return valB !== valA ? valB - valA : name(a, b)
+        }
+        case 'value-asc': {
+          const valA = (a.dfsSalary && a.dfsSalary > 0 && a.dkFantasyPoints != null) 
+            ? a.dkFantasyPoints / (a.dfsSalary / 1000) 
+            : Number.MAX_VALUE
+          const valB = (b.dfsSalary && b.dfsSalary > 0 && b.dkFantasyPoints != null) 
+            ? b.dkFantasyPoints / (b.dfsSalary / 1000) 
+            : Number.MAX_VALUE
+          return valA !== valB ? valA - valB : name(a, b)
         }
         default:
           return 0

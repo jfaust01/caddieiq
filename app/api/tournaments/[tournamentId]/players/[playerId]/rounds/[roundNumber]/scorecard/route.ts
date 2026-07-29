@@ -27,7 +27,8 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid round number' }, { status: 400 })
     }
 
-    console.log('[v0] Fetching scorecard:', { playerId, round, tournamentId })
+    // Development diagnostics
+    console.log('[v0] Scorecard API: Request params', { tournamentId, playerId, roundNumber: round })
 
     // Query PlayerRound with hole scores and course information
     // Path: playerRound -> tournamentField -> playerId, tournament, player
@@ -84,15 +85,58 @@ export async function GET(
       },
     })
 
+    // Development diagnostics
+    if (!playerRound) {
+      console.log('[v0] Scorecard API: PlayerRound not found', {
+        tournamentId,
+        playerId,
+        round,
+        diagnostic: 'Attempting to find resolution path...',
+      })
+
+      // Debug: Try to resolve player and tournament separately
+      const tournament = await prisma.tournament.findUnique({
+        where: { id: tournamentId },
+        select: { id: true, name: true },
+      })
+
+      const tournamentField = await prisma.tournamentField.findFirst({
+        where: {
+          playerId: playerId,
+          tournament: { id: tournamentId },
+        },
+        select: { id: true, playerId: true },
+      })
+
+      const roundRecord = await prisma.round.findFirst({
+        where: {
+          tournamentId: tournamentId,
+          roundNumber: round,
+        },
+        select: { id: true },
+      })
+
+      console.log('[v0] Scorecard API: Debug resolution', {
+        tournamentExists: !!tournament,
+        tournamentFieldExists: !!tournamentField,
+        roundExists: !!roundRecord,
+        resolvedIds: {
+          tournamentId,
+          playerId,
+          tournamentFieldId: tournamentField?.id,
+          roundId: roundRecord?.id,
+        },
+      })
+    }
+
     // Par data is already embedded in holeScores, so no need for separate query
     // Create a map of par by hole number from the hole scores
-    const courseHoles: Array<{ holeNumber: number; par: number | null }> = Array.from(
-      { length: 18 },
-      (_, i) => ({
-        holeNumber: i + 1,
-        par: holeScores.find(h => h.holeNumber === i + 1)?.par || null,
-      })
-    )
+    const courseHoles: Array<{ holeNumber: number; par: number | null }> = playerRound
+      ? Array.from({ length: 18 }, (_, i) => ({
+          holeNumber: i + 1,
+          par: playerRound.holeScores.find(h => h.holeNumber === i + 1)?.par || null,
+        }))
+      : []
 
     // Not found
     if (!playerRound) {
@@ -122,18 +166,39 @@ export async function GET(
     const hasVerifiedHoleData =
       playerRound.holeScores.length === 18 && sources.size === 1
 
+    console.log('[v0] Scorecard API: Database query results', {
+      playerId,
+      round,
+      tournamentId,
+      holesCount: playerRound.holeScores.length,
+      hasVerifiedHoleData,
+      sources: Array.from(sources),
+      holeDataPresent: playerRound.holeScores.length > 0,
+      table: 'hole_scores',
+      firstHole: playerRound.holeScores[0] ? {
+        holeNumber: playerRound.holeScores[0].holeNumber,
+        score: playerRound.holeScores[0].score,
+        par: playerRound.holeScores[0].par,
+        toPar: playerRound.holeScores[0].toPar,
+        source: playerRound.holeScores[0].source,
+        externalId: playerRound.holeScores[0].externalId,
+      } : null,
+    })
+
     if (playerRound.holeScores.length === 0) {
-      console.log('[v0] No hole scores for round (returning summary only):', { playerId, round })
+      console.log('[v0] AUDIT: No hole scores found for round (returning summary only):', { playerId, round, tournamentId })
     } else if (playerRound.holeScores.length !== 18) {
-      console.error('[v0] Incomplete hole scores (returning summary only):', {
+      console.warn('[v0] AUDIT: Incomplete hole scores in hole_scores table (returning summary only):', {
         playerId,
         round,
+        tournamentId,
         count: playerRound.holeScores.length,
       })
     } else if (sources.size > 1) {
-      console.error('[v0] Mixed data sources (returning summary only):', {
+      console.warn('[v0] AUDIT: Mixed data sources in hole_scores (returning summary only):', {
         playerId,
         round,
+        tournamentId,
         sources: Array.from(sources),
       })
     }
