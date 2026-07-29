@@ -15,7 +15,11 @@ export async function generateMetadata({
   const { tournamentId } = await params
 
   try {
-    const tournament = await tournamentService.getTournamentById(tournamentId)
+    // Try to look up by slug first, then fall back to ID for backward compatibility
+    let tournament = await tournamentService.getTournamentBySlug(tournamentId)
+    if (!tournament) {
+      tournament = await tournamentService.getTournamentById(tournamentId)
+    }
 
     if (!tournament) {
       return {
@@ -41,9 +45,14 @@ export default async function TournamentDetailPage({
   params,
 }: TournamentDetailPageProps) {
   const { tournamentId } = await params
-  const tournament = await tournamentService.getTournamentById(tournamentId)
+  
+  // Try to look up by slug first, then fall back to ID for backward compatibility
+  let tournament = await tournamentService.getTournamentBySlug(tournamentId)
+  if (!tournament) {
+    tournament = await tournamentService.getTournamentById(tournamentId)
+  }
 
-  // Invalid or unknown tournament ID → proper HTTP 404 via the nearest not-found boundary.
+  // Invalid or unknown tournament slug/ID → proper HTTP 404 via the nearest not-found boundary.
   if (!tournament) {
     notFound()
   }

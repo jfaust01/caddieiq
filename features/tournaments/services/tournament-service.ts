@@ -935,4 +935,31 @@ export const tournamentService = {
       return null
     }
   },
+
+  /**
+   * Look up a tournament by its slug.
+   * Tournaments have a built-in `slug` field that can be used in URLs.
+   * Returns the tournament if found, or null otherwise.
+   */
+  async getTournamentBySlug(slug: string): Promise<TournamentSummary | null> {
+    try {
+      const result = await this.getTournaments({
+        page: 1,
+        limit: 100, // Get a reasonable sample to search through
+      })
+
+      if (!result.items || result.items.length === 0) {
+        return null
+      }
+
+      // Find tournament with matching slug (case-insensitive)
+      const match = result.items.find(t => 
+        t.slug.toLowerCase() === slug.toLowerCase()
+      )
+
+      return match || null
+    } catch {
+      return null
+    }
+  },
 }
