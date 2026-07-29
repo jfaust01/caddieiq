@@ -86,7 +86,7 @@ export function TournamentFeaturedCard({
 
           <h2 className="text-2xl font-bold tracking-tight text-foreground line-clamp-2">
             <Link
-              href={`/tournaments/${tournament.slug}`}
+              href={`/tournaments/${tournament.id}`}
               className="outline-none after:absolute after:inset-0 hover:underline"
             >
               {tournament.name}
