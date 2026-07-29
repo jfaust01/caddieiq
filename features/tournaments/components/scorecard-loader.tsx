@@ -14,8 +14,6 @@ interface ScorecardLoaderProps {
   phase?: 'scheduled' | 'live' | 'completed'
   /** Whether this scorecard is being rendered inside a drawer (affects layout selection). */
   isDrawerContext?: boolean
-  /** Callback when round tab is clicked */
-  onRoundChange?: (round: number) => void
 }
 
 type LoadingState = 'idle' | 'loading' | 'success' | 'empty' | 'error'
@@ -27,7 +25,6 @@ export function ScorecardLoader({
   roundNumber,
   phase = 'scheduled',
   isDrawerContext = false,
-  onRoundChange,
 }: ScorecardLoaderProps) {
   const [state, setState] = useState<LoadingState>('idle')
   const [data, setData] = useState<PlayerRoundScorecardData | null>(null)
@@ -132,7 +129,7 @@ export function ScorecardLoader({
   return (
     <div>
       <ScorecardErrorBoundary playerName={playerName}>
-        <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} phase={phase} isDrawerContext={isDrawerContext} onRoundChange={onRoundChange} />
+        <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} phase={phase} isDrawerContext={isDrawerContext} />
       </ScorecardErrorBoundary>
       {state === 'error' && (
         <div className="mt-4 p-3 bg-muted/20 rounded">
