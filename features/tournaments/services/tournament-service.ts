@@ -878,59 +878,112 @@ export const tournamentService = {
   /**
    * Look up a tournament by its name (case-insensitive fuzzy match).
    * Used when navigating via URL slug that doesn't include the ID.
-   * Returns the first tournament that closely matches the name.
+   * Handles both formatted names and URL slugs (hyphen-separated).
    */
   async getTournamentByName(slug: string): Promise<TournamentSummary | null> {
     try {
-      const result = await this.getTournaments({
-        page: 1,
-        limit: 100, // Get a reasonable sample to search through
-      })
-
-      if (!result.items || result.items.length === 0) {
+      // If it looks like an ID (contains non-alphanumeric chars typically used in IDs), skip
+      if (slug.includes('_') || slug.match(/^[a-z0-9]{15,}$/)) {
         return null
       }
 
-      // Normalize both slug and tournament names for comparison
-      const normalizedSlug = slug.toLowerCase().replace(/-/g, ' ').trim()
+      // Fetch tournaments - try multiple pages if needed to find a match
+      let allTournaments: TournamentSummary[] = []
       
-      // Remove common words and extra spaces to create a searchable key
+      for (let page = 1; page <= 5; page++) {
+        const result = await this.getTournaments({
+          page,
+          limit: 100,
+        })
+
+        if (!result.items || result.items.length === 0) {
+          break
+        }
+
+        allTournaments = allTournaments.concat(result.items)
+      }
+
+      if (allTournaments.length === 0) {
+        return null
+      }
+
+      // Normalize for comparison: convert hyphens to spaces and remove special chars
       const normalize = (str: string) => 
-        str.toLowerCase()
-          .replace(/\s+/g, ' ')
-          .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+        str
+          .toLowerCase()
+          .replace(/-/g, ' ')           // Convert hyphens to spaces (for URL slugs)
+          .replace(/\s+/g, ' ')         // Collapse multiple spaces
+          .replace(/[^a-z0-9\s]/g, '')  // Remove special characters
           .trim()
 
-      const normalizedSearchKey = normalize(normalizedSlug)
+      const normalizedSlug = normalize(slug)
 
-      // Try exact match first (case-insensitive, normalized)
-      let match = result.items.find(t => 
-        normalize(t.name) === normalizedSearchKey
+      // Try exact match first (after normalization)
+      let match = allTournaments.find(t => 
+        normalize(t.name) === normalizedSlug
       )
 
       if (match) {
         return match
       }
 
-      // Try close match - if most words are present
-      match = result.items.find(t => {
-        const tName = normalize(t.name)
-        const searchWords = normalizedSearchKey.split(' ').filter(w => w.length > 2)
-        const matchedWords = searchWords.filter(w => tName.includes(w))
-        return matchedWords.length >= Math.max(1, Math.ceil(searchWords.length * 0.7))
-      })
+      // Try match where the slug words appear in the tournament name
+      const slugWords = normalizedSlug.split(' ').filter(w => w.length > 0)
+      if (slugWords.length > 0) {
+        match = allTournaments.find(t => {
+          const tName = normalize(t.name)
+          const matchedWords = slugWords.filter(w => tName.includes(w))
+          // All words must match for a valid hit
+          return matchedWords.length === slugWords.length
+        })
 
-      if (match) {
-        return match
+        if (match) {
+          return match
+        }
       }
 
-      // Fallback: partial substring match
-      match = result.items.find(t => 
-        normalize(t.name).includes(normalizedSearchKey) ||
-        normalizedSearchKey.includes(normalize(t.name))
-      )
+      return null
+    } catch {
+      return null
+    }
+  },
 
-      return match || null
+  /**
+   * Look up a tournament by its slug.
+   * Tournaments have a built-in `slug` field that can be used in URLs.
+   * Returns the tournament if found, or null otherwise.
+   */
+  async getTournamentBySlug(slug: string): Promise<TournamentSummary | null> {
+    try {
+      // Fetch multiple pages to find the tournament by slug
+      let allTournaments: TournamentSummary[] = []
+      
+      for (let page = 1; page <= 10; page++) {
+        const result = await this.getTournaments({
+          page,
+          limit: 100,
+        })
+
+        if (!result.items || result.items.length === 0) {
+          break
+        }
+
+        allTournaments = allTournaments.concat(result.items)
+
+        // Try to find exact match as we add each batch
+        const match = allTournaments.find(t => 
+          t.slug.toLowerCase() === slug.toLowerCase()
+        )
+        if (match) {
+          return match
+        }
+      }
+
+      // If no exact match, try partial matching (in case slug format differs slightly)
+      const lowerSlug = slug.toLowerCase()
+      return allTournaments.find(t => 
+        t.slug.toLowerCase().replace(/[^a-z0-9]+/g, '-') === lowerSlug.replace(/[^a-z0-9]+/g, '-')
+      ) || null
     } catch {
       return null
     }

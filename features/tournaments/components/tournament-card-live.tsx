@@ -38,7 +38,7 @@ export function TournamentCardLive({ tournament }: TournamentCardLiveProps) {
       : null
 
   return (
-    <Link href={`/tournaments/${generateTournamentSlug(tournament.id)}`}>
+    <Link href={`/tournaments/${tournament.id}`}>
       <div
         className={cn(
           'group relative overflow-hidden rounded-lg cursor-pointer',
