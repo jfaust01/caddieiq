@@ -1,16 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { PlayerRoundScorecardData } from '../actions/get-player-round-scorecard'
-import { ScorecardHeroHeader } from './scorecard-hero-header'
-import { ScorecardStatsCards } from './scorecard-stats-cards'
-import { ScorecardSidebar } from './scorecard-sidebar'
-import { ScorecardModalLayout } from './scorecard-modal-layout'
 import { ScorecardDesktopLayout } from './scorecard-desktop-layout'
-import { NineHoleScorecard } from './nine-hole-scorecard'
-import { ScorecardLegend } from './scorecard-legend'
-import { ScorecardPlayerRoundStats } from './scorecard-player-round-stats'
 import { cn } from '@/lib/utils'
 
 interface ExpandedPlayerScorecardProps {
@@ -26,6 +18,8 @@ interface ExpandedPlayerScorecardProps {
   phase?: 'scheduled' | 'live' | 'completed'
   /** Force mobile layout when rendered inside a drawer. */
   isDrawerContext?: boolean
+  /** Callback when round tab is clicked */
+  onRoundChange?: (round: number) => void
 }
 
 export function ExpandedPlayerScorecard({
@@ -36,6 +30,7 @@ export function ExpandedPlayerScorecard({
   onPlayerChange,
   phase = 'scheduled',
   isDrawerContext = false,
+  onRoundChange,
 }: ExpandedPlayerScorecardProps) {
 
 
@@ -77,6 +72,7 @@ export function ExpandedPlayerScorecard({
     : null
 
   const rounds = ['R1', 'R2', 'R3', 'R4']
+  const [selectedRound, setSelectedRound] = useState(1)
 
   return (
     <div className="w-full h-full min-w-0 max-w-full flex flex-col">
@@ -84,8 +80,11 @@ export function ExpandedPlayerScorecard({
       <div className={cn(isDrawerContext ? 'block' : 'hidden lg:block', 'h-full min-h-0')}>
         <ScorecardDesktopLayout
           data={data}
-          selectedRound={data.roundNumber}
-          onRoundChange={() => {}}
+          selectedRound={selectedRound}
+          onRoundChange={(round) => {
+            setSelectedRound(round)
+            onRoundChange?.(round)
+          }}
           frontNine={frontNine}
           backNine={backNine}
           outTotal={outTotal}
@@ -97,29 +96,6 @@ export function ExpandedPlayerScorecard({
 
       {/* Mobile Layout - below lg (not in drawer context) */}
       <div className={cn(isDrawerContext ? 'hidden' : 'lg:hidden', 'w-full min-w-0 max-w-full flex flex-col gap-4')}>
-          {/* Stacked Scorecards - Responsive to container width */}
-          <div className="w-full min-w-0 max-w-full grid gap-3 @4xl/scorecard:grid-cols-2">
-            <NineHoleScorecard
-              label="FRONT 9"
-              holes={frontNine}
-              courseHoles={data.courseHoles?.slice(0, 9)}
-              total={outTotal}
-              isDesktop={false}
-            />
-            <NineHoleScorecard
-              label="BACK 9"
-              holes={backNine}
-              courseHoles={data.courseHoles?.slice(9, 18)}
-              total={inTotal}
-              totTotal={totTotal}
-              isDesktop={false}
-            />
-          </div>
-
-          {/* Legend */}
-          <div className="w-full min-w-0 max-w-full pt-2 border-t border-white/[0.05]">
-            <ScorecardLegend isDesktop={false} />
-          </div>
         </div>
     </div>
   )

@@ -106,7 +106,7 @@ const CumulativeScoreRow = memo(function CumulativeScoreRow({
   return (
     <div className="flex border-b border-gray-700/10 text-xs tracking-tight">
       <div className="w-32 px-3 py-1.5 font-medium text-gray-500 bg-gray-900/50 leading-tight text-xs">
-        CUMULATIVE<br />SCORE (TO PAR)
+        TO PAR
       </div>
       {/* Holes 1-9 */}
       <div className="flex flex-1">
@@ -622,11 +622,8 @@ export const RoundDnaScorecard = memo(function RoundDnaScorecard({
 
         {/* ROUND DNA CHART row */}
         <div className="border-b border-gray-700/10 px-3 py-3">
-          <div className="flex gap-3">
-            <div className="w-32 font-medium text-gray-500 text-xs tracking-tight">ROUND DNA</div>
-            <div className="flex-1">
-              <RoundDnaChart holeScores={allHoles} />
-            </div>
+          <div className="flex-1">
+            <RoundDnaChart holeScores={allHoles} />
           </div>
         </div>
 
