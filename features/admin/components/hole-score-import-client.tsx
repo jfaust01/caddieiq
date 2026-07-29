@@ -9,7 +9,9 @@ import {
   ChevronDown,
   Search,
   Filter,
+  ArrowUpRight,
 } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -426,6 +428,38 @@ export function HoleScoreImportClient({ tournaments }: { tournaments: Tournament
       {/* Diagnostics Summary */}
       {selectedTournament && diagnostics && (
         <>
+          <Card className="border-emerald-500/30 bg-emerald-500/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-emerald-600" />
+                Data Flow: Import → Holes → Scorecards
+              </CardTitle>
+              <CardDescription>
+                Imported hole scores are immediately available in player scorecards and round DNA visualizations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl font-bold text-emerald-600">{diagnostics.summary.totalPersistedHoleRows}</div>
+                  <div className="text-muted-foreground">Holes persisted in hole_scores table</div>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="h-1 w-1 rounded-full bg-emerald-600"></div>
+                  Available in scorecard details for each player
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="h-1 w-1 rounded-full bg-emerald-600"></div>
+                  Available in round DNA chart for visualization
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="h-1 w-1 rounded-full bg-emerald-600"></div>
+                  Coverage: {diagnostics.summary.coveragePercentage}% of field
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Import Summary Metrics</CardTitle>
@@ -538,6 +572,7 @@ export function HoleScoreImportClient({ tournaments }: { tournaments: Tournament
                           <TableHead className="text-center">R4</TableHead>
                           <TableHead className="text-center">Total</TableHead>
                           <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="w-10"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -612,6 +647,24 @@ export function HoleScoreImportClient({ tournaments }: { tournaments: Tournament
                                         ? 'No Data'
                                         : 'Unmatched'}
                                 </Badge>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {player.totalHoles > 0 && (
+                                  <Link
+                                    href={`/tournaments/${selectedTournament}/players/${player.internalPlayerId}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      title="View scorecard"
+                                    >
+                                      <ArrowUpRight className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </Link>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))
