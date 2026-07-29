@@ -1,6 +1,7 @@
 'use client'
 
 import { memo, useMemo, useState, useEffect, useRef } from 'react'
+import { DraftKingsMark } from '../draftkings-mark'
 import { cn } from '@/lib/utils'
 
 interface HoleResult {
@@ -283,16 +284,16 @@ function RoundDnaRow({
             return 'Triple Bogey+'
           }
           
-          // Get badge color for result
+          // Get text color for result (no background)
           const getResultColor = (result: number | null) => {
-            if (result === null) return 'bg-gray-600 text-gray-100'
-            if (result <= -3) return 'bg-purple-600 text-white' // Albatross
-            if (result === -2) return 'bg-emerald-600 text-white' // Eagle
-            if (result === -1) return 'bg-green-600 text-white' // Birdie
-            if (result === 0) return 'bg-gray-600 text-gray-100' // Par
-            if (result === 1) return 'bg-amber-600 text-white' // Bogey
-            if (result === 2) return 'bg-red-600 text-white' // Double Bogey
-            return 'bg-red-700 text-white' // Triple+
+            if (result === null) return 'text-gray-400'
+            if (result <= -3) return 'text-purple-400' // Albatross
+            if (result === -2) return 'text-emerald-400' // Eagle
+            if (result === -1) return 'text-green-400' // Birdie
+            if (result === 0) return 'text-gray-400' // Par
+            if (result === 1) return 'text-amber-400' // Bogey
+            if (result === 2) return 'text-orange-400' // Double Bogey
+            return 'text-red-400' // Triple+
           }
           
           // Get to-par display color
@@ -388,10 +389,13 @@ function RoundDnaRow({
                     <span className={`font-semibold ${getToParColor(normalizedResult)}`}>{toParDisplay}</span>
                   </div>
                   {tooltipHole.dkPoints !== undefined && tooltipHole.dkPoints !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">DK Points</span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-1">
+                        <DraftKingsMark className="h-3 w-auto" />
+                        <span className="text-gray-400">Points</span>
+                      </div>
                       <span className={`font-semibold ${getDkPointsColor(tooltipHole.dkPoints)}`}>
-                        {tooltipHole.dkPoints > 0 ? '+' : ''}{tooltipHole.dkPoints.toFixed(1)}
+                        {tooltipHole.dkPoints > 0 ? '+' : ''}{tooltipHole.dkPoints.toFixed(2)}
                       </span>
                     </div>
                   )}
