@@ -152,7 +152,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
           title={tournament.name}
         >
           <Link
-            href={`/tournaments/${tournament.slug}`}
+            href={`/tournaments/${tournament.id}`}
             className="outline-none after:absolute after:inset-0 focus:outline-none"
           >
             {tournament.name}
