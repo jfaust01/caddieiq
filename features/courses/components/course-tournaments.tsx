@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/shared/empty-state'
 import { TournamentStatusBadge } from '@/features/tournaments/components/tournament-status-badge'
-import { generateTournamentNameSlug } from '@/features/tournaments/utils/slug'
+import { generateTournamentSlug } from '@/features/tournaments/utils/slug'
 import type { CourseTournament } from '@/features/courses/types'
 
 const EMPTY_VALUE = '—'
@@ -53,7 +53,7 @@ export function CourseTournaments({ tournaments }: CourseTournamentsProps) {
             {tournaments.map((tournament) => (
               <li key={tournament.id}>
                 <Link
-                  href={`/tournaments/${generateTournamentNameSlug(tournament.name)}`}
+                  href={`/tournaments/${tournament.id}`}
                   className="flex items-center justify-between gap-3 py-3 outline-none transition-colors first:pt-0 last:pb-0 hover:text-primary focus-visible:text-primary"
                 >
                   <div className="flex min-w-0 flex-col gap-1">

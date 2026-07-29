@@ -21,7 +21,7 @@ import {
   statusLabel,
   tourShortLabel,
 } from '@/features/tournaments/utils/format'
-import { generateTournamentNameSlug } from '@/features/tournaments/utils/slug'
+import { generateTournamentSlug } from '@/features/tournaments/utils/slug'
 import { cn } from '@/lib/utils'
 
 interface MetadataRowProps {
@@ -152,7 +152,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
           title={tournament.name}
         >
           <Link
-            href={`/tournaments/${generateTournamentNameSlug(tournament.name)}`}
+            href={`/tournaments/${tournament.id}`}
             className="outline-none after:absolute after:inset-0 focus:outline-none"
           >
             {tournament.name}

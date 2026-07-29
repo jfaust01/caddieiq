@@ -15,7 +15,7 @@ import {
   formatToPar,
   textDisplay,
 } from '@/features/tournaments/utils/format'
-import { generateTournamentNameSlug } from '@/features/tournaments/utils/slug'
+import { generateTournamentSlug } from '@/features/tournaments/utils/slug'
 import { cn } from '@/lib/utils'
 
 interface TournamentFeaturedCardProps {
@@ -86,7 +86,7 @@ export function TournamentFeaturedCard({
 
           <h2 className="text-2xl font-bold tracking-tight text-foreground line-clamp-2">
             <Link
-              href={`/tournaments/${generateTournamentNameSlug(tournament.name)}`}
+              href={`/tournaments/${tournament.id}`}
               className="outline-none after:absolute after:inset-0 hover:underline"
             >
               {tournament.name}
