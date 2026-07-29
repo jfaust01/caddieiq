@@ -13,11 +13,14 @@ interface HoleScore {
 }
 
 interface RoundDnaScorecardProps {
-  tournamentId: string
-  playerId: string
-  round: number
+  tournamentId?: string
+  playerId?: string
+  round?: number
   playerName?: string
   onRoundChange?: (round: number) => void
+  // Direct data mode (alternative to API fetch mode)
+  holeScores?: HoleScore[]
+  currentRound?: number
 }
 
 const normalizeHoleResult = (hole: HoleScore): number | null => {
@@ -427,13 +430,20 @@ export const RoundDnaScorecard = memo(function RoundDnaScorecard({
   round,
   playerName = 'Player',
   onRoundChange,
+  holeScores: directHoleScores,
+  currentRound: directCurrentRound,
 }: RoundDnaScorecardProps) {
-  const [holeScores, setHoleScores] = useState<HoleScore[]>([])
-  const [loading, setLoading] = useState(true)
-  const [currentRound, setCurrentRound] = useState(round)
+  // Support both modes: direct data and API fetch
+  const isDirectDataMode = !!directHoleScores && directHoleScores.length > 0
+  
+  const [holeScores, setHoleScores] = useState<HoleScore[]>(directHoleScores || [])
+  const [loading, setLoading] = useState(!isDirectDataMode)
+  const [currentRound, setCurrentRound] = useState(directCurrentRound || round || 1)
 
-  // Fetch scorecard data
+  // Fetch scorecard data (only in API mode)
   const fetchScorecard = async (roundNum: number) => {
+    if (isDirectDataMode) return // Skip fetch in direct data mode
+    
     setLoading(true)
     try {
       const res = await fetch(
@@ -501,14 +511,18 @@ export const RoundDnaScorecard = memo(function RoundDnaScorecard({
   const handleRoundChange = (newRound: number) => {
     if (newRound !== currentRound) {
       setCurrentRound(newRound)
-      fetchScorecard(newRound)
+      if (!isDirectDataMode) {
+        fetchScorecard(newRound)
+      }
       onRoundChange?.(newRound)
     }
   }
 
-  // Initialize data on mount
+  // Initialize data on mount (only in API fetch mode)
   useEffect(() => {
-    fetchScorecard(currentRound)
+    if (!isDirectDataMode) {
+      fetchScorecard(currentRound)
+    }
   }, [])
 
   if (loading && holeScores.length === 0) {
