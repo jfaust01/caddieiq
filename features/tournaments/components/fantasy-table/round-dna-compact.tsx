@@ -268,30 +268,127 @@ function RoundDnaRow({
           </svg>
         </div>
 
-        {/* Tooltip - rendered outside overflow-hidden for proper visibility */}
+        {/* Premium tooltip - rendered outside overflow-hidden for proper visibility */}
         {tooltipHole && tooltipPosition && (() => {
           const normalizedResult = normalizeHoleResult(tooltipHole)
-          const resultLabel = normalizedResult === null ? '-' : 
+          
+          // Map normalized result to golf terminology
+          const getGolfTerminology = (result: number | null) => {
+            if (result === null) return 'Unknown'
+            if (result <= -3) return 'Albatross'
+            if (result === -2) return 'Eagle'
+            if (result === -1) return 'Birdie'
+            if (result === 0) return 'Par'
+            if (result === 1) return 'Bogey'
+            if (result === 2) return 'Double Bogey'
+            return 'Triple Bogey+'
+          }
+          
+          // Get badge color for result
+          const getResultColor = (result: number | null) => {
+            if (result === null) return 'bg-gray-600 text-gray-100'
+            if (result <= -3) return 'bg-purple-600 text-white' // Albatross
+            if (result === -2) return 'bg-emerald-600 text-white' // Eagle
+            if (result === -1) return 'bg-green-600 text-white' // Birdie
+            if (result === 0) return 'bg-gray-600 text-gray-100' // Par
+            if (result === 1) return 'bg-amber-600 text-white' // Bogey
+            if (result === 2) return 'bg-red-600 text-white' // Double Bogey
+            return 'bg-red-700 text-white' // Triple+
+          }
+          
+          // Get to-par display color
+          const getToParColor = (result: number | null) => {
+            if (result === null) return 'text-gray-400'
+            if (result < 0) return 'text-emerald-400'
+            if (result === 0) return 'text-gray-400'
+            return 'text-red-400'
+          }
+          
+          // Get DK points color
+          const getDkPointsColor = (points: number | null | undefined) => {
+            if (points === null || points === undefined) return 'text-gray-400'
+            if (points > 0) return 'text-emerald-400'
+            if (points === 0) return 'text-gray-400'
+            return 'text-red-400'
+          }
+          
+          const golfTerm = getGolfTerminology(normalizedResult)
+          const toParDisplay = normalizedResult === null ? '-' : 
             normalizedResult === 0 ? 'E' :
             normalizedResult > 0 ? `+${normalizedResult}` : 
             `${normalizedResult}`
           
+          // Calculate tooltip position with viewport bounds checking
+          let top = tooltipPosition.y - 120
+          let left = tooltipPosition.x
+          
           return (
             <div
-              className="absolute bg-gray-800 border border-gray-600 rounded px-2 py-1 pointer-events-none z-50 text-xs text-gray-100"
+              className="fixed pointer-events-none z-50 opacity-100 scale-100 transition-all duration-[120ms] ease-out"
               style={{
-                left: `${tooltipPosition.x}px`,
-                top: `${tooltipPosition.y - 100}px`,
-                transform: 'translateX(-50%)',
+                left: `${left}px`,
+                top: `${top}px`,
+                transform: 'translate(-50%, -100%)',
               }}
             >
-              <div className="font-semibold">H{tooltipHole.holeNumber}</div>
-              <div className="text-gray-300">Par: {tooltipHole.par}</div>
-              <div className="text-gray-300">Score: {tooltipHole.score ?? '-'}</div>
-              <div className="text-amber-300 font-bold">{resultLabel}</div>
-              {tooltipHole.dkPoints !== undefined && tooltipHole.dkPoints !== null && (
-                <div className="text-yellow-400">DK: {tooltipHole.dkPoints}</div>
-              )}
+              {/* Dark glass panel with backdrop blur */}
+              <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-2xl shadow-2xl w-72">
+                {/* Header */}
+                <div className="px-4 pt-4 pb-3">
+                  <div className="flex items-center justify-between gap-3 mb-1">
+                    <h3 className="text-2xl font-bold text-white">
+                      Hole {tooltipHole.holeNumber}
+                    </h3>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      tooltipHole.par === 3 ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' :
+                      tooltipHole.par === 4 ? 'bg-gray-600/20 text-gray-300 border border-gray-500/30' :
+                      'bg-amber-600/20 text-amber-300 border border-amber-500/30'
+                    }`}>
+                      Par {tooltipHole.par}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Divider */}
+                <div className="h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent" />
+                
+                {/* Content - Two Column Layout */}
+                <div className="px-4 py-4 space-y-4">
+                  {/* Score Row */}
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-medium text-gray-400">Score</span>
+                    <span className="text-2xl font-semibold text-white">
+                      {tooltipHole.score ?? '-'}
+                    </span>
+                  </div>
+                  
+                  {/* Result Row */}
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-medium text-gray-400">Result</span>
+                    <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${getResultColor(normalizedResult)}`}>
+                      {golfTerm}
+                    </span>
+                  </div>
+                  
+                  {/* To Par Row */}
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-medium text-gray-400">To Par</span>
+                    <span className={`text-2xl font-semibold ${getToParColor(normalizedResult)}`}>
+                      {toParDisplay}
+                    </span>
+                  </div>
+                  
+                  {/* DK Points Row */}
+                  {tooltipHole.dkPoints !== undefined && tooltipHole.dkPoints !== null && (
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-sm font-medium text-gray-400">DK Points</span>
+                      <span className={`text-2xl font-semibold ${getDkPointsColor(tooltipHole.dkPoints)}`}>
+                        {tooltipHole.dkPoints > 0 ? '+' : ''}{tooltipHole.dkPoints.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )
         })()}
