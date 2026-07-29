@@ -3,7 +3,6 @@
 import { PlayerRoundScorecardData } from '../actions/get-player-round-scorecard'
 import { NineHoleScorecard } from './nine-hole-scorecard'
 import { ScorecardLegend } from './scorecard-legend'
-import { EnhancedRoundDnaCell } from './fantasy-table/enhanced-round-dna-cell'
 import { cn } from '@/lib/utils'
 
 interface DesktopScorecardLayoutProps {
@@ -53,33 +52,21 @@ export function ScorecardDesktopLayout({
 
       {/* Round Tabs */}
       <div className="flex-shrink-0 px-0 mt-6">
-        <div className="flex flex-col gap-4">
-          <div className="w-[360px] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] grid grid-cols-4">
-            {[1, 2, 3, 4].map((round) => (
-              <button
-                key={round}
-                onClick={() => onRoundChange(round)}
-                className={cn(
-                  'py-3 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0',
-                  selectedRound === round
-                    ? 'bg-emerald-500/15 text-emerald-300'
-                    : 'text-white/60 hover:text-white'
-                )}
-              >
-                R{round}
-              </button>
-            ))}
-          </div>
-
-          {/* Enhanced Round DNA Chart */}
-          {(frontNine.length > 0 || backNine.length > 0) && (
-            <div className="mt-4">
-              <EnhancedRoundDnaCell
-                holes={[...frontNine, ...backNine]}
-                round={selectedRound}
-              />
-            </div>
-          )}
+        <div className="w-[360px] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] grid grid-cols-4">
+          {[1, 2, 3, 4].map((round) => (
+            <button
+              key={round}
+              onClick={() => onRoundChange(round)}
+              className={cn(
+                'py-3 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0',
+                selectedRound === round
+                  ? 'bg-emerald-500/15 text-emerald-300'
+                  : 'text-white/60 hover:text-white'
+              )}
+            >
+              R{round}
+            </button>
+          ))}
         </div>
       </div>
 
