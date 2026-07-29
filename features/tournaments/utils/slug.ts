@@ -13,3 +13,18 @@ export function generateTournamentSlug(tournamentId: string): string {
 export function extractTournamentIdFromSlug(slug: string): string {
   return slug
 }
+
+/**
+ * Convert tournament name to URL-friendly slug.
+ * Example: "Cadillac Championship" -> "cadillac-championship"
+ */
+export function generateTournamentNameSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, 'and')
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
