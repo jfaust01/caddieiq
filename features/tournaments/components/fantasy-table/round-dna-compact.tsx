@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useMemo, useState, useEffect } from 'react'
+import { memo, useMemo, useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
 interface HoleResult {
@@ -146,6 +146,7 @@ function RoundDnaRow({
 }) {
   const [hoveredHole, setHoveredHole] = useState<string | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null)
+  const svgContainerRef = useRef<HTMLDivElement>(null)
   const [tooltipHole, setTooltipHole] = useState<HoleResult | null>(null)
 
   const PADDING = 8
@@ -190,7 +191,7 @@ function RoundDnaRow({
       onClick={() => playerId && onRoundClick?.(playerId, round)}
     >
       <div className="flex h-full relative">
-        <div className="flex-1 min-w-0 overflow-hidden relative">
+        <div className="flex-1 min-w-0 overflow-hidden relative" ref={svgContainerRef}>
           <svg
             className="w-full h-full"
             viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
@@ -316,32 +317,43 @@ function RoundDnaRow({
             normalizedResult > 0 ? `+${normalizedResult}` : 
             `${normalizedResult}`
           
-          // Smart positioning: prevent tooltip from being cut off at edges
-          // Tooltip width is approximately 200-240px, estimate at 220px for calculation
-          const TOOLTIP_WIDTH = 220
-          const pixelPosition = (tooltipPosition.x / SVG_WIDTH) * 100
+          // Calculate viewport coordinates for fixed positioning
+          // This prevents clipping since tooltip is no longer constrained by parent overflow
+          let viewportLeft = 0
+          let viewportTop = 0
+          let transformStyle = 'translate(-50%, -100%)'
           
-          // Determine transform based on position
-          // If near left edge (< 15%), align to left
-          // If near right edge (> 85%), align to right
-          // Otherwise, center it
-          let transformStyle = 'translate(-50%, -100%)' // default centered
-          let leftStyle = `${pixelPosition}%`
-          
-          if (pixelPosition < 15) {
-            transformStyle = 'translate(0, -100%)' // align left
-            leftStyle = `${Math.max(0, pixelPosition - 5)}%`
-          } else if (pixelPosition > 85) {
-            transformStyle = 'translate(-100%, -100%)' // align right
-            leftStyle = `${Math.min(100, pixelPosition + 5)}%`
+          if (svgContainerRef.current) {
+            const rect = svgContainerRef.current.getBoundingClientRect()
+            // Convert SVG coordinates to viewport coordinates
+            const dotViewportX = rect.left + (tooltipPosition.x / SVG_WIDTH) * rect.width
+            const dotViewportY = rect.top + (tooltipPosition.y / SVG_HEIGHT) * rect.height
+            
+            viewportLeft = dotViewportX
+            viewportTop = dotViewportY - 12
+            
+            // Smart positioning for edges
+            const TOOLTIP_WIDTH = 240
+            const PADDING = 16
+            
+            // Check if centered position would go off-screen
+            if (dotViewportX - TOOLTIP_WIDTH / 2 < PADDING) {
+              // Left edge - align left
+              transformStyle = 'translate(0, -100%)'
+              viewportLeft = Math.max(PADDING, dotViewportX - 8)
+            } else if (dotViewportX + TOOLTIP_WIDTH / 2 > window.innerWidth - PADDING) {
+              // Right edge - align right
+              transformStyle = 'translate(-100%, -100%)'
+              viewportLeft = Math.min(window.innerWidth - PADDING, dotViewportX + 8)
+            }
           }
           
           return (
             <div
-              className="absolute pointer-events-auto z-50 opacity-100 scale-100 transition-all duration-[120ms] ease-out"
+              className="fixed pointer-events-auto z-50 opacity-100 scale-100 transition-all duration-[120ms] ease-out"
               style={{
-                left: leftStyle,
-                top: `${tooltipPosition.y - 12}px`,
+                left: `${viewportLeft}px`,
+                top: `${viewportTop}px`,
                 transform: transformStyle,
               }}
             >
