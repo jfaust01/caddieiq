@@ -156,7 +156,7 @@ const toParColumn: ColumnDescriptor = {
 }
 const roundScoreColumn: ColumnDescriptor = {
   id: 'roundScore',
-  label: 'Round Score',
+  label: 'Total',
   tooltip: 'Current round score and to-par',
   colClassName: 'w-[120px] sm:w-[140px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
