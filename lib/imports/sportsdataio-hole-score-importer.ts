@@ -127,6 +127,7 @@ export async function importHoleScoresForTournament(
     )
 
     // Step 4: Process each player's rounds and holes
+    let firstMatchedPlayerLogged = false
     for (const sdioPlayer of leaderboard.Players) {
       const playerSourceRecordId = String(sdioPlayer.PlayerID)
 
@@ -140,16 +141,38 @@ export async function importHoleScoresForTournament(
         continue
       }
 
+      // LOG: First matched player raw data
+      if (!firstMatchedPlayerLogged) {
+        console.log('[v0] ===== FIRST MATCHED PLAYER (Scottie Scheffler check) =====')
+        console.log(`[v0] Player: ${sdioPlayer.Name} (ID: ${sdioPlayer.PlayerID})`)
+        console.log(`[v0] Internal Player ID: ${internalPlayer.id}`)
+        console.log(`[v0] Rounds array exists: ${!!sdioPlayer.Rounds}`)
+        console.log(`[v0] Rounds count: ${sdioPlayer.Rounds?.length ?? 0}`)
+        if (sdioPlayer.Rounds && sdioPlayer.Rounds.length > 0) {
+          console.log(`[v0] First round: ${JSON.stringify(sdioPlayer.Rounds[0], null, 2)}`)
+          if (sdioPlayer.Rounds[0].Holes) {
+            console.log(`[v0] First round Holes count: ${sdioPlayer.Rounds[0].Holes.length}`)
+            console.log(`[v0] First hole: ${JSON.stringify(sdioPlayer.Rounds[0].Holes[0], null, 2)}`)
+          } else {
+            console.log(`[v0] First round has NO Holes array`)
+          }
+        }
+        firstMatchedPlayerLogged = true
+      }
+
       summary.playersProcessed++
 
       // Process rounds with hole data
       if (!sdioPlayer.Rounds || sdioPlayer.Rounds.length === 0) {
+        console.log(`[v0] Player ${sdioPlayer.Name}: Skipping - no rounds in response`)
         continue
       }
 
       for (const sdioRound of sdioPlayer.Rounds) {
         // Step 5: Resolve/create Round
         const roundNumber = sdioRound.Number || 1
+        console.log(`[v0] Player ${sdioPlayer.Name}: Looking for Round ${roundNumber}...`)
+        
         const round = await prisma.round.findFirst({
           where: {
             tournamentId: internalTournamentId,
@@ -159,9 +182,11 @@ export async function importHoleScoresForTournament(
         })
 
         if (!round) {
-          console.warn(`[v0] Round ${roundNumber} not found for tournament ${internalTournamentId}`)
+          console.log(`[v0] Player ${sdioPlayer.Name}: Round ${roundNumber} NOT FOUND in database - SKIPPING`)
           continue
         }
+        
+        console.log(`[v0] Player ${sdioPlayer.Name}: Round ${roundNumber} found (ID: ${round.id})`)
 
         // Step 6: Resolve/create PlayerRound
         let playerRound = await prisma.playerRound.findFirst({
@@ -187,37 +212,49 @@ export async function importHoleScoresForTournament(
         }
 
         summary.roundsProcessed++
+        console.log(`[v0] Player ${sdioPlayer.Name}: Processing round ${roundNumber}...`)
 
         // Step 7: Upsert hole scores
         if (!sdioRound.Holes || sdioRound.Holes.length === 0) {
+          console.log(`[v0] Player ${sdioPlayer.Name}: Round ${roundNumber} has NO Holes array - SKIPPING`)
           continue
         }
+
+        console.log(`[v0] Player ${sdioPlayer.Name}: Round ${roundNumber} has ${sdioRound.Holes.length} holes`)
 
         for (const sdioHole of sdioRound.Holes) {
           const holeNumber = sdioHole.Number
           if (!holeNumber || holeNumber < 1 || holeNumber > 18) {
+            const err = `Invalid hole number: ${holeNumber}`
+            console.log(`[v0] REJECTED: ${err}`)
             summary.errors.push({
-              error: `Invalid hole number: ${holeNumber}`,
+              error: err,
               playerRoundId: playerRound.id,
             })
             continue
           }
 
           if (!sdioHole.Par || sdioHole.Par < 3 || sdioHole.Par > 5) {
+            const err = `Invalid par: ${sdioHole.Par} for hole ${holeNumber}`
+            console.log(`[v0] REJECTED: ${err}`)
             summary.errors.push({
-              error: `Invalid par: ${sdioHole.Par} for hole ${holeNumber}`,
+              error: err,
               playerRoundId: playerRound.id,
             })
             continue
           }
 
           if (!sdioHole.Score || sdioHole.Score < 1 || sdioHole.Score > 14) {
+            const err = `Invalid score: ${sdioHole.Score} for hole ${holeNumber}`
+            console.log(`[v0] REJECTED: ${err}`)
             summary.errors.push({
-              error: `Invalid score: ${sdioHole.Score} for hole ${holeNumber}`,
+              error: err,
               playerRoundId: playerRound.id,
             })
             continue
           }
+          
+          console.log(`[v0] ACCEPTED: Hole ${holeNumber} - Score: ${sdioHole.Score}, Par: ${sdioHole.Par}`)
 
           const toPar = sdioHole.ToPar ?? sdioHole.Score - sdioHole.Par
           const dkPoints = calculateDkPoints(sdioHole.Score, sdioHole.Par)
