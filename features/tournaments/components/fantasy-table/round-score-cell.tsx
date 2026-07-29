@@ -67,10 +67,10 @@ export function RoundScoreCell({
 
   return (
     <div className="flex flex-col items-center justify-center gap-0.5">
-      <div className={`text-sm font-semibold font-mono tabular-nums ${toParColorClass}`}>
+      <div className={`text-base font-semibold font-mono tabular-nums ${toParColorClass}`}>
         {toParDisplay}
       </div>
-      <div className="text-xs font-medium font-mono tabular-nums text-foreground">
+      <div className="text-xs font-normal font-mono tabular-nums text-foreground">
         {scoreDisplay}
       </div>
     </div>
