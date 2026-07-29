@@ -3,12 +3,10 @@
 import type { FieldEntrant } from '@/features/tournaments/types'
 
 /**
- * Round Score Cell - displays the current round score and to-par.
+ * Round Score Cell - displays the current round to-par and total score.
  * Matches the Round DNA visualization for the selected round.
  * 
- * Format:
- * Line 1: To par (e.g., "-4") - larger, emphasized
- * Line 2: Total score (e.g., "68") - smaller
+ * Format: +1 (72) - to-par value with total strokes in parentheses
  */
 export function RoundScoreCell({
   entrant,
@@ -66,12 +64,12 @@ export function RoundScoreCell({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-0.5">
+    <div className="flex items-center justify-center">
       <div className={`text-base font-semibold font-mono tabular-nums ${toParColorClass}`}>
         {toParDisplay}
-      </div>
-      <div className="text-xs font-normal font-mono tabular-nums text-foreground">
-        {scoreDisplay}
+        <span className="text-xs font-normal text-muted-foreground ml-1">
+          ({scoreDisplay})
+        </span>
       </div>
     </div>
   )
