@@ -329,17 +329,42 @@ function RoundDnaRow({
                 transform: 'translate(-50%, -100%)',
               }}
             >
-              {/* Minimal compact tooltip */}
-              <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded px-2 py-1 shadow-md w-auto min-w-fit">
-                <div className="flex flex-col gap-1 text-xs whitespace-nowrap">
-                  <div className="font-semibold text-white">H{tooltipHole.holeNumber} Par {tooltipHole.par}</div>
-                  <div className="text-gray-300">Score: <span className="font-semibold text-white">{tooltipHole.score ?? '-'}</span></div>
-                  <div className={`font-semibold ${getToParColor(normalizedResult)}`}>
-                    {golfTerm}: {toParDisplay}
+              {/* Premium glass panel tooltip */}
+              <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-lg shadow-lg">
+                {/* Header */}
+                <div className="px-3 pt-3 pb-2 border-b border-gray-700/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-bold text-white text-sm">Hole {tooltipHole.holeNumber}</h3>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      tooltipHole.par === 3 ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' :
+                      tooltipHole.par === 4 ? 'bg-gray-600/20 text-gray-300 border border-gray-500/30' :
+                      'bg-amber-600/20 text-amber-300 border border-amber-500/30'
+                    }`}>
+                      Par {tooltipHole.par}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Content */}
+                <div className="px-3 py-2 space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Score</span>
+                    <span className="font-semibold text-white">{tooltipHole.score ?? '-'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Result</span>
+                    <span className={`font-semibold ${getResultColor(normalizedResult)}`}>{golfTerm}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">To Par</span>
+                    <span className={`font-semibold ${getToParColor(normalizedResult)}`}>{toParDisplay}</span>
                   </div>
                   {tooltipHole.dkPoints !== undefined && tooltipHole.dkPoints !== null && (
-                    <div className={`font-semibold ${getDkPointsColor(tooltipHole.dkPoints)}`}>
-                      DK: {tooltipHole.dkPoints > 0 ? '+' : ''}{tooltipHole.dkPoints.toFixed(1)}
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">DK Points</span>
+                      <span className={`font-semibold ${getDkPointsColor(tooltipHole.dkPoints)}`}>
+                        {tooltipHole.dkPoints > 0 ? '+' : ''}{tooltipHole.dkPoints.toFixed(1)}
+                      </span>
                     </div>
                   )}
                 </div>
