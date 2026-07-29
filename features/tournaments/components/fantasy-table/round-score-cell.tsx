@@ -65,9 +65,9 @@ export function RoundScoreCell({
 
   return (
     <div className="flex items-center justify-center">
-      <div className={`text-base font-semibold font-mono tabular-nums ${toParColorClass}`}>
+      <div className={`text-[18px] font-semibold font-mono tabular-nums ${toParColorClass}`}>
         {toParDisplay}
-        <span className="text-base font-normal text-muted-foreground ml-1">
+        <span className="text-[18px] font-normal text-muted-foreground ml-1">
           ({scoreDisplay})
         </span>
       </div>
