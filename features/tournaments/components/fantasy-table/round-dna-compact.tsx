@@ -60,32 +60,19 @@ const getDotColor = (status: string): string => {
 
 async function fetchRealHoles(tournamentId: string, playerId: string, round: number): Promise<HoleResult[] | null> {
   try {
-    console.log('[v0] RoundDNA: Fetching real holes from API', { tournamentId, playerId, round })
-    
     const response = await fetch(
       `/api/tournaments/${tournamentId}/players/${playerId}/rounds/${round}/scorecard`
     )
     
     if (!response.ok) {
-      console.error('[v0] RoundDNA: Failed to fetch holes from API', { status: response.status, tournamentId, playerId, round })
       return null
     }
 
     const { data } = await response.json()
     
     if (!data || !data.holes || data.holes.length === 0) {
-      console.log('[v0] RoundDNA: API returned no holes (empty or null)', { tournamentId, playerId, round, hasData: !!data, holesCount: data?.holes?.length })
       return null
     }
-
-    console.log('[v0] RoundDNA: API returned persisted holes from hole_scores table', { 
-      tournamentId, 
-      playerId, 
-      round, 
-      holesCount: data.holes.length,
-      sources: data.holes.map((h: any) => h.source),
-      firstHole: data.holes[0]
-    })
 
     // Convert database hole scores to HoleResult format
     return data.holes.map((hole: any) => {
@@ -120,7 +107,6 @@ async function fetchRealHoles(tournamentId: string, playerId: string, round: num
       }
     })
   } catch (error) {
-    console.error('[v0] Error fetching real holes:', error)
     return null
   }
 }

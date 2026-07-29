@@ -110,7 +110,9 @@ export const RoundDnaCell = memo(function RoundDnaCell({
   }
 
   try {
-    // Generate hole data for display
+    // Prepare round data with real to-par values only
+    // Note: Actual hole data is fetched via RoundDnaCompact's scorecard API
+    // This component displays the aggregated round-level scores
     const roundsData = useMemo<RoundData[]>(() => {
       const roundArray = [
         { round: 1, relToPar: round1RelToPar, dkPoints: round1DkPoints },
@@ -125,7 +127,8 @@ export const RoundDnaCell = memo(function RoundDnaCell({
           round: r.round,
           relToPar: r.relToPar!,
           dkPoints: r.dkPoints,
-          holes: generateMockHoles(r.relToPar!, r.round),
+          // Use placeholder holes array - actual holes fetched from scorecard API
+          holes: generatePlaceholderHoles(r.relToPar!, r.round),
         }))
     }, [round1RelToPar, round2RelToPar, round3RelToPar, round4RelToPar, round1DkPoints, round2DkPoints, round3DkPoints, round4DkPoints])
 
@@ -451,64 +454,25 @@ function RoundDnaRow({
 
 // Utility functions
 
-function generateMockHoles(roundToPar: number, round: number): HoleResult[] {
+/**
+ * Generate placeholder holes for UI layout/rendering.
+ * Real hole data comes from scorecard API in RoundDnaCompact.
+ * This function creates visual placeholders that maintain the correct layout structure
+ * while actual per-hole data is fetched asynchronously from the database.
+ */
+function generatePlaceholderHoles(roundToPar: number, round: number): HoleResult[] {
+  // Create 18 simple placeholder holes for layout
+  // All values are placeholders - actual data from scorecard API
   const holes: HoleResult[] = []
-  let remaining = Math.abs(roundToPar)
-  const isUnder = roundToPar < 0
 
   for (let i = 1; i <= 18; i++) {
-    const par = 4 // Simplified: all par 4s
-    let score = par
-    let status: HoleResult['status'] = 'par'
-    let relativeToPar = 0
-
-    if (remaining > 0) {
-      const random = Math.sin(round * 1000 + i) * 10000
-      const frac = random - Math.floor(random)
-
-      if (frac < 0.02) {
-        relativeToPar = -3
-        status = 'albatross'
-        score = par - 3
-        remaining -= 3
-      } else if (frac < 0.08) {
-        relativeToPar = -2
-        status = 'eagle'
-        score = par - 2
-        remaining -= 2
-      } else if (frac < 0.25) {
-        relativeToPar = -1
-        status = 'birdie'
-        score = par - 1
-        remaining -= 1
-      } else if (frac < 0.55 && remaining > 0) {
-        relativeToPar = 0
-        status = 'par'
-        score = par
-      } else if (frac < 0.75 && (isUnder ? remaining > 0 : remaining > 0)) {
-        relativeToPar = 1
-        status = 'bogey'
-        score = par + 1
-        remaining -= 1
-      } else if (frac < 0.90 && (isUnder ? remaining > 0 : remaining > 1)) {
-        relativeToPar = 2
-        status = 'double'
-        score = par + 2
-        remaining -= 2
-      } else if (remaining > 0) {
-        relativeToPar = 3
-        status = 'triplePlus'
-        score = par + 3
-        remaining -= 3
-      }
-    }
-
+    const par = 4 // Standard par 4 for layout
     holes.push({
       holeNumber: i,
       par,
-      score,
-      relativeToPar,
-      status,
+      score: null,
+      relativeToPar: null,
+      status: 'missing', // Placeholder status
       isCurrentHole: false,
     })
   }
