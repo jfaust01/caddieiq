@@ -34,12 +34,13 @@ export function ScorecardDrawer({
   const drawerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
 
-  // Update selected round when initialRound prop changes
+  // Update selected round only when initialRound changes and is different
+  // Don't override user's round selection
   useEffect(() => {
-    if (initialRound) {
+    if (initialRound && isOpen && selectedPlayerId) {
       setSelectedRound(initialRound)
     }
-  }, [initialRound])
+  }, [initialRound, selectedPlayerId])
 
   // Determine phase based on tournament status
   const phase = useMemo(() => {
