@@ -259,36 +259,35 @@ export async function importHoleScoresForTournament(
         }
 
         // Batch upsert all valid holes for this round
-        for (const hole of validHoles) {
-          const existingHole = await prisma.holeScore.findUnique({
-            where: {
-              playerRoundId_holeNumber: {
-                playerRoundId: playerRound.id,
-                holeNumber: hole.holeNumber,
-              },
-            },
-            select: { id: true },
-          })
+        // First try batch create for new holes, then handle updates
+        try {
+          const createData = validHoles.map((hole) => ({
+            playerRoundId: playerRound.id,
+            holeNumber: hole.holeNumber,
+            score: hole.score,
+            par: hole.par,
+            toPar: hole.toPar,
+            dkPoints: hole.dkPoints,
+            source: 'sportsdataio' as const,
+            externalId: hole.externalId,
+            importedAt: new Date(),
+          }))
 
-          if (existingHole) {
-            await prisma.holeScore.update({
-              where: { id: existingHole.id },
-              data: {
-                score: hole.score,
-                par: hole.par,
-                toPar: hole.toPar,
-                dkPoints: hole.dkPoints,
-                source: 'sportsdataio',
-                externalId: hole.externalId,
-                importedAt: new Date(),
-              },
-            })
-            summary.holesUpdated++
-          } else {
-            await prisma.holeScore.create({
-              data: {
+          // Try batch create - will skip duplicates with skipDuplicates
+          const created = await prisma.holeScore.createMany({
+            data: createData,
+            skipDuplicates: true,
+          })
+          summary.holesInserted += created.count
+
+          // Then update any existing holes with new data
+          for (const hole of validHoles) {
+            const updated = await prisma.holeScore.updateMany({
+              where: {
                 playerRoundId: playerRound.id,
                 holeNumber: hole.holeNumber,
+              },
+              data: {
                 score: hole.score,
                 par: hole.par,
                 toPar: hole.toPar,
@@ -298,7 +297,58 @@ export async function importHoleScoresForTournament(
                 importedAt: new Date(),
               },
             })
-            summary.holesInserted++
+            summary.holesUpdated += updated.count
+          }
+        } catch (err) {
+          // Fallback to individual upserts if batch fails
+          for (const hole of validHoles) {
+            try {
+              const existingHole = await prisma.holeScore.findUnique({
+                where: {
+                  playerRoundId_holeNumber: {
+                    playerRoundId: playerRound.id,
+                    holeNumber: hole.holeNumber,
+                  },
+                },
+                select: { id: true },
+              })
+
+              if (existingHole) {
+                await prisma.holeScore.update({
+                  where: { id: existingHole.id },
+                  data: {
+                    score: hole.score,
+                    par: hole.par,
+                    toPar: hole.toPar,
+                    dkPoints: hole.dkPoints,
+                    source: 'sportsdataio',
+                    externalId: hole.externalId,
+                    importedAt: new Date(),
+                  },
+                })
+                summary.holesUpdated++
+              } else {
+                await prisma.holeScore.create({
+                  data: {
+                    playerRoundId: playerRound.id,
+                    holeNumber: hole.holeNumber,
+                    score: hole.score,
+                    par: hole.par,
+                    toPar: hole.toPar,
+                    dkPoints: hole.dkPoints,
+                    source: 'sportsdataio',
+                    externalId: hole.externalId,
+                    importedAt: new Date(),
+                  },
+                })
+                summary.holesInserted++
+              }
+            } catch (holeErr) {
+              summary.errors.push({
+                error: `Failed to insert hole ${hole.holeNumber}: ${(holeErr as Error).message}`,
+                playerRoundId: playerRound.id,
+              })
+            }
           }
         }
       }
