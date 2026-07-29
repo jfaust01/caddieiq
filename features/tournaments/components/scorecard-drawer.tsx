@@ -296,27 +296,7 @@ export function ScorecardDrawer({
             </button>
           </div>
 
-          {/* Score Display */}
-          <div className="text-right">
-            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-              TO PAR
-            </div>
-            <div className="text-xl font-bold text-emerald-400 mb-2">
-              {selectedPlayer.total !== null && selectedPlayer.total !== undefined
-                ? selectedPlayer.total > 0
-                  ? `+${selectedPlayer.total}`
-                  : selectedPlayer.total === 0
-                    ? 'E'
-                    : selectedPlayer.total
-                : '—'}
-            </div>
-            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-              TOTAL
-            </div>
-            <div className="text-xl font-bold text-emerald-400">
-              {selectedPlayer.totalStrokes || '—'}
-            </div>
-          </div>
+
         </div>
 
         {/* Content */}
