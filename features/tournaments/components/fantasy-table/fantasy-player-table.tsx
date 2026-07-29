@@ -3,7 +3,6 @@
 import React from 'react'
 
 import { useDragScroll } from '@/features/tournaments/hooks/use-drag-scroll'
-import { usePlayerColumnWidth } from '@/features/tournaments/hooks/use-player-column-width'
 import { buildPositionCountMap } from '@/features/tournaments/utils/format-position'
 import type { FieldEntrant } from '@/features/tournaments/types'
 import { type TablePhase, phaseTableConfig } from '@/features/tournaments/config/phase-table-config'
@@ -69,7 +68,6 @@ export function FantasyPlayerTable({
   const config = phaseTableConfig[phase]
   const { columns, footnote } = config
   const scrollContainerRef = useDragScroll({ dragThreshold: 5 })
-  const playerColumnWidth = usePlayerColumnWidth(allEntrants, '.tournament-table-container')
   const positionCountMap = buildPositionCountMap(allEntrants)
 
   const [hasScrolled, setHasScrolled] = React.useState(false)
@@ -108,7 +106,6 @@ export function FantasyPlayerTable({
   return (
     <div
       className="w-full min-w-0 tournament-table-container"
-      style={{ '--player-column-width': playerColumnWidth || '220px' } as React.CSSProperties}
     >
       <div 
         className="relative overflow-hidden rounded-[16px] border bg-[#0D1117]"

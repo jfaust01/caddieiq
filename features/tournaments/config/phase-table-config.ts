@@ -143,7 +143,7 @@ const scoringPlayerColumn: ColumnDescriptor = {
   id: 'player',
   label: 'Players',
   headerKind: 'player',
-  colClassName: '[width:var(--player-column-width,300px)]',
+  colClassName: 'w-[300px]',
   thClassName:
     'px-2 sm:px-3 h-[50px] text-left text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80',
 }
@@ -152,6 +152,13 @@ const toParColumn: ColumnDescriptor = {
   label: 'To Par',
   tooltip: 'Score relative to par',
   colClassName: 'w-[85px] sm:w-[100px]',
+  thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
+}
+const roundScoreColumn: ColumnDescriptor = {
+  id: 'roundScore',
+  label: 'Total',
+  tooltip: 'Current round score and to-par',
+  colClassName: 'w-[120px] sm:w-[140px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 const totalColumn: ColumnDescriptor = {
@@ -273,14 +280,6 @@ const courseFitColumn: ColumnDescriptor = {
   thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER_NUM}`,
 }
 
-const scorecardColumn: ColumnDescriptor = {
-  id: 'scorecard',
-  label: 'Scorecard',
-  tooltip: 'View player scorecard',
-  colClassName: 'w-[50px]',
-  thClassName: `border-l border-white/[0.055] px-1 sm:px-3 ${TH_CENTER}`,
-}
-
 const tournamentFormColumn: ColumnDescriptor = {
   id: 'tournamentForm',
   label: 'Round DNA',
@@ -350,7 +349,7 @@ const liveColumns: ColumnDescriptor[] = [
   posColumn,
   scoringPlayerColumn,
   toParColumn,
-  scorecardColumn,
+  roundScoreColumn,
   tournamentFormColumn,
   aiIntelligenceColumn,
   recentFormLiveColumn,
@@ -469,7 +468,7 @@ const completedColumns: ColumnDescriptor[] = [
   favoritesColumn,
   scoringPlayerColumn,
   toParColumn,
-  scorecardColumn,
+  roundScoreColumn,
   tournamentFormCompletedColumn,
   aiIntelligenceColumn,
   recentFormCompletedColumn,

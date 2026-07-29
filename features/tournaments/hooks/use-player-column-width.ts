@@ -21,6 +21,7 @@ export function usePlayerColumnWidth(
 
   /**
    * Measure rendered player names and calculate column width
+   * Uses both DOM measurements and data to ensure consistent widths
    */
   const measureWidth = useCallback(() => {
     // Clear any pending measure
@@ -34,21 +35,53 @@ export function usePlayerColumnWidth(
         // Find all player name elements in the DOM
         const playerNameElements = document.querySelectorAll('[data-player-name]')
         
-        if (playerNameElements.length === 0) {
+        if (playerNameElements.length === 0 || entrants.length === 0) {
           // Fallback: no names rendered yet, use minimum width
           setColumnWidth('220px')
           return
         }
 
-        // Measure all visible player names
-        let maxNameWidth = 0
+        // Measure all visible player names in the DOM
+        let maxDomNameWidth = 0
         playerNameElements.forEach((el) => {
           const rect = el.getBoundingClientRect()
           const width = rect.width
-          if (width > maxNameWidth) {
-            maxNameWidth = width
+          if (width > maxDomNameWidth) {
+            maxDomNameWidth = width
           }
         })
+
+        // Also check the longest name in the data to ensure consistent sizing
+        // This ensures Favorites table and main table have same width even if
+        // different sets of players are visible
+        let maxDataNameLength = 0
+        let longestName = ''
+        entrants.forEach((entrant) => {
+          if (entrant.playerName.length > maxDataNameLength) {
+            maxDataNameLength = entrant.playerName.length
+            longestName = entrant.playerName
+          }
+        })
+
+        // Use the larger of DOM-measured or data-calculated width
+        let maxNameWidth = maxDomNameWidth
+
+        // If data suggests names might be longer, measure the longest name
+        if (maxDataNameLength > playerNameElements.length / 2) {
+          // Create a temporary element to measure the longest name
+          const tempEl = document.createElement('span')
+          tempEl.className = 'text-sm font-medium'
+          tempEl.textContent = longestName
+          tempEl.style.position = 'absolute'
+          tempEl.style.visibility = 'hidden'
+          tempEl.style.whiteSpace = 'nowrap'
+          document.body.appendChild(tempEl)
+          
+          const tempWidth = tempEl.getBoundingClientRect().width
+          maxNameWidth = Math.max(maxNameWidth, tempWidth)
+          
+          document.body.removeChild(tempEl)
+        }
 
         // Constants
         const HEADSHOT_WIDTH = 44 // 11 * 4 = 44px (h-11 w-11 in Tailwind)
@@ -69,7 +102,7 @@ export function usePlayerColumnWidth(
         setColumnWidth('220px')
       }
     }, 100) // 100ms delay for DOM to settle
-  }, [])
+  }, [entrants])
 
   /**
    * Set up ResizeObserver to watch container and remeasure on resize

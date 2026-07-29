@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { ExpandedPlayerScorecard } from './expanded-player-scorecard'
 import { ScorecardErrorBoundary } from './scorecard-error-boundary'
+import { ScorecardSkeleton } from './scorecard-skeleton'
 import type { PlayerRoundScorecardData } from '@/features/tournaments/actions/get-player-round-scorecard'
 
 interface ScorecardLoaderProps {
@@ -10,6 +11,8 @@ interface ScorecardLoaderProps {
   playerName: string
   tournamentId: string
   roundNumber: number
+  /** Whether the scorecard drawer is open. Only fetches when true. */
+  isOpen: boolean
   /** Tournament phase: scheduled, live, or completed. */
   phase?: 'scheduled' | 'live' | 'completed'
   /** Whether this scorecard is being rendered inside a drawer (affects layout selection). */
@@ -25,6 +28,7 @@ export function ScorecardLoader({
   playerName,
   tournamentId,
   roundNumber,
+  isOpen,
   phase = 'scheduled',
   isDrawerContext = false,
   onRoundChange,
@@ -32,6 +36,10 @@ export function ScorecardLoader({
   const [state, setState] = useState<LoadingState>('idle')
   const [data, setData] = useState<PlayerRoundScorecardData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  
+  // Track request ID to prevent race conditions
+  const requestIdRef = useRef(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Validate required props
   if (!playerId || !playerName || !tournamentId || roundNumber === undefined) {
@@ -54,13 +62,22 @@ export function ScorecardLoader({
   }
 
   const fetchScorecard = useCallback(async () => {
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Increment request ID to prevent race conditions
+    const currentRequestId = ++requestIdRef.current
+
     // Reset state
     setState('loading')
     setError(null)
     setData(null)
 
-    // Create abort controller with 10 second timeout
+    // Create new abort controller with 10 second timeout
     const controller = new AbortController()
+    abortControllerRef.current = controller
     const timeoutId = setTimeout(() => controller.abort(), 10000)
 
     try {
@@ -69,6 +86,11 @@ export function ScorecardLoader({
 
       clearTimeout(timeoutId)
 
+      // Ignore response if a newer request has been made
+      if (currentRequestId !== requestIdRef.current) {
+        return
+      }
+
       if (!response.ok) {
         setState('error')
         setError('Unable to load scorecard.')
@@ -76,6 +98,11 @@ export function ScorecardLoader({
       }
 
       const json = await response.json()
+
+      // Double-check request ID before updating state
+      if (currentRequestId !== requestIdRef.current) {
+        return
+      }
 
       if (!json.data) {
         setState('empty')
@@ -88,6 +115,11 @@ export function ScorecardLoader({
     } catch (err) {
       clearTimeout(timeoutId)
 
+      // Ignore errors from aborted or outdated requests
+      if (currentRequestId !== requestIdRef.current) {
+        return
+      }
+
       if (err instanceof Error && err.name === 'AbortError') {
         setState('error')
         setError('Scorecard request timed out.')
@@ -99,42 +131,33 @@ export function ScorecardLoader({
     }
   }, [playerId, roundNumber, tournamentId])
 
-  // Fetch when props change
+  // Only fetch when drawer is open and all required IDs exist
   useEffect(() => {
+    // Explicit guard: do not fetch unless drawer is open
+    if (!isOpen || !tournamentId || !playerId || roundNumber === undefined) {
+      return
+    }
+
     fetchScorecard()
-  }, [fetchScorecard])
 
-  // Always show the scorecard grid, even with empty data
-  // Generate empty scorecard structure if data is null, using courseHoles from API
-  const displayData =
-    data ||
-    ({
-      playerName,
-      roundNumber,
-      totalStrokes: null,
-      totalToPar: null,
-      totalDkPoints: null,
-      courseHoles: data?.courseHoles || Array.from({ length: 18 }, (_, i) => ({
-        holeNumber: i + 1,
-        par: null,
-      })),
-      holes: Array.from({ length: 18 }, (_, i) => ({
-        holeNumber: i + 1,
-        score: null,
-        par: null,
-        toPar: null,
-        dkPoints: null,
-      })),
-    } as PlayerRoundScorecardData)
+    // Cleanup: cancel request on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [fetchScorecard, isOpen, tournamentId, playerId, roundNumber])
 
+  // Only render scorecard when data is actually loaded
   const isLoading = state === 'loading'
 
-  return (
-    <div>
-      <ScorecardErrorBoundary playerName={playerName}>
-        <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} phase={phase} isDrawerContext={isDrawerContext} roundNumber={roundNumber} onRoundChange={onRoundChange} onRoundSelect={onRoundChange} />
-      </ScorecardErrorBoundary>
-      {state === 'error' && (
+  // Do not render scorecard UI until data is loaded
+  if (!data) {
+    if (isLoading) {
+      return <ScorecardSkeleton />
+    }
+    if (state === 'error') {
+      return (
         <div className="mt-4 p-3 bg-muted/20 rounded">
           <div className="text-center text-xs text-muted-foreground mb-2">
             {error || 'Unable to load scorecard data.'}
@@ -148,7 +171,16 @@ export function ScorecardLoader({
             </button>
           </div>
         </div>
-      )}
+      )
+    }
+    return null
+  }
+
+  return (
+    <div>
+      <ScorecardErrorBoundary playerName={playerName}>
+        <ExpandedPlayerScorecard data={data} isLoading={isLoading} phase={phase} isDrawerContext={isDrawerContext} roundNumber={roundNumber} onRoundChange={onRoundChange} onRoundSelect={onRoundChange} />
+      </ScorecardErrorBoundary>
     </div>
   )
 }

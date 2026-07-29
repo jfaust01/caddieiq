@@ -16,7 +16,15 @@ interface ScorecardDrawerProps {
   tournamentId: string
   visiblePlayers: FieldEntrant[]
   status?: string | null
-  initialRound?: number
+  initialRound?: number | null
+}
+
+interface ScorecardState {
+  tournamentId: string
+  playerId: string
+  playerName: string
+  selectedRound: number
+  isOpen: boolean
 }
 
 export function ScorecardDrawer({
@@ -30,16 +38,60 @@ export function ScorecardDrawer({
   status,
   initialRound,
 }: ScorecardDrawerProps) {
-  const [selectedRound, setSelectedRound] = useState<number>(initialRound || 1)
+  // Single source of truth for scorecard state
+  const [scorecardState, setScorecardState] = useState<ScorecardState | null>(null)
+  
+  // AbortController refs for request cancellation
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const requestIdRef = useRef(0)
+  
   const drawerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
 
-  // Update selected round when initialRound changes or drawer opens
+  // Sync scorecard state when isOpen or selectedPlayerId changes
+  // This ensures state is set BEFORE the modal renders
   useEffect(() => {
-    if (initialRound !== undefined && isOpen) {
-      setSelectedRound(initialRound)
+    if (!isOpen) {
+      setScorecardState(null)
+      return
     }
-  }, [initialRound, isOpen])
+
+    if (!selectedPlayerId) {
+      setScorecardState(null)
+      return
+    }
+
+    // Only proceed if initialRound is explicitly set
+    if (initialRound === null || initialRound === undefined) {
+      setScorecardState(null)
+      return
+    }
+
+    // Find the selected player
+    const player = players.find((p) => p.playerId === selectedPlayerId)
+    if (!player) {
+      setScorecardState(null)
+      return
+    }
+
+    // Set the complete state object atomically
+    setScorecardState({
+      tournamentId,
+      playerId: selectedPlayerId,
+      playerName: player.playerName,
+      selectedRound: initialRound,
+      isOpen: true,
+    })
+  }, [isOpen, selectedPlayerId, tournamentId, players, initialRound])
+
+  // Separate effect to handle round changes without resetting player
+  useEffect(() => {
+    if (scorecardState && initialRound !== undefined && initialRound !== scorecardState.selectedRound) {
+      setScorecardState((prev) =>
+        prev ? { ...prev, selectedRound: initialRound } : null
+      )
+    }
+  }, [initialRound, scorecardState?.playerId])
 
   // Determine phase based on tournament status
   const phase = useMemo(() => {
@@ -53,36 +105,36 @@ export function ScorecardDrawer({
     return 'scheduled'
   }, [status])
 
-  // Find the selected player
+  // Get the selected player from the centralized state
   const selectedPlayer = useMemo(
-    () => players.find((p) => p.playerId === selectedPlayerId),
-    [selectedPlayerId, players]
+    () => scorecardState ? players.find((p) => p.playerId === scorecardState.playerId) : null,
+    [scorecardState?.playerId, players]
   )
 
   // Find the index in visible players for navigation
   const visibleIndex = useMemo(
-    () => visiblePlayers.findIndex((p) => p.playerId === selectedPlayerId),
-    [selectedPlayerId, visiblePlayers]
+    () => scorecardState ? visiblePlayers.findIndex((p) => p.playerId === scorecardState.playerId) : -1,
+    [scorecardState?.playerId, visiblePlayers]
   )
 
   const canGoPrevious = visibleIndex > 0
   const canGoNext = visibleIndex < visiblePlayers.length - 1
 
   const handlePreviousPlayer = useCallback(() => {
-    if (canGoPrevious) {
+    if (canGoPrevious && scorecardState) {
       const previousPlayer = visiblePlayers[visibleIndex - 1]
-      setSelectedRound(1)
+      // Set state for new player with round 1
       onPlayerChange(previousPlayer.playerId)
     }
-  }, [canGoPrevious, visibleIndex, visiblePlayers, onPlayerChange])
+  }, [canGoPrevious, visibleIndex, visiblePlayers, onPlayerChange, scorecardState])
 
   const handleNextPlayer = useCallback(() => {
-    if (canGoNext) {
+    if (canGoNext && scorecardState) {
       const nextPlayer = visiblePlayers[visibleIndex + 1]
-      setSelectedRound(1)
+      // Set state for new player with round 1
       onPlayerChange(nextPlayer.playerId)
     }
-  }, [canGoNext, visibleIndex, visiblePlayers, onPlayerChange])
+  }, [canGoNext, visibleIndex, visiblePlayers, onPlayerChange, scorecardState])
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -125,10 +177,14 @@ export function ScorecardDrawer({
     onOpenChange(false)
   }, [onOpenChange])
 
-  if (!isOpen) return null
-
-  if (!selectedPlayer) {
+  if (!isOpen || !scorecardState || !selectedPlayer) {
     return null
+  }
+
+  const handleRoundChange = (round: number) => {
+    setScorecardState((prev) =>
+      prev ? { ...prev, selectedRound: round } : null
+    )
   }
 
   return (
@@ -240,27 +296,7 @@ export function ScorecardDrawer({
             </button>
           </div>
 
-          {/* Score Display */}
-          <div className="text-right">
-            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-              TO PAR
-            </div>
-            <div className="text-xl font-bold text-emerald-400 mb-2">
-              {selectedPlayer.total !== null && selectedPlayer.total !== undefined
-                ? selectedPlayer.total > 0
-                  ? `+${selectedPlayer.total}`
-                  : selectedPlayer.total === 0
-                    ? 'E'
-                    : selectedPlayer.total
-                : '—'}
-            </div>
-            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-              TOTAL
-            </div>
-            <div className="text-xl font-bold text-emerald-400">
-              {selectedPlayer.totalStrokes || '—'}
-            </div>
-          </div>
+
         </div>
 
         {/* Content */}
@@ -268,13 +304,15 @@ export function ScorecardDrawer({
           <div className="px-4 lg:px-6 py-4 lg:py-6 w-full min-w-0 max-w-full">
             <ScorecardErrorBoundaryV2 playerName={selectedPlayer.playerName}>
               <ScorecardLoader
-                playerId={selectedPlayer.playerId}
-                playerName={selectedPlayer.playerName}
-                tournamentId={tournamentId}
-                roundNumber={selectedRound}
+                key={`${scorecardState.tournamentId}-${scorecardState.playerId}-${scorecardState.selectedRound}`}
+                playerId={scorecardState.playerId}
+                playerName={scorecardState.playerName}
+                tournamentId={scorecardState.tournamentId}
+                roundNumber={scorecardState.selectedRound}
+                isOpen={scorecardState.isOpen}
                 phase={phase}
                 isDrawerContext
-                onRoundChange={setSelectedRound}
+                onRoundChange={handleRoundChange}
               />
             </ScorecardErrorBoundaryV2>
           </div>
