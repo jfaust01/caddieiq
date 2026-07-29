@@ -8,16 +8,15 @@ import { cn } from '@/lib/utils'
 interface ExpandedPlayerScorecardProps {
   data: PlayerRoundScorecardData
   isLoading?: boolean
-  players?: Array<{
-    id: string
-    playerName: string
-  }>
+  players?: FieldEntrant[]
   currentPlayerIndex?: number
-  onPlayerChange?: (index: number) => void
-  /** Tournament phase for future layout routing. */
+  onPlayerChange?: (playerId: string) => void
+  /** Tournament phase: scheduled, live, or completed. */
   phase?: 'scheduled' | 'live' | 'completed'
-  /** Force mobile layout when rendered inside a drawer. */
+  /** Whether this scorecard is inside a drawer. */
   isDrawerContext?: boolean
+  /** The round number being displayed. */
+  roundNumber?: number
 }
 
 export function ExpandedPlayerScorecard({
@@ -28,6 +27,7 @@ export function ExpandedPlayerScorecard({
   onPlayerChange,
   phase = 'scheduled',
   isDrawerContext = false,
+  roundNumber = 1,
 }: ExpandedPlayerScorecardProps) {
 
 
@@ -73,6 +73,7 @@ export function ExpandedPlayerScorecard({
       {/* Desktop Layout - lg and above, or in drawer context */}
       <div className={cn(isDrawerContext ? 'block' : 'hidden lg:block', 'h-full min-h-0')}>
         <ScorecardDesktopLayout
+          currentRound={roundNumber}
           data={data}
           frontNine={frontNine}
           backNine={backNine}

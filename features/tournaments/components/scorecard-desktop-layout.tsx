@@ -3,8 +3,10 @@
 import { PlayerRoundScorecardData } from '../actions/get-player-round-scorecard'
 import { NineHoleScorecard } from './nine-hole-scorecard'
 import { ScorecardLegend } from './scorecard-legend'
+import { ScorecardRoundSelector } from './scorecard-components/scorecard-round-selector'
 
 interface DesktopScorecardLayoutProps {
+  currentRound: number
   data: PlayerRoundScorecardData
   frontNine: Array<{ holeNumber: number; score: number | null; par: number | null; toPar: number | null; dkPoints: number | null }>
   backNine: Array<{ holeNumber: number; score: number | null; par: number | null; toPar: number | null; dkPoints: number | null }>
@@ -15,6 +17,7 @@ interface DesktopScorecardLayoutProps {
 }
 
 export function ScorecardDesktopLayout({
+  currentRound,
   data,
   frontNine,
   backNine,
@@ -44,6 +47,11 @@ export function ScorecardDesktopLayout({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-0">
+      {/* Round Selector */}
+      <div className="flex-shrink-0 px-4 py-4">
+        <ScorecardRoundSelector currentRound={currentRound} phase="completed" />
+      </div>
+
       {/* Main Content Grid */}
       <div className="min-h-0 flex-1 overflow-y-auto mt-5">
         <div className="min-w-0">

@@ -132,7 +132,7 @@ export function ScorecardLoader({
   return (
     <div>
       <ScorecardErrorBoundary playerName={playerName}>
-        <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} phase={phase} isDrawerContext={isDrawerContext} onRoundChange={onRoundChange} />
+        <ExpandedPlayerScorecard data={displayData} isLoading={isLoading} phase={phase} isDrawerContext={isDrawerContext} roundNumber={roundNumber} onRoundChange={onRoundChange} />
       </ScorecardErrorBoundary>
       {state === 'error' && (
         <div className="mt-4 p-3 bg-muted/20 rounded">
