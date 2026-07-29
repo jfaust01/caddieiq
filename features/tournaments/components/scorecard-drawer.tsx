@@ -274,6 +274,7 @@ export function ScorecardDrawer({
                 roundNumber={selectedRound}
                 phase={phase}
                 isDrawerContext
+                onRoundChange={setSelectedRound}
               />
             </ScorecardErrorBoundaryV2>
           </div>

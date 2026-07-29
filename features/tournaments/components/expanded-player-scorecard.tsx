@@ -18,6 +18,8 @@ interface ExpandedPlayerScorecardProps {
   phase?: 'scheduled' | 'live' | 'completed'
   /** Force mobile layout when rendered inside a drawer. */
   isDrawerContext?: boolean
+  /** Callback when round tab is clicked */
+  onRoundChange?: (round: number) => void
 }
 
 export function ExpandedPlayerScorecard({
@@ -28,6 +30,7 @@ export function ExpandedPlayerScorecard({
   onPlayerChange,
   phase = 'scheduled',
   isDrawerContext = false,
+  onRoundChange,
 }: ExpandedPlayerScorecardProps) {
 
 
@@ -78,7 +81,10 @@ export function ExpandedPlayerScorecard({
         <ScorecardDesktopLayout
           data={data}
           selectedRound={selectedRound}
-          onRoundChange={setSelectedRound}
+          onRoundChange={(round) => {
+            setSelectedRound(round)
+            onRoundChange?.(round)
+          }}
           frontNine={frontNine}
           backNine={backNine}
           outTotal={outTotal}
