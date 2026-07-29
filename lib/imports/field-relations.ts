@@ -75,6 +75,145 @@ function resolveYear(row: SdioTournament): number | undefined {
   return undefined
 }
 
+export interface SingleTournamentFieldImportResult extends FieldImportSummary {
+  /** Total TournamentField rows found for this tournament before import */
+  preImportFieldRowCount: number
+  /** Total TournamentField rows after import */
+  postImportFieldRowCount: number
+  /** sourceRecordId values that were successfully written */
+  sourceRecordIdWritten: number
+  /** sourceRecordId values that remain NULL after import */
+  sourceRecordIdStillNull: number
+}
+
+/**
+ * Import tournament field for a single, specific tournament. Fetches the latest
+ * field from SportsDataIO, updates all TournamentField rows for that tournament,
+ * and verifies sourceRecordId was persisted by querying the database immediately
+ * after the import.
+ */
+export async function importSingleTournamentField(
+  tournamentId: string,
+  options: ImportFieldsOptions = {},
+): Promise<SingleTournamentFieldImportResult> {
+  const prisma = options.prisma ?? prismaClient
+  const provider = options.provider ?? SportsDataProvider.fromEnv()
+  const repository = options.repository ?? getFieldRepository()
+  const maxNotes = options.maxNotes ?? 25
+
+  const result: SingleTournamentFieldImportResult = {
+    tournamentsConsidered: 0,
+    tournamentsWithField: 0,
+    entriesSeen: 0,
+    entriesInvalid: 0,
+    entriesUnmatchedPlayer: 0,
+    inserted: 0,
+    updated: 0,
+    failed: 0,
+    notes: [],
+    preImportFieldRowCount: 0,
+    postImportFieldRowCount: 0,
+    sourceRecordIdWritten: 0,
+    sourceRecordIdStillNull: 0,
+  }
+  const note = (message: string) => {
+    if (result.notes.length < maxNotes) result.notes.push(message)
+  }
+
+  // Get the tournament
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { id: true, slug: true, name: true, startDate: true, externalId: true },
+  })
+
+  if (!tournament) {
+    throw new Error(`Tournament ${tournamentId} not found`)
+  }
+
+  result.tournamentsConsidered = 1
+
+  // Count pre-import field rows
+  result.preImportFieldRowCount = await prisma.tournamentField.count({
+    where: { tournamentId: tournament.id },
+  })
+
+  // Get provider tournament ID from externalId
+  const providerId = parseInt(tournament.externalId || '0', 10)
+  if (providerId === 0) {
+    throw new Error(`Tournament ${tournament.name} has no externalId (SportsDataIO ID)`)
+  }
+
+  // Fetch field from provider
+  let rawPlayers: SdioLeaderboardPlayer[] = []
+  let tournamentIsOver = false
+  try {
+    const response = await provider.getLeaderboard(String(providerId))
+    rawPlayers = response.data.Players ?? []
+    tournamentIsOver = response.data.Tournament?.IsOver === true
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch leaderboard for "${tournament.name}" (ID ${providerId}): ${(error as Error).message}`,
+    )
+  }
+
+  if (rawPlayers.length === 0) {
+    throw new Error(`No players returned from provider for tournament "${tournament.name}"`)
+  }
+
+  result.tournamentsWithField = 1
+  result.entriesSeen = rawPlayers.length
+
+  // Map to domain entries
+  const mapped = rawPlayers.map((row) => mapSportsDataFieldEntry(row, { tournamentIsOver }))
+
+  // Validate entries
+  const { valid, dropped, duplicates } = validateFieldEntries(mapped)
+  result.entriesInvalid = dropped + duplicates
+
+  // Load player slug → id map
+  const players = await prisma.player.findMany({
+    where: { deletedAt: null },
+    select: { id: true, slug: true },
+  })
+  const playerIdBySlug = new Map(players.map((p) => [p.slug, p.id]))
+
+  // Resolve entries
+  const resolved: ResolvedFieldEntry[] = []
+  for (const entry of valid) {
+    const playerId = playerIdBySlug.get(entry.playerSlug)
+    if (!playerId) {
+      result.entriesUnmatchedPlayer += 1
+      note(`Unmatched player "${entry.playerName}"`)
+      continue
+    }
+    resolved.push({ tournamentId: tournament.id, playerId, entry })
+  }
+
+  // Persist using fixed repository (now with sourceRecordId)
+  const persistResult = await repository.bulkUpsert(resolved)
+  result.inserted = persistResult.inserted
+  result.updated = persistResult.updated
+  result.failed = persistResult.failed
+  for (const err of persistResult.errors) {
+    note(`Persist failed (${err.reference ?? '?'}): ${err.error.message}`)
+  }
+
+  // IMMEDIATELY VERIFY: Query database to check sourceRecordId was persisted
+  result.postImportFieldRowCount = await prisma.tournamentField.count({
+    where: { tournamentId: tournament.id },
+  })
+
+  const verification = await prisma.tournamentField.findMany({
+    where: { tournamentId: tournament.id },
+    select: { sourceRecordId: true },
+  })
+
+  result.sourceRecordIdWritten = verification.filter((f) => f.sourceRecordId !== null).length
+  result.sourceRecordIdStillNull = verification.filter((f) => f.sourceRecordId === null).length
+
+  return result
+}
+
 /**
  * Import tournament fields for every tournament in our database that can be
  * matched to a provider tournament id (by slug + year). Idempotent: each entry

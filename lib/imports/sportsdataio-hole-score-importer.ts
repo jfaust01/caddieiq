@@ -153,7 +153,7 @@ export async function importHoleScoresForTournament(
         const round = await prisma.round.findFirst({
           where: {
             tournamentId: internalTournamentId,
-            number: roundNumber,
+            roundNumber: roundNumber,
           },
           select: { id: true },
         })
