@@ -76,8 +76,6 @@ export function ExpandedPlayerScorecard({
       <div className={cn(isDrawerContext ? 'block' : 'hidden lg:block', 'h-full min-h-0')}>
         <ScorecardDesktopLayout
           data={data}
-          selectedRound={data.roundNumber}
-          onRoundChange={() => {}}
           frontNine={frontNine}
           backNine={backNine}
           outTotal={outTotal}
