@@ -51,8 +51,8 @@ export function ScorecardDesktopLayout({
         <div className="min-w-0">
           {/* Scorecards */}
           <div className="min-w-0 flex flex-col gap-4">
-            {/* Front 9 and Back 9 Side by Side */}
-            <div className="grid min-w-0 grid-cols-2 gap-4">
+            {/* Front 9 and Back 9 Stacked */}
+            <div className="flex min-w-0 flex-col gap-4">
               <NineHoleScorecard
                 label="FRONT 9"
                 holes={frontNine}
