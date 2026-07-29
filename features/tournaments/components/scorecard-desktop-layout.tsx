@@ -3,7 +3,6 @@
 import { PlayerRoundScorecardData } from '../actions/get-player-round-scorecard'
 import { NineHoleScorecard } from './nine-hole-scorecard'
 import { ScorecardLegend } from './scorecard-legend'
-import { cn } from '@/lib/utils'
 
 interface DesktopScorecardLayoutProps {
   data: PlayerRoundScorecardData
@@ -45,27 +44,6 @@ export function ScorecardDesktopLayout({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-0">
-
-      {/* Round Tabs */}
-      <div className="flex-shrink-0 px-0 mt-6">
-        <div className="w-[360px] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] grid grid-cols-4">
-          {[1, 2, 3, 4].map((round) => (
-            <button
-              key={round}
-              onClick={() => onRoundChange(round)}
-              className={cn(
-                'py-3 px-4 text-sm font-medium transition-colors border-r border-white/[0.05] last:border-r-0',
-                selectedRound === round
-                  ? 'bg-emerald-500/15 text-emerald-300'
-                  : 'text-white/60 hover:text-white'
-              )}
-            >
-              R{round}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Main Content Grid */}
       <div className="min-h-0 flex-1 overflow-y-auto mt-5">
         <div className="min-w-0">
@@ -132,7 +110,7 @@ function StatSegment({
 
   return (
     <div className="flex flex-col items-center justify-center py-3 px-2">
-      <div className={cn('text-lg font-semibold tabular-nums', valueColor)}>
+      <div className={`text-lg font-semibold tabular-nums ${valueColor}`}>
         {value}
       </div>
       <div className="text-xs text-white/60 uppercase tracking-widest mt-1">
