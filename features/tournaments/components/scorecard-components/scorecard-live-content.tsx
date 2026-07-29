@@ -1,7 +1,7 @@
 'use client'
 
 import { ScorecardMetricCard } from './scorecard-metric-card'
-import { ScorecardRoundTabs } from './scorecard-round-tabs'
+import { ScorecardRoundSelector } from './scorecard-round-selector'
 import { ScorecardNineHoleCard } from './scorecard-nine-hole-card'
 import { ScorecardLegend } from './scorecard-legend'
 import { ScorecardSummaryStrip } from './scorecard-summary-strip'
@@ -18,8 +18,7 @@ interface HoleData {
 }
 
 interface ScorecardLiveContentProps {
-  selectedRound: number
-  onSelectRound: (round: number) => void
+  currentRound: number
   holes: HoleData[]
   position: string | null
   positionMovement?: string
@@ -47,8 +46,7 @@ interface ScorecardLiveContentProps {
  * Updates are only shown when backed by real data.
  */
 export function ScorecardLiveContent({
-  selectedRound,
-  onSelectRound,
+  currentRound,
   holes,
   position,
   positionMovement,
@@ -135,14 +133,8 @@ export function ScorecardLiveContent({
       {/* Divider */}
       <div className="border-t border-white/[0.05]" />
 
-      {/* Round Tabs */}
-      <ScorecardRoundTabs
-        selectedRound={selectedRound}
-        onSelectRound={onSelectRound}
-        phase="live"
-        currentRound={currentRound}
-        isLoading={isLoading}
-      />
+      {/* Round Selector */}
+      <ScorecardRoundSelector currentRound={currentRound} phase="live" />
 
       {/* Live Scorecard - Front 9 and Back 9 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

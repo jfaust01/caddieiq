@@ -34,12 +34,12 @@ export function ScorecardDrawer({
   const drawerRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
 
-  // Update selected round when initialRound prop changes
+  // Update selected round when initialRound changes or drawer opens
   useEffect(() => {
-    if (initialRound) {
+    if (initialRound !== undefined && isOpen) {
       setSelectedRound(initialRound)
     }
-  }, [initialRound])
+  }, [initialRound, isOpen])
 
   // Determine phase based on tournament status
   const phase = useMemo(() => {
@@ -240,50 +240,25 @@ export function ScorecardDrawer({
             </button>
           </div>
 
-          {/* Round Selector and Score Display */}
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                ROUND
-              </div>
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4].map((round) => (
-                  <button
-                    key={round}
-                    onClick={() => setSelectedRound(round)}
-                    className={cn(
-                      'w-9 h-9 rounded border text-xs font-semibold transition-all',
-                      selectedRound === round
-                        ? 'bg-emerald-500/30 border-emerald-500/60 text-emerald-400'
-                        : 'bg-white/5 border-white/[0.15] text-gray-300 hover:bg-white/10'
-                    )}
-                  >
-                    {round}
-                  </button>
-                ))}
-              </div>
+          {/* Score Display */}
+          <div className="text-right">
+            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              TO PAR
             </div>
-
-            {/* Score Display */}
-            <div className="text-right">
-              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                TO PAR
-              </div>
-              <div className="text-xl font-bold text-emerald-400 mb-2">
-                {selectedPlayer.total !== null && selectedPlayer.total !== undefined
-                  ? selectedPlayer.total > 0
-                    ? `+${selectedPlayer.total}`
-                    : selectedPlayer.total === 0
-                      ? 'E'
-                      : selectedPlayer.total
-                  : '—'}
-              </div>
-              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                TOTAL
-              </div>
-              <div className="text-xl font-bold text-emerald-400">
-                {selectedPlayer.totalStrokes || '—'}
-              </div>
+            <div className="text-xl font-bold text-emerald-400 mb-2">
+              {selectedPlayer.total !== null && selectedPlayer.total !== undefined
+                ? selectedPlayer.total > 0
+                  ? `+${selectedPlayer.total}`
+                  : selectedPlayer.total === 0
+                    ? 'E'
+                    : selectedPlayer.total
+                : '—'}
+            </div>
+            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              TOTAL
+            </div>
+            <div className="text-xl font-bold text-emerald-400">
+              {selectedPlayer.totalStrokes || '—'}
             </div>
           </div>
         </div>
@@ -299,6 +274,7 @@ export function ScorecardDrawer({
                 roundNumber={selectedRound}
                 phase={phase}
                 isDrawerContext
+                onRoundChange={setSelectedRound}
               />
             </ScorecardErrorBoundaryV2>
           </div>

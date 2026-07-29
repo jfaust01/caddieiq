@@ -1,7 +1,7 @@
 'use client'
 
 import { ScorecardMetricCard } from './scorecard-metric-card'
-import { ScorecardRoundTabs } from './scorecard-round-tabs'
+import { ScorecardRoundSelector } from './scorecard-round-selector'
 import { ScorecardNineHoleCard } from './scorecard-nine-hole-card'
 import { ScorecardLegend } from './scorecard-legend'
 import { ScorecardSummaryStrip } from './scorecard-summary-strip'
@@ -16,9 +16,7 @@ interface HoleData {
 }
 
 interface ScorecardCompletedContentProps {
-  selectedRound: number
-  onSelectRound: (round: number) => void
-  roundScores?: Record<number, number | null>
+  currentRound: number
   holes: HoleData[]
   finalPosition: string | null
   positionLabel?: string
@@ -42,9 +40,7 @@ interface ScorecardCompletedContentProps {
  * Displays all hole-by-hole scoring with summary statistics.
  */
 export function ScorecardCompletedContent({
-  selectedRound,
-  onSelectRound,
-  roundScores,
+  currentRound,
   holes,
   finalPosition,
   positionLabel,
@@ -104,14 +100,8 @@ export function ScorecardCompletedContent({
       {/* Divider */}
       <div className="border-t border-white/[0.05]" />
 
-      {/* Round Tabs */}
-      <ScorecardRoundTabs
-        selectedRound={selectedRound}
-        onSelectRound={onSelectRound}
-        phase="completed"
-        roundScores={roundScores}
-        isLoading={isLoading}
-      />
+      {/* Round Selector */}
+      <ScorecardRoundSelector currentRound={currentRound} phase="completed" />
 
       {/* Completed Scorecard - Front 9 and Back 9 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

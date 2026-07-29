@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import {
   Dialog,
@@ -22,6 +22,8 @@ interface PlayerScorecardModalProps {
   visiblePlayers: FieldEntrant[]
   /** Tournament status for routing to phase-specific scorecard. */
   status?: string | null
+  /** Initial round to display when modal opens. */
+  initialRound?: number
 }
 
 export function PlayerScorecardModal({
@@ -33,8 +35,14 @@ export function PlayerScorecardModal({
   tournamentId,
   visiblePlayers,
   status,
+  initialRound = 1,
 }: PlayerScorecardModalProps) {
-  const [selectedRound, setSelectedRound] = useState<number>(1)
+  const [selectedRound, setSelectedRound] = useState<number>(initialRound)
+
+  // Update round when initialRound prop changes (e.g., when clicking Round DNA chart)
+  useEffect(() => {
+    setSelectedRound(initialRound)
+  }, [initialRound])
 
   // Determine phase based on tournament status
   const phase = useMemo(() => {

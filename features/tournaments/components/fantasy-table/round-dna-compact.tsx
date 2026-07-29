@@ -61,9 +61,9 @@ const getDotColorFromNormalizedResult = (normalizedResult: number | null): strin
   // Par (gray)
   if (level === 0) return '#6B7280' // gray
   
-  // Over par (red/orange shades)
-  if (level === 1) return '#F97316' // amber/red
-  if (level === 2) return '#FF8C42' // orange
+  // Over par (red shades) - all positive scores use red to match to-par styling
+  if (level === 1) return '#EF4444' // red (matches to-par + color)
+  if (level === 2) return '#EF4444' // red
   if (level >= 3) return '#EF4444' // red
   
   return '#6B7280'
@@ -515,7 +515,7 @@ export const RoundDnaCompact = memo(function RoundDnaCompact({
 
   return (
     <RoundDnaRow
-      round={selectedRoundData.round}
+      round={selectedRound}
       holes={selectedRoundData.holes}
       relToPar={selectedRoundData.relToPar}
       playerId={playerId}
