@@ -527,7 +527,7 @@ function buildLiveCards(field: TournamentField): InsightCardProps[] {
       accent: 'live',
       icon: <DraftKingsMark className="h-6 w-auto" />,
       label: 'Top DK Score',
-      primaryValue: topDkLive?.dkFantasyPoints !== null ? formatDkTotal(topDkLive.dkFantasyPoints) : EMPTY_VALUE,
+      primaryValue: topDkLive && topDkLive.dkFantasyPoints !== null ? formatDkTotal(topDkLive.dkFantasyPoints) : EMPTY_VALUE,
       secondaryValue: topDkLive?.playerName,
       supportingText: topDkLive
         ? `${topDkLive.thruHole ? `Thru ${topDkLive.thruHole}` : 'In progress'}`
