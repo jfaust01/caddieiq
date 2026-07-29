@@ -316,17 +316,33 @@ function RoundDnaRow({
             normalizedResult > 0 ? `+${normalizedResult}` : 
             `${normalizedResult}`
           
-          // Calculate proper pixel position: SVG coordinates to container pixels
-          const containerWidth = 100 // approximately, as percentage
+          // Smart positioning: prevent tooltip from being cut off at edges
+          // Tooltip width is approximately 200-240px, estimate at 220px for calculation
+          const TOOLTIP_WIDTH = 220
           const pixelPosition = (tooltipPosition.x / SVG_WIDTH) * 100
+          
+          // Determine transform based on position
+          // If near left edge (< 15%), align to left
+          // If near right edge (> 85%), align to right
+          // Otherwise, center it
+          let transformStyle = 'translate(-50%, -100%)' // default centered
+          let leftStyle = `${pixelPosition}%`
+          
+          if (pixelPosition < 15) {
+            transformStyle = 'translate(0, -100%)' // align left
+            leftStyle = `${Math.max(0, pixelPosition - 5)}%`
+          } else if (pixelPosition > 85) {
+            transformStyle = 'translate(-100%, -100%)' // align right
+            leftStyle = `${Math.min(100, pixelPosition + 5)}%`
+          }
           
           return (
             <div
               className="absolute pointer-events-auto z-50 opacity-100 scale-100 transition-all duration-[120ms] ease-out"
               style={{
-                left: `${pixelPosition}%`,
+                left: leftStyle,
                 top: `${tooltipPosition.y - 12}px`,
-                transform: 'translate(-50%, -100%)',
+                transform: transformStyle,
               }}
             >
               {/* Premium glass panel tooltip */}
