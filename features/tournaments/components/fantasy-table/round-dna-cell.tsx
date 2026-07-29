@@ -32,20 +32,46 @@ interface RoundData {
 // Fixed Y offsets for scoring grid (in SVG coordinate space)
 // Negative Y = above center line (red, bogey or worse)
 // Positive Y = below center line (green, birdie or better)
-const SCORE_Y_OFFSET = {
-  albatross: 12,
-  eagle: 8,
-  birdie: 4,
-  par: 0,
-  bogey: -4,
-  double: -8,
-  triplePlus: -12,
+const LEVEL_SPACING = 4 // pixels between each level above/below par
+
+// Get Y offset based on toPar value only
+// Positive toPar (over par) = smaller Y (above baseline)
+// Negative toPar (under par) = larger Y (below baseline)
+// toPar = 0 = baseline Y
+const getYOffsetFromToPar = (toPar: number | null): number => {
+  if (toPar === null || toPar === undefined) return 0
+  // Clamp to [-3, 3] range and invert for SVG coordinates
+  // (screen Y increases downward, so under-par must be larger Y than baseline)
+  const displayLevel = Math.max(-3, Math.min(3, toPar))
+  return -displayLevel * LEVEL_SPACING
 }
 
-// Helper function to get color based on score status
-// Birdie or better (eagle, albatross) = green (down)
-// Par = gray (centered)
-// Bogey or worse (double, triple+) = red (up)
+// Get color based on toPar value only
+// Under par (negative) = green shades
+// Par (0) = gray
+// Over par (positive) = red/orange shades
+const getDotColorFromToPar = (toPar: number | null): string => {
+  if (toPar === null || toPar === undefined) return '#4B5563' // muted gray for missing
+  
+  const level = Math.max(-3, Math.min(3, toPar))
+  
+  // Under par (green shades)
+  if (level === -1) return '#10B981' // green
+  if (level === -2) return '#059669' // emerald
+  if (level <= -3) return '#7C3AED' // purple
+  
+  // Par (gray)
+  if (level === 0) return '#6B7280' // gray
+  
+  // Over par (red/orange shades)
+  if (level === 1) return '#F97316' // amber/red
+  if (level === 2) return '#FF8C42' // orange
+  if (level >= 3) return '#EF4444' // red
+  
+  return '#6B7280' // default gray
+}
+
+// Legacy function for backwards compatibility (not used in new toPar-based logic)
 const getDotColor = (status: string): string => {
   if (status === 'future') return '#3F4855' // dark gray
   if (status === 'missing') return '#4B5563' // muted gray
@@ -302,15 +328,20 @@ function RoundDnaRow({
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
   const STEP_X = (USABLE_WIDTH - DOT_GAP * 17) / 17 + DOT_GAP
 
-  // Calculate point coordinates (shared between line and dots)
-  const points = holes.map((hole, idx) => ({
-    x: PADDING + idx * STEP_X,
-    y: CENTER_Y + SCORE_Y_OFFSET[hole.status === 'future' || hole.status === 'missing' ? 'par' : hole.status],
-    hole,
-  }))
+  // Calculate point coordinates based on toPar values
+  // Use real toPar if available, otherwise default to par (0)
+  const points = holes.map((hole, idx) => {
+    const toPar = hole.toPar !== null && hole.toPar !== undefined ? hole.toPar : 0
+    return {
+      x: PADDING + idx * STEP_X,
+      y: CENTER_Y + getYOffsetFromToPar(toPar),
+      hole,
+      toPar,
+    }
+  })
 
-  // Filter completed points for line segments
-  const completedPoints = points.filter(p => p.hole.status !== 'future' && p.hole.status !== 'missing')
+  // Filter completed points for line segments (holes with actual scores)
+  const completedPoints = points.filter(p => p.hole.score !== null && p.hole.score !== undefined)
 
   return (
     <div
@@ -338,12 +369,13 @@ function RoundDnaRow({
           preserveAspectRatio="none"
           style={{ overflow: 'visible', marginLeft: '0' }}
         >
-          {/* Connecting line segments - each line takes color of the next dot */}
+          {/* Connecting line segments - each line takes color of the next dot based on toPar */}
           {completedPoints.slice(0, -1).map((startPoint, idx) => {
             const endPoint = completedPoints[idx + 1]
             if (!endPoint) return null
             
-            const lineColor = getDotColor(endPoint.hole.status)
+            const endToPar = endPoint.toPar !== null && endPoint.toPar !== undefined ? endPoint.toPar : 0
+            const lineColor = getDotColorFromToPar(endToPar)
             
             return (
               <line
@@ -417,8 +449,8 @@ function RoundDnaRow({
                   cx={point.x}
                   cy={point.y}
                   r={hoverRadius}
-                  fill={getDotColor(point.hole.status)}
-                  opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.4 : 1}
+                  fill={getDotColorFromToPar(point.toPar)}
+                  opacity={point.hole.score === null ? 0.4 : 1}
                   style={{
                     transition: 'r 0.2s',
                     filter: isHovered ? 'drop-shadow(0 0 4px rgba(0,0,0,0.5))' : 'none',
@@ -431,9 +463,9 @@ function RoundDnaRow({
                   cy={point.y}
                   r={hoverRadius}
                   fill="none"
-                  stroke={point.hole.status === 'future' || point.hole.status === 'missing' ? 'rgba(200,200,200,0.3)' : 'rgba(255,255,255,0.3)'}
+                  stroke={point.hole.score === null ? 'rgba(200,200,200,0.3)' : 'rgba(255,255,255,0.3)'}
                   strokeWidth="0.75"
-                  opacity={point.hole.status === 'future' || point.hole.status === 'missing' ? 0.3 : 0.7}
+                  opacity={point.hole.score === null ? 0.3 : 0.7}
                 />
 
                 {/* Tooltip */}
