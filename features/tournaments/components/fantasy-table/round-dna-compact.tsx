@@ -190,7 +190,7 @@ function RoundDnaRow({
       onClick={() => playerId && onRoundClick?.(playerId, round)}
     >
       <div className="flex h-full relative">
-        <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="flex-1 min-w-0 overflow-hidden relative">
           <svg
             className="w-full h-full"
             viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
@@ -239,37 +239,12 @@ function RoundDnaRow({
                 }}
               />
             ))}
-
-            {/* To-par labels (rendered last to appear in front) */}
-            {completedPoints.map((point) => {
-              const labelText = point.normalizedResult === null ? '-' :
-                point.normalizedResult === 0 ? 'E' :
-                point.normalizedResult > 0 ? `+${point.normalizedResult}` :
-                `${point.normalizedResult}`
-              
-              return (
-                <text
-                  key={`label-${point.hole.holeNumber}`}
-                  x={point.x}
-                  y={point.y - 8}
-                  textAnchor="middle"
-                  fontSize="10"
-                  fontWeight="500"
-                  fill={getDotColorFromNormalizedResult(point.normalizedResult)}
-                  pointerEvents="none"
-                  style={{ zIndex: 10 }}
-                >
-                  {labelText}
-                </text>
-              )
-            })}
-
-
           </svg>
         </div>
+      </div>
 
-        {/* Premium tooltip - rendered outside overflow-hidden for proper visibility */}
-        {tooltipHole && tooltipPosition && (() => {
+        {/* Premium tooltip - rendered outside overflow-hidden container for proper visibility */}
+      {tooltipHole && tooltipPosition && (() => {
           const normalizedResult = normalizeHoleResult(tooltipHole)
           
           // Map normalized result to golf terminology
@@ -318,17 +293,13 @@ function RoundDnaRow({
             normalizedResult > 0 ? `+${normalizedResult}` : 
             `${normalizedResult}`
           
-          // Calculate tooltip position with viewport bounds checking
-          let top = tooltipPosition.y - 120
-          let left = tooltipPosition.x
-          
           return (
             <div
-              className="fixed pointer-events-none z-50 opacity-100 scale-100 transition-all duration-[120ms] ease-out"
+              className="absolute pointer-events-auto z-50 opacity-100 scale-100 transition-all duration-[120ms] ease-out"
               style={{
-                left: `${left}px`,
-                top: `${top}px`,
-                transform: 'translate(-50%, -100%)',
+                left: `${(tooltipPosition.x / SVG_WIDTH) * 100}%`,
+                top: `${tooltipPosition.y - 120}px`,
+                transform: 'translate(-50%, 0)',
               }}
             >
               {/* Dark glass panel with backdrop blur */}
@@ -392,7 +363,6 @@ function RoundDnaRow({
             </div>
           )
         })()}
-      </div>
     </div>
   )
 }
