@@ -36,7 +36,7 @@ export function TournamentCardCompleted({ tournament }: TournamentCardCompletedP
       : null
 
   return (
-    <Link href={`/tournaments/${tournament.id}`}>
+    <Link href={`/tournaments/${tournament.slug}`}>
       <div
         className={cn(
           'group relative overflow-hidden rounded-lg cursor-pointer',

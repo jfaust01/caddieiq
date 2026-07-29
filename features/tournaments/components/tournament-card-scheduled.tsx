@@ -38,7 +38,7 @@ export function TournamentCardScheduled({ tournament }: TournamentCardScheduledP
   const hasDefendingChamp = !!tournament.defendingChampion
 
   return (
-    <Link href={`/tournaments/${tournament.id}`}>
+    <Link href={`/tournaments/${tournament.slug}`}>
       <div
         className={cn(
           'group relative overflow-hidden rounded-lg cursor-pointer',

@@ -955,21 +955,35 @@ export const tournamentService = {
    */
   async getTournamentBySlug(slug: string): Promise<TournamentSummary | null> {
     try {
-      const result = await this.getTournaments({
-        page: 1,
-        limit: 100, // Get a reasonable sample to search through
-      })
+      // Fetch multiple pages to find the tournament by slug
+      let allTournaments: TournamentSummary[] = []
+      
+      for (let page = 1; page <= 10; page++) {
+        const result = await this.getTournaments({
+          page,
+          limit: 100,
+        })
 
-      if (!result.items || result.items.length === 0) {
-        return null
+        if (!result.items || result.items.length === 0) {
+          break
+        }
+
+        allTournaments = allTournaments.concat(result.items)
+
+        // Try to find exact match as we add each batch
+        const match = allTournaments.find(t => 
+          t.slug.toLowerCase() === slug.toLowerCase()
+        )
+        if (match) {
+          return match
+        }
       }
 
-      // Find tournament with matching slug (case-insensitive)
-      const match = result.items.find(t => 
-        t.slug.toLowerCase() === slug.toLowerCase()
-      )
-
-      return match || null
+      // If no exact match, try partial matching (in case slug format differs slightly)
+      const lowerSlug = slug.toLowerCase()
+      return allTournaments.find(t => 
+        t.slug.toLowerCase().replace(/[^a-z0-9]+/g, '-') === lowerSlug.replace(/[^a-z0-9]+/g, '-')
+      ) || null
     } catch {
       return null
     }
