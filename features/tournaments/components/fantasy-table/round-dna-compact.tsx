@@ -394,7 +394,7 @@ function RoundDnaRow({
                         <DraftKingsMark className="h-3 w-auto" />
                         <span className="text-gray-400">Points</span>
                       </div>
-                      <span className={`font-semibold ${getDkPointsColor(tooltipHole.dkPoints)}`}>
+                      <span className="font-semibold text-orange-400">
                         {tooltipHole.dkPoints > 0 ? '+' : ''}{tooltipHole.dkPoints.toFixed(2)}
                       </span>
                     </div>
