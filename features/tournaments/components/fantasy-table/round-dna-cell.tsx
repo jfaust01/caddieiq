@@ -34,26 +34,48 @@ interface RoundData {
 // Positive Y = below center line (green, birdie or better)
 const LEVEL_SPACING = 4 // pixels between each level above/below par
 
-// Get Y offset based on toPar value only
-// Positive toPar (over par) = smaller Y (above baseline)
-// Negative toPar (under par) = larger Y (below baseline)
-// toPar = 0 = baseline Y
-const getYOffsetFromToPar = (toPar: number | null): number => {
-  if (toPar === null || toPar === undefined) return 0
+/**
+ * Normalize hole result to a single true value
+ * Priority: (score - par) > provider toPar > null
+ * This ensures all rendering uses consistent values
+ */
+const normalizeHoleResult = (hole: any): number | null => {
+  // Calculate from score and par if available (most reliable)
+  if (typeof hole.score === 'number' && typeof hole.par === 'number') {
+    const calculated = hole.score - hole.par
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[v0] Hole ${hole.holeNumber}: par=${hole.par}, score=${hole.score}, providerToPar=${hole.toPar}, calculated=${calculated}`)
+    }
+    return calculated
+  }
+
+  // Fall back to provider toPar
+  if (typeof hole.toPar === 'number') {
+    return hole.toPar
+  }
+
+  return null
+}
+
+// Get Y offset based on normalized result
+// Positive result (over par) = smaller Y (above baseline)
+// Negative result (under par) = larger Y (below baseline)
+// result = 0 = baseline Y
+const getYOffsetFromNormalizedResult = (normalizedResult: number | null): number => {
+  if (normalizedResult === null || normalizedResult === undefined) return 0
   // Clamp to [-3, 3] range and invert for SVG coordinates
-  // (screen Y increases downward, so under-par must be larger Y than baseline)
-  const displayLevel = Math.max(-3, Math.min(3, toPar))
+  const displayLevel = Math.max(-3, Math.min(3, normalizedResult))
   return -displayLevel * LEVEL_SPACING
 }
 
-// Get color based on toPar value only
+// Get color based on normalized result
 // Under par (negative) = green shades
 // Par (0) = gray
 // Over par (positive) = red/orange shades
-const getDotColorFromToPar = (toPar: number | null): string => {
-  if (toPar === null || toPar === undefined) return '#4B5563' // muted gray for missing
+const getDotColorFromNormalizedResult = (normalizedResult: number | null): string => {
+  if (normalizedResult === null || normalizedResult === undefined) return '#4B5563' // muted gray for missing
   
-  const level = Math.max(-3, Math.min(3, toPar))
+  const level = Math.max(-3, Math.min(3, normalizedResult))
   
   // Under par (green shades)
   if (level === -1) return '#10B981' // green
@@ -197,32 +219,42 @@ export const RoundDnaCell = memo(function RoundDnaCell({
         ))}
         
         {/* Tooltip */}
-        {tooltipHole && tooltipPosition && (
-          <div
-            className="absolute bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs z-50 pointer-events-none shadow-lg"
-            style={{
-              left: `${tooltipPosition.x}px`,
-              top: `${tooltipPosition.y - 8}px`,
-              transform: 'translate(-50%, -100%)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <div className="flex gap-3 font-medium">
-              <span>Par: {tooltipHole.par}</span>
-              {tooltipHole.score !== null && <span>Score: {tooltipHole.score}</span>}
-              {tooltipHole.dkPoints !== null && tooltipHole.dkPoints !== undefined && (
-                <span>DK: {tooltipHole.dkPoints.toFixed(1)}</span>
-              )}
-            </div>
-            {/* Tooltip arrow pointing down */}
+        {tooltipHole && tooltipPosition && (() => {
+          const normalizedResult = normalizeHoleResult(tooltipHole)
+          const resultLabel = normalizedResult === null ? '-' : 
+            normalizedResult === 0 ? 'E' :
+            normalizedResult > 0 ? `+${normalizedResult}` : 
+            `${normalizedResult}`
+          
+          return (
             <div
-              className="absolute left-1/2 -bottom-1 w-2 h-2 bg-gray-900 border-r border-b border-gray-700"
+              className="absolute bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs z-50 pointer-events-none shadow-lg"
               style={{
-                transform: 'translateX(-50%) rotate(45deg)',
+                left: `${tooltipPosition.x}px`,
+                top: `${tooltipPosition.y - 8}px`,
+                transform: 'translate(-50%, -100%)',
+                whiteSpace: 'nowrap',
               }}
-            />
-          </div>
-        )}
+            >
+              <div className="flex gap-3 font-medium">
+                <span>Hole {tooltipHole.holeNumber}</span>
+                <span>Par: {tooltipHole.par}</span>
+                {tooltipHole.score !== null && <span>Score: {tooltipHole.score}</span>}
+                <span className="font-bold text-amber-300">{resultLabel}</span>
+                {tooltipHole.dkPoints !== null && tooltipHole.dkPoints !== undefined && (
+                  <span>DK: {tooltipHole.dkPoints.toFixed(1)}</span>
+                )}
+              </div>
+              {/* Tooltip arrow pointing down */}
+              <div
+                className="absolute left-1/2 -bottom-1 w-2 h-2 bg-gray-900 border-r border-b border-gray-700"
+                style={{
+                  transform: 'translateX(-50%) rotate(45deg)',
+                }}
+              />
+            </div>
+          )
+        })()}
       </div>
     )
   } catch (error) {
@@ -328,15 +360,15 @@ function RoundDnaRow({
   const USABLE_WIDTH = SVG_WIDTH - 2 * PADDING
   const STEP_X = (USABLE_WIDTH - DOT_GAP * 17) / 17 + DOT_GAP
 
-  // Calculate point coordinates based on toPar values
-  // Use real toPar if available, otherwise default to par (0)
+  // Calculate point coordinates based on normalized results
+  // All rendering uses the same normalized value
   const points = holes.map((hole, idx) => {
-    const toPar = hole.toPar !== null && hole.toPar !== undefined ? hole.toPar : 0
+    const normalizedResult = normalizeHoleResult(hole)
     return {
       x: PADDING + idx * STEP_X,
-      y: CENTER_Y + getYOffsetFromToPar(toPar),
+      y: CENTER_Y + getYOffsetFromNormalizedResult(normalizedResult),
       hole,
-      toPar,
+      normalizedResult,
     }
   })
 
@@ -369,13 +401,12 @@ function RoundDnaRow({
           preserveAspectRatio="none"
           style={{ overflow: 'visible', marginLeft: '0' }}
         >
-          {/* Connecting line segments - each line takes color of the next dot based on toPar */}
+          {/* Connecting line segments - each line takes color of the next dot based on normalized result */}
           {completedPoints.slice(0, -1).map((startPoint, idx) => {
             const endPoint = completedPoints[idx + 1]
             if (!endPoint) return null
             
-            const endToPar = endPoint.toPar !== null && endPoint.toPar !== undefined ? endPoint.toPar : 0
-            const lineColor = getDotColorFromToPar(endToPar)
+            const lineColor = getDotColorFromNormalizedResult(endPoint.normalizedResult)
             
             return (
               <line
@@ -449,7 +480,7 @@ function RoundDnaRow({
                   cx={point.x}
                   cy={point.y}
                   r={hoverRadius}
-                  fill={getDotColorFromToPar(point.toPar)}
+                  fill={getDotColorFromNormalizedResult(point.normalizedResult)}
                   opacity={point.hole.score === null ? 0.4 : 1}
                   style={{
                     transition: 'r 0.2s',
