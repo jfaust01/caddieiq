@@ -143,7 +143,7 @@ const scoringPlayerColumn: ColumnDescriptor = {
   id: 'player',
   label: 'Players',
   headerKind: 'player',
-  colClassName: '[width:var(--player-column-width,300px)]',
+  colClassName: '[width:var(--player-column-width,400px)]',
   thClassName:
     'px-2 sm:px-3 h-[50px] text-left text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80',
 }
