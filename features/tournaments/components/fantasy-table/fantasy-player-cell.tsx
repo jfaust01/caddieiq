@@ -44,8 +44,8 @@ export function FantasyPlayerCell({
           {initials}
         </div>
       )}
-      <div className="flex flex-col gap-0 min-w-0">
-        <div className="flex items-center gap-1 min-w-0">
+      <div className="flex flex-col gap-0">
+        <div className="flex items-center gap-1 whitespace-nowrap">
           <span className="text-sm font-medium text-foreground">
             {entrant.playerName}
           </span>
