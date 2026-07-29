@@ -249,6 +249,12 @@ function RoundDnaRow({
                 point.normalizedResult > 0 ? `+${point.normalizedResult}` :
                 `${point.normalizedResult}`
               
+              // Use red color for positive numbers to match to-par + styling
+              let labelColor = getDotColorFromNormalizedResult(point.normalizedResult)
+              if (point.normalizedResult !== null && point.normalizedResult > 0) {
+                labelColor = '#EF4444' // text-red-400 equivalent from to-par-cell
+              }
+              
               return (
                 <text
                   key={`label-${point.hole.holeNumber}`}
@@ -257,7 +263,7 @@ function RoundDnaRow({
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="500"
-                  fill={getDotColorFromNormalizedResult(point.normalizedResult)}
+                  fill={labelColor}
                   pointerEvents="none"
                 >
                   {labelText}
