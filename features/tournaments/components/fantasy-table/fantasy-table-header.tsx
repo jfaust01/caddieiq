@@ -60,6 +60,8 @@ export function FantasyTableHeader({
                   <span>{col.label}</span>
                 </span>
               ) : col.id === 'toPar' ? (
+                <span className="text-[11px] sm:text-[12px] font-semibold">Round #</span>
+              ) : col.label === `R1` ? (
                 <span className="text-[11px] sm:text-[12px] font-semibold">R{selectedRound || 1}</span>
               ) : col.id === 'roundScore' ? (
                 <span className="text-[11px] sm:text-[12px] font-semibold">{col.label}</span>
