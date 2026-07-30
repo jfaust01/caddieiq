@@ -552,7 +552,7 @@ export const RoundDnaScorecard = memo(function RoundDnaScorecard({
       {/* Header */}
       <div className="text-center space-y-1.5">
         <h2 className="text-3xl font-black text-white tracking-tighter">
-          ROUND DNA R<span>{currentRound || 1}</span>
+          {'ROUND DNA R' + (currentRound || 1)}
         </h2>
 
         {/* Round Selector */}
