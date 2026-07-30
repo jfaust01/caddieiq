@@ -59,8 +59,12 @@ export function FantasyTableHeader({
                   <DraftKingsMark className="h-3 w-auto" />
                   <span>{col.label}</span>
                 </span>
+              ) : col.id === 'toPar' ? (
+                <span className="text-[11px] sm:text-[12px] font-semibold">Total</span>
+              ) : col.label === `R1` ? (
+                <span className="text-[11px] sm:text-[12px] font-semibold">(R{selectedRound || 1})</span>
               ) : col.id === 'roundScore' ? (
-                <span className="text-[11px] sm:text-[12px] font-semibold">{col.label}</span>
+                <span className="text-[11px] sm:text-[12px] font-semibold">(R{selectedRound || 1})</span>
               ) : col.id === 'tournamentForm' ? (
                 <div className="flex flex-col gap-1 h-full mt-[5px]">
                   <div className="flex flex-col items-center justify-center gap-1 mt-[5px]">

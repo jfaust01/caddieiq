@@ -239,8 +239,7 @@ export const RoundDnaCell = memo(function RoundDnaCell({
               <div className="flex gap-3 font-medium">
                 <span>Hole {tooltipHole.holeNumber}</span>
                 <span>Par: {tooltipHole.par}</span>
-                {tooltipHole.score !== null && <span>Score: {tooltipHole.score}</span>}
-                <span className="font-bold text-amber-300">{resultLabel}</span>
+                {tooltipHole.score !== null && <span>{tooltipHole.score}</span>}
                 {tooltipHole.dkPoints !== null && tooltipHole.dkPoints !== undefined && (
                   <span>DK: {tooltipHole.dkPoints.toFixed(1)}</span>
                 )}

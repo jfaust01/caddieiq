@@ -83,7 +83,7 @@ const scheduledColumns: ColumnDescriptor[] = [
   },
   {
     id: 'toPar',
-    label: 'To Par',
+    label: 'Total',
     tooltip: 'Score relative to par (scheduled phase placeholder)',
     colClassName: 'w-[85px] sm:w-[100px]',
     thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
@@ -149,14 +149,14 @@ const scoringPlayerColumn: ColumnDescriptor = {
 }
 const toParColumn: ColumnDescriptor = {
   id: 'toPar',
-  label: 'To Par',
+  label: 'Total',
   tooltip: 'Score relative to par',
   colClassName: 'w-[85px] sm:w-[100px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
 }
 const roundScoreColumn: ColumnDescriptor = {
   id: 'roundScore',
-  label: 'Total',
+  label: 'Round #',
   tooltip: 'Current round score and to-par',
   colClassName: 'w-[120px] sm:w-[140px]',
   thClassName: `border-l border-white/[0.055] px-1 sm:px-2 ${TH_CENTER_NUM}`,
