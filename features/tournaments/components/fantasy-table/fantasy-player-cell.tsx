@@ -15,10 +15,8 @@ import type { FieldEntrant } from '@/features/tournaments/types'
  */
 export function FantasyPlayerCell({
   entrant,
-  onClick,
 }: {
   entrant: FieldEntrant
-  onClick?: (playerId: string) => void
 }) {
   const initials = entrant.playerName
     .split(' ')
@@ -28,10 +26,8 @@ export function FantasyPlayerCell({
     .slice(0, 2)
 
   return (
-    <button
-      onClick={() => onClick?.(entrant.playerId)}
-      className="flex gap-2 items-start py-0 pr-2 w-full text-left hover:opacity-80 transition-opacity duration-150"
-      type="button"
+    <div
+      className="flex gap-2 items-start py-0 pr-2 w-full text-left"
     >
       {entrant.headshotUrl ? (
         <img
@@ -58,6 +54,6 @@ export function FantasyPlayerCell({
         </div>
         <PlayerPerformanceBadges entrant={entrant} />
       </div>
-    </button>
+    </div>
   )
 }
