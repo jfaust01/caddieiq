@@ -382,10 +382,6 @@ function RoundDnaRow({
                     <span className="font-semibold text-white">{tooltipHole.score ?? '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Result</span>
-                    <span className={`font-semibold ${getResultColor(normalizedResult)}`}>{golfTerm}</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-gray-400">To Par</span>
                     <span className={`font-semibold ${getToParColor(normalizedResult)}`}>{toParDisplay}</span>
                   </div>
